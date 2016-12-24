@@ -1,0 +1,23 @@
+opam-version: "1.2"
+name:         "dowsing"
+maintainer:   "Gabriel Radanne <drupyog@zoho.com>"
+authors:      [ "Gabriel Radanne" ]
+homepage:     "https://github.com/Drup/dowsing"
+bug-reports:  "https://github.com/Drup/dowsing/issues"
+dev-repo:     "https://github.com/Drup/dowsing.git"
+license:      "ISC"
+version: "dev"
+tags: [ ]
+build: [
+  ["ocaml" "setup.ml" "-configure"
+    "--enable-tests" {test}
+    "--prefix" prefix
+  ]
+  ["ocaml" "setup.ml" "-build"]
+]
+build-doc: ["ocaml" "setup.ml" "-doc"]
+install: ["ocaml" "setup.ml" "-install"]
+remove: ["ocamlfind" "remove" "dowsing"]
+depends: [
+  "ocamlfind" {build}
+]

@@ -1,0 +1,33 @@
+# OASIS_START
+# DO NOT EDIT (digest: 88cbed58b35745d7931b8537b6e59c47)
+# Ignore VCS directories, you can use the same kind of rule outside
+# OASIS_START/STOP if you want to exclude directories that contains
+# useless stuff for the build process
+true: annot, bin_annot
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library dowsing
+"src/dowsing.cmxs": use_dowsing
+"src/types.cmx": for-pack(Dowsing)
+"src/normal_form.cmx": for-pack(Dowsing)
+<src/*.ml{,i,y}>: package(compiler-libs.common)
+<src/*.ml{,i,y}>: package(containers)
+<src/*.ml{,i,y}>: package(ppx_deriving.std)
+<src/*.ml{,i,y}>: package(ppx_import)
+# OASIS_STOP
+
+true: warn(+A-4-6-9-40-42-44)
+true: warn_error(+1..49)
+true: strict_sequence, safe_string, short_paths
+true: bin_annot
+
+# Better locations and loc in .mlis
+true: keep_locs
