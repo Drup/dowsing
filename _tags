@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 88cbed58b35745d7931b8537b6e59c47)
+# DO NOT EDIT (digest: c13cd18f02633b0acee3ee7a95b93c0b)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -22,6 +22,7 @@ true: annot, bin_annot
 <src/*.ml{,i,y}>: package(containers)
 <src/*.ml{,i,y}>: package(ppx_deriving.std)
 <src/*.ml{,i,y}>: package(ppx_import)
+<src/*.ml{,i,y}>: package(sequence)
 # OASIS_STOP
 
 true: warn(+A-4-6-9-40-42-44)

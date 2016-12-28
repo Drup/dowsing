@@ -7,4 +7,4 @@ FLG -strict-sequence -safe-string
 
 PKG compiler-libs.common
 PKG ppx_import ppx_deriving.std
-PKG containers
+PKG containers sequence
