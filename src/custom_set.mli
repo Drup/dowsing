@@ -7,6 +7,7 @@ module type S = sig
   val union : t -> t -> t
   val compare : t CCOrd.t
   val of_seq : elt Sequence.t -> t
+  val to_seq : t -> elt Sequence.t
   val map : (elt -> elt) -> t -> t
 end
 
