@@ -1,9 +1,9 @@
 # OASIS_START
-# DO NOT EDIT (digest: 36e85dc45b6a65dbd190f4901705c808)
+# DO NOT EDIT (digest: 73d8d685ae60bfb306469d42f05a8b67)
 version = "0.1.0"
 description = "Dowsing"
 requires =
-"compiler-libs.common ppx_import ppx_deriving.std containers sequence"
+"compiler-libs.common ppx_import ppx_deriving.std containers containers.data sequence"
 archive(byte) = "dowsing.cma"
 archive(byte, plugin) = "dowsing.cma"
 archive(native) = "dowsing.cmxa"

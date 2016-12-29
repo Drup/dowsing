@@ -14,12 +14,17 @@ OCamlVersion: >= 4.02.0
 
 Library dowsing
   Path: src
-  Modules: Types, Normal_form
+  Modules: Types, Normal_form, Custom_set
   BuildDepends:
     compiler-libs.common,
     ppx_import, ppx_deriving.std,
-    containers, sequence
+    containers, containers.data, sequence
   Pack: true
+
+Executable dowsindex
+  Path: index_bin
+  MainIs: dowsindex.ml
+  BuildDepends: dowsing, ocp-index.lib, unix
 
 Document "dowsing"
   Type: ocamlbuild (0.3)
