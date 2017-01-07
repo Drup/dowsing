@@ -14,7 +14,7 @@ OCamlVersion: >= 4.02.0
 
 Library dowsing
   Path: src
-  Modules: Types, Typexpr, Custom_set, Database
+  Modules: Typexpr, Custom_set, Database, Imports
   BuildDepends:
     compiler-libs.common,
     ppx_import, ppx_deriving.std,

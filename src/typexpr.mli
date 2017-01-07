@@ -26,18 +26,18 @@ type ('v, 's) skel =
 *)
 module Raw : sig
 
-  type t = private (string, set) skel
-  and set = S of t Sequence.t
+  type t = private (string option, set) skel
+  and set = S of t list
 
   val arrow : t -> t -> t
-  val tuple : t Sequence.t -> t
+  val tuple : t list -> t
   val unknown : 'a -> t
   val constr : P.t -> t array -> t
 
   type varset
   val varset : unit -> varset
 
-  val var : varset -> string -> t
+  val var : varset -> string option -> t
 end
 
 module rec Nf : (Set.OrderedType with type t = (int, NSet.t) skel)
@@ -49,8 +49,6 @@ val equal : t -> t -> bool
 
 module HC : Hashcons.S with type key = t
 
-val normalize : ?ht:HC.t -> Raw.varset -> Raw.t -> t
-
-val of_outcometree : ?ht:HC.t -> Outcometree.out_type -> t
+val normalize : ?ht:HC.t -> Raw.t -> t
 
 val pp : Format.formatter -> t -> unit

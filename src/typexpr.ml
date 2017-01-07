@@ -33,11 +33,6 @@ module P = struct
     Format.pp_print_string ppf
       (String.concat "." @@ Longident.flatten x)
 
-  let rec of_outcometree = let open Outcometree in function
-    | Oide_apply (id1,id2) -> Lapply (of_outcometree id1, of_outcometree id2)
-    | Oide_dot (id, s) -> Ldot (of_outcometree id, s)
-    | Oide_ident s -> Lident s
-
   let unit = Lident "unit"
 end
 
@@ -97,41 +92,25 @@ let equal x y = compare x y = 0
 *)
 module Raw = struct
 
-  module S = Sequence
-  open S.Infix
-
-  type t = (string, set) skel
-  and set = S of t S.t
-
-  (* let flatten_tup = *)
-  (*   let rec aux = function *)
-  (*     | Unit -> S.empty *)
-  (*     | Tuple (S tup) -> S.flat_map aux tup *)
-  (*     | x -> S.singleton x *)
-  (*   in *)
-  (*   S.flat_map aux *)
-
-  (* let rec flatten_arrow args r = match r with *)
-  (*   | Arrow (S args', ret) -> *)
-  (*     flatten_arrow (args <+> flatten_tup args') ret *)
-  (*   | ret -> args, ret *)
+  type t = (string option, set) skel
+  and set = S of t list
 
   let arrow a r = match a, r with
     | Unit, ret -> ret
     | Tuple (S tup), Arrow (S args, ret) ->
-      Arrow (S (tup <+> args), ret)
+      Arrow (S (tup @ args), ret)
     | arg, Arrow (S args, ret) ->
-      Arrow (S (S.cons arg args), ret)
+      Arrow (S (arg :: args), ret)
     | Tuple tup, ret -> Arrow (tup, ret)
-    | arg, ret -> Arrow (S (S.singleton arg), ret)
+    | arg, ret -> Arrow (S [arg], ret)
 
   let tuple elts =
     let aux = function
-      | Unit -> S.empty
+      | Unit -> []
       | Tuple (S tup) -> tup
-      | x -> S.singleton x
+      | x -> [x]
     in
-    Tuple (S (Sequence.flat_map aux elts))
+    Tuple (S (CCList.flat_map aux elts))
 
   let constr lid args = match args with
     | [||] when lid = P.unit -> Unit
@@ -140,7 +119,10 @@ module Raw = struct
   let unknown x = Unknown (Hash.make x)
 
   let var vars s =
-    vars := s :: !vars ;
+    begin match s with
+      | Some s -> (vars := s :: !vars)
+      | None -> ()
+    end ;
     Var s
 
   type varset = string list ref
@@ -164,32 +146,39 @@ module HC = Hashcons.Make(struct
   end)
 
 (** Take as argument a list of variable present in the expression. *)
-let normalize ?ht vars x =
+let normalize ?ht x =
+  let tbl = STbl.create 17 in
+  let nb = ref 0 in
+  let gen () = let i = !nb in incr nb ; i in
+  let sym tbl x =
+    match STbl.get tbl x with
+    | None ->
+      let v = Var (gen ()) in
+      STbl.add tbl x v ; v
+    | Some v -> v
+  in
+
   let hashsubst = match ht with
     | None -> fun x -> x
     | Some ht -> fun x -> (HC.hashcons ht x).node
   in
-  let rec aux ht vartbl raw =
-    hashsubst @@ aux_int ht vartbl raw
-  and aux_int ht vartbl raw = match raw with
-    | Var s -> STbl.find vartbl s
+  let rec aux vartbl raw =
+    hashsubst @@ aux_int vartbl raw
+  and aux_int vartbl raw = match raw with
+    | Var (Some s) -> sym vartbl s
+    | Var None -> Var (gen ())
     | Constr (p,args) ->
-      Constr (p, Array.map (aux ht vartbl) args)
+      Constr (p, Array.map (aux vartbl) args)
     | Arrow (Raw.S args,ret) ->
-      Arrow (auxset ht vartbl args, aux ht vartbl ret)
+      Arrow (auxset vartbl args, aux vartbl ret)
     | Tuple (Raw.S tup) ->
-      Tuple (auxset ht vartbl tup)
+      Tuple (auxset vartbl tup)
     | Unit -> Unit
     | Unknown h -> Unknown h
-  and auxset ht vartbl rawset =
-    NSet.of_seq @@ S.map (aux ht vartbl) rawset
+  and auxset vartbl rawset =
+    NSet.of_seq @@ S.map (aux vartbl) @@ S.of_list rawset
   in
-  let tbl = STbl.create 17 in
-  let add tbl i x =
-    if not (STbl.mem tbl x) then STbl.add tbl x (Var i)
-  in
-  List.iteri (add tbl) !vars ;
-  aux ht tbl x
+  aux tbl x
 
 
 (** Pretty printing *)
@@ -198,8 +187,8 @@ let rec pp ppf = function
   | Var i -> Format.fprintf ppf {|\%i|} i
   | Constr (p,[||]) -> P.pp ppf p
   | Constr (p,args) ->
-    Format.fprintf ppf "@[<2>(%a)@]@ %a"
-      (CCFormat.array ~sep:", " pp) args
+    Format.fprintf ppf "%a@ %a"
+      pp_array args
       P.pp p
   | Arrow (args,ret) ->
     Format.fprintf ppf "@[<2>%a@ ->@ %a@]"
@@ -207,57 +196,13 @@ let rec pp ppf = function
       pp ret
   | Tuple tup ->
     Format.fprintf ppf "@[<2>%a@]" (NSet.pp pp) tup
-  | Unknown _ -> Format.pp_print_string ppf "_"
-  | Unit -> Format.pp_print_string ppf "unit"
+  | Unknown _ -> CCFormat.string ppf "_"
+  | Unit -> CCFormat.string ppf "unit"
 
-
-(** Import from Outcometree *)
-
-let rec of_outcometree_rec vars x : Raw.t =
-  let open Outcometree in match x with
-  | Otyp_arrow (_label, arg, ret) ->
-    let arg' = of_outcometree_rec vars arg in
-    let ret' = of_outcometree_rec vars ret in
-    Raw.arrow arg' ret'
-  | Otyp_constr (id, args) ->
-    let a =
-      S.to_array @@
-      S.map (of_outcometree_rec vars) @@
-      S.of_list args
-    in
-    Raw.constr (P.of_outcometree id) a
-  | Otyp_tuple tup ->
-    let tup' =
-      Sequence.map (of_outcometree_rec vars) @@ Sequence.of_list tup
-    in
-    Raw.tuple tup'
-  | Otyp_var (_, s) ->
-    Raw.var vars s
-
-  (* Not handled *)
-  | Otyp_object (_,_)
-  | Otyp_class (_,_,_)
-  | Otyp_variant (_,_,_,_)
-  | Otyp_module (_,_,_)
-  | Otyp_alias (_,_)
-  | Otyp_attribute (_,_)
-
-  (* Not simple types *)
-  | Otyp_stuff _
-  | Otyp_poly (_,_)
-  | Otyp_abstract
-  | Otyp_open
-  | Otyp_manifest (_,_)
-  | Otyp_record _
-  | Otyp_sum _
-    -> Raw.unknown x
-
-let of_outcometree ?ht x =
-  let vars = Raw.varset () in
-  let t = of_outcometree_rec vars x in
-  normalize ?ht vars t
-
-
+and pp_array ppf = function
+  | [||] -> CCFormat.string ppf "()"
+  | [|x|] -> pp ppf x
+  | a -> Format.fprintf ppf "@[<2>(%a)@]" (CCFormat.array ~sep:", " pp) a
 (*
  * Copyright (c) 2016 Gabriel Radanne <drupyog@zoho.com>
  *
