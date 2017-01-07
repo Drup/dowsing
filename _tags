@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 155adbeb1aeaa030d266ade5a7f8c15a)
+# DO NOT EDIT (digest: a959b1c28d805625c0fc1f4e78dcb4dc)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -17,11 +17,13 @@ true: annot, bin_annot
 # Library dowsing
 "src/dowsing.cmxs": use_dowsing
 "src/types.cmx": for-pack(Dowsing)
-"src/normal_form.cmx": for-pack(Dowsing)
+"src/typexpr.cmx": for-pack(Dowsing)
 "src/custom_set.cmx": for-pack(Dowsing)
+"src/database.cmx": for-pack(Dowsing)
 <src/*.ml{,i,y}>: package(compiler-libs.common)
 <src/*.ml{,i,y}>: package(containers)
 <src/*.ml{,i,y}>: package(containers.data)
+<src/*.ml{,i,y}>: package(hashcons)
 <src/*.ml{,i,y}>: package(ppx_deriving.std)
 <src/*.ml{,i,y}>: package(ppx_import)
 <src/*.ml{,i,y}>: package(sequence)
@@ -29,6 +31,7 @@ true: annot, bin_annot
 "index_bin/dowsindex.byte": package(compiler-libs.common)
 "index_bin/dowsindex.byte": package(containers)
 "index_bin/dowsindex.byte": package(containers.data)
+"index_bin/dowsindex.byte": package(hashcons)
 "index_bin/dowsindex.byte": package(ocp-index.lib)
 "index_bin/dowsindex.byte": package(ppx_deriving.std)
 "index_bin/dowsindex.byte": package(ppx_import)
@@ -38,6 +41,7 @@ true: annot, bin_annot
 <index_bin/*.ml{,i,y}>: package(compiler-libs.common)
 <index_bin/*.ml{,i,y}>: package(containers)
 <index_bin/*.ml{,i,y}>: package(containers.data)
+<index_bin/*.ml{,i,y}>: package(hashcons)
 <index_bin/*.ml{,i,y}>: package(ocp-index.lib)
 <index_bin/*.ml{,i,y}>: package(ppx_deriving.std)
 <index_bin/*.ml{,i,y}>: package(ppx_import)
@@ -47,7 +51,7 @@ true: annot, bin_annot
 # OASIS_STOP
 
 true: warn(+A-4-6-9-40-42-44)
-true: warn_error(+1..49)
+true: warn_error(+1..49-3)
 true: strict_sequence, safe_string, short_paths
 true: bin_annot
 
