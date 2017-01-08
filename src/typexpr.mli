@@ -34,10 +34,7 @@ module Raw : sig
   val unknown : 'a -> t
   val constr : P.t -> t array -> t
 
-  type varset
-  val varset : unit -> varset
-
-  val var : varset -> string option -> t
+  val var : string option -> t
 end
 
 module rec Nf : (Set.OrderedType with type t = (int, NSet.t) skel)

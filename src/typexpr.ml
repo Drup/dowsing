@@ -15,16 +15,6 @@ let array_compare ord a1 a2 =
   in
   aux 0
 
-module Hash
-  : sig
-    type t = (* private *) int
-    val make : 'a -> t
-  end
-= struct
-  type t = int
-  let make = Hashtbl.hash
-end
-
 module P = struct
   type t = [%import: Longident.t]
   [@@deriving ord]
@@ -41,7 +31,7 @@ type ('v, 's) skel =
   | Constr of P.t * ('v, 's) skel array
   | Arrow of 's * ('v, 's) skel
   | Tuple of 's
-  | Unknown of Hash.t
+  | Unknown of int
   | Unit
 
 let to_int = function
@@ -85,7 +75,7 @@ and NSet
 
 include Nf
 
-let equal x y = compare x y = 0
+let equal x y = Nf.compare x y = 0
 
 (** Non normalized expressions.
     Usually the result of conversion or parsing.
@@ -116,17 +106,9 @@ module Raw = struct
     | [||] when lid = P.unit -> Unit
     | _ -> Constr (lid, args)
 
-  let unknown x = Unknown (Hash.make x)
+  let unknown x = Unknown (Hashtbl.hash x)
 
-  let var vars s =
-    begin match s with
-      | Some s -> (vars := s :: !vars)
-      | None -> ()
-    end ;
-    Var s
-
-  type varset = string list ref
-  let varset () = ref []
+  let var s = Var s
 end
 
 (** Normalization
@@ -145,7 +127,6 @@ module HC = Hashcons.Make(struct
     let hash = Hashtbl.hash
   end)
 
-(** Take as argument a list of variable present in the expression. *)
 let normalize ?ht x =
   let tbl = STbl.create 17 in
   let nb = ref 0 in
@@ -203,6 +184,7 @@ and pp_array ppf = function
   | [||] -> CCFormat.string ppf "()"
   | [|x|] -> pp ppf x
   | a -> Format.fprintf ppf "@[<2>(%a)@]" (CCFormat.array ~sep:", " pp) a
+
 (*
  * Copyright (c) 2016 Gabriel Radanne <drupyog@zoho.com>
  *
