@@ -33,13 +33,13 @@ let rec of_outcometree_rec x : Raw.t =
     in
     Raw.tuple tup'
   | Otyp_var (_, s) -> Raw.var (Some s)
+  | Otyp_alias (ty, _) -> of_outcometree_rec ty
 
   (* Not handled *)
   | Otyp_object _
   | Otyp_class _
   | Otyp_variant _
   | Otyp_module _
-  | Otyp_alias _
   | Otyp_attribute _
 
   (* Not simple types *)
@@ -82,6 +82,7 @@ let rec of_parse_rec resolver x : Raw.t =
   | Ptyp_var s ->
     Raw.var (Some s)
 
+  | Ptyp_alias (ty, _)
   | Ptyp_poly (_, ty) -> of_parse_rec resolver ty
 
   (* Not handled *)
@@ -89,7 +90,6 @@ let rec of_parse_rec resolver x : Raw.t =
   | Ptyp_class _
   | Ptyp_variant _
   | Ptyp_package _
-  | Ptyp_alias _
   | Ptyp_extension _
     -> Raw.unknown x
 

@@ -1,6 +1,8 @@
 
+let make_lid l =
+   Longident.parse @@ String.concat "." l
+
 let database_of_libindex dirs =
-  let open Database in
   let ht = Typexpr.HC.create 17 in
   let index =
     LibIndex.load @@ LibIndex.Misc.unique_subdirs
@@ -9,7 +11,8 @@ let database_of_libindex dirs =
   let all = LibIndex.all index in
   let f x = match x.LibIndex.kind, x.ty with
     | Value, Some (Osig_value {oval_type}) ->
-      let lid = Longident.parse @@ String.concat "." (x.path @ [x.name]) in
+      let lid = make_lid (x.path @ [x.name]) in
+      let orig_lid = make_lid (x.orig_path @ [x.name]) in
       let nf = try
           Imports.of_outcometree ~ht oval_type
         with Not_found as e->
@@ -19,15 +22,15 @@ let database_of_libindex dirs =
           raise e
       in
       let (LibIndex.Cmt s | Cmti s | Cmi s) = x.file in
-      let info = {Database.
+      let info = {Database.Info.
         source = s ;
         lid ;
       }
       in
-      Some (nf, info)
+      Some (nf, orig_lid, info, oval_type)
     | _ -> None
   in
-  NFMap.of_seq (Sequence.filter_map f @@ Sequence.of_list all)
+  Database.of_seq (Sequence.filter_map f @@ Sequence.of_list all)
 
 let rectime s t =
   let t' = Unix.gettimeofday () in
@@ -44,11 +47,6 @@ let save ~file dirs =
   let _t = rectime "Save to file" t in
   ()
 
-let pp_item ty ppf x =
-  Format.fprintf ppf "@[<2>%a:@ %a@]"
-    Typexpr.P.pp x.Database.lid
-    Typexpr.pp ty
-
 let search ~file key =
   let t = Unix.gettimeofday () in
   let map = Database.load file in
@@ -56,15 +54,17 @@ let search ~file key =
 
   Format.printf "@[<2>Searching:@ %a@]@." Typexpr.pp key ;
 
-  let decls = Database.NFMap.find map key in
+  let decls = Database.NFMap.find key map in
   let _t = rectime "Search in the map" t in
 
-  Format.printf "@[<v>%a@]@."
-    (CCFormat.list ~sep:"" (pp_item key)) decls ;
+  Format.printf "%a@."
+    Database.Info.pp decls ;
 
   ()
 
 let file = "foo.db"
+
+let () = Format.set_margin 100
 
 let () = match Sys.argv.(1) with
   | "save" -> save ~file Sequence.(drop 2 @@ of_array Sys.argv)
