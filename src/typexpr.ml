@@ -16,23 +16,45 @@ let array_compare ord a1 a2 =
   aux 0
 
 module P = struct
-  type t = [%import: Longident.t]
-  [@@deriving ord]
+  module M = struct
+    type t = [%import: Longident.t]
+    [@@deriving ord]
+  end
+  include M
 
   let pp ppf x =
     Format.pp_print_string ppf
       (String.concat "." @@ Longident.flatten x)
 
+  let of_list l =
+    let rec aux = function
+      | [] -> invalid_arg "Typexpr.P.of_list"
+      | [s] -> Lident s
+      | h :: t -> Ldot (aux t, h)
+    in
+    aux @@ List.rev l
+  let rec to_seq t k = match t with
+    | Lident s -> k s
+    | Ldot (t, s) -> to_seq t k ; k s
+    | Lapply (t1, t2) -> to_seq t1 k ; to_seq t2 k
+
   let unit = Lident "unit"
+  module Map = CCTrie.Make(struct
+      type char_ = string
+      let compare = String.compare
+      type t = Longident.t
+      let of_list = of_list
+      let to_seq = to_seq
+    end)
 end
 
 type ('v, 's) skel =
   | Var of 'v
   | Constr of P.t * ('v, 's) skel array
-  | Arrow of 's * ('v, 's) skel
   | Tuple of 's
   | Unknown of int
   | Unit
+  | Arrow of 's * ('v, 's) skel
 
 let to_int = function
   | Var _ -> 0
@@ -161,6 +183,25 @@ let normalize ?ht x =
   in
   aux tbl x
 
+(** Extract the head *)
+module Head = struct
+
+  type t =
+    | Var
+    | Constr of P.t
+    | Tuple
+    | Other
+    | Unit
+
+  let rec get : Nf.t -> t = function
+    | Arrow (_, ret) -> get ret
+    | Var _i -> Var
+    | Constr (p, _) -> Constr p
+    | Unknown _ -> Other
+    | Tuple _ -> Tuple
+    | Unit -> Unit
+
+end
 
 (** Pretty printing *)
 

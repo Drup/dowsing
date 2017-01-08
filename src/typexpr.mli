@@ -5,6 +5,8 @@ module P : sig
 
   val pp : Format.formatter -> t -> unit
   val compare : t -> t -> int
+
+  module Map : CCTrie.S with type key = t
 end
 
 (** The skeleton of type expressions,
@@ -12,10 +14,10 @@ end
 type ('v, 's) skel =
   | Var of 'v
   | Constr of P.t * ('v, 's) skel array
-  | Arrow of 's * ('v, 's) skel
   | Tuple of 's
   | Unknown of int
   | Unit
+  | Arrow of 's * ('v, 's) skel
 
 (** Non-normalized type expressions.
 
@@ -47,5 +49,16 @@ val equal : t -> t -> bool
 module HC : Hashcons.S with type key = t
 
 val normalize : ?ht:HC.t -> Raw.t -> t
+
+module Head : sig
+  type t =
+    | Var
+    | Constr of P.t
+    | Tuple
+    | Other
+    | Unit
+
+  val get : Nf.t -> t
+end
 
 val pp : Format.formatter -> t -> unit

@@ -51,16 +51,26 @@ let search ~file key =
   let t = Unix.gettimeofday () in
   let map = Database.load file in
   let t = rectime "Loading map from disk" t in
+  (* let _map' = Database.ByHead.fuse map in *)
+  (* let t = rectime "Fusing database" t in *)
+
 
   Format.printf "@[<2>Searching:@ %a@]@." Typexpr.pp key ;
 
-  let decls = Database.NFMap.find key map in
+  let decls = Database.find map key in
   let _t = rectime "Search in the map" t in
 
   Format.printf "%a@."
     Database.Info.pp decls ;
 
   ()
+
+let stat file =
+  let t = Unix.gettimeofday () in
+  let map = Database.load file in
+  let _t = rectime "Loading map from disk" t in
+  Format.printf "%a@." Database.ByHead.pp_stat map
+
 
 let file = "foo.db"
 
@@ -69,4 +79,5 @@ let () = Format.set_margin 100
 let () = match Sys.argv.(1) with
   | "save" -> save ~file Sequence.(drop 2 @@ of_array Sys.argv)
   | "search" -> search ~file (Imports.read (Lexing.from_string Sys.argv.(2)))
+  | "stat" -> stat file
   | _ -> failwith "wrong cli"
