@@ -2,53 +2,49 @@ module P = Typexpr.P
 
 module Info = struct
 
-  type data = {
-    lid : P.t ;
-    source : string ;
-  }
+  type 'a t = 'a list
 
-  type t = {
-    ty : Outcometree.out_type ;
-    data : data ;
-    aliases : data list ;
-  }
+  type 'a map = 'a t P.Map.t
 
-  type map = t P.Map.t
+  let add_new path data map =
+    P.Map.add path [data] map
 
-  let add_new lid data ty map =
-    if P.compare data.lid lid = 0 then
-      P.Map.add lid { ty ; data ; aliases = [] } map
-    else
-      let odata = { lid ; source = data.source } in
-      P.Map.add lid { ty ; data = odata ; aliases = [data] } map
-
-  let add map lid data ty =
+  let add map lid data =
     match P.Map.find lid map with
     | None ->
-      add_new lid data ty map
-    | Some t when lid = data.lid ->
-      (* We inserted the lid earlier, thanks to an orig_lid, but we only
-         get the actual data now. *)
-      P.Map.add lid {t with data} map
+      add_new lid data map
     | Some t ->
-      P.Map.add lid {t with aliases = data :: t.aliases } map
+      P.Map.add lid (data :: t) map
 
-  let create lid data ty = add_new lid data ty P.Map.empty
+  let create lid data = add_new lid data P.Map.empty
 
-  let pp =
-    let pp_item ppf t =
-      match t.aliases with
-      | [] ->
-        Format.fprintf ppf "@[<2>%a:@ %a@]@."
-          P.pp t.data.lid
-          !Oprint.out_type t.ty
-      | l ->
-        Format.fprintf ppf "@[<v2>@[<2>%a:@ %a@]@ %a@]@."
-          P.pp t.data.lid
-          !Oprint.out_type t.ty
-          (Format.pp_print_list (fun ppf x -> P.pp ppf x.lid)) l
+  let pp eq ppdata_main ppdata =
+    let pp_item ppf (path, aliases) =
+      let find l = CCList.find_pred (eq path) l in
+      let pp_opt ppf =
+        CCOpt.iter @@ fun x ->
+        Fmt.pf ppf ":@ %a" ppdata_main x
+      in
+      let pp_list ppf = function
+        | [] -> ()
+        | l -> Fmt.(prefix sp @@ list ppdata) ppf l
+      in
+      Format.fprintf ppf "@[<v2>@[<2>%a%a@]%a@]@."
+        P.pp path
+        pp_opt (find aliases)
+        pp_list (CCList.filter (fun x -> not @@ eq path x) aliases)
     in
-    CCFormat.vbox (fun ppf m -> P.Map.iter_values (pp_item ppf) m)
+    Fmt.vbox (Fmt.iter_bindings P.Map.iter pp_item)
+
+end
+
+module Insert = struct
+
+  type 'a t = {
+    lid : P.t ;
+    ty : Typexpr.t ;
+    data : 'a ;
+  }
 
 end
 
@@ -56,30 +52,30 @@ module ByType = struct
 
   module M = CCMap.Make(Typexpr)
 
-  type t = Info.map M.t
+  type 'a t = 'a Info.map M.t
 
-  let add tbl (ty, lid, data, oty) : t =
+  let add tbl {Insert. ty ; lid ; data} : _ t =
     let ti = try
         let imap = M.find ty tbl in
-        Info.add imap lid data oty
+        Info.add imap lid data
       with Not_found ->
-        Info.create lid data oty
+        Info.create lid data
     in
     M.add ty ti tbl
 
-  let of_seq seq : t = Sequence.fold add M.empty seq
+  let of_seq seq : _ t = Sequence.fold add M.empty seq
 
 end
-type map = ByType.t
+type 'a map = 'a ByType.t
 
 module ByHead = struct
 
-  type t = {
-    var : map ;
-    constr : map P.Map.t ;
-    tup : map ;
-    others : map ;
-    unit : map ;
+  type 'a t = {
+    var : 'a map ;
+    constr : 'a map P.Map.t ;
+    tup : 'a map ;
+    others : 'a map ;
+    unit : 'a map ;
   }
 
   let empty = {
@@ -90,8 +86,8 @@ module ByHead = struct
     unit = ByType.M.empty ;
   }
 
-  let add t ((ty, _, _, _) as k) =
-    match Typexpr.Head.get ty with
+  let add t k =
+    match Typexpr.Head.get k.Insert.ty with
     | Constr p ->
       let m = match P.Map.find p t.constr with
         | None -> ByType.M.empty
@@ -114,9 +110,9 @@ module ByHead = struct
     | Other -> ByType.M.find ty t.others
     | Unit -> ByType.M.find ty t.unit
 
-  let of_seq seq : t = Sequence.fold add empty seq
+  let of_seq seq : 'a t = Sequence.fold add empty seq
 
-  let fuse t : ByType.t =
+  let fuse t : 'a ByType.t =
     let (<+>) = ByType.M.union (fun _ a _ -> Some a) in
     t.var <+> t.tup <+> t.others <+> t.unit
     |> fun x -> P.Map.fold_values (<+>) x t.constr
@@ -139,12 +135,12 @@ module ByHead = struct
       total vars tup unit others constr_total constr_slots
 end
 
-type t = ByHead.t
+type 'a t = 'a ByHead.t
 let of_seq = ByHead.of_seq
 let find = ByHead.find
 
-let load file : t =
+let load file : 'a t =
   CCIO.with_in file Marshal.from_channel
 
-let save file (db:t) : unit =
+let save file (db : 'a t) : unit =
   CCIO.with_out file (fun oc -> Marshal.to_channel oc db [])

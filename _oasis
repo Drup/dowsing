@@ -18,7 +18,8 @@ Library dowsing
   BuildDepends:
     compiler-libs.common,
     ppx_import, ppx_deriving.std,
-    containers, containers.data, sequence, hashcons
+    containers, containers.data, sequence, hashcons,
+    fmt
   Pack: true
 
 Executable dowsindex

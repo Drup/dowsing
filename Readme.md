@@ -32,3 +32,14 @@ Dowsing is a type of divination employed in attempts to locate identifiers match
 
 ### With modules
 - [Mul; ZW93] ADC96; ADCD97
+
+### Database format
+
+#### Serialization
+
+To speed up database deserialization, we could use a format
+that allows random access in an mmap datastructure.
+Example of such formats:
+
+- [Cap'n Proto](https://capnproto.org/index.html) (OCaml implementation: `capnp`)
+- [Flatbuffer](https://github.com/google/flatbuffers) (No OCaml implementation)
