@@ -38,7 +38,7 @@ Document "dowsing"
   XOCamlbuildPath: .
   XOCamlbuildExtraArgs:
     "-docflags '-t Dowsing -colorize-code -short-functors -charset utf-8'"
-  XOCamlbuildLibraries: dowsing
+  XOCamlbuildLibraries: diophantine, dowsing
 
 SourceRepository head
   Type: git
