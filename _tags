@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: c0aa536189c5754fb71a44ca30d05fbf)
+# DO NOT EDIT (digest: 318c482eff558cd258f2e20288d05387)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -14,6 +14,10 @@ true: annot, bin_annot
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
+# Library diophantine
+"diophantine/diophantine.cmxs": use_diophantine
+<diophantine/*.ml{,i,y}>: package(fmt)
+<diophantine/*.ml{,i,y}>: package(sequence)
 # Library dowsing
 "src/dowsing.cmxs": use_dowsing
 "src/typexpr.cmx": for-pack(Dowsing)

@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: 4c2e367577480965b726bd0c4303b8d2)
+version = "0.1.0"
+description = "Dowsing"
+requires = "fmt sequence"
+archive(byte) = "diophantine.cma"
+archive(byte, plugin) = "diophantine.cma"
+archive(native) = "diophantine.cmxa"
+archive(native, plugin) = "diophantine.cmxs"
+exists_if = "diophantine.cma"
+# OASIS_STOP
+

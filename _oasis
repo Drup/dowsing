@@ -11,6 +11,10 @@ AlphaFeatures: ocamlbuild_more_args, pure_interface
 
 OCamlVersion: >= 4.02.0
 
+Library diophantine
+  Path: diophantine
+  Modules: Diophantine
+  BuildDepends: fmt, sequence
 
 Library dowsing
   Path: src
