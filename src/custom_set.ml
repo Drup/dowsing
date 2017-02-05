@@ -29,4 +29,5 @@ module Array (E: Set.OrderedType) = struct
         (CCFormat.array ~sep:", " ppf)
         a
 
+  let as_array x = x
 end

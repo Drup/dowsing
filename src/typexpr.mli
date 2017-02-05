@@ -5,6 +5,7 @@ module P : sig
 
   val pp : Format.formatter -> t -> unit
   val compare : t -> t -> int
+  val unit : t
 
   module Map : CCTrie.S with type key = t
 end
@@ -40,7 +41,10 @@ module Raw : sig
 end
 
 module rec Nf : (Set.OrderedType with type t = (int, NSet.t) skel)
-and NSet : Custom_set.S with type elt = Nf.t
+and NSet : sig
+  include Custom_set.S with type elt = Nf.t
+  val as_array : t -> elt array
+end
 
 type t = Nf.t
 val compare : t -> t -> int

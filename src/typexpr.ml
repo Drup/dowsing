@@ -92,7 +92,9 @@ module rec Nf
   let compare = compare_skel CCInt.compare NSet.compare
 end
 and NSet
-  : Custom_set.S with type elt = Nf.t
+  : sig include Custom_set.S with type elt = Nf.t
+    val as_array : t -> elt array
+  end
   = Custom_set.Array(Nf)
 
 include Nf

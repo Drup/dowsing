@@ -18,7 +18,7 @@ Library diophantine
 
 Library dowsing
   Path: src
-  Modules: Typexpr, Custom_set, Database, Imports
+  Modules: Typexpr, Custom_set, Database, Imports, Unification
   BuildDepends:
     compiler-libs.common,
     ppx_import, ppx_deriving.std,

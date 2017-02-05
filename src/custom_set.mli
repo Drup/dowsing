@@ -8,4 +8,7 @@ module type S = sig
   val pp : elt CCFormat.printer -> t CCFormat.printer
 end
 
-module Array (M : Set.OrderedType) : S with type elt = M.t
+module Array (M : Set.OrderedType) : sig
+  include S with type elt = M.t
+  val as_array : t -> elt array
+end
