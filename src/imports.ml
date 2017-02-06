@@ -95,10 +95,10 @@ let rec of_parse_rec resolver x : Raw.t =
 
 let default_resolver id a = id, a
 
-let of_parsetree ?ht ?(resolver=default_resolver) x =
+let of_parsetree ?gen ?ht ?(resolver=default_resolver) x =
   let t = of_parse_rec resolver x in
-  normalize ?ht t
+  normalize ?gen ?ht t
 
-let read ?ht ?resolver lexbuf =
-  of_parsetree ?ht ?resolver @@
+let read ?gen ?ht ?resolver lexbuf =
+  of_parsetree ?gen ?ht ?resolver @@
   Parse.core_type lexbuf

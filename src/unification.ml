@@ -6,28 +6,7 @@
 
 
 module T = Typexpr
-
-module Var : sig
-  type t = private int
-  val equal : t -> t -> bool
-  module Map : CCMap.S with type key = t
-
-  type gen
-  val gen : gen -> t
-  val init : int -> gen
-  val inject : int -> t
-  val pp : t Fmt.t
-end = struct
-  include CCInt
-  module Map = CCMap.Make(CCInt)
-
-  type gen = int ref
-  let gen r = let x = !r in incr r ; x
-  let init i = ref i
-  let inject i = i
-  let pp fmt i = Fmt.pf fmt "\\%i" i
-end
-
+module Var = Variables
 
 module Pure = struct
   type t =
@@ -38,7 +17,6 @@ module Pure = struct
     | Pure of t
     | Tuple of t array
 
-  let var' x = Var (Var.inject x)
   let var x = Var x
   let constant p = Constant p
   let tuple p = Tuple p
@@ -91,8 +69,8 @@ module Env = struct
     mutable pure_problems : Pure.problem list ;
   }
 
-  let make i = {
-    gen = Var.init i ;
+  let make ?(gen=Var.init 0) () = {
+    gen ;
     vars = Var.Map.empty ;
     pure_problems = []
   }
@@ -108,7 +86,7 @@ module Env = struct
   let rec representative_rec m x =
     match Var.Map.get x m with
     | None -> V x
-    | Some (T.Var x') -> representative_rec m (Var.inject x')
+    | Some (T.Var x') -> representative_rec m x'
     | Some t -> E (x, t)
   let representative e x = representative_rec e.vars x
 
@@ -140,6 +118,11 @@ and insert env stack (t1 : T.t) (t2 : T.t) =
     let stack = Stack.push_array2 args1 args2 stack in
     process env stack
 
+  | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
+    (* TODO: Wrong, should fork here *)
+    let stack = Stack.push stack (T.Tuple arg1) (T.Tuple arg2) in
+    insert env stack ret1 ret2
+
   (* Two tuples, we apply VA repeatedly
      (s₁,...,sₙ) ≡ (t₁,...,tₙ) -> an equivalent pure problem
   *)
@@ -149,7 +132,7 @@ and insert env stack (t1 : T.t) (t2 : T.t) =
     Env.push_pure env pure_s pure_t ;
     process env stack
 
-  | Var v, t -> insert_var env stack (Var.inject v) t
+  | Var v, t | t, Var v -> insert_var env stack v t
 
   (* Clash rule
      Terms are incompatible
@@ -182,7 +165,7 @@ and variable_abstraction env stack t =
   | T.Tuple _ -> assert false (* No nested tuple *)
 
   (* Not a foreign subterm *)
-  | Var i -> stack, Pure.var' i
+  | Var i -> stack, Pure.var i
   | Unit -> stack, Pure.constant T.P.unit
   | Constr (p, [||]) -> stack, Pure.constant p
 
@@ -197,7 +180,6 @@ and insert_var env stack x s = match s with
   | T.Tuple _ | T.Constr _ | T.Arrow _ | T.Unknown _ ->
     quasi_solved env stack x s
   | T.Var y ->
-    let y = Var.inject y in
     non_proper env stack x y
 
 (* Quasi solved equation
@@ -212,7 +194,7 @@ and quasi_solved env stack x s =
 
   (* Rule representative *)
   | Some (T.Var y) ->
-    Env.attach env (Var.inject y) s ;
+    Env.attach env y s ;
     process env stack
 
   (* Rule AC-Merge *)
@@ -232,7 +214,7 @@ and non_proper env stack x y =
     process env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
-    Env.attach env x' (T.Var (y' :> int)) ;
+    Env.attach env x' (T.Var y') ;
     process env stack
   | E (_, t), E (_, s) ->
     (* TODO: use size of terms *)

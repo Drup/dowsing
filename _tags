@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 93a272b72df982898071d46bbffc2300)
+# DO NOT EDIT (digest: a961788d2342b05bc5fe6e954e76000e)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -25,6 +25,7 @@ true: annot, bin_annot
 "src/database.cmx": for-pack(Dowsing)
 "src/imports.cmx": for-pack(Dowsing)
 "src/unification.cmx": for-pack(Dowsing)
+"src/variables.cmx": for-pack(Dowsing)
 <src/*.ml{,i,y}>: package(compiler-libs.common)
 <src/*.ml{,i,y}>: package(containers)
 <src/*.ml{,i,y}>: package(containers.data)

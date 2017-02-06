@@ -90,11 +90,14 @@ let stat file =
   let _t = rectime "Loading map from disk" t in
   Format.printf "%a@." Database.ByHead.pp_stat map
 
-let unif t1 t2 =
+let unif s1 s2 =
+  let gen = Variables.init 0 in
+  let t1 = Imports.read ~gen (Lexing.from_string s1) in
+  let t2 = Imports.read ~gen (Lexing.from_string s2) in
   Format.printf "@[<2>t1:@ %a@]@." Typexpr.pp t1 ;
   Format.printf "@[<2>t2:@ %a@]@." Typexpr.pp t2 ;
   let t = Unix.gettimeofday () in
-  let env = Unification.Env.make 50 in
+  let env = Unification.Env.make ~gen () in
   let Unification.Done = Unification.insert env [] t1 t2 in
   let _t = rectime "Unification" t in
   Format.printf "%a@." Unification.Env.pp env
@@ -106,9 +109,6 @@ let () = Format.set_margin 100
 let () = match Sys.argv.(1) with
   | "save" -> save ~file Sequence.(drop 2 @@ of_array Sys.argv)
   | "search" -> search ~file (Imports.read (Lexing.from_string Sys.argv.(2)))
-  | "unif" ->
-    unif
-      (Imports.read (Lexing.from_string Sys.argv.(2)))
-      (Imports.read (Lexing.from_string Sys.argv.(3)))
+  | "unif" -> unif Sys.argv.(2) Sys.argv.(3)
   | "stat" -> stat file
   | _ -> failwith "wrong cli"

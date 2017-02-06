@@ -40,7 +40,7 @@ module Raw : sig
   val var : string option -> t
 end
 
-module rec Nf : (Set.OrderedType with type t = (int, NSet.t) skel)
+module rec Nf : (Set.OrderedType with type t = (Variables.t, NSet.t) skel)
 and NSet : sig
   include Custom_set.S with type elt = Nf.t
   val as_array : t -> elt array
@@ -52,7 +52,7 @@ val equal : t -> t -> bool
 
 module HC : Hashcons.S with type key = t
 
-val normalize : ?ht:HC.t -> Raw.t -> t
+val normalize : ?gen:Variables.gen -> ?ht:HC.t -> Raw.t -> t
 
 module Head : sig
   type t =

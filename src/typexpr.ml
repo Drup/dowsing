@@ -87,9 +87,9 @@ let rec compare_skel cmp_var cmp_set lhs rhs =
 (** Normal forms *)
 
 module rec Nf
-  : Set.OrderedType with type t = (int, NSet.t) skel = struct
-  type t = (int, NSet.t) skel
-  let compare = compare_skel CCInt.compare NSet.compare
+  : Set.OrderedType with type t = (Variables.t, NSet.t) skel = struct
+  type t = (Variables.t, NSet.t) skel
+  let compare = compare_skel Variables.compare NSet.compare
 end
 and NSet
   : sig include Custom_set.S with type elt = Nf.t
@@ -151,14 +151,12 @@ module HC = Hashcons.Make(struct
     let hash = Hashtbl.hash
   end)
 
-let normalize ?ht x =
+let normalize ?(gen=Variables.init 0) ?ht x =
   let tbl = STbl.create 17 in
-  let nb = ref 0 in
-  let gen () = let i = !nb in incr nb ; i in
   let sym tbl x =
     match STbl.get tbl x with
     | None ->
-      let v = Var (gen ()) in
+      let v = Var (Variables.gen gen) in
       STbl.add tbl x v ; v
     | Some v -> v
   in
@@ -171,7 +169,7 @@ let normalize ?ht x =
     hashsubst @@ aux_int vartbl raw
   and aux_int vartbl raw = match raw with
     | Var (Some s) -> sym vartbl s
-    | Var None -> Var (gen ())
+    | Var None -> Var (Variables.gen gen)
     | Constr (p,args) ->
       Constr (p, Array.map (aux vartbl) args)
     | Arrow (Raw.S args,ret) ->
@@ -208,7 +206,7 @@ end
 (** Pretty printing *)
 
 let rec pp ppf = function
-  | Var i -> Format.fprintf ppf {|\%i|} i
+  | Var i -> Variables.pp ppf i
   | Constr (p,[||]) -> P.pp ppf p
   | Constr (p,args) ->
     Format.fprintf ppf "%a@ %a"

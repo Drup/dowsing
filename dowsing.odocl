@@ -1,9 +1,10 @@
 # OASIS_START
-# DO NOT EDIT (digest: b9e66c076f605411fce1772b3b7b059b)
+# DO NOT EDIT (digest: 4aafa17564eb78a5763d70dee587c1e5)
 diophantine/Diophantine
 src/Typexpr
 src/Custom_set
 src/Database
 src/Imports
 src/Unification
+src/Variables
 # OASIS_STOP
