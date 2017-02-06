@@ -30,6 +30,7 @@ Executable dowsindex
   Path: index_bin
   MainIs: dowsindex.ml
   BuildDepends: dowsing, ocp-index.lib, unix
+  CompiledObject: best
 
 Document "dowsing"
   Type: ocamlbuild (0.3)

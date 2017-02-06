@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: a961788d2342b05bc5fe6e954e76000e)
+# DO NOT EDIT (digest: 84515f06824da7635d083ea3c3daea5e)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -35,17 +35,17 @@ true: annot, bin_annot
 <src/*.ml{,i,y}>: package(ppx_import)
 <src/*.ml{,i,y}>: package(sequence)
 # Executable dowsindex
-"index_bin/dowsindex.byte": package(compiler-libs.common)
-"index_bin/dowsindex.byte": package(containers)
-"index_bin/dowsindex.byte": package(containers.data)
-"index_bin/dowsindex.byte": package(fmt)
-"index_bin/dowsindex.byte": package(hashcons)
-"index_bin/dowsindex.byte": package(ocp-index.lib)
-"index_bin/dowsindex.byte": package(ppx_deriving.std)
-"index_bin/dowsindex.byte": package(ppx_import)
-"index_bin/dowsindex.byte": package(sequence)
-"index_bin/dowsindex.byte": package(unix)
-"index_bin/dowsindex.byte": use_dowsing
+<index_bin/dowsindex.{native,byte}>: package(compiler-libs.common)
+<index_bin/dowsindex.{native,byte}>: package(containers)
+<index_bin/dowsindex.{native,byte}>: package(containers.data)
+<index_bin/dowsindex.{native,byte}>: package(fmt)
+<index_bin/dowsindex.{native,byte}>: package(hashcons)
+<index_bin/dowsindex.{native,byte}>: package(ocp-index.lib)
+<index_bin/dowsindex.{native,byte}>: package(ppx_deriving.std)
+<index_bin/dowsindex.{native,byte}>: package(ppx_import)
+<index_bin/dowsindex.{native,byte}>: package(sequence)
+<index_bin/dowsindex.{native,byte}>: package(unix)
+<index_bin/dowsindex.{native,byte}>: use_dowsing
 <index_bin/*.ml{,i,y}>: package(compiler-libs.common)
 <index_bin/*.ml{,i,y}>: package(containers)
 <index_bin/*.ml{,i,y}>: package(containers.data)
