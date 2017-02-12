@@ -26,7 +26,7 @@ module Array (E: Set.OrderedType) = struct
     | [| x |] -> ppf fmt x
     | _ ->
       CCFormat.fprintf fmt "(@ %a@ )"
-        (CCFormat.array ~sep:", " ppf)
+        CCFormat.(array ~sep:(return ", ") ppf)
         a
 
   let as_array x = x

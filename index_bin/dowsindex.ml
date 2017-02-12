@@ -60,7 +60,7 @@ let rectime s t =
 let save ~file dirs =
   let t = Unix.gettimeofday () in
   Format.printf "@[<v2>Saving directories:@ %a@]@."
-    CCFormat.(seq ~sep:"" string) dirs ;
+    CCFormat.(seq ~sep:silent string) dirs ;
   let map = Idx.database dirs in
   let t = rectime "Loading into the map" t in
   Database.save file map ;

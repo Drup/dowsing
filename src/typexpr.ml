@@ -224,7 +224,8 @@ let rec pp ppf = function
 and pp_array ppf = function
   | [||] -> CCFormat.string ppf "()"
   | [|x|] -> pp ppf x
-  | a -> Format.fprintf ppf "@[<2>(%a)@]" (CCFormat.array ~sep:", " pp) a
+  | a -> Format.fprintf ppf "@[<2>(%a)@]"
+      CCFormat.(array ~sep:(return ", ") pp) a
 
 (*
  * Copyright (c) 2016 Gabriel Radanne <drupyog@zoho.com>
