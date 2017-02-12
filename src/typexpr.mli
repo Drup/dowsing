@@ -8,6 +8,7 @@ module P : sig
   val unit : t
 
   module Map : CCTrie.S with type key = t
+  module HMap : CCHashtbl.S with type key = t
 end
 
 (** The skeleton of type expressions,

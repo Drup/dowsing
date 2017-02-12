@@ -30,12 +30,14 @@
 (**
   [solve v_type system] returns the minimal solutions [m]s of the linear
    Diophantine system [system] such that:
-   - [∀i], [i > v_type.(0)] implies [m.(i) <= 1].
+   - [∀i], [v_type.(0) < i] implies [m.(i) <= 1].
    - if there is a pair [(i,k)] such that
    [v_type.(k) <= i < v_type.(k+1)] and [m.(i) > 0], then
    [∀ k' <> k], [∀i'],  [v_type.(k') <= i' < v_type.(k'+1)]
    implies [m.(i') = 0].
+
+   [i] is constrained if [v_type.(0) < i]
 *)
 val solve :
   ?debug:bool ->
-  int array -> int array array -> int array array
+  int array -> int array array -> int array list

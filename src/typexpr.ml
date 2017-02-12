@@ -18,7 +18,7 @@ let array_compare ord a1 a2 =
 module P = struct
   module M = struct
     type t = [%import: Longident.t]
-    [@@deriving ord]
+    [@@deriving ord, eq]
   end
   include M
 
@@ -46,6 +46,7 @@ module P = struct
       let of_list = of_list
       let to_seq = to_seq
     end)
+  module HMap = CCHashtbl.Make(struct include M let hash = CCHash.poly end)
 end
 
 type ('v, 's) skel =

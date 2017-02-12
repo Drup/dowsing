@@ -132,19 +132,15 @@ let init_state nb_eq nb_var v_type system =
 
     (* freezing the components corresponding to other theories if the
        variable associated with the jth component is instanciated. *)
-    if (v_type.(0) <= j)
-    then
-      begin
-        ej.(j).frozen <- true;
-        for i=1 to (pred (pred (Array.length v_type))) do
-          if (v_type.(i) > j)
-          then
-            for k = v_type.(i) to (pred (v_type.(i+1))) do
-              ej.(k).frozen <- true
-            done
-        done
-      end;
-
+    if v_type.(0) <= j then begin
+      ej.(j).frozen <- true;
+      for i=1 to Array.length v_type - 2 do
+        if v_type.(i) > j then
+          for k = v_type.(i) to v_type.(i+1) - 1 do
+            ej.(k).frozen <- true
+          done
+      done
+    end;
 
     let d = Array.make nb_eq 0 in
     for i=0 to (pred nb_eq) do d.(i) <- system.(i).(j) done;
@@ -344,4 +340,4 @@ let solve ?(debug=false) v_type system =
     if debug then
       pp_state Format.err_formatter ~nb_eqs ~nb_vars ~v_type system my_state
   done;
-  Array.of_list my_state.sol
+  my_state.sol

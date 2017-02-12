@@ -102,7 +102,9 @@ let unif s1 s2 =
   let _t = rectime "Unification" t in
   Format.printf "%a@.Occur-check: %b@."
     Unification.Env.pp env
-    (Unification.occur_check env)
+    (Unification.occur_check env) ;
+  let system = Unification.System.make env.pure_problems in
+  Format.printf "System: @,%a@." Unification.System.pp system
 
 
 let file = "foo.db"

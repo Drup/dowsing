@@ -49,14 +49,15 @@ module Arrow = struct
       Pure.pp ret2
 end
 
-type problem =
-  | Var of Var.t * Typexpr.t
-  | Expr of Typexpr.t * Typexpr.t
-
 type representative = V of Var.t | E of Var.t * Typexpr.t
 
 module Stack = struct
-  type t = problem list
+
+  type elt =
+    | Var of Var.t * Typexpr.t
+    | Expr of Typexpr.t * Typexpr.t
+
+  type t = elt list
   let pop = function
     | [] -> None
     | h :: t -> Some (h, t)
@@ -126,7 +127,7 @@ type d = Done
 
 let rec process env stack =
   match stack with
-  | Expr (t1, t2) :: stack -> insert env stack t1 t2
+  | Stack.Expr (t1, t2) :: stack -> insert env stack t1 t2
   | Var (v, t) :: stack -> insert_var env stack v t
   | [] -> Done
 
@@ -286,3 +287,88 @@ let occur_check env =
     Var.HMap.fold (fun x p l -> if p = 0 then x :: l else l) nb_preds []
   in
   loop 0 no_preds
+
+
+(** Elementary AC-Unif *)
+
+module System = struct
+
+  type t = {
+    get : int -> Pure.t ;
+    is_const : int -> bool ;
+    system : int array array ;
+  }
+
+  let pp ppf {system} =
+    Fmt.(vbox (array ~sep:cut @@ array ~sep:(unit ", ") int)) ppf system
+
+  (* Replace variables by their representative/a constant *)
+  let simplify_problem env {Pure. left ; right} =
+    let f x = match x with
+      | Pure.Constant _ -> x
+      | Pure.Var v ->
+        match Env.representative env v with
+        | V v' -> Var v'
+        | E (_,Constr (p,[||])) -> Constant p
+        | E _ -> x
+    in
+    {Pure. left = Array.map f left ; right = Array.map f right }
+
+  let add_problem get_index size {Pure. left; right} =
+    let equation = Array.make size 0 in
+    let add dir r =
+      let i = get_index r in
+      equation.(i) <- equation.(i) + dir
+    in
+    Array.iter (add 1) left ;
+    Array.iter (add (-1)) right ;
+    equation
+
+  (* The number of constants and variables in a system *)
+  let make_mapping problems =
+    let vars = Var.HMap.create 4 in
+    let nb_vars = ref 0 in
+    let consts = T.P.HMap.create 4 in
+    let nb_consts = ref 0 in
+    let f = function
+      | Pure.Var v ->
+        if Var.HMap.mem vars v then () else
+          Var.HMap.add vars v @@ CCRef.get_then_incr nb_vars
+      | Constant p ->
+        if T.P.HMap.mem consts p then () else
+          T.P.HMap.add consts p @@ CCRef.get_then_incr nb_consts
+    in
+    let aux {Pure. left ; right} =
+      Array.iter f left ; Array.iter f right
+    in
+    List.iter aux problems ;
+    vars, !nb_vars, consts, !nb_consts
+
+  let array_of_map size neutral iter tbl =
+    let a = Array.make size neutral in
+    let f k i = a.(i) <- k in
+    iter f tbl
+
+  let make problems =
+    let vars, nb_vars, consts, nb_consts = make_mapping problems in
+    let get_index = function
+      | Pure.Constant p -> T.P.HMap.find consts p
+      | Pure.Var v -> Var.HMap.find vars v + nb_consts
+    in
+    let size = nb_vars + nb_consts in
+
+    let get =
+      let a = Array.make size (Pure.var @@ Var.inject 0) in
+      T.P.HMap.iter (fun k i -> a.(i) <- Pure.constant k) consts ;
+      Var.HMap.iter (fun k i -> a.(i+nb_consts) <- Pure.var k) vars ;
+      Array.get a
+    in
+    let is_const i = i < nb_consts in
+    let system =
+      Sequence.of_list problems
+      |> Sequence.map (add_problem get_index size)
+      |> Sequence.to_array
+    in
+    { get ; is_const ; system }
+
+end
