@@ -22,17 +22,31 @@ module Pure = struct
   let tuple p = Tuple p
   let pure p = Pure p
 
-  type problem =
-    | Problem of t array * t array [@ocaml.unboxed]
+  type problem = {left : t array ; right : t array }
 
   let pp fmt = function
     | Var i -> Var.pp fmt i
     | Constant p -> T.P.pp fmt p
 
-  let pp_problem fmt (Problem (a,b)) =
+  let pp_problem fmt {left ; right} =
     Fmt.pf fmt "%a = %a"
-      Fmt.(array ~sep:(unit ",") pp) a
-      Fmt.(array ~sep:(unit ",") pp) b
+      Fmt.(array ~sep:(unit ",") pp) left
+      Fmt.(array ~sep:(unit ",") pp) right
+end
+
+module Arrow = struct
+
+  type problem = {
+    arg1 : Pure.t array ; ret1 : Pure.t ;
+    arg2 : Pure.t array ; ret2 : Pure.t ;
+  }
+
+  let pp_problem fmt {arg1; ret1; arg2; ret2} =
+    Fmt.pf fmt "%a -> %a = %a -> %a"
+      Fmt.(array ~sep:(unit ",") Pure.pp) arg1
+      Pure.pp ret1
+      Fmt.(array ~sep:(unit ",") Pure.pp) arg2
+      Pure.pp ret2
 end
 
 type problem =
@@ -67,21 +81,29 @@ module Env = struct
     gen : Var.gen ;
     mutable vars : Typexpr.t Var.Map.t ;
     mutable pure_problems : Pure.problem list ;
+    mutable arrows : Arrow.problem list ;
   }
 
   let make ?(gen=Var.init 0) () = {
     gen ;
     vars = Var.Map.empty ;
-    pure_problems = []
+    pure_problems = [] ;
+    arrows = [] ;
   }
+
+  let copy { gen ; vars ; pure_problems ; arrows } =
+    { gen ; vars ; pure_problems ; arrows }
 
   let gen e = Var.gen e.gen
   let get e x = Var.Map.get x e.vars
   let attach e v t =
     e.vars <- Var.Map.add v t e.vars
 
-  let push_pure e a b =
-    e.pure_problems <- (Pure.Problem (a,b)) :: e.pure_problems
+  let push_pure e left right =
+    e.pure_problems <- {left;right} :: e.pure_problems
+
+  let push_arrow e (arg1, ret1) (arg2, ret2) =
+    e.arrows <- {arg1;ret1;arg2;ret2} :: e.arrows
 
   let rec representative_rec m x =
     match Var.Map.get x m with
@@ -93,10 +115,11 @@ module Env = struct
   let pp_binding fmt (x,t) =
     Fmt.pf fmt "%a = %a"  Var.pp x  Typexpr.pp t
 
-  let pp fmt { vars ; pure_problems } =
-    Fmt.pf fmt "@[<v2>Quasi:@ %a@]@.@[<v2>Pure:@ %a@]@."
+  let pp fmt { vars ; pure_problems ; arrows } =
+    Fmt.pf fmt "@[<v2>Quasi:@ %a@]@.@[<v2>Pure:@ %a@]@.@[<v2>Arrows:@ %a@]@."
       Fmt.(iter_bindings ~sep:cut Var.Map.iter pp_binding) vars
       Fmt.(list ~sep:cut Pure.pp_problem) pure_problems
+      Fmt.(list ~sep:cut Arrow.pp_problem) arrows
 end
 
 type d = Done
@@ -110,7 +133,7 @@ let rec process env stack =
 and insert env stack (t1 : T.t) (t2 : T.t) =
   match t1, t2 with
   (* Decomposition rule
-     (s₁,...,sₙ) p ≡ (t₁,...,tₙ) p --> ∀i, sᵢ ≡ tᵢ
+     (s₁,...,sₙ) p ≡ (t₁,...,tₙ) p  --> ∀i, sᵢ ≡ tᵢ
      when p is a type constructor.
   *)
   | Constr (p1, args1), Constr (p2, args2)
@@ -118,13 +141,19 @@ and insert env stack (t1 : T.t) (t2 : T.t) =
     let stack = Stack.push_array2 args1 args2 stack in
     process env stack
 
+  (* Two arrows, we apply VA repeatedly
+     (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r'  -->  an equivalent arrow problem
+  *)
   | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
-    (* TODO: Wrong, should fork here *)
-    let stack = Stack.push stack (T.Tuple arg1) (T.Tuple arg2) in
-    insert env stack ret1 ret2
+    let stack, pure_arg1 = variable_abstraction_all env stack arg1 in
+    let stack, pure_ret1 = variable_abstraction env stack ret1 in
+    let stack, pure_arg2 = variable_abstraction_all env stack arg2 in
+    let stack, pure_ret2 = variable_abstraction env stack ret2 in
+    Env.push_arrow env (pure_arg1, pure_ret1) (pure_arg2, pure_ret2) ;
+    process env stack
 
   (* Two tuples, we apply VA repeatedly
-     (s₁,...,sₙ) ≡ (t₁,...,tₙ) -> an equivalent pure problem
+     (s₁,...,sₙ) ≡ (t₁,...,tₙ) --> an equivalent pure problem
   *)
   | Tuple s, Tuple t ->
     let stack, pure_s = variable_abstraction_all env stack s in
@@ -183,7 +212,7 @@ and insert_var env stack x s = match s with
     non_proper env stack x y
 
 (* Quasi solved equation
-   'x = (s₁,...sₙ) or
+   'x = (s₁,...sₙ)
    'x = (s₁,...sₙ) p
  *)
 and quasi_solved env stack x s =
@@ -203,7 +232,7 @@ and quasi_solved env stack x s =
     insert env stack t s
 
 (* Non proper equations
-   x ≡ y
+   'x ≡ 'y
 *)
 and non_proper env stack x y =
   let xr = Env.representative env x
@@ -219,3 +248,41 @@ and non_proper env stack x y =
   | E (_, t), E (_, s) ->
     (* TODO: use size of terms *)
     insert env stack t s
+
+
+(** Checking for cycles *)
+
+(* Check for cycles *)
+let occur_check env =
+  let nb_preds = Var.HMap.create 17 in
+  let succs = Var.HMap.create 17 in
+  let nb_representatives = Var.HMap.length nb_preds in
+
+  let fill_nb_preds x ty =
+    let aux v =
+      Var.HMap.incr nb_preds v ;
+      Var.HMap.add_list succs x v ;
+    in
+    T.vars ty |> Sequence.iter aux
+  in
+  Var.Map.iter fill_nb_preds env.Env.vars ;
+
+  let rec loop n q = match q with
+    | _ when n = nb_representatives -> true
+    (* We eliminated all the variables: there are no cycles *)
+    | [] -> false (* there is a cycle *)
+    | x :: q ->
+      let aux l v =
+        Var.HMap.decr nb_preds v ;
+        let n = Var.HMap.find nb_preds v in
+        if n = 0 then v :: l
+        else l
+      in
+      let q = List.fold_left aux q (Var.HMap.find succs x) in
+      loop (n+1) q
+  in
+
+  let no_preds =
+    Var.HMap.fold (fun x p l -> if p = 0 then x :: l else l) nb_preds []
+  in
+  loop 0 no_preds

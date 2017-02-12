@@ -100,7 +100,10 @@ let unif s1 s2 =
   let env = Unification.Env.make ~gen () in
   let Unification.Done = Unification.insert env [] t1 t2 in
   let _t = rectime "Unification" t in
-  Format.printf "%a@." Unification.Env.pp env
+  Format.printf "%a@.Occur-check: %b@."
+    Unification.Env.pp env
+    (Unification.occur_check env)
+
 
 let file = "foo.db"
 

@@ -9,3 +9,6 @@ val gen : gen -> t
 val init : int -> gen
 val inject : int -> t
 val pp : t Fmt.t
+
+module Set: CCSet.S with type elt = t
+module HMap : CCHashtbl.S with type key = t

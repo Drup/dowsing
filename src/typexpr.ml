@@ -183,6 +183,16 @@ let normalize ?(gen=Variables.init 0) ?ht x =
   in
   aux tbl x
 
+let rec vars (x: Nf.t) k = match x with
+  | Var v -> k v
+  | Constr (_,a) -> Array.iter (fun x -> vars x k) a
+  | Tuple t -> Sequence.flat_map vars (NSet.to_seq t) k
+  | Unknown _ -> ()
+  | Unit -> ()
+  | Arrow (a,r) ->
+    Sequence.flat_map vars (NSet.to_seq a) k ;
+    vars r k
+
 (** Extract the head *)
 module Head = struct
 
