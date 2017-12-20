@@ -104,7 +104,10 @@ let unif s1 s2 =
     Unification.Env.pp env
     (Unification.occur_check env) ;
   let system = Unification.System.make env.pure_problems in
-  Format.printf "System: @,%a@." Unification.System.pp system
+  Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
+  Format.printf "@[<2>Solutions: @,%a@]@."
+    (CCFormat.seq ~sep:Fmt.sp Unification.System.DSystem.pp_sol)
+    (Unification.System.solutions system)
 
 
 let file = "foo.db"

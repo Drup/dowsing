@@ -23,7 +23,7 @@ Library dowsing
     compiler-libs.common,
     ppx_import, ppx_deriving.std,
     containers, containers.data, sequence, hashcons,
-    fmt
+    fmt, funarith
   Pack: true
 
 Executable dowsindex

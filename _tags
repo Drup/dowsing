@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 84515f06824da7635d083ea3c3daea5e)
+# DO NOT EDIT (digest: 6fda74957576bc9e09409797c7849a25)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -30,6 +30,7 @@ true: annot, bin_annot
 <src/*.ml{,i,y}>: package(containers)
 <src/*.ml{,i,y}>: package(containers.data)
 <src/*.ml{,i,y}>: package(fmt)
+<src/*.ml{,i,y}>: package(funarith)
 <src/*.ml{,i,y}>: package(hashcons)
 <src/*.ml{,i,y}>: package(ppx_deriving.std)
 <src/*.ml{,i,y}>: package(ppx_import)
@@ -39,6 +40,7 @@ true: annot, bin_annot
 <index_bin/dowsindex.{native,byte}>: package(containers)
 <index_bin/dowsindex.{native,byte}>: package(containers.data)
 <index_bin/dowsindex.{native,byte}>: package(fmt)
+<index_bin/dowsindex.{native,byte}>: package(funarith)
 <index_bin/dowsindex.{native,byte}>: package(hashcons)
 <index_bin/dowsindex.{native,byte}>: package(ocp-index.lib)
 <index_bin/dowsindex.{native,byte}>: package(ppx_deriving.std)
@@ -50,6 +52,7 @@ true: annot, bin_annot
 <index_bin/*.ml{,i,y}>: package(containers)
 <index_bin/*.ml{,i,y}>: package(containers.data)
 <index_bin/*.ml{,i,y}>: package(fmt)
+<index_bin/*.ml{,i,y}>: package(funarith)
 <index_bin/*.ml{,i,y}>: package(hashcons)
 <index_bin/*.ml{,i,y}>: package(ocp-index.lib)
 <index_bin/*.ml{,i,y}>: package(ppx_deriving.std)

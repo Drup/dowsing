@@ -292,15 +292,17 @@ let occur_check env =
 (** Elementary AC-Unif *)
 
 module System = struct
+  module Dioph = Funarith.Diophantine.Make(Funarith.Int.Default)
+  module DSystem = Dioph.Homogeneous_system
 
   type t = {
     get : int -> Pure.t ;
-    is_const : int -> bool ;
-    system : int array array ;
+    range_const : int * int ; (* range of variable indices which are const, inclusive *)
+    system : DSystem.t ;
   }
 
-  let pp ppf {system} =
-    Fmt.(vbox (array ~sep:cut @@ array ~sep:(unit ", ") int)) ppf system
+  let pp ppf {system; range_const = (i,j)} =
+    Fmt.pf ppf "%a | (%i - %i)" DSystem.pp system i j
 
   (* Replace variables by their representative/a constant *)
   let simplify_problem env {Pure. left ; right} =
@@ -363,12 +365,23 @@ module System = struct
       Var.HMap.iter (fun k i -> a.(i+nb_consts) <- Pure.var k) vars ;
       Array.get a
     in
-    let is_const i = i < nb_consts in
+    let range_const = 0, nb_consts - 1 in
     let system =
       Sequence.of_list problems
       |> Sequence.map (add_problem get_index size)
       |> Sequence.to_array
+      |> DSystem.make
     in
-    { get ; is_const ; system }
+    { get ; range_const ; system }
 
+  let solutions { range_const ; system ; _ } =
+    let rec cut_aux (i, j) sum solution =
+      if i <= j then
+        let v = solution.(i) in
+        v > 1 || cut_aux (i+1, j) (sum+v) solution
+      else
+        sum > 1
+    in
+    let cut x = cut_aux range_const 0 x in
+    DSystem.solve ~cut system
 end
