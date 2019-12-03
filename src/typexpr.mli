@@ -55,7 +55,7 @@ module HC : Hashcons.S with type key = t
 
 val normalize : ?gen:Variables.gen -> ?ht:HC.t -> Raw.t -> t
 
-val vars : Nf.t -> Variables.t Sequence.t
+val vars : Nf.t -> Variables.t Iter.t
 
 module Head : sig
   type t =

@@ -63,7 +63,7 @@ module ByType = struct
     in
     M.add ty ti tbl
 
-  let of_seq seq : _ t = Sequence.fold add M.empty seq
+  let of_seq seq : _ t = Iter.fold add M.empty seq
 
 end
 type 'a map = 'a ByType.t
@@ -110,7 +110,7 @@ module ByHead = struct
     | Other -> ByType.M.find ty t.others
     | Unit -> ByType.M.find ty t.unit
 
-  let of_seq seq : 'a t = Sequence.fold add empty seq
+  let of_seq seq : 'a t = Iter.fold add empty seq
 
   let fuse t : 'a ByType.t =
     let (<+>) = ByType.M.union (fun _ a _ -> Some a) in
@@ -125,8 +125,8 @@ module ByHead = struct
     let constr_slots = P.Map.size constr in
     let constr_total =
       P.Map.to_seq_values constr
-      |> Sequence.map ByType.M.cardinal
-      |> Sequence.fold (+) 0
+      |> Iter.map ByType.M.cardinal
+      |> Iter.fold (+) 0
     in
     let total = vars + tup + others + unit + constr_total in
     Format.fprintf ppf

@@ -1,5 +1,5 @@
 open Typexpr
-module S = Sequence
+module S = Iter
 
 
 (** Import from Outcometree *)

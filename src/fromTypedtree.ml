@@ -4,9 +4,9 @@ open Types
 let to_longident = Untypeast.lident_of_path
 
 let map_al f l =
-  Sequence.of_list l
-  |> Sequence.map f
-  |> Sequence.to_array
+  Iter.of_list l
+  |> Iter.map f
+  |> Iter.to_array
 
 let rec to_typexpr_raw vars x = match x.desc with
   | Tvar x
@@ -16,8 +16,8 @@ let rec to_typexpr_raw vars x = match x.desc with
     let ret = to_typexpr_raw vars ret in
     F.arrow arg ret
   | Ttuple tup ->
-    let tup = Sequence.of_list tup in
-    F.tuple (Sequence.map (to_typexpr_raw vars) tup)
+    let tup = Iter.of_list tup in
+    F.tuple (Iter.map (to_typexpr_raw vars) tup)
   | Tconstr (p,args,_) ->
     let lid = to_longident p in
     let args = map_al (to_typexpr_raw vars) args in

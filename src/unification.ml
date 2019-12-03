@@ -264,7 +264,7 @@ let occur_check env =
       Var.HMap.incr nb_preds v ;
       Var.HMap.add_list succs x v ;
     in
-    T.vars ty |> Sequence.iter aux
+    T.vars ty |> Iter.iter aux
   in
   Var.Map.iter fill_nb_preds env.Env.vars ;
 
@@ -367,9 +367,9 @@ module System = struct
     in
     let range_const = 0, nb_consts - 1 in
     let system =
-      Sequence.of_list problems
-      |> Sequence.map (add_problem get_index size)
-      |> Sequence.to_array
+      Iter.of_list problems
+      |> Iter.map (add_problem get_index size)
+      |> Iter.to_array
       |> DSystem.make
     in
     { get ; range_const ; system }

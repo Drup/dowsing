@@ -22,7 +22,7 @@ module Idx = struct
     let ht = Typexpr.HC.create 17 in
     let index =
       LibIndex.load @@ LibIndex.Misc.unique_subdirs
-        (Sequence.to_list dirs)
+        (Iter.to_list dirs)
     in
     let all = LibIndex.all index in
     let f i = match i.LibIndex.kind, i.ty with
@@ -42,7 +42,7 @@ module Idx = struct
         Some insert
       | _ -> None
     in
-    Database.of_seq (Sequence.filter_map f @@ Sequence.of_list all)
+    Database.of_seq (Iter.filter_map f @@ Iter.of_list all)
 
   let pp_data ppf x = Typexpr.P.pp ppf x.path
   let pp =
@@ -115,7 +115,7 @@ let file = "foo.db"
 let () = Format.set_margin 100
 
 let () = match Sys.argv.(1) with
-  | "save" -> save ~file Sequence.(drop 2 @@ of_array Sys.argv)
+  | "save" -> save ~file Iter.(drop 2 @@ of_array Sys.argv)
   | "search" -> search ~file (Imports.read (Lexing.from_string Sys.argv.(2)))
   | "unif" -> unif Sys.argv.(2) Sys.argv.(3)
   | "stat" -> stat file

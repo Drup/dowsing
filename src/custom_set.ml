@@ -3,8 +3,8 @@ module type S = sig
   type elt
   type t
   val compare : t CCOrd.t
-  val of_seq : elt Sequence.t -> t
-  val to_seq : t -> elt Sequence.t
+  val of_seq : elt Iter.t -> t
+  val to_seq : t -> elt Iter.t
   val pp : elt CCFormat.printer -> t CCFormat.printer
 end
 
@@ -14,11 +14,11 @@ module Array (E: Set.OrderedType) = struct
   let compare = CCArray.compare E.compare
 
   let of_seq x =
-    let a = Sequence.to_array x in
+    let a = Iter.to_array x in
     Array.sort E.compare a ;
     a
 
-  let to_seq = Sequence.of_array
+  let to_seq = Iter.of_array
 
   let pp ppf fmt a =
     match a with
