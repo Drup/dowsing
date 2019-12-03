@@ -6,3 +6,4 @@ setup.bin
 setup.data
 setup.log
 *.docdir
+.merlin

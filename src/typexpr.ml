@@ -1,5 +1,5 @@
 
-module S = Sequence
+module S = Iter
 
 let array_compare ord a1 a2 =
   let rec aux i =
@@ -17,8 +17,9 @@ let array_compare ord a1 a2 =
 
 module P = struct
   module M = struct
-    type t = [%import: Longident.t]
-    [@@deriving ord, eq]
+    type t = Longident.t
+    let compare = compare
+    let equal = (=)
   end
   include M
 

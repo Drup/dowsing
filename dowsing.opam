@@ -1,0 +1,29 @@
+opam-version: "2.0"
+maintainer:   "Gabriel Radanne <drupyog@zoho.com>"
+authors:      [ "Gabriel Radanne" ]
+homepage:     "https://github.com/Drup/dowsing"
+synopsis: "Dowsing is a type of divination employed in attempts to locate identifiers matching a given type expression"
+bug-reports:  "https://github.com/Drup/dowsing/issues"
+dev-repo:     "git+https://github.com/Drup/dowsing.git"
+license:      "ISC"
+version: "dev"
+build: [
+  ["dune" "build" "@install" "-p" name "-j" jobs]
+  ["dune" "build" "@doc" "-p" name] {with-doc}
+  ["dune" "runtest" "-p" name] {with-test}
+]
+depends: [
+  "dune" { >= "1.1" }
+  "re"
+  "fmt"
+  "containers"
+  "iter"
+  "hashcons"
+  "ocp-index"
+  "base-unix"
+  "funarith"
+  "odoc" {with-doc}
+]
+pin-depends: [
+  ["funarith.dev" "git+https://github.com/c-cube/funarith.git"]
+]

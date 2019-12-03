@@ -1,0 +1,7 @@
+
+(library
+  (name dowsing)
+  (public_name dowsing)
+  (libraries
+    compiler-libs.common containers containers.data iter hashcons
+    fmt funarith))
