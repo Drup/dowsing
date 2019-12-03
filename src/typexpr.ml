@@ -30,16 +30,16 @@ module P = struct
   let of_list l =
     let rec aux = function
       | [] -> invalid_arg "Typexpr.P.of_list"
-      | [s] -> Lident s
-      | h :: t -> Ldot (aux t, h)
+      | [s] -> Longident.Lident s
+      | h :: t -> Longident.Ldot (aux t, h)
     in
     aux @@ List.rev l
   let rec to_seq t k = match t with
-    | Lident s -> k s
-    | Ldot (t, s) -> to_seq t k ; k s
-    | Lapply (t1, t2) -> to_seq t1 k ; to_seq t2 k
+    | Longident.Lident s -> k s
+    | Longident.Ldot (t, s) -> to_seq t k ; k s
+    | Longident.Lapply (t1, t2) -> to_seq t1 k ; to_seq t2 k
 
-  let unit = Lident "unit"
+  let unit = Longident.Lident "unit"
   module Map = CCTrie.Make(struct
       type char_ = string
       let compare = String.compare

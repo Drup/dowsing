@@ -10,14 +10,14 @@ let map_al f l =
 
 let rec to_typexpr_raw vars x = match x.desc with
   | Tvar x
-  | Tunivar x -> F.var vars x
+  | Tunivar x -> F.var x
   | Tarrow (_,arg,ret,_) ->
     let arg = to_typexpr_raw vars arg in
     let ret = to_typexpr_raw vars ret in
     F.arrow arg ret
   | Ttuple tup ->
     let tup = Iter.of_list tup in
-    F.tuple (Iter.map (to_typexpr_raw vars) tup)
+    F.tuple (Iter.map (to_typexpr_raw vars) tup |> Iter.to_list)
   | Tconstr (p,args,_) ->
     let lid = to_longident p in
     let args = map_al (to_typexpr_raw vars) args in
@@ -34,6 +34,6 @@ let rec to_typexpr_raw vars x = match x.desc with
     F.unknown x.desc
 
 let to_typexpr ?ht x =
-  let vars = F.varset () in
+  let vars = () (* F.varset () *) in
   let raw = to_typexpr_raw vars x in
-  Typexpr.normalize ?ht vars raw
+  Typexpr.normalize ?ht (* TODO: vars *) raw

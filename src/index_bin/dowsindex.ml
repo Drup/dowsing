@@ -1,3 +1,5 @@
+open Dowsing
+
 (** Interface with ocp-index *)
 module Idx = struct
 
@@ -26,7 +28,7 @@ module Idx = struct
     in
     let all = LibIndex.all index in
     let f i = match i.LibIndex.kind, i.ty with
-      | Value, Some (Osig_value {oval_type}) ->
+      | Value, Some (Osig_value {oval_type;_}) ->
         let base_lid = path i.path i.name in
         let lid = path i.orig_path i.name in
         let ty = try

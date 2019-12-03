@@ -11,7 +11,7 @@ let rec lid_of_outcometree
     Lapply (lid_of_outcometree id1, lid_of_outcometree id2)
   | Oide_dot (id, s) ->
     Ldot (lid_of_outcometree id, s)
-  | Oide_ident s ->
+  | Oide_ident {printed_name=s} ->
     Lident s
 
 let rec of_outcometree_rec x : Raw.t =
