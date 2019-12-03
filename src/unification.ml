@@ -116,7 +116,7 @@ module Env = struct
   let pp_binding fmt (x,t) =
     Fmt.pf fmt "%a = %a"  Var.pp x  Typexpr.pp t
 
-  let pp fmt { vars ; pure_problems ; arrows } =
+  let pp fmt { vars ; pure_problems ; arrows; gen=_ } =
     Fmt.pf fmt "@[<v2>Quasi:@ %a@]@.@[<v2>Pure:@ %a@]@.@[<v2>Arrows:@ %a@]@."
       Fmt.(iter_bindings ~sep:cut Var.Map.iter pp_binding) vars
       Fmt.(list ~sep:cut Pure.pp_problem) pure_problems
@@ -301,7 +301,7 @@ module System = struct
     system : DSystem.t ;
   }
 
-  let pp ppf {system; range_const = (i,j)} =
+  let pp ppf {system; range_const = (i,j); get=_} =
     Fmt.pf ppf "%a | (%i - %i)" DSystem.pp system i j
 
   (* Replace variables by their representative/a constant *)

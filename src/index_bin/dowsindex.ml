@@ -108,8 +108,8 @@ let unif s1 s2 =
   let system = Unification.System.make env.pure_problems in
   Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
   Format.printf "@[<2>Solutions: @,%a@]@."
-    (CCFormat.seq ~sep:Fmt.sp Unification.System.DSystem.pp_sol)
-    (Unification.System.solutions system)
+    (CCFormat.list ~sep:Fmt.sp Unification.System.DSystem.pp_sol)
+    (Unification.System.solutions system |> Iter.to_list)
 
 
 let file = "foo.db"
