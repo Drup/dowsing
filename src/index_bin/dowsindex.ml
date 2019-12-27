@@ -104,8 +104,7 @@ let unif s1 s2 =
     let Unification.Done = Unification.insert env [] t1 t2 in
     let _t = rectime "Unification" t in
     Format.printf "%a@.Occur-check: %b@."
-      Unification.Env.pp env
-      (Unification.occur_check env) ;
+      Unification.Env.pp env (Unification.occur_check env);
     let system = Unification.System.make env.pure_problems in
     Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
     let sols =
