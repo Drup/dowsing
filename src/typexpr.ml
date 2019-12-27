@@ -1,4 +1,5 @@
 
+let poly_compare = compare
 module S = Iter
 
 let array_compare ord a1 a2 =
@@ -15,6 +16,7 @@ let array_compare ord a1 a2 =
   in
   aux 0
 
+(** Path *)
 module P = struct
   module M = struct
     type t = Longident.t
@@ -81,7 +83,7 @@ let rec compare_skel cmp_var cmp_set lhs rhs =
        | x -> x)
     | Tuple lhs0, Tuple rhs0 -> cmp_set lhs0 rhs0
     | Unknown lhs0, Unknown rhs0 ->
-      Pervasives.compare lhs0 rhs0
+      poly_compare lhs0 rhs0
     | Unit, Unit -> 0
     | _ ->
       CCInt.compare (to_int lhs) (to_int rhs)
@@ -142,16 +144,36 @@ end
     Going from the Raw.t to Nf.t
 *)
 
-module STbl = CCHashtbl.Make(struct
-    include String
-    let hash (x:string) = Hashtbl.hash x
+module STbl = CCHashtbl.Make(CCString)
+
+module HC = struct
+  type elt = {
+    node: Nf.t;
+    mutable id: int;
+  }
+
+  module W = Weak.Make(struct
+    type t = elt
+    let equal a b = Nf.compare a.node b.node = 0
+    let hash a = Hashtbl.hash a.node
   end)
 
-module HC = Hashcons.Make(struct
-    type t = Nf.t
-    let equal = equal
-    let hash = Hashtbl.hash
-  end)
+  type t = {
+    tbl: W.t;
+    mutable n: int;
+  }
+
+  let create size : t = { tbl=W.create size; n=0 }
+
+  let hashcons (self:t) x =
+    let x = {node=x; id= -1} in
+    let y = W.merge self.tbl x in
+    if x==y then (
+      x.id <- self.n;
+      self.n <- self.n + 1;
+    );
+    y
+end
 
 let normalize ?(gen=Variables.init 0) ?ht x =
   let tbl = STbl.create 17 in

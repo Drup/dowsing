@@ -100,15 +100,17 @@ module ByHead = struct
     | Other -> {t with others = ByType.add t.others k}
     | Unit -> {t with unit = ByType.add t.unit k}
 
-  let find t ty =
-    match Typexpr.Head.get ty with
-    | Constr p ->
-      let m = P.Map.find_exn p t.constr in
-      ByType.M.find ty m
-    | Var -> ByType.M.find ty t.var
-    | Tuple -> ByType.M.find ty t.tup
-    | Other -> ByType.M.find ty t.others
-    | Unit -> ByType.M.find ty t.unit
+  let find t ty : _ Info.map =
+    try
+      match Typexpr.Head.get ty with
+      | Constr p ->
+        let m = P.Map.find_exn p t.constr in
+        ByType.M.find ty m
+      | Var -> ByType.M.find ty t.var
+      | Tuple -> ByType.M.find ty t.tup
+      | Other -> ByType.M.find ty t.others
+      | Unit -> ByType.M.find ty t.unit
+    with Not_found -> P.Map.empty
 
   let of_seq seq : 'a t = Iter.fold add empty seq
 

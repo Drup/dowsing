@@ -4,5 +4,5 @@
   (public_name dowsing)
   (flags :standard -safe-string -open Asttypes -warn-error -3-9-33)
   (libraries
-    compiler-libs.common containers containers.data iter hashcons
+    compiler-libs.common containers containers.data iter
     fmt funarith))

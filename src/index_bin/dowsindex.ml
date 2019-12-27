@@ -100,25 +100,35 @@ let unif s1 s2 =
   Format.printf "@[<2>t2:@ %a@]@." Typexpr.pp t2 ;
   let t = Unix.gettimeofday () in
   let env = Unification.Env.make ~gen () in
-  let Unification.Done = Unification.insert env [] t1 t2 in
-  let _t = rectime "Unification" t in
-  Format.printf "%a@.Occur-check: %b@."
-    Unification.Env.pp env
-    (Unification.occur_check env) ;
-  let system = Unification.System.make env.pure_problems in
-  Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
-  Format.printf "@[<2>Solutions: @,%a@]@."
-    (CCFormat.list ~sep:Fmt.sp Unification.System.DSystem.pp_sol)
-    (Unification.System.solutions system |> Iter.to_list)
+  try
+    let Unification.Done = Unification.insert env [] t1 t2 in
+    let _t = rectime "Unification" t in
+    Format.printf "%a@.Occur-check: %b@."
+      Unification.Env.pp env
+      (Unification.occur_check env) ;
+    let system = Unification.System.make env.pure_problems in
+    Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
+    let sols =
+      Unification.System.solutions system |> Iter.to_list
+    in
+    Format.printf "@[<2>Solutions[%d]: @,%a@]@."
+      (List.length sols)
+      (CCFormat.list ~sep:Fmt.sp Unification.System.DSystem.pp_sol) sols
+  with Unification.FailUnif ->
+    Format.printf "no solution@."
 
 
 let file = "foo.db"
 
 let () = Format.set_margin 100
 
-let () = match Sys.argv.(1) with
+let () =
+  let pp_help () =  Format.printf "usage: dowsindex save|search|unif|stat@." in
+  if Array.length Sys.argv <= 1 then pp_help()
+  else match Sys.argv.(1) with
   | "save" -> save ~file Iter.(drop 2 @@ of_array Sys.argv)
   | "search" -> search ~file (Imports.read (Lexing.from_string Sys.argv.(2)))
   | "unif" -> unif Sys.argv.(2) Sys.argv.(3)
   | "stat" -> stat file
+  | "help" | "" -> pp_help()
   | _ -> failwith "wrong cli"

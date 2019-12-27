@@ -51,7 +51,16 @@ type t = Nf.t
 val compare : t -> t -> int
 val equal : t -> t -> bool
 
-module HC : Hashcons.S with type key = t
+module HC : sig
+  type elt = private {
+    node: t;
+    mutable id: int;
+  }
+  type t
+
+  val create : int -> t
+  val hashcons : t -> Nf.t -> elt
+end
 
 val normalize : ?gen:Variables.gen -> ?ht:HC.t -> Raw.t -> t
 
