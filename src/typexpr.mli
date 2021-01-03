@@ -77,4 +77,5 @@ module Head : sig
   val get : Nf.t -> t
 end
 
-val pp : Format.formatter -> t -> unit
+val pp : t Fmt.t
+val pp_raw : Raw.t Fmt.t

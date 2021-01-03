@@ -96,7 +96,9 @@ let rec of_parse_rec resolver x : Raw.t =
 let default_resolver id a = id, a
 
 let of_parsetree ?gen ?ht ?(resolver=default_resolver) x =
+  (* Format.eprintf "@[ptree: %a@]@." Pprintast.core_type x; *)
   let t = of_parse_rec resolver x in
+  (* Format.eprintf "@[raw: %a@]@." Typexpr.pp_raw t; *)
   normalize ?gen ?ht t
 
 let read ?gen ?ht ?resolver lexbuf =

@@ -36,10 +36,10 @@ module P = struct
       | h :: t -> Longident.Ldot (aux t, h)
     in
     aux @@ List.rev l
-  let rec to_seq t k = match t with
+  let rec to_iter t k = match t with
     | Longident.Lident s -> k s
-    | Longident.Ldot (t, s) -> to_seq t k ; k s
-    | Longident.Lapply (t1, t2) -> to_seq t1 k ; to_seq t2 k
+    | Longident.Ldot (t, s) -> to_iter t k ; k s
+    | Longident.Lapply (t1, t2) -> to_iter t1 k ; to_iter t2 k
 
   let unit = Longident.Lident "unit"
   module Map = CCTrie.Make(struct
@@ -47,7 +47,7 @@ module P = struct
       let compare = String.compare
       type t = Longident.t
       let of_list = of_list
-      let to_seq = to_seq
+      let to_iter = to_iter
     end)
   module HMap = CCHashtbl.Make(struct include M let hash = CCHash.poly end)
 end
@@ -239,12 +239,18 @@ end
 
 (** Pretty printing *)
 
+let pp_array ppx ppf = function
+  | [||] -> CCFormat.string ppf "()"
+  | [|x|] -> ppx ppf x
+  | a -> Format.fprintf ppf "@[<2>(%a)@]"
+      CCFormat.(array ~sep:(return ", ") ppx) a
+
 let rec pp ppf = function
   | Var i -> Variables.pp ppf i
   | Constr (p,[||]) -> P.pp ppf p
   | Constr (p,args) ->
     Format.fprintf ppf "%a@ %a"
-      pp_array args
+      (pp_array pp) args
       P.pp p
   | Arrow (args,ret) ->
     Format.fprintf ppf "@[<2>%a@ ->@ %a@]"
@@ -255,11 +261,22 @@ let rec pp ppf = function
   | Unknown _ -> CCFormat.string ppf "_"
   | Unit -> CCFormat.string ppf "unit"
 
-and pp_array ppf = function
-  | [||] -> CCFormat.string ppf "()"
-  | [|x|] -> pp ppf x
-  | a -> Format.fprintf ppf "@[<2>(%a)@]"
-      CCFormat.(array ~sep:(return ", ") pp) a
+
+let rec pp_raw ppf : Raw.t -> unit = function
+  | Var s -> Fmt.(option string) ppf s
+  | Constr (p,[||]) -> P.pp ppf p
+  | Constr (p,args) ->
+    Format.fprintf ppf "%a@ %a"
+      (pp_array pp_raw) args
+      P.pp p
+  | Arrow (S args,ret) ->
+    Format.fprintf ppf "@[<2>%a@ ->@ %a@]"
+      (Fmt.Dump.list pp_raw) args
+      pp_raw ret
+  | Tuple (S tup) ->
+    Format.fprintf ppf "(@[<2>%a@])" (Fmt.list ~sep:(Fmt.unit " *@ ") pp_raw) tup
+  | Unknown _ -> CCFormat.string ppf "_"
+  | Unit -> CCFormat.string ppf "unit"
 
 (*
  * Copyright (c) 2016 Gabriel Radanne <drupyog@zoho.com>

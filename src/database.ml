@@ -126,7 +126,7 @@ module ByHead = struct
     let unit = ByType.M.cardinal unit in
     let constr_slots = P.Map.size constr in
     let constr_total =
-      P.Map.to_seq_values constr
+      P.Map.to_iter_values constr
       |> Iter.map ByType.M.cardinal
       |> Iter.fold (+) 0
     in

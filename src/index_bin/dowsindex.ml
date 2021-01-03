@@ -62,7 +62,7 @@ let rectime s t =
 let save ~file dirs =
   let t = Unix.gettimeofday () in
   Format.printf "@[<v2>Saving directories:@ %a@]@."
-    CCFormat.(seq ~sep:silent string) dirs ;
+    CCFormat.(iter ~sep:silent string) dirs ;
   let map = Idx.database dirs in
   let t = rectime "Loading into the map" t in
   Database.save file map ;
@@ -101,18 +101,19 @@ let unif s1 s2 =
   let t = Unix.gettimeofday () in
   let env = Unification.Env.make ~gen () in
   try
-    let Unification.Done = Unification.insert env [] t1 t2 in
+    Unification.insert env t1 t2;
     let _t = rectime "Unification" t in
-    Format.printf "%a@.Occur-check: %b@."
-      Unification.Env.pp env (Unification.occur_check env);
-    let system = Unification.System.make env.pure_problems in
+    let oc = Unification.occur_check env in
+    Format.printf "%a@.Occur-check: %b@." Unification.Env.pp env oc;
+    if not oc then Unification.fail();
+    let system = Unification.get_system env in
     Format.printf "@[<2>System: @,%a@]@." Unification.System.pp system ;
     let sols =
-      Unification.System.solutions system |> Iter.to_list
+      Unification.solve_system env system |> Iter.to_list
     in
-    Format.printf "@[<2>Solutions[%d]: @,%a@]@."
+    Format.printf "@[<v2>Solutions[%d]:@ %a@]@."
       (List.length sols)
-      (CCFormat.list ~sep:Fmt.sp Unification.System.DSystem.pp_sol) sols
+      (CCFormat.list ~sep:Fmt.sp Unification.Unifier.pp) sols
   with Unification.FailUnif ->
     Format.printf "no solution@."
 
