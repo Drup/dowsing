@@ -13,22 +13,25 @@ module Pure = struct
     | Var of Var.t
     | Constant of T.P.t
 
-  type term = t array
+  type term =
+    | Pure of t
+    | Tuple of t array
 
   let dummy = Constant (Longident.Lident "dummy")
   let var x = Var x
   let constant p = Constant p
-  let tuple p = p
-  let pure p = [|p|]
+  let tuple p = Tuple p
+  let pure p = Pure p
 
   type problem = {left : t array ; right : t array }
+  let make_problem left right = {left;right}
 
   let pp fmt = function
     | Var i -> Var.pp fmt i
     | Constant p -> T.P.pp fmt p
   let pp_term fmt = function
-    | [|t|] -> pp fmt t
-    | t -> Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") pp) t
+    | Pure t -> pp fmt t
+    | Tuple t -> Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") pp) t
 
   let pp_problem fmt {left ; right} =
     Fmt.pf fmt "%a = %a"
@@ -36,13 +39,15 @@ module Pure = struct
       Fmt.(array ~sep:(unit ",") pp) right
 
   let as_typexpr p : Typexpr.t =
-    let a =
-      p
-      |> Iter.of_array
-      |> Iter.map (function Var v -> Typexpr.Var v | Constant c -> Typexpr.Constr (c, [||]))
-      |> Typexpr.NSet.of_seq
+    let f = function
+      | Var v -> Typexpr.Var v
+      | Constant c -> Typexpr.Constr (c, [||])
     in
-    Typexpr.Tuple a
+    match p with
+    | Pure p -> f p
+    | Tuple t -> 
+      let a = t |> Iter.of_array|> Iter.map f |> Typexpr.NSet.of_seq in
+      Typexpr.Tuple a
 end
 
 module Arrow : sig
@@ -89,22 +94,18 @@ module Stack : sig
   type elt =
     | Var of Var.t * Typexpr.t
     | Expr of Typexpr.t * Typexpr.t
-    | Subst of Var.t * Pure.term
-
   type t
 
   val empty : t
   val pop : t -> (elt * t) option
-  val push : t -> Typexpr.t -> Typexpr.t -> t
   val push_quasi_solved : t -> Var.t -> Typexpr.t -> t
   val push_array2 : Typexpr.t array -> Typexpr.t array -> t -> t
 
-  val pp : t Fmt.t
+  val[@warning "-32"] pp : t Fmt.t
 end = struct
   type elt =
     | Var of Var.t * Typexpr.t
     | Expr of Typexpr.t * Typexpr.t
-    | Subst of Var.t * Pure.term
 
   type t = elt list
   let empty : t = []
@@ -124,7 +125,6 @@ end = struct
   let pp_elt fmt = function
     | Var (v, t) -> Fmt.pf fmt "%a = %a" Var.pp v Typexpr.pp t
     | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" Typexpr.pp t1 Typexpr.pp t2
-    | Subst (v, p) -> Fmt.pf fmt "%a = %a" Var.pp v Pure.pp_term p
 
   let pp = Fmt.(vbox (list ~sep:cut pp_elt))
 end
@@ -145,10 +145,8 @@ module Env : sig
   val vars : t -> Typexpr.t Var.Map.t
   val representative : t -> Var.t -> representative
 
-  val push_pure : t -> Pure.problem -> unit
-  val push_pure' : t -> Pure.t array -> Pure.t array -> unit
-  val push_arrow : t -> Arrow.problem -> unit
-  val push_arrow' : t -> Arrow.t -> Arrow.t -> unit
+  val push_pure : t -> Pure.t array -> Pure.t array -> unit
+  val push_arrow : t -> Arrow.t -> Arrow.t -> unit
   val attach : t -> Var.t -> Typexpr.t -> unit
 
   val pop_pure : t -> Pure.problem option
@@ -180,10 +178,10 @@ end = struct
   let attach e v t =
     e.vars <- Var.Map.add v t e.vars
 
-  let push_pure e pb = e.pure_problems <- pb :: e.pure_problems
-  let push_pure' e left right = push_pure e {Pure.left;right}
-  let push_arrow e pb = e.arrows <- pb :: e.arrows
-  let push_arrow' e left right = push_arrow e {Arrow.left;right}
+  let push_pure e left right =
+    e.pure_problems <- Pure.make_problem left right :: e.pure_problems
+  let push_arrow e left right =
+    e.arrows <- Arrow.make_problem left right :: e.arrows
 
   let pop_pure e =
     match e.pure_problems with
@@ -321,11 +319,11 @@ end = struct
 end
 
 module Unifier : sig
-  type t = Bitv.t * Pure.t array Var.HMap.t
+  type t = Bitv.t * Pure.term Var.HMap.t
 
   val pp : t Fmt.t
 end = struct
-  type t = Bitv.t * Pure.t array Var.HMap.t
+  type t = Bitv.t * Pure.term Var.HMap.t
 
   let pp ppf (subset, unif : t) =
     let pp_pair ppf (v,t) =
@@ -403,7 +401,7 @@ end = struct
     bitvars
 
   (* TO OPTIM *)
-  let make_term buffer l : Pure.t array =
+  let make_term buffer l : Pure.term =
     CCVector.clear buffer;
     let f (n, symb) =
       for _ = 1 to n do CCVector.push buffer symb done
@@ -463,7 +461,6 @@ let rec process_stack env (stack:Stack.t) : unit =
   match Stack.pop stack with
   | Some (Stack.Expr (t1, t2), stack) -> insert_rec env stack t1 t2
   | Some (Var (v, t), stack) -> insert_var env stack v t
-  | Some (Subst (v, p), stack) -> insert_subst env stack v p
   | None -> ()
 
 and insert_rec env stack (t1 : T.t) (t2 : T.t) : unit =
@@ -485,7 +482,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : unit =
     let stack, pure_ret1 = variable_abstraction env stack ret1 in
     let stack, pure_arg2 = variable_abstraction_all env stack arg2 in
     let stack, pure_ret2 = variable_abstraction env stack ret2 in
-    Env.push_arrow' env (Arrow.make pure_arg1 pure_ret1) (Arrow.make pure_arg2 pure_ret2) ;
+    Env.push_arrow env (Arrow.make pure_arg1 pure_ret1) (Arrow.make pure_arg2 pure_ret2) ;
     process_stack env stack
 
   (* Two tuples, we apply VA repeatedly
@@ -494,7 +491,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : unit =
   | Tuple s, Tuple t ->
     let stack, pure_s = variable_abstraction_all env stack s in
     let stack, pure_t = variable_abstraction_all env stack t in
-    Env.push_pure' env pure_s pure_t ;
+    Env.push_pure env pure_s pure_t ;
     process_stack env stack
 
   | Var v, t | t, Var v ->
@@ -556,10 +553,6 @@ and insert_var env stack x s =
     (* variable was already bound *)
     insert_rec env stack u s
 
-and insert_subst env stack x p = match p with
-  | [| Pure.Var v |] -> non_proper env stack x v
-  | _ -> quasi_solved env stack x (Pure.as_typexpr p) (* TO OPTIM *)
-
 (* Quasi solved equation
    'x = (s₁,...sₙ)
    'x = (s₁,...sₙ) p
@@ -616,8 +609,8 @@ let rec process_arrow_problems env : System.t =
   match Env.pop_arrow env with
   | None -> process_pure_problems env
   | Some {Arrow. left; right } ->
-    Env.push_pure env {Pure.left = [|left.ret|]; right = [|right.ret|]};
-    Env.push_pure env {Pure.left = left.args; right = right.args};
+    Env.push_pure env [|left.ret|] [|right.ret|];
+    Env.push_pure env left.args right.args;
     process_arrow_problems env
 
 let get_system env = process_arrow_problems env

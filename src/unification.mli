@@ -6,11 +6,14 @@ module Pure : sig
     | Var of Var.t
     | Constant of T.P.t
 
-  type term = t array
+  type term
 
+  val pure : t -> term
+  val tuple : t array -> term
+  
   val pp : t Fmt.t
   val pp_term : term Fmt.t
-  val as_typexpr : t array -> Typexpr.t
+  val as_typexpr : term -> Typexpr.t
 end
 
 module Env : sig
@@ -22,7 +25,7 @@ module Env : sig
 end
 
 module Unifier : sig
-  type t = Bitv.Default.t * Pure.t array Var.HMap.t
+  type t = Bitv.t * Pure.term Var.HMap.t
 
   val pp : t Fmt.t
 end
