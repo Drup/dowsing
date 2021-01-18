@@ -23,6 +23,8 @@ module type S = sig
   val iter : len:int -> small:(bitset -> bool) -> large:(bitset -> bool) -> bitset Iter.t
 end
 
+include S with type bitset = Bitv.t
+
 module Default : S with type bitset = Bitv.Default.t
 
 module Make (M : Bitv.S) : S with type bitset = M.t

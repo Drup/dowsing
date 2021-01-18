@@ -321,17 +321,17 @@ end = struct
 end
 
 module Unifier : sig
-  type t = int * Pure.t array Var.HMap.t
+  type t = Bitv.t * Pure.t array Var.HMap.t
 
   val pp : t Fmt.t
 end = struct
-  type t = int * Pure.t array Var.HMap.t
+  type t = Bitv.t * Pure.t array Var.HMap.t
 
   let pp ppf (subset, unif : t) =
     let pp_pair ppf (v,t) =
       Fmt.pf ppf "(@[%a := %a@])" Var.pp v Pure.pp_term t in
     Fmt.pf ppf "@[%a: { %a }@]"
-      Bitv.Default.pp subset
+      Bitv.pp subset
       (Fmt.iter_bindings ~sep:(Fmt.unit "|@ ")
          Var.HMap.iter pp_pair)
       unif
@@ -352,11 +352,11 @@ end = struct
     k = stop || f a.(k) && for_all2_range f a (k+1) stop
 
   let large_enough bitvars subset =
-    let f col = Bitv.Default.is_subset col subset in
+    let f col = Bitv.is_subset col subset in
     for_all2_range f bitvars 0 @@ Array.length bitvars
 
   let small_enough first_var bitvars bitset =
-    let f col = Bitv.Default.(is_singleton (bitset && col)) in
+    let f col = Bitv.(is_singleton (bitset && col)) in
     for_all2_range f bitvars 0 first_var
 
   let iterate_subsets len system bitvars =
@@ -385,9 +385,9 @@ end = struct
     pures
 
   let extract_solutions stack nb_atom
-      (seq_solutions:System.dioph_solution Iter.t) : int array =
+      (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
     let nb_columns = nb_atom in
-    let bitvars = Array.make nb_columns Bitv.Default.empty in
+    let bitvars = Array.make nb_columns Bitv.empty in
     let counter = ref 0 in
     seq_solutions begin fun sol ->
       let sol = (sol : System.dioph_solution :> int array) in
@@ -395,11 +395,11 @@ end = struct
       let i = CCRef.get_then_incr counter in
       for j = 0 to nb_columns - 1 do
         if sol.(j) <> 0 then
-          bitvars.(j) <- Bitv.Default.add bitvars.(j) i
+          bitvars.(j) <- Bitv.add bitvars.(j) i
         else ()
       done;
     end;
-    assert (!counter < Bitv.Default.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
+    assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
     bitvars
 
   (* TO OPTIM *)
@@ -417,11 +417,11 @@ end = struct
     let unifiers = Var.HMap.create (Array.length vars) in
     let solutions = CCVector.unsafe_get_array solutions in
     for i = 0 to Array.length symbols - 1 do
-      if Bitv.Default.mem i subset then
+      if Bitv.mem i subset then
         let sol = solutions.(i) in
         assert (Array.length sol = Array.length vars) ;
         let symb = symbols.(i) in
-        (* Fmt.epr "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.Default.pp subset; *)
+        (* Fmt.epr "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset; *)
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
           | Pure.Constant _ -> ()
@@ -447,7 +447,7 @@ end = struct
       (seq_solutions:System.dioph_solution Iter.t) : Unifier.t Iter.t =
     let stack_solutions = CCVector.create_with ~capacity:5 [||] in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
-    Fmt.epr "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.Default.pp) bitvars;
+    Fmt.epr "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars;
     (* Fmt.epr "@[<v2>Sol stack:@ %a@]@." (CCVector.pp System.Solver.pp_sol) stack_solutions; *)
     let symbols = symbols_of_solutions gen system stack_solutions in
     Fmt.epr "@[Symbols: %a@]@." (Fmt.Dump.array Pure.pp) symbols;

@@ -44,3 +44,5 @@ module Default = struct
   let pp = CCInt.pp_binary
   let storage x = x
 end
+
+include Default

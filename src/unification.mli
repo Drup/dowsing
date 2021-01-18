@@ -22,7 +22,7 @@ module Env : sig
 end
 
 module Unifier : sig
-  type t = int * Pure.t array Var.HMap.t
+  type t = Bitv.Default.t * Pure.t array Var.HMap.t
 
   val pp : t Fmt.t
 end
