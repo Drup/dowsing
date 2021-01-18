@@ -660,7 +660,7 @@ let solve_system env system : _ Iter.t =
 
 let unify ?gen (pairs: _ list) : Unifier.t Iter.t =
   let env = Env.make ?gen () in
-  List.iter (fun (t1,t2) -> insert_rec env Stack.empty t1 t2) pairs;
+  List.iter (fun (t1,t2) -> insert env t1 t2) pairs;
   if not (occur_check env) then (
     raise FailUnif;
   );
