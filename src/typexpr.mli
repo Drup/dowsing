@@ -51,7 +51,7 @@ type t = Nf.t
 val compare : t -> t -> int
 val equal : t -> t -> bool
 
-module HC : sig
+module Hashcons : sig
   type elt = private {
     node: t;
     mutable id: int;
@@ -62,7 +62,11 @@ module HC : sig
   val hashcons : t -> Nf.t -> elt
 end
 
-val normalize : ?gen:Variables.gen -> ?ht:HC.t -> Raw.t -> t
+val normalize :
+  gen:Variables.gen ->
+  ht:Hashcons.t ->
+  nametbl:label Variables.HMap.t ->
+  Raw.t -> t
 
 val vars : Nf.t -> Variables.t Iter.t
 
@@ -77,5 +81,5 @@ module Head : sig
   val get : Nf.t -> t
 end
 
-val pp : t Fmt.t
+val pp : string Variables.HMap.t -> t Fmt.t
 val pp_raw : Raw.t Fmt.t

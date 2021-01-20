@@ -7,6 +7,9 @@ type gen = int ref
 let gen r = let x = !r in incr r ; x
 let init i = ref i
 let inject i = i
-let pp fmt i = Fmt.pf fmt "\\%i" i
+let pp nametbl fmt i =
+  match HMap.get nametbl i with
+  | Some s -> Fmt.pf fmt "'%s" s
+  | None -> Fmt.pf fmt "\\%i" i
 
 module Set = CCSet.Make(CCInt)

@@ -11,8 +11,8 @@ module Pure : sig
   val pure : t -> term
   val tuple : t array -> term
   
-  val pp : t Fmt.t
-  val pp_term : term Fmt.t
+  val pp : string Var.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
+  val pp_term : string Var.HMap.t -> term Fmt.t [@@ocaml.toplevel_printer]
   val as_typexpr : term -> Typexpr.t
 end
 
@@ -21,35 +21,33 @@ module Env : sig
 
   val make : ?gen:Var.gen -> unit -> t
   val copy : t -> t
-  val pp : t Fmt.t
+  val pp : string Var.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
 end
 
 module Unifier : sig
-  type t = Bitv.t * Pure.term Var.HMap.t
-
-  val pp : t Fmt.t
+  type t
+  val pp : string Var.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
 end
 
 module System : sig
   type t
-  val pp : t Fmt.t
+  val pp : t Fmt.t [@@ocaml.toplevel_printer]
 end
 
-exception FailUnif
+exception FailUnif of Typexpr.t * Typexpr.t
 
-val fail : unit -> 'a
+val fail : Typexpr.t -> Typexpr.t -> 'a
 
 val insert : Env.t -> T.t -> T.t -> unit
 
 val occur_check : Env.t -> bool
 
-val occur_check_or_fail : Env.t -> unit
-
 val get_system : Env.t -> System.t
 
-val solve_system : Env.t -> System.t -> Unifier.t Iter.t
+(* val solve_system : Env.t -> System.t -> Unifier.t Iter.t *)
 
 val unify :
   ?gen:Var.gen ->
+  string Var.HMap.t ->
   (T.t * T.t) list -> Unifier.t Iter.t
 (** All-in one function *)

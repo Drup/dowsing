@@ -146,7 +146,7 @@ end
 
 module STbl = CCHashtbl.Make(CCString)
 
-module HC = struct
+module Hashcons = struct
   type elt = {
     node: Nf.t;
     mutable id: int;
@@ -175,20 +175,19 @@ module HC = struct
     y
 end
 
-let normalize ?(gen=Variables.init 0) ?ht x =
+let normalize ~gen ~ht ~nametbl x =
   let tbl = STbl.create 17 in
   let sym tbl x =
     match STbl.get tbl x with
     | None ->
-      let v = Var (Variables.gen gen) in
+      let i = Variables.gen gen in
+      let v = Var i in
+      Variables.HMap.add nametbl i x;
       STbl.add tbl x v ; v
     | Some v -> v
   in
 
-  let hashsubst = match ht with
-    | None -> fun x -> x
-    | Some ht -> fun x -> (HC.hashcons ht x).node
-  in
+  let hashsubst x = (Hashcons.hashcons ht x).node in
   let rec aux vartbl raw =
     hashsubst @@ aux_int vartbl raw
   and aux_int vartbl raw = match raw with
@@ -245,19 +244,19 @@ let pp_array ppx ppf = function
   | a -> Format.fprintf ppf "@[<2>(%a)@]"
       CCFormat.(array ~sep:(return ", ") ppx) a
 
-let rec pp ppf = function
-  | Var i -> Variables.pp ppf i
+let rec pp namefmt ppf = function
+  | Var i -> Variables.pp namefmt ppf i
   | Constr (p,[||]) -> P.pp ppf p
   | Constr (p,args) ->
     Format.fprintf ppf "%a@ %a"
-      (pp_array pp) args
+      (pp_array @@ pp namefmt) args
       P.pp p
   | Arrow (args,ret) ->
     Format.fprintf ppf "@[<2>%a@ ->@ %a@]"
-      (NSet.pp pp) args
-      pp ret
+      (NSet.pp @@ pp namefmt) args
+      (pp namefmt) ret
   | Tuple tup ->
-    Format.fprintf ppf "@[<2>%a@]" (NSet.pp pp) tup
+    Format.fprintf ppf "@[<2>%a@]" (NSet.pp @@ pp namefmt) tup
   | Unknown _ -> CCFormat.string ppf "_"
   | Unit -> CCFormat.string ppf "unit"
 

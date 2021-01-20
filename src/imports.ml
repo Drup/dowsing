@@ -52,9 +52,9 @@ let rec of_outcometree_rec x : Raw.t =
   | Otyp_sum _
     -> Raw.unknown x
 
-let of_outcometree ?ht x =
+let of_outcometree ~gen ~ht ~nametbl x =
   let t = of_outcometree_rec x in
-  normalize ?ht t
+  normalize ~gen ~ht ~nametbl t
 
 (** Import from Parsetree *)
 
@@ -95,12 +95,12 @@ let rec of_parse_rec resolver x : Raw.t =
 
 let default_resolver id a = id, a
 
-let of_parsetree ?gen ?ht ?(resolver=default_resolver) x =
+let of_parsetree ?(resolver=default_resolver) ~gen ~ht ~nametbl x =
   (* Format.eprintf "@[ptree: %a@]@." Pprintast.core_type x; *)
   let t = of_parse_rec resolver x in
   (* Format.eprintf "@[raw: %a@]@." Typexpr.pp_raw t; *)
-  normalize ?gen ?ht t
+  normalize ~gen ~ht ~nametbl t
 
-let read ?gen ?ht ?resolver lexbuf =
-  of_parsetree ?gen ?ht ?resolver @@
+let read ?resolver ~gen ~ht ~nametbl lexbuf =
+  of_parsetree ?resolver ~gen ~ht ~nametbl @@
   Parse.core_type lexbuf
