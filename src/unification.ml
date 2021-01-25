@@ -648,9 +648,6 @@ let rec process_arrow_problems env : System.t =
     Env.push_pure env left.args right.args;
     process_arrow_problems env
 
-let get_system env = process_arrow_problems env
-
-
 (* Insertion of unifiers *)
 and insert_substitution env stack x p =
   let ty = Pure.as_typexpr p in
