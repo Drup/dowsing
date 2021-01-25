@@ -1,6 +1,4 @@
 open Typexpr
-module S = Iter
-
 
 (** Import from Outcometree *)
 
@@ -22,9 +20,9 @@ let rec of_outcometree_rec x : Raw.t =
     Raw.arrow arg' ret'
   | Otyp_constr (id, args) ->
     let a =
-      S.to_array @@
-      S.map of_outcometree_rec @@
-      S.of_list args
+      Iter.to_array @@
+      Iter.map of_outcometree_rec @@
+      Iter.of_list args
     in
     Raw.constr (lid_of_outcometree id) a
   | Otyp_tuple tup ->
@@ -66,9 +64,9 @@ let rec of_parse_rec resolver x : Raw.t =
     Raw.arrow arg' ret'
   | Ptyp_constr (id, args) ->
     let a =
-      S.to_array @@
-      S.map (of_parse_rec resolver) @@
-      S.of_list args
+      Iter.to_array @@
+      Iter.map (of_parse_rec resolver) @@
+      Iter.of_list args
     in
     let id, a = resolver id.txt a in
     Raw.constr id a

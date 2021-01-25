@@ -34,18 +34,6 @@ module System : sig
   val pp : t Fmt.t [@@ocaml.toplevel_printer]
 end
 
-exception FailUnif of Typexpr.t * Typexpr.t
-
-val fail : Typexpr.t -> Typexpr.t -> 'a
-
-val insert : Env.t -> T.t -> T.t -> unit
-
-val occur_check : Env.t -> bool
-
-val get_system : Env.t -> System.t
-
-(* val solve_system : Env.t -> System.t -> Unifier.t Iter.t *)
-
 val unify :
   ?gen:Var.gen ->
   string Var.HMap.t ->

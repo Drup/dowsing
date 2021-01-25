@@ -1,7 +1,3 @@
-
-let poly_compare = compare
-module S = Iter
-
 let array_compare ord a1 a2 =
   let rec aux i =
     if i = Array.length a1
@@ -83,7 +79,7 @@ let rec compare_skel cmp_var cmp_set lhs rhs =
        | x -> x)
     | Tuple lhs0, Tuple rhs0 -> cmp_set lhs0 rhs0
     | Unknown lhs0, Unknown rhs0 ->
-      poly_compare lhs0 rhs0
+      Stdlib.compare lhs0 rhs0
     | Unit, Unit -> 0
     | _ ->
       CCInt.compare (to_int lhs) (to_int rhs)
@@ -202,7 +198,7 @@ let normalize ~gen ~ht ~nametbl x =
     | Unit -> Unit
     | Unknown h -> Unknown h
   and auxset vartbl rawset =
-    NSet.of_seq @@ S.map (aux vartbl) @@ S.of_list rawset
+    NSet.of_seq @@ Iter.map (aux vartbl) @@ Iter.of_list rawset
   in
   aux tbl x
 
