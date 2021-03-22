@@ -48,13 +48,13 @@ module P = struct
   module HMap = CCHashtbl.Make(struct include M let hash = CCHash.poly end)
 end
 
-type ('v, 's) skel =
-  | Var of 'v
-  | Constr of P.t * ('v, 's) skel array
-  | Tuple of 's
+type ('var, 'tuple) skel =
+  | Var of 'var
+  | Constr of P.t * ('var, 'tuple) skel array
+  | Tuple of 'tuple
   | Unknown of int
   | Unit
-  | Arrow of 's * ('v, 's) skel
+  | Arrow of 'tuple * ('var, 'tuple) skel
 
 let to_int = function
   | Var _ -> 0

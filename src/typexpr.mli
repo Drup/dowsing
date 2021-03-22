@@ -1,5 +1,6 @@
 (** Type expressions *)
 
+(** Path *)
 module P : sig
   type t = Longident.t
 
@@ -13,13 +14,13 @@ end
 
 (** The skeleton of type expressions,
     with parametrized variable and set. *)
-type ('v, 's) skel =
-  | Var of 'v
-  | Constr of P.t * ('v, 's) skel array
-  | Tuple of 's
+type ('var, 'tuple) skel =
+  | Var of 'var
+  | Constr of P.t * ('var, 'tuple) skel array
+  | Tuple of 'tuple
   | Unknown of int
   | Unit
-  | Arrow of 's * ('v, 's) skel
+  | Arrow of 'tuple * ('var, 'tuple) skel
 
 (** Non-normalized type expressions.
 
@@ -41,6 +42,7 @@ module Raw : sig
   val var : string option -> t
 end
 
+(** Normal form *)
 module rec Nf : (Set.OrderedType with type t = (Variables.t, NSet.t) skel)
 and NSet : sig
   include Custom_set.S with type elt = Nf.t

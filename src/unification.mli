@@ -1,3 +1,9 @@
+(** Unification of typexpr 
+
+    Direct implementation of 
+    "Competing for the AC-unification race"
+*)
+
 module T = Typexpr
 module Var = Variables
 
