@@ -17,10 +17,10 @@ let unify str1 str2 =
 let save file_name =
   Index.(save @@ make ()) file_name
 
-let test str =
+let test file_name str =
   let env = Type.Env.make () in
   let ty' = Type.of_string env str in
-  let idx = Index.make ~env () in
+  let idx = Index.load file_name in
   Timer.tick timer ;
   idx
   |> Index.iter (fun _ Index.{ ty } ->
@@ -42,8 +42,8 @@ let () =
         usage () ;
       save Sys.argv.(2)
   | "test" ->
-      if Array.length Sys.argv < 3 then
+      if Array.length Sys.argv < 4 then
         usage () ;
-      test Sys.argv.(2)
+      test Sys.argv.(2) Sys.argv.(3)
   | _ ->
       usage ()

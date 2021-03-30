@@ -1,6 +1,4 @@
-(******************** Ident ********************)
-
-module Ident : sig
+module Longident : sig
 
   type t = Longident.t
 
@@ -20,29 +18,24 @@ module Ident : sig
 
 end
 
-(******************** Base ********************)
-
 module rec Base : sig
 
   type t =
     | Var of Variable.t
-    | Constr of Ident.t * t Array.t
+    | Constr of Longident.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
-    | Unit
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t
 
 end
 
-(******************** Set ********************)
-
 and Set : sig
 
   type elt = Base.t
-  type t = elt Array.t
+  type t
 
   val compare : t -> t -> Int.t
 
@@ -63,19 +56,14 @@ end
 
 include module type of Base with type t = Base.t
 
-(******************** Hashcons ********************)
-
 module Hashcons : sig
 
-  type typ = t
   type t
 
   val make : Int.t -> t
-  val hashcons : t -> typ -> typ
+  val hashcons : t -> Base.t -> Base.t
 
 end
-
-(******************** Env ********************)
 
 module Env : sig
 
@@ -89,14 +77,14 @@ module Env : sig
 
 end
 
-(******************** importation functions ********************)
+(** {1 importation functions} *)
 
 val of_outcometree : Env.t -> Outcometree.out_type -> t
 val of_parsetree : Env.t -> Parsetree.core_type -> t
 val of_lexing : Env.t -> Lexing.lexbuf -> t
 val of_string : Env.t -> String.t -> t
 
-(******************** utility functions ********************)
+(** {1 utility functions} *)
 
 val vars : t -> Variable.t Iter.t
 

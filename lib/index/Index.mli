@@ -1,4 +1,4 @@
-type key = Type.Ident.t
+type key = Type.Longident.t
 
 type info = {
   ty : Type.t ;

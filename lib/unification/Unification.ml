@@ -11,7 +11,7 @@ module Var = Variable
 module Pure = struct
   type t =
     | Var of Var.t
-    | Constant of T.Ident.t
+    | Constant of T.Longident.t
 
   type term =
     | Pure of t
@@ -28,7 +28,7 @@ module Pure = struct
 
   let pp namefmt fmt = function
     | Var i -> Var.pp namefmt fmt i
-    | Constant p -> T.Ident.pp fmt p
+    | Constant p -> T.Longident.pp fmt p
   let pp_term namefmt fmt = function
     | Pure t -> pp namefmt fmt t
     | Tuple t ->
@@ -308,15 +308,15 @@ end = struct
   let make_mapping problems =
     let vars = Var.HMap.create 4 in
     let nb_vars = ref 0 in
-    let consts = T.Ident.HMap.create 4 in
+    let consts = T.Longident.HMap.create 4 in
     let nb_consts = ref 0 in
     let f = function
       | Pure.Var v ->
         if Var.HMap.mem vars v then () else
           Var.HMap.add vars v @@ CCRef.get_then_incr nb_vars
       | Constant p ->
-        if T.Ident.HMap.mem consts p then () else
-          T.Ident.HMap.add consts p @@ CCRef.get_then_incr nb_consts
+        if T.Longident.HMap.mem consts p then () else
+          T.Longident.HMap.add consts p @@ CCRef.get_then_incr nb_consts
     in
     let aux {Pure. left ; right} =
       Array.iter f left ; Array.iter f right
@@ -327,13 +327,13 @@ end = struct
   let make problems : t =
     let vars, nb_vars, consts, nb_consts = make_mapping problems in
     let get_index = function
-      | Pure.Constant p -> T.Ident.HMap.find consts p
+      | Pure.Constant p -> T.Longident.HMap.find consts p
       | Pure.Var v -> Var.HMap.find vars v + nb_consts
     in
     let nb_atom = nb_vars + nb_consts in
 
     let assoc_pure = Array.make nb_atom Pure.dummy in
-    T.Ident.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
+    T.Longident.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
     Var.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
 
     let first_var = nb_consts in
@@ -480,16 +480,16 @@ end = struct
     subset, tbl
 
   (** Combine everything *)
-  let get_solutions namefmt env
+  let get_solutions _namefmt env
       ({System. nb_atom; assoc_pure;_} as system)
       (seq_solutions:System.dioph_solution Iter.t) : t Iter.t =
     let stack_solutions = CCVector.create_with ~capacity:5 [||] in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
-    Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
-    Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
-      (CCVector.pp @@ Fmt.Dump.array Fmt.int) stack_solutions;
+    (* Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
+     * Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
+     *   (CCVector.pp @@ Fmt.Dump.array Fmt.int) stack_solutions; *)
     let symbols = symbols_of_solutions env system stack_solutions in
-    Fmt.epr "@[Symbols: %a@]@," (Fmt.Dump.array @@ Pure.pp namefmt) symbols;
+    (* Fmt.epr "@[Symbols: %a@]@," (Fmt.Dump.array @@ Pure.pp namefmt) symbols; *)
     let subsets = iterate_subsets (Array.length symbols) system bitvars in
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
@@ -517,7 +517,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
      when p is a type constructor.
   *)
   | T.Constr (p1, args1), T.Constr (p2, args2)
-    when T.Ident.compare p1 p2 = 0 ->
+    when T.Longident.compare p1 p2 = 0 ->
     let stack = Stack.push_array2 args1 args2 stack in
     process_stack env stack
 
@@ -553,8 +553,6 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
     ->
     fail t1 t2
 
-  | _ -> assert false
-
 (* Repeated application of VA on an array of subexpressions. *)
 and variable_abstraction_all env stack a =
   let r = ref stack in
@@ -573,11 +571,17 @@ and variable_abstraction_all env stack a =
 *)
 and variable_abstraction env stack t =
   match t with
-  | T.Tuple _ -> assert false (* No nested tuple *)
-
+  | T.Tuple t' ->
+    let stack, vars = variable_abstraction_all env stack t' in
+    let var = Env.gen env in
+    let stack = Stack.push_quasi_solved stack var
+        (Pure.as_typexpr @@ Pure.tuple vars)
+    in
+    stack, Pure.var var
+    
   (* Not a foreign subterm *)
   | Var i -> stack, Pure.var i
-  | Unit -> stack, Pure.constant T.Ident.unit
+  (* | Unit -> stack, Pure.constant T.Longident.unit *)
   | Constr (p, [||]) -> stack, Pure.constant p
 
   (* It's a foreign subterm *)
@@ -590,7 +594,7 @@ and insert_var env stack x s =
   match Env.representative env x with
   | V x ->
     begin match s with
-      | T.Unit | T.Constr (_, [||])
+      | T.Constr (_, [||])
       | T.Tuple _ | T.Constr _ | T.Arrow _ | T.Other _ ->
         quasi_solved env stack x s
       | T.Var y ->
@@ -721,30 +725,31 @@ let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   let namefmt = env.var_names in
   let env0 = Env.make ~gen () in
   List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-  Fmt.epr "@[<v2>env0: @,%a@]@." (Env.pp namefmt) env0 ;
+  (* Fmt.epr "@[<v2>env0: @,%a@]@." (Env.pp namefmt) env0 ; *)
   let rec solving_loop env k =
     if not (occur_check env) then ()
     else
       let system = process_arrow_problems env in
-      Fmt.epr "@[<v2>System:@,%a" System.pp system ;
+      (* Fmt.epr "@[<v2>System:@,%a" System.pp system ; *)
       let solutions = solve_system namefmt env system in
-      Fmt.epr "@]@." ;
+      (* Fmt.epr "@]@." ; *)
       let f sol k =
-        Fmt.epr "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp namefmt) sol ;
+        (* Fmt.epr "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp namefmt) sol ; *)
         try
           let env = fork_with_solutions env sol in
           match Env.is_solved env with
           | Some map ->
-            Fmt.epr "@[<v2>Solved env:@,%a@]@." (Env.pp namefmt) env ;
+            (* Fmt.epr "@[<v2>Solved env:@,%a@]@." (Env.pp namefmt) env ; *)
             k map
           | None ->
-            Fmt.epr "@[<v2>New env:@,%a@]@." (Env.pp namefmt) env ;
+            (* Fmt.epr "@[<v2>New env:@,%a@]@." (Env.pp namefmt) env ; *)
             solving_loop env k
         with
         | FailUnif (t1, t2) ->
-          Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-            (Type.pp namefmt) t1
-            (Type.pp namefmt) t2
+          (* Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
+           *   (Type.pp namefmt) t1
+           *   (Type.pp namefmt) t2 *)
+          raise @@ FailUnif (t1, t2)
       in
       Iter.flat_map f solutions k
   in

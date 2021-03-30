@@ -1,6 +1,4 @@
-(******************** Ident ********************)
-
-module Ident = struct
+module Longident = struct
 
   type t = Longident.t
 
@@ -13,7 +11,7 @@ module Ident = struct
 
   let of_list strs =
     if strs = [] then
-      invalid_arg "Type.Ident.of_list"
+      invalid_arg "Type.Longident.of_list"
     else
       let root = Lident (CCList.hd strs) in
       let strs = CCList.tl strs in
@@ -54,10 +52,7 @@ module Ident = struct
     let hash = CCHash.poly
   end)
 
-  let pp fmt id =
-    id
-    |> flatten
-    |> Fmt.(list ~sep:(any ".") string) fmt
+  let pp fmt id = Pprintast.longident fmt id
 
 end
 
@@ -67,11 +62,10 @@ module rec Base : sig
 
   type t =
     | Var of Variable.t
-    | Constr of Ident.t * t Array.t
+    | Constr of Longident.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
-    | Unit
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t
@@ -80,11 +74,10 @@ end = struct
 
   type t =
     | Var of Variable.t
-    | Constr of Ident.t * t Array.t
+    | Constr of Longident.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
-    | Unit
 
   let to_int = function
     | Var _ -> 0
@@ -92,7 +85,6 @@ end = struct
     | Arrow _ -> 2
     | Tuple _ -> 3
     | Other _ -> 4
-    | Unit -> 5
 
   let rec compare lhs rhs =
       if lhs == rhs then 0
@@ -102,7 +94,7 @@ end = struct
         | Var lhs, Var rhs ->
             Variable.compare lhs rhs
         | Constr (id1, args1), Constr (id2, args2) ->
-            Ident.compare id1 id2
+            Longident.compare id1 id2
             <?> (CCArray.compare compare, args1, args2)
         | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
             compare ret1 ret2
@@ -111,8 +103,6 @@ end = struct
             Set.compare lhs rhs
         | Other lhs, Other rhs ->
             CCInt.compare lhs rhs
-        | Unit, Unit ->
-            0
         | _ ->
             CCInt.compare (to_int lhs) (to_int rhs)
 
@@ -126,7 +116,7 @@ end
 and Set : sig
 
   type elt = Base.t
-  type t = elt Array.t
+  type t
 
   val compare : t -> t -> Int.t
 
@@ -135,6 +125,8 @@ and Set : sig
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+
+  val is_empty : t -> bool
 
   val of_list : elt List.t -> t
   val of_iter : elt Iter.t -> t
@@ -152,6 +144,7 @@ end = struct
   let sort = CCArray.sort Base.compare
 
   let empty = [||]
+  let is_empty t = t = [||]
 
   let singleton elt = [| elt |]
 
@@ -196,8 +189,6 @@ include Base
 (******************** Hashcons ********************)
 
 module Hashcons = struct
-
-  type typ = t
 
   type elt = {
     node : t ;
@@ -268,12 +259,12 @@ let make_var (env : Env.t) =
             ty
 
 let make_constr id = function
-  | [||] when id = Ident.unit -> Unit
+  | [||] when id = Longident.unit -> Tuple Set.empty
   | args -> Constr (id, args)
 
 let make_arrow arg ret =
   match arg, ret with
-  | Unit, _ ->
+  | Tuple tpl, _ when Set.is_empty tpl ->
       ret
   | Tuple tpl, Arrow (args, ret) ->
       Arrow (Set.union tpl args, ret)
@@ -286,7 +277,6 @@ let make_arrow arg ret =
 
 let make_tuple elts =
   let aux = function
-    | Unit -> Set.empty
     | Tuple elts -> elts
     | elt -> Set.singleton elt
   in
@@ -304,7 +294,7 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
-      |> make_constr (Ident.of_outcometree id)
+      |> make_constr (Longident.of_outcometree id)
   | Otyp_arrow (_, arg, ret) ->
       make_arrow (of_outcometree arg) (of_outcometree ret)
   | Otyp_tuple elts ->
@@ -387,7 +377,7 @@ let of_string env str =
 
 let rec vars ty k =
   match ty with
-  | Other _ | Unit ->
+  | Other _ ->
       ()
   | Var var ->
       k var
@@ -418,11 +408,11 @@ let rec pp var_names =
     | Var var ->
         Variable.pp var_names fmt var
     | Constr (id, [||]) ->
-        Ident.pp fmt id
+        Longident.pp fmt id
     | Constr (id, args) ->
         Fmt.pf fmt "%a@ %a"
           (pp_array pp) args
-          Ident.pp id
+          Longident.pp id
     | Arrow (args, ret) ->
         Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
           (Set.pp pp) args
@@ -432,5 +422,3 @@ let rec pp var_names =
           (Set.pp pp) elts
     | Other _ ->
         Fmt.string fmt "_"
-    | Unit ->
-        Fmt.string fmt "unit"

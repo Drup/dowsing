@@ -13,7 +13,6 @@ let test (str, ty) =
 
 let tests = [|
   "int", int ;
-  "unit", Unit ;
   "int -> int", Arrow (Set.of_list [ int ], int) ;
   "unit -> int", int ;
   "int * int", Tuple (Set.of_list [ int ; int ]) ;

@@ -4,7 +4,7 @@ module Var = Variable
 module Pure : sig
   type t =
     | Var of Var.t
-    | Constant of T.Ident.t
+    | Constant of T.Longident.t
 
   type term
 
@@ -36,4 +36,4 @@ end
 
 val unify : Type.Env.t -> (Type.t * Type.t) List.t -> Unifier.t Iter.t
 
-val unifiable : Type.Env.t -> (Type.t * Type.t) List.t -> Bool.t
+val unifiable : Type.Env.t -> (Type.t * Type.t) List.t -> bool

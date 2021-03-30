@@ -1,3 +1,0 @@
-(env
-  (_
-    (flags (:standard -safe-string -warn-error -a+8))))
