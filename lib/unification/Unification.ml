@@ -571,19 +571,15 @@ and variable_abstraction_all env stack a =
 *)
 and variable_abstraction env stack t =
   match t with
-  | T.Tuple t' ->
-    let stack, vars = variable_abstraction_all env stack t' in
+  (* A nested tuple. We consider that a pure subproblem *)
+  | T.Tuple ts ->
+    let stack, all_vars = variable_abstraction_all env stack ts in
     let var = Env.gen env in
-    let stack = Stack.push_quasi_solved stack var
-        (Pure.as_typexpr @@ Pure.tuple vars)
-    in
+    Env.push_pure env [|Pure.var var|] all_vars;
     stack, Pure.var var
-    
   (* Not a foreign subterm *)
   | Var i -> stack, Pure.var i
-  (* | Unit -> stack, Pure.constant T.Longident.unit *)
   | Constr (p, [||]) -> stack, Pure.constant p
-
   (* It's a foreign subterm *)
   | Arrow _ | Constr (_, _) | Other _ ->
     let var = Env.gen env in
