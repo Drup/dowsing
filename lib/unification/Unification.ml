@@ -5,13 +5,13 @@
 *)
 
 
-module T = Typexpr
-module Var = Variables
+module T = Type
+module Var = Variable
 
 module Pure = struct
   type t =
     | Var of Var.t
-    | Constant of T.P.t
+    | Constant of T.Ident.t
 
   type term =
     | Pure of t
@@ -28,7 +28,7 @@ module Pure = struct
 
   let pp namefmt fmt = function
     | Var i -> Var.pp namefmt fmt i
-    | Constant p -> T.P.pp fmt p
+    | Constant p -> T.Ident.pp fmt p
   let pp_term namefmt fmt = function
     | Pure t -> pp namefmt fmt t
     | Tuple t ->
@@ -39,16 +39,16 @@ module Pure = struct
       Fmt.(array ~sep:(unit ",") @@ pp namefmt) left
       Fmt.(array ~sep:(unit ",") @@ pp namefmt) right
 
-  let as_typexpr p : Typexpr.t =
+  let as_typexpr p : Type.t =
     let f = function
-      | Var v -> Typexpr.Var v
-      | Constant c -> Typexpr.Constr (c, [||])
+      | Var v -> Type.Var v
+      | Constant c -> Type.Constr (c, [||])
     in
     match p with
     | Pure p -> f p
-    | Tuple t -> 
-      let a = t |> Iter.of_array|> Iter.map f |> Typexpr.NSet.of_seq in
-      Typexpr.Tuple a
+    | Tuple t ->
+      let a = t |> Iter.of_array |> Iter.map f |> Type.Set.of_iter in
+      Type.Tuple a
 end
 
 module Arrow : sig
@@ -64,8 +64,10 @@ module Arrow : sig
 
   val make : Pure.t array -> Pure.t -> t
   val make_problem : t -> t -> problem
-  val pp_problem : string Variables.HMap.t -> problem Fmt.t
+  val pp_problem : string Variable.HMap.t -> problem Fmt.t
+
 end = struct
+
   type t = {
     args: Pure.t array;
     ret: Pure.t;
@@ -88,30 +90,33 @@ end = struct
 
 end
 
-type representative = V of Var.t | E of Var.t * Typexpr.t
+type representative = V of Var.t | E of Var.t * Type.t
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
+
   type elt =
-    | Var of Var.t * Typexpr.t
-    | Expr of Typexpr.t * Typexpr.t
+    | Var of Var.t * Type.t
+    | Expr of Type.t * Type.t
   type t
 
   val empty : t
   val pop : t -> (elt * t) option
-  val push_quasi_solved : t -> Var.t -> Typexpr.t -> t
-  val push_array2 : Typexpr.t array -> Typexpr.t array -> t -> t
+  val push_quasi_solved : t -> Var.t -> Type.t -> t
+  val push_array2 : Type.t array -> Type.t array -> t -> t
 
-  val[@warning "-32"] pp : string Variables.HMap.t -> t Fmt.t
+  val[@warning "-32"] pp : string Variable.HMap.t -> t Fmt.t
+
 end = struct
+
   type elt =
-    | Var of Var.t * Typexpr.t
-    | Expr of Typexpr.t * Typexpr.t
+    | Var of Var.t * Type.t
+    | Expr of Type.t * Type.t
 
   type t = elt list
   let empty : t = []
 
-  let[@inline] pop = function
+  let [@inline] pop = function
     | [] -> None
     | h :: t -> Some (h, t)
 
@@ -124,26 +129,29 @@ end = struct
     CCArray.fold2 push stack a1 a2
 
   let pp_elt namefmt fmt = function
-    | Var (v, t) -> Fmt.pf fmt "%a = %a" (Var.pp namefmt) v (Typexpr.pp namefmt) t
-    | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" (Typexpr.pp namefmt) t1 (Typexpr.pp namefmt) t2
+    | Var (v, t) -> Fmt.pf fmt "%a = %a" (Var.pp namefmt) v (Type.pp namefmt) t
+    | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" (Type.pp namefmt) t1 (Type.pp namefmt) t2
 
   let pp namefmt = Fmt.(vbox (list ~sep:cut @@ pp_elt namefmt))
+
 end
 
 (* The [F] unification problem. *)
-exception FailUnif of Typexpr.t * Typexpr.t
+exception FailUnif of Type.t * Type.t
 let fail t1 t2 = raise (FailUnif (t1, t2))
 
 module Unifier : sig
-  type t = Typexpr.t Var.Map.t
-  val pp : string Variables.HMap.t -> t Fmt.t
+
+  type t = Type.t Var.Map.t
+  val pp : string Variable.HMap.t -> t Fmt.t
 
 end = struct
-  type t = Typexpr.t Var.Map.t
+
+  type t = Type.t Var.Map.t
 
   let pp namefmt ppf (unif : t) =
     let pp_pair ppf (v,t) =
-      Fmt.pf ppf "@[%a → %a@]" (Var.pp namefmt) v (Typexpr.pp namefmt) t in
+      Fmt.pf ppf "@[%a → %a@]" (Var.pp namefmt) v (Type.pp namefmt) t in
     Fmt.pf ppf "@[%a@]"
       (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
          Var.Map.iter pp_pair)
@@ -151,35 +159,38 @@ end = struct
 end
 
 module Env : sig
+
   type t
 
-  val make : ?gen:Var.gen -> unit -> t
+  val make : ?gen:Var.Gen.t -> unit -> t
 
   val copy : t -> t
   val gen : t -> Var.t
-  val get : t -> Var.t -> Typexpr.t option
-  val vars : t -> Typexpr.t Var.Map.t
+  val get : t -> Var.t -> Type.t option
+  val vars : t -> Type.t Var.Map.t
   val representative : t -> Var.t -> representative
 
   val push_pure : t -> Pure.t array -> Pure.t array -> unit
   val push_arrow : t -> Arrow.t -> Arrow.t -> unit
-  val attach : t -> Var.t -> Typexpr.t -> unit
+  val attach : t -> Var.t -> Type.t -> unit
 
   val pop_pure : t -> Pure.problem option
   val pop_arrow : t -> Arrow.problem option
 
   val is_solved : t -> Unifier.t option
-  
-  val pp : string Variables.HMap.t -> t Fmt.t
+
+  val pp : string Variable.HMap.t -> t Fmt.t
+
 end = struct
+
   type t = {
-    gen : Var.gen ;
-    mutable vars : Typexpr.t Var.Map.t ;
+    gen : Var.Gen.t ;
+    mutable vars : Type.t Var.Map.t ;
     mutable pure_problems : Pure.problem list ;
     mutable arrows : Arrow.problem list ;
   }
 
-  let make ?(gen=Var.init 0) () = {
+  let make ?(gen=Var.Gen.make 0) () = {
     gen ;
     vars = Var.Map.empty ;
     pure_problems = [] ;
@@ -190,7 +201,7 @@ end = struct
     { gen ; vars ; pure_problems ; arrows }
 
   let vars e = e.vars
-  let gen e = Var.gen e.gen
+  let gen e = Var.Gen.gen e.gen
   let get e x = Var.Map.get x e.vars
   let attach e v t =
     e.vars <- Var.Map.add v t e.vars
@@ -218,7 +229,7 @@ end = struct
   let representative e x = representative_rec e.vars x
 
   let pp_binding namefmt fmt (x,t) =
-    Fmt.pf fmt "@[%a = %a@]"  (Var.pp namefmt) x (Typexpr.pp namefmt) t
+    Fmt.pf fmt "@[%a = %a@]"  (Var.pp namefmt) x (Type.pp namefmt) t
 
   let is_solved env =
     if CCList.is_empty env.pure_problems
@@ -227,16 +238,18 @@ end = struct
       Some env.vars
     else
       None
-  
+
   let pp namefmt fmt { vars ; pure_problems ; arrows; gen=_ } =
     Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Pure:@ %a@]@,@[<v2>Arrows:@ %a@]"
       Fmt.(iter_bindings ~sep:cut Var.Map.iter @@ pp_binding namefmt) vars
       Fmt.(list ~sep:cut @@ Pure.pp_problem namefmt) pure_problems
       Fmt.(list ~sep:cut @@ Arrow.pp_problem namefmt) arrows
+
 end
 
 (** Elementary AC-Unif *)
 module System : sig
+
   type t = {
     nb_atom : int ; (* Number of atoms in each equation *)
     assoc_pure : Pure.t array ; (* Map from indices to the associated pure terms *)
@@ -253,7 +266,9 @@ module System : sig
   type dioph_solution = private int array
 
   val solve : t -> dioph_solution Iter.t
+
 end = struct
+
   module Dioph = Diophantine.Make()
   module Solver = Dioph.Homogeneous_system
 
@@ -293,15 +308,15 @@ end = struct
   let make_mapping problems =
     let vars = Var.HMap.create 4 in
     let nb_vars = ref 0 in
-    let consts = T.P.HMap.create 4 in
+    let consts = T.Ident.HMap.create 4 in
     let nb_consts = ref 0 in
     let f = function
       | Pure.Var v ->
         if Var.HMap.mem vars v then () else
           Var.HMap.add vars v @@ CCRef.get_then_incr nb_vars
       | Constant p ->
-        if T.P.HMap.mem consts p then () else
-          T.P.HMap.add consts p @@ CCRef.get_then_incr nb_consts
+        if T.Ident.HMap.mem consts p then () else
+          T.Ident.HMap.add consts p @@ CCRef.get_then_incr nb_consts
     in
     let aux {Pure. left ; right} =
       Array.iter f left ; Array.iter f right
@@ -312,13 +327,13 @@ end = struct
   let make problems : t =
     let vars, nb_vars, consts, nb_consts = make_mapping problems in
     let get_index = function
-      | Pure.Constant p -> T.P.HMap.find consts p
+      | Pure.Constant p -> T.Ident.HMap.find consts p
       | Pure.Var v -> Var.HMap.find vars v + nb_consts
     in
     let nb_atom = nb_vars + nb_consts in
 
     let assoc_pure = Array.make nb_atom Pure.dummy in
-    T.P.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
+    T.Ident.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
     Var.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
 
     let first_var = nb_consts in
@@ -346,8 +361,8 @@ end
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
   type t = Bitv.t * Pure.term Var.HMap.t
-  val[@warning "-32"] pp : string Variables.HMap.t -> t Fmt.t
-  
+  val[@warning "-32"] pp : string Variable.HMap.t -> t Fmt.t
+
   val get_solutions :
     string Var.HMap.t ->
     Env.t -> System.t -> System.dioph_solution Iter.t ->
@@ -366,7 +381,7 @@ end = struct
       (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
          Var.HMap.iter pp_pair)
       unif
-  
+
   (** Construction of the hullot tree to iterate through subsets. *)
 
   let rec for_all2_range f a k stop : bool =
@@ -479,6 +494,7 @@ end = struct
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
       subsets
+
 end
 
 (** Main process *)
@@ -501,7 +517,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
      when p is a type constructor.
   *)
   | T.Constr (p1, args1), T.Constr (p2, args2)
-    when T.P.compare p1 p2 = 0 ->
+    when T.Ident.compare p1 p2 = 0 ->
     let stack = Stack.push_array2 args1 args2 stack in
     process_stack env stack
 
@@ -532,8 +548,8 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
      Terms are incompatible
   *)
   | Constr _, Constr _  (* if same constructor, already checked above *)
-  | (Constr _ | Tuple _ | Arrow _ | Unknown _),
-    (Constr _ | Tuple _ | Arrow _ | Unknown _)
+  | (Constr _ | Tuple _ | Arrow _ | Other _),
+    (Constr _ | Tuple _ | Arrow _ | Other _)
     ->
     fail t1 t2
 
@@ -547,7 +563,7 @@ and variable_abstraction_all env stack a =
     r := stack ;
     x
   in
-  !r, Array.map f @@ T.NSet.as_array a
+  !r, Array.map f @@ T.Set.as_array a
 
 (* rule VA/Variable Abstraction
    Given a tuple, assign a variable to each subexpressions that is foreign
@@ -561,11 +577,11 @@ and variable_abstraction env stack t =
 
   (* Not a foreign subterm *)
   | Var i -> stack, Pure.var i
-  | Unit -> stack, Pure.constant T.P.unit
+  | Unit -> stack, Pure.constant T.Ident.unit
   | Constr (p, [||]) -> stack, Pure.constant p
 
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Unknown _ ->
+  | Arrow _ | Constr (_, _) | Other _ ->
     let var = Env.gen env in
     let stack = Stack.push_quasi_solved stack var t in
     stack, Pure.var var
@@ -575,7 +591,7 @@ and insert_var env stack x s =
   | V x ->
     begin match s with
       | T.Unit | T.Constr (_, [||])
-      | T.Tuple _ | T.Constr _ | T.Arrow _ | T.Unknown _ ->
+      | T.Tuple _ | T.Constr _ | T.Arrow _ | T.Other _ ->
         quasi_solved env stack x s
       | T.Var y ->
         non_proper env stack x y
@@ -699,9 +715,11 @@ let occur_check env : bool =
     Var.HMap.fold (fun x p l -> if p = 0 then x :: l else l) nb_preds []
   in
   loop 0 no_preds
-       
-let unify ?gen namefmt (pairs: _ list) : Unifier.t Iter.t =
-  let env0 = Env.make ?gen () in
+
+let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
+  let gen = env.var_gen in
+  let namefmt = env.var_names in
+  let env0 = Env.make ~gen () in
   List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
   Fmt.epr "@[<v2>env0: @,%a@]@." (Env.pp namefmt) env0 ;
   let rec solving_loop env k =
@@ -725,9 +743,17 @@ let unify ?gen namefmt (pairs: _ list) : Unifier.t Iter.t =
         with
         | FailUnif (t1, t2) ->
           Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-            (Typexpr.pp namefmt) t1
-            (Typexpr.pp namefmt) t2
+            (Type.pp namefmt) t1
+            (Type.pp namefmt) t2
       in
       Iter.flat_map f solutions k
   in
   solving_loop env0
+
+let unifiable (env : Type.Env.t) pairs =
+  try
+    pairs
+    |> unify env
+    |> CCFun.negate Iter.is_empty
+  with
+  | FailUnif _ -> false

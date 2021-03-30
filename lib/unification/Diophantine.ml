@@ -1,7 +1,7 @@
 module Fmt = CCFormat
 module Vec = CCVector
 
-module type S = Diophantine_intf.S
+module type S = DiophantineIntf.S
 
 module Make() = struct
   module Z = CCInt

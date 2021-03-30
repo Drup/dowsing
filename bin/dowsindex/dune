@@ -1,0 +1,4 @@
+(executable
+  (name dowsindex)
+  (libraries utils common index unification)
+  (flags (:standard -open Utils -open Common -open Index)))

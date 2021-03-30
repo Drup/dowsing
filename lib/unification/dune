@@ -1,0 +1,11 @@
+(library
+  (name unification)
+  (modules (:standard \ tests))
+  (libraries common)
+  (flags (:standard -open Common)))
+
+(test
+  (name tests)
+  (modules tests)
+  (libraries unification)
+  (flags (:standard -open Common -open Unification)))

@@ -1,5 +1,0 @@
-
-(executable
-  (name dowsindex)
-  (public_name dowsindex)
-  (libraries dowsing ocp-index.lib unix))

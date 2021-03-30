@@ -1,4 +1,5 @@
 module type S = sig
+
   type storage
   type t = private storage
   val empty : t
@@ -17,8 +18,9 @@ module type S = sig
   val storage : t -> storage
 
   val capacity : int
+
 end
 
-
 module Default : S with type storage = int
+
 include S with type storage = int and type t = Default.t

@@ -1,0 +1,4 @@
+(library
+  (name index)
+  (libraries ocp-index.lib findlib common)
+  (flags (:standard -open Common)))

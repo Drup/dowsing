@@ -1,7 +1,0 @@
-
-(library
-  (name dowsing)
-  (public_name dowsing)
-  (flags :standard -safe-string -open Asttypes -warn-error -a+8)
-  (libraries
-    compiler-libs.common containers containers-data iter fmt))

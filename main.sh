@@ -1,2 +1,2 @@
 #!/bin/sh
-exec dune exec src/index_bin/dowsindex.exe -- "$@"
+exec dune exec bin/dowsindex/dowsindex.exe -- "$@"
