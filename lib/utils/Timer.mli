@@ -4,5 +4,5 @@ val make : Unit.t -> t
 
 val get : t -> Float.t
 
-val tick : t -> Unit.t
-val tock : t -> Unit.t
+val start : t -> Unit.t
+val stop : t -> Unit.t

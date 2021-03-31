@@ -4,8 +4,8 @@ let make () = ref 0.
 
 let get self = ! self
 
-let tick self =
+let start self =
   self := Unix.gettimeofday ()
 
-let tock self =
+let stop self =
   self := Unix.gettimeofday () -. ! self

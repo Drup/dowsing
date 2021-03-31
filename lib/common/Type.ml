@@ -1,3 +1,5 @@
+(* Longident *)
+
 module Longident = struct
 
   type t = Longident.t
@@ -52,11 +54,11 @@ module Longident = struct
     let hash = CCHash.poly
   end)
 
-  let pp fmt id = Pprintast.longident fmt id
+  let pp = Pprintast.longident
 
 end
 
-(******************** Base ********************)
+(* Base *)
 
 module rec Base : sig
 
@@ -111,7 +113,7 @@ end = struct
 
 end
 
-(******************** Set ********************)
+(* Set *)
 
 and Set : sig
 
@@ -121,12 +123,11 @@ and Set : sig
   val compare : t -> t -> Int.t
 
   val empty : t
+  val is_empty : t -> Bool.t
   val singleton : elt -> t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-
-  val is_empty : t -> bool
 
   val of_list : elt List.t -> t
   val of_iter : elt Iter.t -> t
@@ -144,7 +145,7 @@ end = struct
   let sort = CCArray.sort Base.compare
 
   let empty = [||]
-  let is_empty t = t = [||]
+  let is_empty = (=) [||]
 
   let singleton elt = [| elt |]
 
@@ -186,7 +187,7 @@ end
 
 include Base
 
-(******************** Hashcons ********************)
+(* Hashcons *)
 
 module Hashcons = struct
 
@@ -222,7 +223,7 @@ module Hashcons = struct
 
 end
 
-(******************** Env ********************)
+(* Env *)
 
 module Env = struct
 
@@ -240,7 +241,7 @@ module Env = struct
 
 end
 
-(******************** importation functions ********************)
+(* importation functions *)
 
 let make_var (env : Env.t) =
   let module StringHMap = CCHashtbl.Make (CCString) in
@@ -373,7 +374,7 @@ let of_string env str =
   |> Lexing.from_string
   |> of_lexing env
 
-(******************** utility functions ********************)
+(* utility functions *)
 
 let rec vars ty k =
   match ty with

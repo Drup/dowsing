@@ -40,6 +40,7 @@ and Set : sig
   val compare : t -> t -> Int.t
 
   val empty : t
+  val is_empty : t -> Bool.t
   val singleton : elt -> t
   val union : t -> t -> t
   val add : elt -> t -> t
@@ -77,14 +78,14 @@ module Env : sig
 
 end
 
-(** {1 importation functions} *)
+(* importation functions *)
 
 val of_outcometree : Env.t -> Outcometree.out_type -> t
 val of_parsetree : Env.t -> Parsetree.core_type -> t
 val of_lexing : Env.t -> Lexing.lexbuf -> t
 val of_string : Env.t -> String.t -> t
 
-(** {1 utility functions} *)
+(* utility functions *)
 
 val vars : t -> Variable.t Iter.t
 
