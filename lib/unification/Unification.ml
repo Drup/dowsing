@@ -731,9 +731,6 @@ let occur_check env : bool =
   loop 0 no_preds
 
 let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
-  let env0 = Env.make tyenv in
-  List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-  (* Fmt.epr "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
   let rec solving_loop env k =
     if not (occur_check env) then ()
     else
@@ -761,21 +758,20 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
       in
       Iter.flat_map f solutions k
   in
-  solving_loop env0
+  let env0 = Env.make tyenv in
+  try
+    List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
+    (* Fmt.epr "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
+    solving_loop env0
+  with
+  | FailUnif _ -> Iter.empty
 
 let unify (env : Type.Env.t) pairs =
   let is_smaller t1 t2 = Unifier.size t1 < Unifier.size t2 in
-  try
-    pairs
-    |> unifiers env
-    |> Iter.min ~lt:is_smaller
-  with
-  | FailUnif _ -> None
-
+  unifiers env pairs
+  |> Iter.min ~lt:is_smaller
+  
 let unifiable (env : Type.Env.t) pairs =
-  try
-    pairs
-    |> unifiers env
-    |> CCFun.negate Iter.is_empty
-  with
-  | FailUnif _ -> false
+  unifiers env pairs
+  |> CCFun.negate Iter.is_empty
+
