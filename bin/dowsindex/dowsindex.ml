@@ -35,7 +35,7 @@ let test file_name str =
   |> Index.iter (fun _ Index.{ ty } ->
     ignore @@ Unification.unifiable env [ ty, ty' ]) ;
   Timer.stop timer ;
-  CCFormat.printf "exhaustive lookup: %f@." (Timer.get timer)
+  CCFormat.printf "exhaustive lookup: %f@." @@ Timer.get timer
 
 let () =
   CCFormat.set_margin 100 ;
