@@ -22,4 +22,5 @@ depends: [
   "base-unix"
   "ocp-index"
   "findlib"
+  "alcotest"
 ]
