@@ -144,11 +144,23 @@ let fail t1 t2 = raise (FailUnif (t1, t2))
 module Unifier : sig
 
   type t = Type.t Var.Map.t
+
+  val size : t -> int
+  val simplify : string Variable.HMap.t -> t -> t
+  
   val pp : string Variable.HMap.t -> t Fmt.t
 
 end = struct
 
   type t = Type.t Var.Map.t
+
+  let simplify namefmt unif =
+    let named_vars, anonymous_vars =
+      Var.Map.partition (fun v _ -> Var.HMap.mem namefmt v) unif
+    in
+    Var.Map.map (Type.substitute anonymous_vars) named_vars
+
+  let size = Var.Map.cardinal
 
   let pp namefmt ppf (unif : t) =
     let pp_pair ppf (v,t) =
@@ -163,12 +175,13 @@ module Env : sig
 
   type t
 
-  val make : ?gen:Var.Gen.t -> unit -> t
+  val make : Type.Env.t -> t
 
   val copy : t -> t
   val gen : t -> Var.t
   val get : t -> Var.t -> Type.t option
   val vars : t -> Type.t Var.Map.t
+  val var_names : t -> string Var.HMap.t
   val representative : t -> Var.t -> representative
 
   val push_tuple : t -> Tuple.t -> Tuple.t -> unit
@@ -180,30 +193,31 @@ module Env : sig
 
   val is_solved : t -> Unifier.t option
 
-  val pp : string Variable.HMap.t -> t Fmt.t
+  val pp : t Fmt.t
 
 end = struct
 
   type t = {
-    gen : Var.Gen.t ;
+    tyenv : Type.Env.t ;
     mutable vars : Type.t Var.Map.t ;
     mutable tuples : Tuple.problem list ;
     mutable arrows : Arrow.problem list ;
   }
 
-  let make ?(gen=Var.Gen.make 0) () = {
-    gen ;
+  let make (tyenv : Type.Env.t) = {
+    tyenv ;
     vars = Var.Map.empty ;
     tuples = [] ;
     arrows = [] ;
   }
 
-  let copy { gen ; vars ; tuples ; arrows } =
-    { gen ; vars ; tuples ; arrows }
+  let copy { tyenv ; vars ; tuples ; arrows } =
+    { tyenv ; vars ; tuples ; arrows }
 
   let vars e = e.vars
-  let gen e = Var.Gen.gen e.gen
+  let gen e = Var.Gen.gen e.tyenv.var_gen
   let get e x = Var.Map.get x e.vars
+  let var_names e = e.tyenv.var_names
   let attach e v t =
     e.vars <- Var.Map.add v t e.vars
 
@@ -236,15 +250,16 @@ end = struct
     if CCList.is_empty env.tuples
     && CCList.is_empty env.arrows
     then
-      Some env.vars
+      Some (Unifier.simplify env.tyenv.var_names env.vars)
     else
       None
 
-  let pp namefmt fmt { vars ; tuples ; arrows; gen=_ } =
+  let pp fmt { vars ; tuples ; arrows; tyenv } =
+    let {Type.Env. var_names ; _ } = tyenv in
     Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Pure:@ %a@]@,@[<v2>Arrows:@ %a@]"
-      Fmt.(iter_bindings ~sep:cut Var.Map.iter @@ pp_binding namefmt) vars
-      Fmt.(list ~sep:cut @@ Tuple.pp_problem namefmt) tuples
-      Fmt.(list ~sep:cut @@ Arrow.pp_problem namefmt) arrows
+      Fmt.(iter_bindings ~sep:cut Var.Map.iter @@ pp_binding var_names) vars
+      Fmt.(list ~sep:cut @@ Tuple.pp_problem var_names) tuples
+      Fmt.(list ~sep:cut @@ Arrow.pp_problem var_names) arrows
 
 end
 
@@ -362,10 +377,9 @@ end
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
   type t = Bitv.t * Tuple.t Var.HMap.t
-  val[@warning "-32"] pp : string Variable.HMap.t -> t Fmt.t
+  val[@warning "-32"] pp : Env.t -> t Fmt.t
 
   val get_solutions :
-    string Var.HMap.t ->
     Env.t -> System.t -> System.dioph_solution Iter.t ->
     t Iter.t
 end = struct
@@ -374,7 +388,8 @@ end = struct
 
   type t = Bitv.t * Tuple.t Var.HMap.t
 
-  let pp namefmt ppf (subset, unif : t) =
+  let pp env ppf (subset, unif : t) =
+    let namefmt = Env.var_names env in
     let pp_pair ppf (v,t) =
       Fmt.pf ppf "@[%a → %a@]" (Var.pp namefmt) v (Tuple.pp namefmt) t in
     Fmt.pf ppf "@[%a: { %a }@]"
@@ -479,7 +494,7 @@ end = struct
     subset, tbl
 
   (** Combine everything *)
-  let get_solutions _namefmt env
+  let get_solutions env
       ({System. nb_atom; assoc_pure;_} as system)
       (seq_solutions:System.dioph_solution Iter.t) : t Iter.t =
     let stack_solutions = CCVector.create_with ~capacity:5 [||] in
@@ -675,9 +690,9 @@ let fork_with_solutions env ((_, map) : Dioph2Sol.t) =
   env
 
 
-let solve_system namefmt env system =
+let solve_system env system =
   let dioph_sols = System.solve system in
-  Dioph2Sol.get_solutions namefmt env system dioph_sols
+  Dioph2Sol.get_solutions env system dioph_sols
 
 (** Checking for cycles *)
 (* TO OPTIM/MEASURE *)
@@ -715,32 +730,30 @@ let occur_check env : bool =
   in
   loop 0 no_preds
 
-let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
-  let gen = env.var_gen in
-  let namefmt = env.var_names in
-  let env0 = Env.make ~gen () in
+let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
+  let env0 = Env.make tyenv in
   List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-  (* Fmt.epr "@[<v2>env0: @,%a@]@." (Env.pp namefmt) env0 ; *)
+  (* Fmt.epr "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
   let rec solving_loop env k =
     if not (occur_check env) then ()
     else
       let system = process_arrows env in
       (* Fmt.epr "@[<v2>System:@,%a" System.pp system ; *)
-      let solutions = solve_system namefmt env system in
+      let solutions = solve_system env system in
       (* Fmt.epr "@]@." ; *)
       let f sol k =
-        (* Fmt.epr "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp namefmt) sol ; *)
+        (* Fmt.epr "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol ; *)
         try
           let env = fork_with_solutions env sol in
           match Env.is_solved env with
           | Some map ->
-            (* Fmt.epr "@[<v2>Solved env:@,%a@]@." (Env.pp namefmt) env ; *)
+            (* Fmt.epr "@[<v2>Solved env:@,%a@]@." Env.pp env ; *)
             k map
           | None ->
-            (* Fmt.epr "@[<v2>New env:@,%a@]@." (Env.pp namefmt) env ; *)
+            (* Fmt.epr "@[<v2>New env:@,%a@]@." Env.pp env ; *)
             solving_loop env k
         with
-        | FailUnif (t1, t2) ->
+        | FailUnif (_t1, _t2) ->
           (* Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
            *   (Type.pp namefmt) t1
            *   (Type.pp namefmt) t2 *)
@@ -750,10 +763,19 @@ let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   in
   solving_loop env0
 
+let unify (env : Type.Env.t) pairs =
+  let is_smaller t1 t2 = Unifier.size t1 < Unifier.size t2 in
+  try
+    pairs
+    |> unifiers env
+    |> Iter.min ~lt:is_smaller
+  with
+  | FailUnif _ -> None
+
 let unifiable (env : Type.Env.t) pairs =
   try
     pairs
-    |> unify env
+    |> unifiers env
     |> CCFun.negate Iter.is_empty
   with
   | FailUnif _ -> false

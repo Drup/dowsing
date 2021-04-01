@@ -125,6 +125,7 @@ and Set : sig
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+  val map : (elt -> elt) -> t -> t
 
   val is_empty : t -> bool
 
@@ -170,6 +171,8 @@ end = struct
     arr
 
   let to_iter = Iter.of_array
+
+  let map f t = of_iter @@ Iter.map f @@ to_iter t
 
   let as_array = Fun.id
 
@@ -284,6 +287,20 @@ let make_tuple elts =
 
 let make_other x =
   Other (CCHash.poly x)
+
+let rec substitute sub (ty : t) = match ty with
+  | Var v ->
+    begin match Variable.Map.find_opt v sub with
+      | None -> ty
+      | Some ty -> ty
+    end
+  | Constr (lid, ts) ->
+    make_constr lid @@ Array.map (substitute sub) ts
+  | Arrow (ts, t) ->
+    make_arrow (make_tuple @@ Set.map (substitute sub) ts) (substitute sub t)
+  | Tuple ts ->
+    make_tuple (Set.map (substitute sub) ts)
+  | Other _ -> ty
 
 let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   match out_ty with

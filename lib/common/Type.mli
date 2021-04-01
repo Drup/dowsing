@@ -86,6 +86,8 @@ val of_string : Env.t -> String.t -> t
 
 (** {1 utility functions} *)
 
+val substitute : t Variable.Map.t -> t -> t
+
 val vars : t -> Variable.t Iter.t
 
 val head : t -> t
