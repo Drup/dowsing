@@ -1,4 +1,4 @@
-open Longident
+open LongIdent
 open Type
 
 let test_equal ty1 ty2 =

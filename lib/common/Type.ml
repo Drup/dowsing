@@ -1,70 +1,10 @@
-(* Longident *)
-
-module Longident = struct
-
-  type t = Longident.t
-
-  open Longident
-
-  let compare = compare
-  let equal = (=)
-
-  let unit = Lident "unit"
-
-  let of_list strs =
-    if strs = [] then
-      invalid_arg "Type.Longident.of_list"
-    else
-      let root = Lident (CCList.hd strs) in
-      let strs = CCList.tl strs in
-      CCList.fold_left (fun id str -> Ldot (id, str)) root strs
-
-  let rec of_outcometree =
-    let open Outcometree in
-    function
-      | Oide_apply (oid1, oid2) ->
-          Lapply (of_outcometree oid1, of_outcometree oid2)
-      | Oide_dot (oid, str) ->
-          Ldot (of_outcometree oid, str)
-      | Oide_ident { printed_name = str } ->
-          Lident str
-
-  let rec to_iter id k =
-    match id with
-    | Lident str ->
-        k str
-    | Ldot (id, str) ->
-        to_iter id k ;
-        k str
-    | Lapply (id1, id2) ->
-        to_iter id1 k ;
-        to_iter id2 k
-
-  module Map = CCTrie.Make (struct
-    type nonrec t = t
-    type char_ = String.t
-    let compare = CCString.compare
-    let to_iter = to_iter
-    let of_list = of_list
-  end)
-
-  module HMap = CCHashtbl.Make (struct
-    type nonrec t = t
-    let equal = equal
-    let hash = CCHash.poly
-  end)
-
-  let pp = Pprintast.longident
-
-end
-
 (* Base *)
 
 module rec Base : sig
 
   type t =
     | Var of Variable.t
-    | Constr of Longident.t * t Array.t
+    | Constr of LongIdent.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
@@ -76,7 +16,7 @@ end = struct
 
   type t =
     | Var of Variable.t
-    | Constr of Longident.t * t Array.t
+    | Constr of LongIdent.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
@@ -96,7 +36,7 @@ end = struct
         | Var lhs, Var rhs ->
             Variable.compare lhs rhs
         | Constr (id1, args1), Constr (id2, args2) ->
-            Longident.compare id1 id2
+            LongIdent.compare id1 id2
             <?> (CCArray.compare compare, args1, args2)
         | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
             compare ret1 ret2
@@ -145,7 +85,7 @@ end = struct
   let sort = CCArray.sort Base.compare
 
   let empty = [||]
-  let is_empty = (=) [||]
+  let is_empty set = set = [||]
 
   let singleton elt = [| elt |]
 
@@ -260,7 +200,7 @@ let make_var (env : Env.t) =
             ty
 
 let make_constr id = function
-  | [||] when id = Longident.unit -> Tuple Set.empty
+  | [||] when id = LongIdent.unit -> Tuple Set.empty
   | args -> Constr (id, args)
 
 let make_arrow arg ret =
@@ -295,7 +235,7 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
-      |> make_constr (Longident.of_outcometree id)
+      |> make_constr (LongIdent.of_outcometree id)
   | Otyp_arrow (_, arg, ret) ->
       make_arrow (of_outcometree arg) (of_outcometree ret)
   | Otyp_tuple elts ->
@@ -409,11 +349,11 @@ let rec pp var_names =
     | Var var ->
         Variable.pp var_names fmt var
     | Constr (id, [||]) ->
-        Longident.pp fmt id
+        LongIdent.pp fmt id
     | Constr (id, args) ->
         Fmt.pf fmt "%a@ %a"
           (pp_array pp) args
-          Longident.pp id
+          LongIdent.pp id
     | Arrow (args, ret) ->
         Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
           (Set.pp pp) args

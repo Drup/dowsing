@@ -1,7 +1,7 @@
 module Pure : sig
   type t =
     | Var of Variable.t
-    | Constant of Type.Longident.t
+    | Constant of LongIdent.t
 
   type term
 

@@ -21,11 +21,11 @@ let test file_name str =
   let env = Type.Env.make () in
   let ty' = Type.of_string env str in
   let idx = Index.load file_name in
-  Timer.tick timer ;
+  Timer.start timer ;
   idx
   |> Index.iter (fun _ Index.{ ty } ->
     ignore @@ Unification.unifiable env [ ty, ty' ]) ;
-  Timer.tock timer ;
+  Timer.stop timer ;
   CCFormat.printf "exhaustive lookup: %f@." (Timer.get timer)
 
 let () =

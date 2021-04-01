@@ -1,28 +1,8 @@
-module Longident : sig
-
-  type t = Longident.t
-
-  val compare : t -> t -> Int.t
-  val equal : t -> t -> Bool.t
-
-  val unit : t
-
-  val of_list : String.t List.t -> t
-  val of_outcometree : Outcometree.out_ident -> t
-  val to_iter : t -> String.t Iter.t
-
-  module Map : CCTrie.S with type key = t and type char_ = String.t
-  module HMap : CCHashtbl.S with type key = t
-
-  val pp : t Fmt.t
-
-end
-
 module rec Base : sig
 
   type t =
     | Var of Variable.t
-    | Constr of Longident.t * t Array.t
+    | Constr of LongIdent.t * t Array.t
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t

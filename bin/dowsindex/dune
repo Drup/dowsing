@@ -2,4 +2,4 @@
   (name dowsindex)
   (public_name dowsindex)
   (libraries utils common index unification)
-  (flags (:standard -open Utils -open Common -open Index)))
+  (flags (:standard -open Utils -open Common -open Index -open Unification)))

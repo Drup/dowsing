@@ -1,17 +1,17 @@
-module LidMap = Type.Longident.HMap
+module LIdMap = LongIdent.HMap
 
-type key = Type.Longident.t
+type key = LongIdent.t
 
 type info = {
   ty : Type.t ;
 }
 
-type t = info LidMap.t
+type t = info LIdMap.t
 
-let get = LidMap.get
-let add = LidMap.add
-let iter = LidMap.iter
-let make () = LidMap.create 17
+let get = LIdMap.get
+let add = LIdMap.add
+let iter = LIdMap.iter
+let make () = LIdMap.create 17
 
 let make =
   Findlib.init () ;
@@ -28,7 +28,7 @@ let make =
           let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
           let out_ty = out_ty.oval_type in
           let ty = Type.of_outcometree env out_ty in
-          add idx (Type.Longident.of_list @@ info.path @ [ info.name ]) { ty }
+          add idx (LongIdent.of_list @@ info.path @ [ info.name ]) { ty }
       | _ -> ()) ;
     idx
 

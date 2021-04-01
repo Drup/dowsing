@@ -7,13 +7,13 @@
 module Pure = struct
   type t =
     | Var of Variable.t
-    | Constant of Type.Longident.t
+    | Constant of LongIdent.t
 
   type term =
     | Pure of t
     | Tuple of t array
 
-  let dummy = Constant (Longident.Lident "dummy")
+  let dummy = Constant (LongIdent.Lident "dummy")
   let var x = Var x
   let constant p = Constant p
   let tuple p = Tuple p
@@ -24,7 +24,7 @@ module Pure = struct
 
   let pp namefmt fmt = function
     | Var i -> Variable.pp namefmt fmt i
-    | Constant p -> Type.Longident.pp fmt p
+    | Constant p -> LongIdent.pp fmt p
   let pp_term namefmt fmt = function
     | Pure t -> pp namefmt fmt t
     | Tuple t ->
@@ -304,15 +304,15 @@ end = struct
   let make_mapping problems =
     let vars = Variable.HMap.create 4 in
     let nb_vars = ref 0 in
-    let consts = Type.Longident.HMap.create 4 in
+    let consts = LongIdent.HMap.create 4 in
     let nb_consts = ref 0 in
     let f = function
       | Pure.Var v ->
         if Variable.HMap.mem vars v then () else
           Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
       | Constant p ->
-        if Type.Longident.HMap.mem consts p then () else
-          Type.Longident.HMap.add consts p @@ CCRef.get_then_incr nb_consts
+        if LongIdent.HMap.mem consts p then () else
+          LongIdent.HMap.add consts p @@ CCRef.get_then_incr nb_consts
     in
     let aux {Pure. left ; right} =
       Array.iter f left ; Array.iter f right
@@ -323,13 +323,13 @@ end = struct
   let make problems : t =
     let vars, nb_vars, consts, nb_consts = make_mapping problems in
     let get_index = function
-      | Pure.Constant p -> Type.Longident.HMap.find consts p
+      | Pure.Constant p -> LongIdent.HMap.find consts p
       | Pure.Var v -> Variable.HMap.find vars v + nb_consts
     in
     let nb_atom = nb_vars + nb_consts in
 
     let assoc_pure = Array.make nb_atom Pure.dummy in
-    Type.Longident.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
+    LongIdent.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
     Variable.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
 
     let first_var = nb_consts in
@@ -513,7 +513,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : done_ty =
      when p is a type constructor.
   *)
   | Type.Constr (p1, args1), Type.Constr (p2, args2)
-    when Type.Longident.compare p1 p2 = 0 ->
+    when LongIdent.compare p1 p2 = 0 ->
     let stack = Stack.push_array2 args1 args2 stack in
     process_stack env stack
 
@@ -577,7 +577,7 @@ and variable_abstraction env stack t =
 
   (* Not a foreign subterm *)
   | Var i -> stack, Pure.var i
-  (* | Unit -> stack, Pure.constant Type.Longident.unit *)
+  (* | Unit -> stack, Pure.constant LongIdent.unit *)
   | Constr (p, [||]) -> stack, Pure.constant p
 
   (* It's a foreign subterm *)
