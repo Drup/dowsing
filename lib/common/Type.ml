@@ -369,13 +369,15 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
   | Ptyp_extension _ ->
       make_other parse_ty
 
-let wrap fn (env : Env.t) =
+let wrap fn (env : Env.t) ty =
+  (* This creates a local naming env, it must be defined here *)
+  let make_var = make_var env in
   let rec fn' x =
     x
-    |> fn fn' (make_var env)
+    |> fn fn' make_var
     |> Hashcons.hashcons env.hcons
   in
-  fn'
+  fn' ty
 
 let of_outcometree = wrap of_outcometree
 let of_parsetree = wrap of_parsetree
