@@ -20,6 +20,7 @@ let tests = [|
   "int -> int -> int -> int -> int", "int -> int * int -> int -> int" ;
   "int -> int -> int -> int -> int", "int * int * int -> int -> int" ;
   "'a -> 'b -> 'c", "'x -> 'y * 'z" ;
+  "'a -> 'b list -> int", "'x array * 'y list -> 'x";
 |]
 
 let () = Array.iter test tests
@@ -37,6 +38,8 @@ let tests = [|
   "int", "int * int" ;
   "int", "int list" ;
   "'a -> 'b", "'a * 'b" ;
+  "'a list * int", "'x array * int";
+  "'a t -> 'b list -> int", "'x array * 'y -> 'x";
 |]
 
 let () = Array.iter test tests
