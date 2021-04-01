@@ -571,7 +571,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
 and variable_abstraction_all env stack a =
   let r = ref stack in
   let f x =
-    let stack, x = variable_abstraction env stack x in
+    let stack, x = variable_abstraction env !r x in
     r := stack ;
     x
   in
