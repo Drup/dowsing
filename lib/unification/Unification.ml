@@ -757,7 +757,7 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
           (* Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
            *   (Type.pp namefmt) t1
            *   (Type.pp namefmt) t2 *)
-          raise @@ FailUnif (t1, t2)
+          ()
       in
       Iter.flat_map f solutions k
   in
