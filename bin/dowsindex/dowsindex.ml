@@ -1,16 +1,16 @@
 let timer = Timer.make ()
 
-let usage () =
-  CCFormat.printf "usage: dowsindex [unify | save | test] <args>...@." ;
-  exit 1
+let error ?(code = 1) ?msg () =
+  Option.iter (CCFormat.printf "error: %s@.") msg ;
+  exit code
 
-let error msg =
-  CCFormat.printf "error: %s@." msg ;
-  exit 1
+let usage ?code () =
+  CCFormat.printf "usage: dowsindex [ unify | save | test ] <arg>...@." ;
+  error () ?code
 
 let type_of_string env str =
   try Type.of_string env str
-  with Syntaxerr.Error _ -> error "syntax error"
+  with Syntaxerr.Error _ -> error () ~msg:"syntax error"
 
 let unify str1 str2 =
   let env = Type.Env.make () in
@@ -42,6 +42,8 @@ let () =
   if CCArray.length Sys.argv < 2 then
     usage () ;
   match Sys.argv.(1) with
+  | "help" ->
+      usage ~code:0 ()
   | "unify" ->
       if CCArray.length Sys.argv < 4 then
         usage () ;
