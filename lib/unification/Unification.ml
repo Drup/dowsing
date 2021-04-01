@@ -751,10 +751,9 @@ let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   in
   solving_loop env0
 
-let unifiable (env : Type.Env.t) pairs =
-  try
-    pairs
-    |> unify env
-    |> CCFun.negate Iter.is_empty
-  with
-  | FailUnif _ -> false
+let unify env pairs =
+  try unify env pairs
+  with FailUnif _ -> Iter.empty
+
+let unifiable env pairs =
+  not @@ Iter.is_empty @@ unify env pairs
