@@ -1,9 +1,7 @@
-include (Longident : sig
-  type t = Longident.t =
-    | Lident of string
-    | Ldot of t * string
-    | Lapply of t * t
-end)
+type t = Longident.t =
+  | Lident of string
+  | Ldot of t * string
+  | Lapply of t * t
 
 let compare = compare
 let equal = (=)
@@ -12,7 +10,7 @@ let unit = Lident "unit"
 
 let of_list strs =
   if strs = [] then
-    invalid_arg "Type.Longident.of_list"
+    invalid_arg "Type.LongIdent.of_list"
   else
     let root = Lident (CCList.hd strs) in
     let strs = CCList.tl strs in

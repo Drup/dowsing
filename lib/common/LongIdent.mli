@@ -1,9 +1,7 @@
-include module type of (Longident : sig
-  type t = Longident.t =
-    | Lident of string
-    | Ldot of t * string
-    | Lapply of t * t
-end)
+type t = Longident.t =
+  | Lident of string
+  | Ldot of t * string
+  | Lapply of t * t
 
 val compare : t -> t -> Int.t
 val equal : t -> t -> Bool.t
