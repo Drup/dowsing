@@ -13,44 +13,45 @@ module Pure = struct
     | Var of Var.t
     | Constant of T.Longident.t
 
-  type term =
-    | Pure of t
-    | Tuple of t array
-
   let dummy = Constant (Longident.Lident "dummy")
   let var x = Var x
   let constant p = Constant p
-  let tuple p = Tuple p
-  let pure p = Pure p
-
-  type problem = {left : t array ; right : t array }
-  let make_problem left right = {left;right}
 
   let pp namefmt fmt = function
     | Var i -> Var.pp namefmt fmt i
     | Constant p -> T.Longident.pp fmt p
-  let pp_term namefmt fmt = function
-    | Pure t -> pp namefmt fmt t
-    | Tuple t ->
-      Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (pp namefmt)) t
+
+  let as_typexpr = function
+    | Var v -> Type.Var v
+    | Constant c -> Type.Constr (c, [||])
+end
+
+module Tuple = struct
+
+  type t = Pure.t array
+
+  let make p = p
+
+  type problem = {left : t ; right : t }
+
+  let make_problem left right = {left;right}
+
+  let as_typexpr t : Type.t =
+    match t with
+    | [|x|] -> Pure.as_typexpr x
+    | t ->
+      Type.Tuple
+        (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.Set.of_iter)
+
+  let pp namefmt fmt t =
+      Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (Pure.pp namefmt)) t
 
   let pp_problem namefmt fmt {left ; right} =
     Fmt.pf fmt "%a = %a"
-      Fmt.(array ~sep:(unit ",") @@ pp namefmt) left
-      Fmt.(array ~sep:(unit ",") @@ pp namefmt) right
-
-  let as_typexpr p : Type.t =
-    let f = function
-      | Var v -> Type.Var v
-      | Constant c -> Type.Constr (c, [||])
-    in
-    match p with
-    | Pure p -> f p
-    | Tuple t ->
-      let a = t |> Iter.of_array |> Iter.map f |> Type.Set.of_iter in
-      Type.Tuple a
-end
-
+      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) left
+      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) right
+end 
+  
 module Arrow : sig
   type t = {
     args: Pure.t array;
@@ -170,11 +171,11 @@ module Env : sig
   val vars : t -> Type.t Var.Map.t
   val representative : t -> Var.t -> representative
 
-  val push_pure : t -> Pure.t array -> Pure.t array -> unit
+  val push_tuple : t -> Tuple.t -> Tuple.t -> unit
   val push_arrow : t -> Arrow.t -> Arrow.t -> unit
   val attach : t -> Var.t -> Type.t -> unit
 
-  val pop_pure : t -> Pure.problem option
+  val pop_tuple : t -> Tuple.problem option
   val pop_arrow : t -> Arrow.problem option
 
   val is_solved : t -> Unifier.t option
@@ -186,19 +187,19 @@ end = struct
   type t = {
     gen : Var.Gen.t ;
     mutable vars : Type.t Var.Map.t ;
-    mutable pure_problems : Pure.problem list ;
+    mutable tuples : Tuple.problem list ;
     mutable arrows : Arrow.problem list ;
   }
 
   let make ?(gen=Var.Gen.make 0) () = {
     gen ;
     vars = Var.Map.empty ;
-    pure_problems = [] ;
+    tuples = [] ;
     arrows = [] ;
   }
 
-  let copy { gen ; vars ; pure_problems ; arrows } =
-    { gen ; vars ; pure_problems ; arrows }
+  let copy { gen ; vars ; tuples ; arrows } =
+    { gen ; vars ; tuples ; arrows }
 
   let vars e = e.vars
   let gen e = Var.Gen.gen e.gen
@@ -206,15 +207,15 @@ end = struct
   let attach e v t =
     e.vars <- Var.Map.add v t e.vars
 
-  let push_pure e left right =
-    e.pure_problems <- Pure.make_problem left right :: e.pure_problems
+  let push_tuple e left right =
+    e.tuples <- Tuple.make_problem left right :: e.tuples
   let push_arrow e left right =
     e.arrows <- Arrow.make_problem left right :: e.arrows
 
-  let pop_pure e =
-    match e.pure_problems with
+  let pop_tuple e =
+    match e.tuples with
     | [] -> None
-    | pb :: tl -> e.pure_problems <- tl; Some pb
+    | pb :: tl -> e.tuples <- tl; Some pb
 
   let pop_arrow e =
     match e.arrows with
@@ -232,17 +233,17 @@ end = struct
     Fmt.pf fmt "@[%a = %a@]"  (Var.pp namefmt) x (Type.pp namefmt) t
 
   let is_solved env =
-    if CCList.is_empty env.pure_problems
+    if CCList.is_empty env.tuples
     && CCList.is_empty env.arrows
     then
       Some env.vars
     else
       None
 
-  let pp namefmt fmt { vars ; pure_problems ; arrows; gen=_ } =
+  let pp namefmt fmt { vars ; tuples ; arrows; gen=_ } =
     Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Pure:@ %a@]@,@[<v2>Arrows:@ %a@]"
       Fmt.(iter_bindings ~sep:cut Var.Map.iter @@ pp_binding namefmt) vars
-      Fmt.(list ~sep:cut @@ Pure.pp_problem namefmt) pure_problems
+      Fmt.(list ~sep:cut @@ Tuple.pp_problem namefmt) tuples
       Fmt.(list ~sep:cut @@ Arrow.pp_problem namefmt) arrows
 
 end
@@ -257,11 +258,11 @@ module System : sig
     system : int array array ;
   }
 
-  val pp : t Fmt.t
+  val[@warning "-32"] pp : t Fmt.t
 
-  val simplify_problem : Env.t -> Pure.problem -> Pure.problem
+  val simplify_problem : Env.t -> Tuple.problem -> Tuple.problem
 
-  val make : Pure.problem list -> t
+  val make : Tuple.problem list -> t
 
   type dioph_solution = private int array
 
@@ -283,7 +284,7 @@ end = struct
     Fmt.(vbox (array ~sep:cut @@ array ~sep:(unit ", ") int)) ppf system
 
   (* Replace variables by their representative/a constant *)
-  let simplify_problem env {Pure. left ; right} =
+  let simplify_problem env {Tuple. left ; right} =
     let f x = match x with
       | Pure.Constant _ -> x
       | Pure.Var v ->
@@ -292,9 +293,9 @@ end = struct
         | E (_,Constr (p,[||])) -> Constant p
         | E _ -> x
     in
-    {Pure. left = Array.map f left ; right = Array.map f right }
+    {Tuple. left = Array.map f left ; right = Array.map f right }
 
-  let add_problem get_index nb_atom {Pure. left; right} =
+  let add_problem get_index nb_atom {Tuple. left; right} =
     let equation = Array.make nb_atom 0 in
     let add dir r =
       let i = get_index r in
@@ -318,7 +319,7 @@ end = struct
         if T.Longident.HMap.mem consts p then () else
           T.Longident.HMap.add consts p @@ CCRef.get_then_incr nb_consts
     in
-    let aux {Pure. left ; right} =
+    let aux {Tuple. left ; right} =
       Array.iter f left ; Array.iter f right
     in
     List.iter aux problems ;
@@ -360,7 +361,7 @@ end
 
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
-  type t = Bitv.t * Pure.term Var.HMap.t
+  type t = Bitv.t * Tuple.t Var.HMap.t
   val[@warning "-32"] pp : string Variable.HMap.t -> t Fmt.t
 
   val get_solutions :
@@ -371,11 +372,11 @@ end = struct
   (** In the following, [i] is always the row/solution index and [j] is always
       the column/variable index. *)
 
-  type t = Bitv.t * Pure.term Var.HMap.t
+  type t = Bitv.t * Tuple.t Var.HMap.t
 
   let pp namefmt ppf (subset, unif : t) =
     let pp_pair ppf (v,t) =
-      Fmt.pf ppf "@[%a → %a@]" (Var.pp namefmt) v (Pure.pp_term namefmt) t in
+      Fmt.pf ppf "@[%a → %a@]" (Var.pp namefmt) v (Tuple.pp namefmt) t in
     Fmt.pf ppf "@[%a: { %a }@]"
       Bitv.pp subset
       (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
@@ -439,15 +440,13 @@ end = struct
     bitvars
 
   (* TO OPTIM *)
-  let make_term buffer l : Pure.term =
+  let make_term buffer l : Tuple.t =
     CCVector.clear buffer;
     let f (n, symb) =
       for _ = 1 to n do CCVector.push buffer symb done
     in
     List.iter f l;
-    match CCVector.to_array buffer with
-    | [|x|] -> Pure.pure x
-    | a -> Pure.tuple a
+    Tuple.make @@ CCVector.to_array buffer
 
   let unifier_of_subset
       vars solutions symbols subset : t =
@@ -538,7 +537,7 @@ and insert_rec env stack (t1 : T.t) (t2 : T.t) : done_ty =
   | Tuple s, Tuple t ->
     let stack, pure_s = variable_abstraction_all env stack s in
     let stack, pure_t = variable_abstraction_all env stack t in
-    Env.push_pure env pure_s pure_t ;
+    Env.push_tuple env pure_s pure_t ;
     process_stack env stack
 
   | Var v, t | t, Var v ->
@@ -575,7 +574,7 @@ and variable_abstraction env stack t =
   | T.Tuple ts ->
     let stack, all_vars = variable_abstraction_all env stack ts in
     let var = Env.gen env in
-    Env.push_pure env [|Pure.var var|] all_vars;
+    Env.push_tuple env [|Pure.var var|] all_vars;
     stack, Pure.var var
   (* Not a foreign subterm *)
   | Var i -> stack, Pure.var i
@@ -644,9 +643,9 @@ let insert env t u : unit =
 
 
 
-let process_pure_problems env : System.t =
+let process_tuples env : System.t =
   let rec iter acc =
-    match Env.pop_pure env with
+    match Env.pop_tuple env with
     | None -> acc
     | Some pb ->
       let pb = System.simplify_problem env pb in
@@ -656,17 +655,17 @@ let process_pure_problems env : System.t =
   let sys = System.make l in
   sys
 
-let rec process_arrow_problems env : System.t =
+let rec process_arrows env : System.t =
   match Env.pop_arrow env with
-  | None -> process_pure_problems env
+  | None -> process_tuples env
   | Some {Arrow. left; right } ->
-    Env.push_pure env [|left.ret|] [|right.ret|];
-    Env.push_pure env left.args right.args;
-    process_arrow_problems env
+    Env.push_tuple env [|left.ret|] [|right.ret|];
+    Env.push_tuple env left.args right.args;
+    process_arrows env
 
 (* Insertion of unifiers *)
 and insert_substitution env stack x p =
-  let ty = Pure.as_typexpr p in
+  let ty = Tuple.as_typexpr p in
   let Done = insert_var env stack x ty in
   ()
 let fork_with_solutions env ((_, map) : Dioph2Sol.t) =
@@ -725,7 +724,7 @@ let unify (env : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   let rec solving_loop env k =
     if not (occur_check env) then ()
     else
-      let system = process_arrow_problems env in
+      let system = process_arrows env in
       (* Fmt.epr "@[<v2>System:@,%a" System.pp system ; *)
       let solutions = solve_system namefmt env system in
       (* Fmt.epr "@]@." ; *)
