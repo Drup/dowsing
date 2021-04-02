@@ -1,3 +1,20 @@
+module Kind : sig
+
+  type t =
+    | Var
+    | Constr
+    | Arrow
+    | Tuple
+    | Other
+
+  val to_int : t -> Int.t
+  val of_int : Int.t -> t
+
+  val to_string : t -> String.t
+  val pp : t Fmt.t
+
+end
+
 module rec Base : sig
 
   type t =
@@ -6,6 +23,8 @@ module rec Base : sig
     | Arrow of Set.t * t
     | Tuple of Set.t
     | Other of Int.t
+
+  val kind : t -> Kind.t
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t
@@ -70,5 +89,24 @@ val of_string : Env.t -> String.t -> t
 val vars : t -> Variable.t Iter.t
 
 val head : t -> t
+
+(* several notions of size *)
+
+module Size : sig
+
+  type kind =
+    | VarCount
+    | NodeCount
+    | HeadKind
+
+  type t = private Int.t
+
+  val pp : kind -> t Fmt.t
+
+end
+
+val size : Size.kind -> t -> Size.t
+
+(* pretty printing *)
 
 val pp : String.t Variable.HMap.t -> t Fmt.t
