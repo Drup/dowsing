@@ -57,7 +57,7 @@ module Args = struct
     | Some (module Cmd) ->
         let name = prog_name ^ " " ^ Cmd.name in
         let options = Arg.align @@ options @ Cmd.options in
-        let usage = Printf.sprintf "usage: %s [<options>] %s" name Cmd.usage in
+        let usage = Printf.sprintf "usage: %s [<options>] %s\noptions:" name Cmd.usage in
         Sys.argv.(1) <- "error" ;
         Arg.current := 1 ;
         Arg.parse options Cmd.anon_fun usage ;
