@@ -153,7 +153,11 @@ let () = Args.add_cmd (module struct
   let main file_name str =
     let env = Type.Env.make () in
     let ty' = type_of_string env str in
-    let idx = Index.load file_name in
+    let idx =
+      try Index.load file_name
+      with Sys_error _ ->
+        error @@ Printf.sprintf "cannot open file '%s'" file_name
+    in
     Timer.start timer ;
     idx
     |> Index.iter (fun _ Index.{ ty } ->
