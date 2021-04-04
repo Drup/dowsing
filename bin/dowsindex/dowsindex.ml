@@ -131,11 +131,11 @@ let () = Args.add_cmd (module struct
 
 end)
 
-(* [test] command *)
+(* [stats] command *)
 
 let () = Args.add_cmd (module struct
 
-  let name = "test"
+  let name = "stats"
   let usage = "<file> <type>"
   let options = []
 
