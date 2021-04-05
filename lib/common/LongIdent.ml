@@ -14,7 +14,7 @@ let of_list strs =
   else
     let root = Lident (CCList.hd strs) in
     let strs = CCList.tl strs in
-    CCList.fold_left (fun id str -> Ldot (id, str)) root strs
+    CCList.fold_left (fun t str -> Ldot (t, str)) root strs
 
 let rec of_outcometree =
   let open Outcometree in
@@ -26,16 +26,16 @@ let rec of_outcometree =
     | Oide_ident { printed_name = str } ->
         Lident str
 
-let rec to_iter id k =
-  match id with
+let rec to_iter t k =
+  match t with
   | Lident str ->
       k str
-  | Ldot (id, str) ->
-      to_iter id k ;
+  | Ldot (t, str) ->
+      to_iter t k ;
       k str
-  | Lapply (id1, id2) ->
-      to_iter id1 k ;
-      to_iter id2 k
+  | Lapply (t1, t2) ->
+      to_iter t1 k ;
+      to_iter t2 k
 
 module Map = CCTrie.Make (struct
   type nonrec t = t

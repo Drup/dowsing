@@ -31,8 +31,8 @@ module Kind = struct
     | Tuple -> "tuple"
     | Other -> "other"
 
-  let pp fmt self =
-    Fmt.string fmt @@ to_string self
+  let pp fmt t =
+    Fmt.string fmt @@ to_string t
 
 end
 
@@ -68,31 +68,31 @@ end = struct
     | Tuple _ -> Kind.Tuple
     | Other _ -> Kind.Other
 
-  let to_int self =
-    Kind.to_int @@ kind self
+  let to_int t =
+    Kind.to_int @@ kind t
 
-  let rec compare lhs rhs =
-      if lhs == rhs then 0
+  let rec compare t1 t2 =
+      if t1 == t2 then 0
       else
         let (<?>) = CCOrd.(<?>) in
-        match lhs, rhs with
-        | Var lhs, Var rhs ->
-            Variable.compare lhs rhs
+        match t1, t2 with
+        | Var t1, Var t2 ->
+            Variable.compare t1 t2
         | Constr (lid1, args1), Constr (lid2, args2) ->
             LongIdent.compare lid1 lid2
             <?> (CCArray.compare compare, args1, args2)
         | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
             compare ret1 ret2
             <?> (Set.compare, arg1, arg2)
-        | Tuple lhs, Tuple rhs ->
-            Set.compare lhs rhs
-        | Other lhs, Other rhs ->
-            CCInt.compare lhs rhs
+        | Tuple t1, Tuple t2 ->
+            Set.compare t1 t2
+        | Other t1, Other t2 ->
+            CCInt.compare t1 t2
         | _ ->
-            CCInt.compare (to_int lhs) (to_int rhs)
+            CCInt.compare (to_int t1) (to_int t2)
 
-  let equal lhs rhs =
-    compare lhs rhs = 0
+  let equal t1 t2 =
+    compare t1 t2 = 0
 
 end
 
@@ -129,46 +129,46 @@ end = struct
   let sort = CCArray.sort Base.compare
 
   let of_list lst =
-    let arr = CCArray.of_list lst in
-    sort arr ;
-    arr
+    let t = CCArray.of_list lst in
+    sort t ;
+    t
 
   let of_iter it =
-    let arr = Iter.to_array it in
-    sort arr ;
-    arr
+    let t = Iter.to_array it in
+    sort t ;
+    t
 
   let to_iter = Iter.of_array
 
   let as_array = CCFun.id
 
   let empty = [||]
-  let is_empty set = set = [||]
+  let is_empty t = t = [||]
 
   let singleton elt = [| elt |]
 
-  let union lhs rhs =
-    let arr = CCArray.append lhs rhs in
-    sort arr ;
-    arr
+  let union t1 t2 =
+    let t = CCArray.append t1 t2 in
+    sort t ;
+    t
 
-  let add elt set =
-    union (singleton elt) set
+  let add elt t =
+    union (singleton elt) t
 
-  let fold fn set acc =
-    CCArray.fold_left (CCFun.flip fn) acc set
+  let fold fn t acc =
+    CCArray.fold_left (CCFun.flip fn) acc t
 
-  let map fn set =
-    of_iter @@ Iter.map fn @@ to_iter set
+  let map fn t =
+    of_iter @@ Iter.map fn @@ to_iter t
 
   let pp pp_elt fmt = function
     | [||] ->
         Fmt.string fmt "()"
     | [| elt |] ->
         pp_elt fmt elt
-    | arr ->
+    | t ->
         Fmt.pf fmt "(@ %a@ )"
-          Fmt.(array ~sep:(any ", ") pp_elt) arr
+          Fmt.(array ~sep:(any ", ") pp_elt) t
 
 end
 
@@ -199,12 +199,12 @@ module Hashcons = struct
     elt_cnt = 0 ;
   }
 
-  let hashcons self ty =
+  let hashcons t ty =
     let elt = { node = ty ; tag = -1 } in
-    let elt' = Set.merge self.tbl elt in
+    let elt' = Set.merge t.tbl elt in
     if elt == elt' then begin
-      elt.tag <- self.elt_cnt ;
-      self.elt_cnt <- self.elt_cnt + 1
+      elt.tag <- t.elt_cnt ;
+      t.elt_cnt <- t.elt_cnt + 1
     end ;
     elt'.node
 
@@ -238,13 +238,13 @@ let make_var (env : Env.t) =
         Var (Variable.Gen.gen env.var_gen)
     | Some name ->
         match StringHMap.get vars name with
-        | Some ty -> ty
+        | Some t -> t
         | None ->
             let var = Variable.Gen.gen env.var_gen in
-            let ty = Var var in
+            let t = Var var in
             Variable.HMap.add env.var_names var name ;
-            StringHMap.add vars name ty ;
-            ty
+            StringHMap.add vars name t ;
+            t
 
 let make_constr lid = function
   | [||] when lid = LongIdent.unit -> Tuple Set.empty
@@ -291,8 +291,8 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       |> Iter.map of_outcometree
       |> Set.of_iter
       |> make_tuple
-  | Otyp_alias (ty, _) ->
-      of_outcometree ty
+  | Otyp_alias (out_ty, _) ->
+      of_outcometree out_ty
   (* not handled *)
   | Otyp_object _
   | Otyp_class _
@@ -329,9 +329,9 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
       |> Iter.map of_parsetree
       |> Set.of_iter
       |> make_tuple
-  | Ptyp_alias (ty, _)
-  | Ptyp_poly (_, ty) ->
-      of_parsetree ty
+  | Ptyp_alias (parse_ty, _)
+  | Ptyp_poly (_, parse_ty) ->
+      of_parsetree parse_ty
   (* not handled *)
   | Ptyp_object _
   | Ptyp_class _
@@ -366,7 +366,7 @@ let of_string env str =
 
 let head = function
   | Arrow (_, ret) -> ret
-  | ty -> ty
+  | t -> t
 
 let rec substitute sub =
   let substitute t = substitute sub t in
@@ -387,18 +387,18 @@ let rec substitute sub =
     | Other _ ->
         t
 
-let rec vars ty k =
-  match ty with
+let rec vars t k =
+  match t with
   | Other _ ->
       ()
   | Var var ->
       k var
-  | Constr (_, arr) ->
-      CCArray.iter (fun ty -> vars ty k) arr
-  | Tuple set ->
-      Iter.flat_map vars (Set.to_iter set) k
-  | Arrow (set, ret) ->
-      Iter.flat_map vars (Set.to_iter set) k ;
+  | Constr (_, args) ->
+      CCArray.iter (fun t -> vars t k) args
+  | Tuple elts ->
+      Iter.flat_map vars (Set.to_iter elts) k
+  | Arrow (args, ret) ->
+      Iter.flat_map vars (Set.to_iter args) k ;
       vars ret k
 
 (* several notions of size *)
@@ -412,17 +412,17 @@ module Size = struct
 
   type t = Int.t
 
-  let pp kind fmt self =
+  let pp kind fmt t =
     match kind with
-    | VarCount | NodeCount -> Fmt.int fmt self
-    | HeadKind -> Kind.(pp fmt @@ of_int self)
+    | VarCount | NodeCount -> Fmt.int fmt t
+    | HeadKind -> Kind.(pp fmt @@ of_int t)
 
   module Map = CCMap.Make (CCInt)
   module HMap = CCHashtbl.Make (CCInt)
 
 end
 
-let size sz_kind ty =
+let size sz_kind t =
   match sz_kind with
   | Size.VarCount ->
       let vars = ref Variable.Set.empty in
@@ -431,7 +431,7 @@ let size sz_kind ty =
             if Variable.Set.mem var ! vars then 0
             else (vars := Variable.Set.add var ! vars ; 1)
         | Constr (_, args) ->
-            CCArray.fold (fun acc ty -> acc + aux ty) 0 args
+            CCArray.fold (fun acc t -> acc + aux t) 0 args
         | Arrow (args, ret) ->
             aux_set args + aux ret
         | Tuple elts ->
@@ -439,24 +439,24 @@ let size sz_kind ty =
         | Other _ ->
             0
       and aux_set set =
-        Set.fold (fun ty acc -> aux ty + acc) set 0
-      in aux ty
+        Set.fold (fun t acc -> aux t + acc) set 0
+      in aux t
   | Size.NodeCount ->
       let rec aux = function
         | Var _ | Other _ ->
             1
         | Constr (_, args) ->
-            1 + CCArray.fold (fun acc ty -> acc + aux ty) 0 args
+            1 + CCArray.fold (fun acc t -> acc + aux t) 0 args
         | Arrow (args, ret) ->
             1 + aux_set args + aux ret
         | Tuple elts ->
             1 + aux_set elts
       and aux_set set =
-        Set.fold (fun ty acc -> aux ty + acc) set 0
+        Set.fold (fun t acc -> aux t + acc) set 0
       in
-      aux ty
+      aux t
   | Size.HeadKind ->
-      Kind.to_int @@ kind @@ head ty
+      Kind.to_int @@ kind @@ head t
 
 (* pretty printing *)
 

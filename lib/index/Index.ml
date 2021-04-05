@@ -15,7 +15,7 @@ let make () = LIdMap.create 17
 
 let make pkg_dirs =
   let env = Type.Env.make () in
-  let idx = make () in
+  let t = make () in
   pkg_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
@@ -26,12 +26,12 @@ let make pkg_dirs =
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let out_ty = out_ty.oval_type in
         let ty = Type.of_outcometree env out_ty in
-        add idx (LongIdent.of_list @@ info.path @ [ info.name ]) { ty }
+        add t (LongIdent.of_list @@ info.path @ [ info.name ]) { ty }
     | _ -> ()) ;
-  idx
+  t
 
 let load file_name =
   CCIO.with_in file_name Marshal.from_channel
 
-let save self file_name =
-  CCIO.with_out file_name @@ fun out -> Marshal.to_channel out self []
+let save t file_name =
+  CCIO.with_out file_name @@ fun out -> Marshal.to_channel out t []

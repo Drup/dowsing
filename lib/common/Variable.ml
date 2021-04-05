@@ -11,14 +11,14 @@ module Gen = struct
 
   let make = ref
 
-  let gen self =
-    let var = ! self in
-    incr self ;
+  let gen t =
+    let var = ! t in
+    incr t ;
     var
 
 end
 
-let pp names fmt self =
-  match HMap.get names self with
+let pp names fmt t =
+  match HMap.get names t with
   | Some name -> Fmt.pf fmt "'%s" name
-  | None -> Fmt.pf fmt "\\%i" self
+  | None -> Fmt.pf fmt "\\%i" t

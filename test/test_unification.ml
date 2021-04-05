@@ -53,4 +53,4 @@ let () = add_tests "Unification.unifiable" tests
 
 (* do test *)
 
-let () = Alcotest.run "common" ! all_tests
+let () = Alcotest.run "unification" ! all_tests
