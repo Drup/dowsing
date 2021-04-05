@@ -2,12 +2,13 @@ let prog_name = "dowsindex"
 
 let timer = Timer.make ()
 
-let exit ?(code = 0) () =
+let exit ?(code = 0) ?(out = stdout) ?msg () =
+  CCOpt.iter (Printf.fprintf out "%s\n") msg ;
   exit code
 
 let error msg =
-  Printf.eprintf "error: %s\n" msg ;
-  exit () ~code:1
+  let msg = Printf.sprintf "error: %s" msg in
+  exit () ~code:1 ~out:stderr ~msg
 
 let type_of_string env str =
   try Type.of_string env str
@@ -42,15 +43,17 @@ module Args = struct
     let error usage msg =
       error @@ msg ^ ".\n" ^ usage
     in
-    let error' =
+    let usage =
       cmds
       |> StringHMap.keys_list
       |> CCString.concat " | "
       |> Printf.sprintf "usage: %s [ %s ] <arguments>" prog_name
-      |> error
     in
+    let error' = error usage in
     if CCArray.length Sys.argv < 2 then
       error' "unspecified subcommand" ;
+    if CCArray.mem Sys.argv.(1) [| "-help" ; "--help" |] then
+      exit () ~msg:usage ;
     match StringHMap.get cmds Sys.argv.(1) with
     | None ->
         error' "illegal subcommand"
