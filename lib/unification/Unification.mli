@@ -13,6 +13,9 @@ module Unifier : sig
 
   type t
 
+  val size : t -> int
+  val compare : t -> t -> int
+
   val pp : String.t Variable.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
 
 end

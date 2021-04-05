@@ -77,10 +77,14 @@ let () = Args.add_cmd (module struct
 
   let name = "unify"
   let usage = "<type1> <type2>"
-  let options = []
 
   let ty1 = ref None
   let ty2 = ref None
+  let all_unifs = ref false
+
+  let options = [
+    "-a", Arg.Set all_unifs, "\tReport all unifiers" ;
+  ]
 
   let anon_fun arg =
     if CCOpt.is_none ! ty1 then
@@ -90,13 +94,22 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main str1 str2 =
+  let main all_unifs str1 str2 =
     let env = Type.Env.make () in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
     CCFormat.printf "@[<2>t1:@ %a@]@." (Type.pp env.var_names) ty1 ;
     CCFormat.printf "@[<2>t2:@ %a@]@." (Type.pp env.var_names) ty2 ;
-    let unifs = Iter.to_list @@ Unification.unifiers env [ ty1, ty2 ] in
+    let unifs =
+      [ ty1, ty2 ]
+      |> Unification.unifiers env
+      |> Iter.sort ~cmp:Unification.Unifier.compare
+      |> Iter.to_list
+    in
+    let unifs =
+      if all_unifs then unifs
+      else CCList.cons_maybe (CCList.head_opt unifs) []
+    in
     if not @@ CCList.is_empty unifs then
       CCFormat.printf "@[<v2>Unifiers@ %a@]@."
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs
@@ -104,7 +117,7 @@ let () = Args.add_cmd (module struct
   let main () =
     if CCOpt.(is_none ! ty1 || is_none ! ty2) then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! ty1) (Option.get ! ty2)
+    main ! all_unifs (Option.get ! ty1) (Option.get ! ty2)
 
 end)
 

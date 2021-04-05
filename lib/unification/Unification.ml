@@ -151,8 +151,11 @@ module Unifier : sig
 
   type t = Type.t Variable.Map.t
 
-  val size : t -> int
   val simplify : string Variable.HMap.t -> t -> t
+
+  val size : t -> int
+  val compare : t -> t -> int
+  val lt : t -> t -> bool
 
   val pp : string Variable.HMap.t -> t Fmt.t
 
@@ -167,6 +170,12 @@ end = struct
     Variable.Map.map (Type.substitute anonymous_vars) named_vars
 
   let size = Variable.Map.cardinal
+
+  let compare t1 t2 =
+    compare (size t1) (size t2)
+
+  let lt t1 t2 =
+    compare t1 t2 < 0
 
   let pp namefmt ppf (unif : t) =
     let pp_pair ppf (v,t) =
@@ -778,10 +787,7 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   | FailUnif _ -> Iter.empty
 
 let unify (env : Type.Env.t) pairs =
-  let is_smaller t1 t2 = Unifier.size t1 < Unifier.size t2 in
-  unifiers env pairs
-  |> Iter.min ~lt:is_smaller
+  Iter.min ~lt:Unifier.lt @@ unifiers env pairs
 
 let unifiable (env : Type.Env.t) pairs =
-  unifiers env pairs
-  |> CCFun.negate Iter.is_empty
+  not @@ Iter.is_empty @@ unifiers env pairs
