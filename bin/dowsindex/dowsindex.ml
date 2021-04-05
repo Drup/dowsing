@@ -60,7 +60,7 @@ module Args = struct
     | Some (module Cmd) ->
         let name = prog_name ^ " " ^ Cmd.name in
         let options = Arg.align @@ options @ Cmd.options in
-        let usage = Printf.sprintf "usage: %s [<options>] %s\noptions:" name Cmd.usage in
+        let usage = Printf.sprintf "usage: %s [<option>...] %s\noptions:" name Cmd.usage in
         Sys.argv.(1) <- "error" ;
         Arg.current := 1 ;
         Arg.parse options Cmd.anon_fun usage ;
@@ -113,24 +113,42 @@ end)
 let () = Args.add_cmd (module struct
 
   let name = "save"
-  let usage = "<file>"
+  let usage = "<file> <package>..."
   let options = []
 
   let file_name = ref None
+  let pkgs = ref []
 
   let anon_fun arg =
     if CCOpt.is_none ! file_name then
       file_name := Some arg
     else
-      raise @@ Arg.Bad "too many arguments"
+      pkgs := ! pkgs @ [ arg ]
 
-  let main file_name =
-    Index.(save @@ make ()) file_name
+  let main file_name pkgs =
+    Findlib.init () ;
+    let pkgs =
+      if pkgs = [] then
+        Findlib.list_packages' ()
+      else pkgs
+    in
+    let pkg_dirs =
+      try
+        pkgs
+        |> Findlib.package_deep_ancestors []
+        |> CCList.map Findlib.package_directory
+        (* we need this because [Findlib.list_packages'] is faulty: it gives some unknown packages *)
+        |> CCList.filter Sys.file_exists
+      with
+      | Findlib.No_such_package (pkg, _) ->
+          error @@ Printf.sprintf "cannot find package '%s'." pkg
+    in
+    Index.(save @@ make pkg_dirs) file_name
 
   let main () =
     if CCOpt.is_none ! file_name then
       raise @@ Arg.Bad "too few arguments" ;
-    main @@ Option.get ! file_name
+    main (Option.get ! file_name) ! pkgs
 
 end)
 
@@ -170,7 +188,7 @@ let () = Args.add_cmd (module struct
     let idx =
       try Index.load file_name
       with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'" file_name
+        error @@ Printf.sprintf "cannot open file '%s'." file_name
     in
     let tbl = ref Type.Size.Map.empty in
     idx |> Index.iter (fun _ Index.{ ty } ->

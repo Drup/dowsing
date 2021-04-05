@@ -6,7 +6,7 @@ type info = {
 
 type t
 
-val make : ?env:Type.Env.t -> Unit.t -> t
+val make : String.t List.t -> t
 val get : t -> key -> info Option.t
 val add : t -> key -> info -> Unit.t
 val iter : (key -> info -> Unit.t) -> t -> Unit.t
