@@ -12,7 +12,7 @@ let error msg =
 let type_of_string env str =
   try Type.of_string env str
   with Syntaxerr.Error _ ->
-    error "syntax error"
+    error "syntax error in type argument."
 
 (* command line arguments *)
 
@@ -99,7 +99,7 @@ let () = Args.add_cmd (module struct
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs
 
   let main () =
-    if Option.(is_none ! ty1 || is_none ! ty2) then
+    if CCOpt.(is_none ! ty1 || is_none ! ty2) then
       raise @@ Arg.Bad "too few arguments" ;
     main (Option.get ! ty1) (Option.get ! ty2)
 
@@ -137,10 +137,21 @@ let () = Args.add_cmd (module struct
 
   let name = "stats"
   let usage = "<file> <type>"
-  let options = []
 
   let file_name = ref None
   let ty = ref None
+
+  let sz_kind = ref Type.Size.VarCount
+  let sz_kind_syms = [ "vars" ; "nodes" ; "head" ]
+  let set_sz_kind = function
+    | "vars" -> sz_kind := VarCount
+    | "nodes" -> sz_kind := NodeCount
+    | "head" -> sz_kind := HeadKind
+    | _ -> assert false
+
+  let options = [
+    "--size", Arg.Symbol (sz_kind_syms, set_sz_kind), "\tSet type size kind" ;
+  ]
 
   let anon_fun arg =
     if CCOpt.is_none ! file_name then
@@ -150,7 +161,7 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main file_name str =
+  let main sz_kind file_name str =
     let env = Type.Env.make () in
     let ty' = type_of_string env str in
     let idx =
@@ -158,17 +169,57 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'" file_name
     in
-    Timer.start timer ;
-    idx
-    |> Index.iter (fun _ Index.{ ty } ->
-      ignore @@ Unification.unifiable env [ ty, ty' ]) ;
-    Timer.stop timer ;
-    CCFormat.printf "exhaustive lookup: %f@." @@ Timer.get timer
+    let tbl = ref Type.Size.Map.empty in
+    idx |> Index.iter (fun _ Index.{ ty } ->
+      Timer.start timer ;
+      ignore @@ Unification.unifiable env [ ty, ty' ] ;
+      Timer.stop timer ;
+      let time = Timer.get timer in
+      let sz = Type.size sz_kind ty in
+      tbl := ! tbl |> Type.Size.Map.update sz @@ function
+        | None -> Some (time, 1)
+        | Some (time', cnt) -> Some (time +. time', cnt + 1)
+    ) ;
+    let col_names = [| "size" ; "avg. unif." ; "# unif." |] in
+    let sep = 3 in
+    let col_cnt = CCArray.length col_names in
+    let col_widths = CCArray.map CCString.length col_names in
+    let tbl =
+      ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
+        let row = [|
+          CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
+          Printf.sprintf "%g" @@ time /. CCFloat.of_int cnt ;
+          CCInt.to_string cnt ;
+        |] in
+        for i = 0 to col_cnt - 1 do
+          col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
+        done ;
+        row
+      )
+    in
+    for i = 0 to col_cnt - 2 do
+      col_widths.(i) <- col_widths.(i) + sep
+    done ;
+    CCFormat.open_tbox () ;
+    for i = 0 to col_cnt - 1 do
+      CCFormat.set_tab () ;
+      CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
+    done ;
+    CCFormat.print_tab () ;
+    CCFormat.print_string @@ CCString.make (CCArray.fold (+) 0 col_widths) '-' ;
+    Type.Size.Map.values tbl (fun row ->
+      for i = 0 to col_cnt - 1 do
+        CCFormat.print_tab () ;
+        CCFormat.print_string row.(i)
+      done
+    ) ;
+    CCFormat.close_tbox () ;
+    CCFormat.print_newline ()
 
   let main () =
     if CCOpt.(is_none ! file_name || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! file_name) (Option.get ! ty)
+    main ! sz_kind (Option.get ! file_name) (Option.get ! ty)
 
 end)
 

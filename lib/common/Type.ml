@@ -394,6 +394,9 @@ module Size = struct
     | VarCount | NodeCount -> Fmt.int fmt self
     | HeadKind -> Kind.(pp fmt @@ of_int self)
 
+  module Map = CCMap.Make (CCInt)
+  module HMap = CCHashtbl.Make (CCInt)
+
 end
 
 let size sz_kind ty =

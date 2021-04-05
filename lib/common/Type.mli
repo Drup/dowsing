@@ -11,6 +11,7 @@ module Kind : sig
   val of_int : Int.t -> t
 
   val to_string : t -> String.t
+
   val pp : t Fmt.t
 
 end
@@ -102,6 +103,9 @@ module Size : sig
   type t = private Int.t
 
   val pp : kind -> t Fmt.t
+
+  module Map : CCMap.S with type key = t
+  module HMap : CCHashtbl.S with type key = t
 
 end
 

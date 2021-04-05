@@ -756,4 +756,5 @@ let unify env pairs =
   with FailUnif _ -> Iter.empty
 
 let unifiable env pairs =
-  not @@ Iter.is_empty @@ unify env pairs
+  try not @@ Iter.is_empty @@ unify env pairs
+  with FailUnif _ -> false
