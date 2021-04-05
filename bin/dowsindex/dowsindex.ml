@@ -96,7 +96,7 @@ let () = Args.add_cmd (module struct
     let ty2 = type_of_string env str2 in
     CCFormat.printf "@[<2>t1:@ %a@]@." (Type.pp env.var_names) ty1 ;
     CCFormat.printf "@[<2>t2:@ %a@]@." (Type.pp env.var_names) ty2 ;
-    let unifs = Iter.to_list @@ Unification.unify env [ ty1, ty2 ] in
+    let unifs = Iter.to_list @@ Unification.unifiers env [ ty1, ty2 ] in
     if not @@ CCList.is_empty unifs then
       CCFormat.printf "@[<v2>Unifiers@ %a@]@."
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs

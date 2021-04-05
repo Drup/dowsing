@@ -39,17 +39,18 @@ and Set : sig
 
   val compare : t -> t -> Int.t
 
+  val of_list : elt List.t -> t
+  val of_iter : elt Iter.t -> t
+  val to_iter : t -> elt Iter.t
+  val as_array : t -> elt Array.t
+
   val empty : t
   val is_empty : t -> Bool.t
   val singleton : elt -> t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-
-  val of_list : elt List.t -> t
-  val of_iter : elt Iter.t -> t
-  val to_iter : t -> elt Iter.t
-  val as_array : t -> elt Array.t
+  val map : (elt -> elt) -> t -> t
 
   val pp : elt Fmt.t -> t Fmt.t
 
@@ -87,9 +88,11 @@ val of_string : Env.t -> String.t -> t
 
 (* utility functions *)
 
-val vars : t -> Variable.t Iter.t
-
 val head : t -> t
+
+val substitute : t Variable.Map.t -> t -> t
+
+val vars : t -> Variable.t Iter.t
 
 (* several notions of size *)
 

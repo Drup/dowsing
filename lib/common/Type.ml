@@ -105,17 +105,18 @@ and Set : sig
 
   val compare : t -> t -> Int.t
 
+  val of_list : elt List.t -> t
+  val of_iter : elt Iter.t -> t
+  val to_iter : t -> elt Iter.t
+  val as_array : t -> elt Array.t
+
   val empty : t
   val is_empty : t -> Bool.t
   val singleton : elt -> t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-
-  val of_list : elt List.t -> t
-  val of_iter : elt Iter.t -> t
-  val to_iter : t -> elt Iter.t
-  val as_array : t -> elt Array.t
+  val map : (elt -> elt) -> t -> t
 
   val pp : elt Fmt.t -> t Fmt.t
 
@@ -126,6 +127,20 @@ end = struct
 
   let compare = CCArray.compare Base.compare
   let sort = CCArray.sort Base.compare
+
+  let of_list lst =
+    let arr = CCArray.of_list lst in
+    sort arr ;
+    arr
+
+  let of_iter it =
+    let arr = Iter.to_array it in
+    sort arr ;
+    arr
+
+  let to_iter = Iter.of_array
+
+  let as_array = CCFun.id
 
   let empty = [||]
   let is_empty set = set = [||]
@@ -143,19 +158,8 @@ end = struct
   let fold fn set acc =
     CCArray.fold_left (CCFun.flip fn) acc set
 
-  let of_list lst =
-    let arr = CCArray.of_list lst in
-    sort arr ;
-    arr
-
-  let of_iter it =
-    let arr = Iter.to_array it in
-    sort arr ;
-    arr
-
-  let to_iter = Iter.of_array
-
-  let as_array = CCFun.id
+  let map fn set =
+    of_iter @@ Iter.map fn @@ to_iter set
 
   let pp pp_elt fmt = function
     | [||] ->
@@ -338,8 +342,8 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
 
 let wrap fn (env : Env.t) x =
   let make_var = make_var env in
-  let rec fn' x' =
-    x'
+  let rec fn' x =
+    x
     |> fn fn' make_var
     |> Hashcons.hashcons env.hcons
   in
@@ -360,6 +364,29 @@ let of_string env str =
 
 (* utility functions *)
 
+let head = function
+  | Arrow (_, ret) -> ret
+  | ty -> ty
+
+let rec substitute sub =
+  let substitute t = substitute sub t in
+  let substitute_set = Set.map substitute in
+  fun t ->
+    match t with
+    | Var var ->
+        begin match Variable.Map.find_opt var sub with
+          | None -> t
+          | Some t -> t
+        end
+    | Constr (lid, args) ->
+        make_constr lid @@ CCArray.map substitute args
+    | Arrow (args, ret) ->
+        make_arrow (make_tuple @@ substitute_set args) (substitute ret)
+    | Tuple elts ->
+        make_tuple @@ substitute_set elts
+    | Other _ ->
+        t
+
 let rec vars ty k =
   match ty with
   | Other _ ->
@@ -373,10 +400,6 @@ let rec vars ty k =
   | Arrow (set, ret) ->
       Iter.flat_map vars (Set.to_iter set) k ;
       vars ret k
-
-let head = function
-  | Arrow (_, ret) -> ret
-  | ty -> ty
 
 (* several notions of size *)
 
