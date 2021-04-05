@@ -46,8 +46,8 @@ module Args = struct
     let usage =
       cmds
       |> StringHMap.keys_list
-      |> CCString.concat " | "
-      |> Printf.sprintf "usage: %s [ %s ] <arguments>" prog_name
+      |> CCString.concat "|"
+      |> Printf.sprintf "usage: %s {%s} <argument>..." prog_name
     in
     let error' = error usage in
     if CCArray.length Sys.argv < 2 then
