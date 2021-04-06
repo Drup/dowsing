@@ -215,15 +215,16 @@ let () = Args.add_cmd (module struct
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
-    let col_names = [| "size" ; "avg. unif." ; "# unif." |] in
-    let sep = 3 in
+    let col_names = [| "size" ; "total time (ms)" ; "avg. time. (μs)" ; "# unif." |] in
+    let sep = 4 in
     let col_cnt = CCArray.length col_names in
     let col_widths = CCArray.map CCString.length col_names in
     let tbl =
       ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
         let row = [|
           CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
-          Printf.sprintf "%g" @@ time /. CCFloat.of_int cnt ;
+          Printf.sprintf "%g" @@ 1e3 *. time ;
+          Printf.sprintf "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
           CCInt.to_string cnt ;
         |] in
         for i = 0 to col_cnt - 1 do
