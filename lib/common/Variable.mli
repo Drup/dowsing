@@ -1,5 +1,4 @@
-type t = private Int.t
-
+type t [@@ocaml.immediate]
 val equal : t -> t -> Bool.t
 val compare : t -> t -> Int.t
 
