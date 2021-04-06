@@ -64,10 +64,11 @@ module Args = struct
         Sys.argv.(1) <- "error" ;
         Arg.current := 1 ;
         Arg.parse options Cmd.anon_fun usage ;
-        try Cmd.main ()
-        with Arg.Bad msg ->
-          let usage = CCString.rtrim @@ Arg.usage_string options usage in
-          error usage msg
+        fun () ->
+          try Cmd.main ()
+          with Arg.Bad msg ->
+            let usage = CCString.rtrim @@ Arg.usage_string options usage in
+            error usage msg
 
 end
 
@@ -98,8 +99,8 @@ let () = Args.add_cmd (module struct
     let env = Type.Env.make () in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
-    CCFormat.printf "@[<2>t1:@ %a@]@." (Type.pp env.var_names) ty1 ;
-    CCFormat.printf "@[<2>t2:@ %a@]@." (Type.pp env.var_names) ty2 ;
+    Logs.debug @@ fun m -> m "@[<2>t1:@ %a@]" (Type.pp env.var_names) ty1 ;
+    Logs.debug @@ fun m -> m "@[<2>t2:@ %a@]" (Type.pp env.var_names) ty2 ;
     let unifs =
       [ ty1, ty2 ]
       |> Unification.unifiers env
@@ -111,7 +112,7 @@ let () = Args.add_cmd (module struct
       else CCList.cons_maybe (CCList.head_opt unifs) []
     in
     if not @@ CCList.is_empty unifs then
-      CCFormat.printf "@[<v2>Unifiers@ %a@]@."
+      Logs.app @@ fun m -> m "@[<v2>Unifiers@ %a@]"
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs
 
   let main () =
@@ -260,5 +261,7 @@ end)
 (* main *)
 
 let () =
-  CCFormat.set_margin 100 ;
-  Args.parse ()
+  let main = Args.parse () in
+  Logs.(set_reporter @@ format_reporter ()) ;
+  Logs.set_level @@ Some (if ! Args.debug then Logs.Debug else Logs.Info) ;
+  main ()

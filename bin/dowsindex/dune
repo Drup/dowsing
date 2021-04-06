@@ -1,5 +1,5 @@
 (executable
   (name dowsindex)
   (public_name dowsindex)
-  (libraries findlib utils common index unification)
+  (libraries findlib logs utils common index unification)
   (flags (:standard -open Utils -open Common -open Index -open Unification)))

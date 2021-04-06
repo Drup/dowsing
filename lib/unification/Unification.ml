@@ -4,6 +4,9 @@
     Competing for the AC-unification Race by Boudet (1993)
 *)
 
+(* module Logs = (val Logs.(src_log @@ Src.create __MODULE__)) *)
+(* let log = Logs.debug *)
+
 module Pure = struct
 
   type t =
@@ -755,25 +758,25 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
     if not (occur_check env) then ()
     else
       let system = process_arrows env in
-      (* Fmt.epr "@[<v2>System:@,%a" System.pp system ; *)
+      (* log @@ fun m -> m "@[<v2>System:@,%a" System.pp system ; *)
       let solutions = solve_system env system in
-      (* Fmt.epr "@]@." ; *)
+      (* log @@ fun m -> m "@]@." ; *)
       let f sol k =
-        (* Fmt.epr "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol ; *)
+        (* log @@ fun m -> m "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol ; *)
         try
           let env = fork_with_solutions env sol in
           match Env.is_solved env with
           | Some map ->
-            (* Fmt.epr "@[<v2>Solved env:@,%a@]@." Env.pp env ; *)
+            (* log @@ fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env ; *)
             k map
           | None ->
-            (* Fmt.epr "@[<v2>New env:@,%a@]@." Env.pp env ; *)
+            (* log @@ fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env ; *)
             solving_loop env k
         with
         | FailUnif (_t1, _t2) ->
-          (* Fmt.epr "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-           *   (Type.pp namefmt) t1
-           *   (Type.pp namefmt) t2 *)
+          (* log @@ fun m -> m "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@." *)
+          (*   (Type.pp tyenv.var_names) t1 *)
+          (*   (Type.pp tyenv.var_names) t2 *)
           ()
       in
       Iter.flat_map f solutions k
@@ -781,7 +784,7 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
   let env0 = Env.make tyenv in
   try
     List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-    (* Fmt.epr "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
+    (* log @@ fun m -> m "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
     solving_loop env0
   with
   | FailUnif _ -> Iter.empty

@@ -1,4 +1,4 @@
 (library
   (name unification)
-  (libraries common)
+  (libraries logs common)
   (flags (:standard -open Common)))
