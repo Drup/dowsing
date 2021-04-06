@@ -504,25 +504,26 @@ let var_count t =
   Variable.Set.cardinal @@ Variable.Set.of_iter @@ vars t
 let all_var_count t =
   Iter.length @@ vars t
+let node_count =
+  let rec aux = function
+    | Var _ | Other _ ->
+      1
+    | Constr (_, args) ->
+      1 + CCArray.fold (fun acc t -> acc + aux t) 0 args
+    | Arrow (args, ret) ->
+      1 + aux_set args + aux ret
+    | Tuple elts ->
+      1 + aux_set elts
+  and aux_set set =
+    MSet.fold (fun t acc -> aux t + acc) set 0
+  in
+  aux
 
 let rec size (sz_kind : Size.kind) t =
   match sz_kind with
   | VarCount -> var_count t
   | AllVarCount -> all_var_count t
-  | NodeCount ->
-      let rec aux = function
-        | Var _ | Other _ ->
-            1
-        | Constr (_, args) ->
-            1 + CCArray.fold (fun acc t -> acc + aux t) 0 args
-        | Arrow (args, ret) ->
-            1 + aux_set args + aux ret
-        | Tuple elts ->
-            1 + aux_set elts
-      and aux_set set =
-        MSet.fold (fun t acc -> aux t + acc) set 0
-      in
-      aux t
+  | NodeCount -> node_count t
   | HeadKind ->
       Kind.to_int @@ kind @@ head t
   | TailSpineVarCount ->
