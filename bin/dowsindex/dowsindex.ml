@@ -99,8 +99,8 @@ let () = Args.add_cmd (module struct
     let env = Type.Env.make () in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
-    Logs.debug @@ fun m -> m "@[<2>t1:@ %a@]" (Type.pp env.var_names) ty1 ;
-    Logs.debug @@ fun m -> m "@[<2>t2:@ %a@]" (Type.pp env.var_names) ty2 ;
+    Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty1 ;
+    Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty2 ;
     let unifs =
       [ ty1, ty2 ]
       |> Unification.unifiers env
@@ -112,7 +112,7 @@ let () = Args.add_cmd (module struct
       else CCList.cons_maybe (CCList.head_opt unifs) []
     in
     if not @@ CCList.is_empty unifs then
-      Logs.app @@ fun m -> m "@[<v2>Unifiers@ %a@]"
+      Fmt.pr "@[<v2>Unifiers@ %a@]"
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs
 
   let main () =
@@ -198,22 +198,28 @@ let () = Args.add_cmd (module struct
 
   let main sz_kind file_name str =
     let env = Type.Env.make () in
-    let ty' = type_of_string env str in
+    let ty = type_of_string env str in
     let idx =
       try Index.load file_name
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file_name
     in
     let tbl = ref Type.Size.Map.empty in
-    idx |> Index.iter (fun _ Index.{ ty } ->
-      Timer.start timer ;
-      ignore @@ Unification.unifiable env [ ty, ty' ] ;
-      Timer.stop timer ;
-      let time = Timer.get timer in
-      let sz = Type.size sz_kind ty in
-      tbl := ! tbl |> Type.Size.Map.update sz @@ function
-        | None -> Some (time, 1)
-        | Some (time', cnt) -> Some (time +. time', cnt + 1)
+    idx |> Index.iter (fun _ Index.{ ty = ty' } ->
+      try
+        Timer.start timer ;
+        ignore @@ Unification.unifiable env [ ty, ty' ] ;
+        Timer.stop timer ;
+        let time = Timer.get timer in
+        let sz = Type.size sz_kind ty' in
+        tbl := ! tbl |> Type.Size.Map.update sz @@ function
+          | None -> Some (time, 1)
+          | Some (time', cnt) -> Some (time +. time', cnt + 1)
+      with
+      | Assert_failure (file, line, col) ->
+          Logs.debug @@ fun m -> m "assertion failure in '%s':%d:%d" file line col ;
+          Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty ;
+          Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty'
     ) ;
     let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
     let sep = 4 in
