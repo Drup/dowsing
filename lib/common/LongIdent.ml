@@ -1,6 +1,6 @@
 type t = Longident.t =
-  | Lident of string
-  | Ldot of t * string
+  | Lident of String.t
+  | Ldot of t * String.t
   | Lapply of t * t
 
 let compare = compare

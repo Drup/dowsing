@@ -215,7 +215,7 @@ let () = Args.add_cmd (module struct
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
-    let col_names = [| "size" ; "total time (ms)" ; "avg. time. (μs)" ; "# unif." |] in
+    let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
     let sep = 4 in
     let col_cnt = CCArray.length col_names in
     let col_widths = CCArray.map CCString.length col_names in
