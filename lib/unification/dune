@@ -1,4 +1,4 @@
 (library
   (name unification)
-  (libraries logs common)
+  (libraries logs common zarith)
   (flags (:standard -open Common)))

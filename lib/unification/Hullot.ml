@@ -64,5 +64,5 @@ module Make (B : Bitv.S) = struct
 
 end
 
-module Default = Make (Bitv.Default)
+module Default = Make (Bitv)
 include Default
