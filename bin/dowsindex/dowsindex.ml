@@ -265,6 +265,65 @@ let () = Args.add_cmd (module struct
 
 end)
 
+(* [search] command *)
+
+let () = Args.add_cmd (module struct
+
+  let name = "search"
+  let usage = "<file> <type>"
+  let options = []
+
+  let file_name = ref None
+  let ty = ref None
+
+  let anon_fun arg =
+    if CCOpt.is_none ! file_name then
+      file_name := Some arg
+    else if CCOpt.is_none ! ty then
+      ty := Some arg
+    else
+      raise @@ Arg.Bad "too many arguments"
+
+  let main file_name str =
+    let env = Type.Env.make () in
+    let ty = type_of_string env str in
+    let idx =
+      try Index.load file_name
+      with Sys_error _ ->
+        error @@ Printf.sprintf "cannot open file '%s'." file_name
+    in
+    let module LIdTypeMultiMap = CCMultiMap.Make (CCInt) (struct
+      type t = LongIdent.t * Type.t
+      let compare = CCOrd.pair LongIdent.compare Type.compare
+    end) in
+    let res = ref LIdTypeMultiMap.empty in
+    idx |> Index.iter (fun lid Index.{ ty = ty' } ->
+      try
+        [ ty, ty' ]
+        |> Unification.unify env
+        |> CCOpt.iter (fun unif ->
+          res := LIdTypeMultiMap.add ! res (Unification.Unifier.size unif) (lid, ty'))
+      with
+      | Assert_failure (file, line, col) ->
+          Logs.debug @@ fun m -> m "assertion failure in '%s':%d:%d" file line col ;
+          Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty ;
+          Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty'
+    ) ;
+    Fmt.pr "@[<v>" ;
+    LIdTypeMultiMap.iter ! res (fun _ (lid, ty) ->
+      Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
+        LongIdent.pp lid
+        (Type.pp env.var_names) ty
+    ) ;
+    Fmt.pr "@]@?"
+
+  let main () =
+    if CCOpt.(is_none ! file_name || is_none ! ty) then
+      raise @@ Arg.Bad "too few arguments" ;
+    main (Option.get ! file_name) (Option.get ! ty)
+
+end)
+
 (* main *)
 
 let () =
