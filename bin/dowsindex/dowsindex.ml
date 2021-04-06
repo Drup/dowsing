@@ -109,10 +109,12 @@ let () = Args.add_cmd (module struct
     in
     let unifs =
       if all_unifs then unifs
-      else CCList.cons_maybe (CCList.head_opt unifs) []
+      else CCList.take 1 unifs
     in
-    if not @@ CCList.is_empty unifs then
-      Fmt.pr "@[<v2>Unifiers@ %a@]"
+    if CCList.is_empty unifs then
+      Format.printf "These type do not unify.@."
+    else
+      Format.printf "@[<v2>Unifiers@ %a@]@."
         Fmt.(list ~sep:sp @@ Unification.Unifier.pp env.var_names) unifs
 
   let main () =
