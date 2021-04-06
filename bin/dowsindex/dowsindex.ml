@@ -99,8 +99,8 @@ let () = Args.add_cmd (module struct
     let env = Type.Env.make () in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
-    Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty1 ;
-    Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty2 ;
+    Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty1);
+    Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty2);
     let unifs =
       [ ty1, ty2 ]
       |> Unification.unifiers env
@@ -217,9 +217,12 @@ let () = Args.add_cmd (module struct
           | Some (time', cnt) -> Some (time +. time', cnt + 1)
       with
       | Assert_failure (file, line, col) ->
-          Logs.debug @@ fun m -> m "assertion failure in '%s':%d:%d" file line col ;
-          Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty ;
-          Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty'
+        Logs.debug
+          (fun m -> m "assertion failure in '%s':%d:%d" file line col);
+        Logs.debug
+          (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
+        Logs.debug
+          (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
     ) ;
     let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
     let sep = 4 in
@@ -305,9 +308,12 @@ let () = Args.add_cmd (module struct
           res := LIdTypeMultiMap.add ! res (Unification.Unifier.size unif) (lid, ty'))
       with
       | Assert_failure (file, line, col) ->
-          Logs.debug @@ fun m -> m "assertion failure in '%s':%d:%d" file line col ;
-          Logs.debug @@ fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty ;
-          Logs.debug @@ fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty'
+        Logs.debug
+          (fun m -> m "assertion failure in '%s':%d:%d" file line col) ;
+        Logs.debug
+          (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
+        Logs.debug
+          (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
     ) ;
     Fmt.pr "@[<v>" ;
     LIdTypeMultiMap.iter ! res (fun _ (lid, ty) ->
