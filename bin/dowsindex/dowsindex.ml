@@ -149,7 +149,7 @@ let () = Args.add_cmd (module struct
     let pkg_dirs =
       try
         pkgs
-        |> Findlib.package_deep_ancestors []
+        (* |> Findlib.package_deep_ancestors [] *)
         |> CCList.map Findlib.package_directory
         (* we need this because [Findlib.list_packages'] is faulty: it gives some unknown packages *)
         |> CCList.filter Sys.file_exists

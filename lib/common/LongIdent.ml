@@ -10,7 +10,7 @@ let unit = Lident "unit"
 
 let of_list strs =
   if strs = [] then
-    invalid_arg __FUNCTION__
+    invalid_arg "LongIdent.of_list"
   else
     let root = Lident (CCList.hd strs) in
     let strs = CCList.tl strs in
