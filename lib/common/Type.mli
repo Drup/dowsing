@@ -137,6 +137,7 @@ module Size : sig
 
   type kind =
     | VarCount
+    | AllVarCount
     | NodeCount
     | HeadKind
     | TailSpineVarCount

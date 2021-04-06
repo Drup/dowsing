@@ -479,6 +479,7 @@ module Size = struct
 
   type kind =
     | VarCount
+    | AllVarCount
     | NodeCount
     | HeadKind
     | TailSpineVarCount
@@ -493,14 +494,21 @@ module Size = struct
   let pp kind fmt t =
     match kind with
     | HeadKind -> Kind.(pp fmt @@ of_int t)
-    | _ -> Fmt.int fmt t
+    | VarCount | AllVarCount | NodeCount
+    | TailSpineVarCount | SpineVarCount
+    | TailLength -> Fmt.int fmt t
 
 end
 
+let var_count t =
+  Variable.Set.cardinal @@ Variable.Set.of_iter @@ vars t
+let all_var_count t =
+  Iter.length @@ vars t
+
 let rec size (sz_kind : Size.kind) t =
   match sz_kind with
-  | VarCount ->
-      Variable.Set.(cardinal @@ of_iter @@ vars t)
+  | VarCount -> var_count t
+  | AllVarCount -> all_var_count t
   | NodeCount ->
       let rec aux = function
         | Var _ | Other _ ->

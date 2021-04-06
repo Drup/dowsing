@@ -191,6 +191,7 @@ let () = Args.add_cmd (module struct
   let sz_kind_syms =
     let open Type.Size in [
       "vars", VarCount ;
+      "allvars", AllVarCount ;
       "nodes", NodeCount ;
       "head", HeadKind ;
       "tail-spine-vars", TailSpineVarCount ;
