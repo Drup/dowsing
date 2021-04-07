@@ -297,7 +297,8 @@ module System : sig
 
   val make : Tuple.problem list -> t
 
-  type dioph_solution = private int array
+  type dioph_solution
+  val get_solution : dioph_solution -> int -> int
 
   val solve : t -> dioph_solution Iter.t
 
@@ -379,6 +380,7 @@ end = struct
     { nb_atom ; assoc_pure ; first_var ; system }
 
   type dioph_solution = int array
+  let get_solution = Array.get
 
   let solve { first_var ; system ; _ } : dioph_solution Iter.t =
     let rec cut_aux i stop sum solution =
@@ -444,10 +446,10 @@ end = struct
     (* By invariant, we know that solutions have at most one non-null
        factor associated with a constant, so we scan them linearly, and if
        non is found, we create a fresh variable. *)
-    assert (Array.length sol >= first_var) ;
+    (* assert (Array.length sol >= first_var) ; *)
     let rec aux j =
       if j >= first_var then Pure.var (Env.gen gen)
-      else if sol.(j) <> 0 then
+      else if System.get_solution sol j <> 0 then
         assoc_pure.(j)
       else aux (j+1)
     in
@@ -465,11 +467,10 @@ end = struct
     let bitvars = Array.make nb_columns Bitv.empty in
     let counter = ref 0 in
     seq_solutions begin fun sol ->
-      let sol = (sol : System.dioph_solution :> int array) in
       CCVector.push stack sol ;
       let i = CCRef.get_then_incr counter in
       for j = 0 to nb_columns - 1 do
-        if sol.(j) <> 0 then
+        if System.get_solution sol j <> 0 then
           bitvars.(j) <- Bitv.add bitvars.(j) i
         else ()
       done;
@@ -494,14 +495,14 @@ end = struct
     for i = 0 to Array.length symbols - 1 do
       if Bitv.mem i subset then
         let sol = solutions.(i) in
-        assert (Array.length sol = Array.length vars) ;
+        (* assert (Array.length sol = Array.length vars) ; *)
         let symb = symbols.(i) in
         (* Fmt.epr "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset; *)
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
           | Pure.Constant _ -> ()
           | Pure.Var var ->
-            let multiplicity = sol.(j) in
+            let multiplicity = System.get_solution sol j in
             Variable.HMap.add_list unifiers var (multiplicity, symb)
         done;
     done;
@@ -520,7 +521,7 @@ end = struct
   let get_solutions env
       ({System. nb_atom; assoc_pure;_} as system)
       (seq_solutions:System.dioph_solution Iter.t) : t Iter.t =
-    let stack_solutions = CCVector.create_with ~capacity:5 [||] in
+    let stack_solutions = CCVector.create () in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
     (* Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
      * Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
