@@ -112,11 +112,13 @@ and Set : sig
 
   val empty : t
   val is_empty : t -> Bool.t
+  val length : t -> Int.t
   val singleton : elt -> t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   val map : (elt -> elt) -> t -> t
+  val min_elt : t -> elt
 
   val pp : elt Fmt.t -> t Fmt.t
 
@@ -145,6 +147,8 @@ end = struct
   let empty = [||]
   let is_empty t = t = [||]
 
+  let length = CCArray.length
+
   let singleton elt = [| elt |]
 
   let union t1 t2 =
@@ -160,6 +164,8 @@ end = struct
 
   let map fn t =
     of_iter @@ Iter.map fn @@ to_iter t
+
+  let min_elt t = t.(0)
 
   let pp pp_elt fmt = function
     | [||] ->
@@ -268,7 +274,10 @@ let make_tuple elts =
     | Tuple elts -> elts
     | elt -> Set.singleton elt
   in
-  Tuple (Set.fold (fun elt -> Set.union @@ aux elt) elts Set.empty)
+  let elts = Set.fold (fun elt -> Set.union @@ aux elt) elts Set.empty in
+  if Set.length elts = 1 then
+    Set.min_elt elts
+  else Tuple elts
 
 let make_other x =
   Other (CCHash.poly x)
