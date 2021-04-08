@@ -305,17 +305,11 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file_name
     in
-    let module LIdTypeMultiMap = CCMultiMap.Make (CCInt) (struct
-      type t = LongIdent.t * Type.t
-      let compare = CCOrd.pair LongIdent.compare Type.compare
-    end) in
-    let res = ref LIdTypeMultiMap.empty in
-    idx |> Index.iter (fun lid Index.{ ty = ty' } ->
+    let find k lid Index.{ ty = ty' } =
       try
         [ ty, ty' ]
         |> Unification.unify env
-        |> CCOpt.iter (fun unif ->
-          res := LIdTypeMultiMap.add ! res (Unification.Unifier.size unif) (lid, ty'))
+        |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
       with
       | Assert_failure (file, line, col) ->
         Logs.debug
@@ -324,13 +318,17 @@ let () = Args.add_cmd (module struct
           (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
         Logs.debug
           (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
-    ) ;
+    in
+    let results =
+      (fun k -> Index.iter (find k) idx)
+      |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
+    in    
     Fmt.pr "@[<v>" ;
-    LIdTypeMultiMap.iter ! res (fun _ (lid, ty) ->
+    Iter.iter (fun (_, lid, ty) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
         LongIdent.pp lid
         (Type.pp env.var_names) ty
-    ) ;
+    ) results ;
     Fmt.pr "@]@?"
 
   let main () =
