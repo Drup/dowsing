@@ -326,6 +326,114 @@ let () = Args.add_cmd (module struct
 
 end)
 
+(* [test] command *)
+
+let () = Args.add_cmd (module struct
+
+  let name = "test"
+  let usage = "<file> <type>"
+
+  let file_name = ref None
+  let ty = ref None
+
+  let sz_kind = ref Type.Size.VarCount
+  let sz_kind_syms = [ "vars" ; "nodes" ; "head" ]
+  let set_sz_kind = function
+    | "vars" -> sz_kind := VarCount
+    | "nodes" -> sz_kind := NodeCount
+    | "head" -> sz_kind := HeadKind
+    | _ -> assert false
+
+  let options = [
+    "--size", Arg.Symbol (sz_kind_syms, set_sz_kind), "\tSet type size kind" ;
+  ]
+
+  let anon_fun arg =
+    if CCOpt.is_none ! file_name then
+      file_name := Some arg
+    else if CCOpt.is_none ! ty then
+      ty := Some arg
+    else
+      raise @@ Arg.Bad "too many arguments"
+
+  let main sz_kind file_name str =
+    let env = Type.Env.make () in
+    let ty = type_of_string env str in
+    assert Type.(kind @@ head ty <> Kind.Var) ;
+    let idx =
+      try Index.load file_name
+      with Sys_error _ ->
+        error @@ Printf.sprintf "cannot open file '%s'." file_name
+    in
+    let tys1 = LongIdent.HMap.create 17 in
+    let tys2 = LongIdent.HMap.create 17 in
+    idx |> Index.iter (fun lid Index.{ ty = ty' } ->
+      if Type.(kind @@ head ty' = Kind.Var) then
+        LongIdent.HMap.add tys2 lid ty'
+      else
+        LongIdent.HMap.add tys1 lid ty'
+    ) ;
+    let tbl = ref Type.Size.Map.empty in
+    tys1 |> LongIdent.HMap.iter (fun _ ty' ->
+      try
+        Timer.start timer ;
+        ignore @@ Unification.unifiable env [ ty, ty' ] ;
+        Timer.stop timer ;
+        let time = Timer.get timer in
+        let sz = Type.size sz_kind ty' in
+        tbl := ! tbl |> Type.Size.Map.update sz @@ function
+          | None -> Some (time, 1)
+          | Some (time', cnt) -> Some (time +. time', cnt + 1)
+      with
+      | Assert_failure (file, line, col) ->
+          Logs.debug (fun m -> m "assertion failure in '%s':%d:%d" file line col) ;
+          Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
+          Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
+    ) ;
+    let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
+    let sep = 4 in
+    let col_cnt = CCArray.length col_names in
+    let col_widths = CCArray.map CCString.length col_names in
+    let tbl =
+      ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
+        let row = [|
+          CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
+          Printf.sprintf "%g" @@ 1e3 *. time ;
+          Printf.sprintf "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
+          CCInt.to_string cnt ;
+        |] in
+        for i = 0 to col_cnt - 1 do
+          col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
+        done ;
+        row
+      )
+    in
+    for i = 0 to col_cnt - 2 do
+      col_widths.(i) <- col_widths.(i) + sep
+    done ;
+    CCFormat.open_tbox () ;
+    for i = 0 to col_cnt - 1 do
+      CCFormat.set_tab () ;
+      CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
+    done ;
+    CCFormat.print_tab () ;
+    CCFormat.print_string @@ CCString.make (CCArray.fold (+) 0 col_widths) '-' ;
+    Type.Size.Map.values tbl (fun row ->
+      for i = 0 to col_cnt - 1 do
+        CCFormat.print_tab () ;
+        CCFormat.print_string row.(i)
+      done
+    ) ;
+    CCFormat.close_tbox () ;
+    CCFormat.print_newline ()
+
+  let main () =
+    if CCOpt.(is_none ! file_name || is_none ! ty) then
+      raise @@ Arg.Bad "too few arguments" ;
+    main ! sz_kind (Option.get ! file_name) (Option.get ! ty)
+
+end)
+
 (* main *)
 
 let () =
