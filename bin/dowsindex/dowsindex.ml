@@ -143,22 +143,30 @@ let () = Args.add_cmd (module struct
 
   let main file_name pkgs =
     Findlib.init () ;
-    let pkgs =
+    let pkgs () =
       if pkgs = [] then
         Findlib.list_packages' ()
-      else pkgs
+      else
+        let pkgs = Findlib.package_deep_ancestors [] pkgs in
+        Logs.app (fun m ->
+            m "@[<hv 2>Findlib packages:@ %a@]"
+              Fmt.(list ~sep:sp string) pkgs
+          );
+        pkgs
     in
     let pkg_dirs =
       try
-        pkgs
-        (* |> Findlib.package_deep_ancestors [] *)
+        pkgs ()
         |> CCList.map Findlib.package_directory
-        (* we need this because [Findlib.list_packages'] is faulty: it gives some unknown packages *)
+        (* we need this because [Findlib.list_packages'] is faulty: 
+           it gives some unknown packages *)
         |> CCList.filter Sys.file_exists
       with
       | Findlib.No_such_package (pkg, _) ->
-          error @@ Printf.sprintf "cannot find package '%s'." pkg
+        Logs.err (fun m -> m "Cannot find package '%s'." pkg);
+        exit ~code:1 ()
     in
+    Logs.app (fun m -> m "Found %i findlib packages" (List.length pkg_dirs));
     Index.(save @@ make pkg_dirs) file_name
 
   let main () =
