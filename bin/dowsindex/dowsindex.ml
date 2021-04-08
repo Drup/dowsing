@@ -143,22 +143,30 @@ let () = Args.add_cmd (module struct
 
   let main file_name pkgs =
     Findlib.init () ;
-    let pkgs =
+    let pkgs () =
       if pkgs = [] then
         Findlib.list_packages' ()
-      else pkgs
+      else
+        let pkgs = Findlib.package_deep_ancestors [] pkgs in
+        Logs.app (fun m ->
+            m "@[<hv 2>Findlib packages:@ %a@]"
+              Fmt.(list ~sep:sp string) pkgs
+          );
+        pkgs
     in
     let pkg_dirs =
       try
-        pkgs
-        (* |> Findlib.package_deep_ancestors [] *)
+        pkgs ()
         |> CCList.map Findlib.package_directory
-        (* we need this because [Findlib.list_packages'] is faulty: it gives some unknown packages *)
+        (* we need this because [Findlib.list_packages'] is faulty:
+           it gives some unknown packages *)
         |> CCList.filter Sys.file_exists
       with
       | Findlib.No_such_package (pkg, _) ->
-          error @@ Printf.sprintf "cannot find package '%s'." pkg
+        Logs.err (fun m -> m "Cannot find package '%s'." pkg);
+        exit ~code:1 ()
     in
+    Logs.app (fun m -> m "Found %i findlib packages" (List.length pkg_dirs));
     Index.(save @@ make pkg_dirs) file_name
 
   let main () =
@@ -227,8 +235,10 @@ let () = Args.add_cmd (module struct
     let sep = 4 in
     let col_cnt = CCArray.length col_names in
     let col_widths = CCArray.map CCString.length col_names in
+    let total_time = ref 0. in
     let tbl =
       ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
+        total_time := ! total_time +. time ;
         let row = [|
           CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
           Printf.sprintf "%g" @@ 1e3 *. time ;
@@ -244,21 +254,30 @@ let () = Args.add_cmd (module struct
     for i = 0 to col_cnt - 2 do
       col_widths.(i) <- col_widths.(i) + sep
     done ;
+    let print_hline =
+      let width = CCArray.fold (+) 0 col_widths in
+      let hline = CCString.make width '-' in
+      fun () -> CCFormat.print_string hline
+    in
     CCFormat.open_tbox () ;
+    print_hline () ;
+    CCFormat.printf "@\n" ;
     for i = 0 to col_cnt - 1 do
       CCFormat.set_tab () ;
       CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
     done ;
     CCFormat.print_tab () ;
-    CCFormat.print_string @@ CCString.make (CCArray.fold (+) 0 col_widths) '-' ;
+    print_hline () ;
     Type.Size.Map.values tbl (fun row ->
       for i = 0 to col_cnt - 1 do
         CCFormat.print_tab () ;
         CCFormat.print_string row.(i)
       done
     ) ;
+    CCFormat.print_tab () ;
+    print_hline () ;
     CCFormat.close_tbox () ;
-    CCFormat.print_newline ()
+    CCFormat.printf "@\ntotal time: %g@." ! total_time
 
   let main () =
     if CCOpt.(is_none ! file_name || is_none ! ty) then
@@ -294,25 +313,23 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file_name
     in
-    let module LIdTypeMultiMap = CCMultiMap.Make (CCInt) (struct
-      type t = LongIdent.t * Type.t
-      let compare = CCOrd.pair LongIdent.compare Type.compare
-    end) in
-    let res = ref LIdTypeMultiMap.empty in
-    idx |> Index.iter (fun lid Index.{ ty = ty' } ->
+    let find k lid Index.{ ty = ty' } =
       try
         [ ty, ty' ]
         |> Unification.unify env
-        |> CCOpt.iter (fun unif ->
-          res := LIdTypeMultiMap.add ! res (Unification.Unifier.size unif) (lid, ty'))
+        |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
       with
       | Assert_failure (file, line, col) ->
           Logs.debug (fun m -> m "assertion failure in '%s':%d:%d" file line col) ;
           Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
           Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
-    ) ;
+    in
+    let res =
+      (fun k -> Index.iter (find k) idx)
+      |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
+    in
     Fmt.pr "@[<v>" ;
-    LIdTypeMultiMap.iter ! res (fun _ (lid, ty) ->
+    res |> Iter.iter (fun (_, lid, ty) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
         LongIdent.pp lid
         (Type.pp env.var_names) ty
