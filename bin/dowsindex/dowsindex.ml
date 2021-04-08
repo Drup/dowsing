@@ -187,12 +187,22 @@ let () = Args.add_cmd (module struct
   let ty = ref None
 
   let sz_kind = ref Type.Size.VarCount
-  let sz_kind_syms = [ "vars" ; "nodes" ; "head" ]
-  let set_sz_kind = function
-    | "vars" -> sz_kind := VarCount
-    | "nodes" -> sz_kind := NodeCount
-    | "head" -> sz_kind := HeadKind
-    | _ -> assert false
+  let sz_kind_syms =
+    let open Type.Size in [
+      "vars", VarCount ;
+      "nodes", NodeCount ;
+      "head", HeadKind ;
+      "tail-root-vars", TailRootVarCount ;
+    ]
+  let set_sz_kind =
+    let tbl = Hashtbl.create @@ CCList.length sz_kind_syms in
+    CCList.iter (CCFun.uncurry @@ Hashtbl.add tbl) sz_kind_syms ;
+    fun sym ->
+      match Hashtbl.find_opt tbl sym with
+      | Some sz_kind' -> sz_kind := sz_kind'
+      | None -> assert false
+  let sz_kind_syms =
+    CCList.map fst sz_kind_syms
 
   let options = [
     "--size", Arg.Symbol (sz_kind_syms, set_sz_kind), "\tSet type size kind" ;

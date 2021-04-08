@@ -377,6 +377,10 @@ let head = function
   | Arrow (_, ret) -> ret
   | t -> t
 
+let tail = function
+  | Arrow (args, _) -> args
+  | _ -> Set.empty
+
 let rec substitute sub =
   let substitute t = substitute sub t in
   let substitute_set = Set.map substitute in
@@ -418,13 +422,14 @@ module Size = struct
     | VarCount
     | NodeCount
     | HeadKind
+    | TailRootVarCount
 
   type t = Int.t
 
   let pp kind fmt t =
     match kind with
-    | VarCount | NodeCount -> Fmt.int fmt t
     | HeadKind -> Kind.(pp fmt @@ of_int t)
+    | _ -> Fmt.int fmt t
 
   module Map = CCMap.Make (CCInt)
   module HMap = CCHashtbl.Make (CCInt)
@@ -466,6 +471,13 @@ let size sz_kind t =
       aux t
   | Size.HeadKind ->
       Kind.to_int @@ kind @@ head t
+  | Size.TailRootVarCount ->
+      let aux t acc =
+        match t with
+        | Var _ -> acc + 1
+        | _ -> acc
+      in
+      Set.fold aux (tail t) 0
 
 (* pretty printing *)
 

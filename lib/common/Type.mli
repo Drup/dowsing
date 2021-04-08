@@ -91,6 +91,7 @@ val of_string : Env.t -> String.t -> t
 (* utility functions *)
 
 val head : t -> t
+val tail : t -> Set.t
 
 val substitute : t Variable.Map.t -> t -> t
 
@@ -104,6 +105,7 @@ module Size : sig
     | VarCount
     | NodeCount
     | HeadKind
+    | TailRootVarCount
 
   type t = private Int.t
 
