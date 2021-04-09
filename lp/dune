@@ -1,4 +1,0 @@
-(executable
-  (name lp)
-  (libraries containers lp lp-glpk utils)
-  (flags (:standard -cclib -lglpk -open Utils)))
