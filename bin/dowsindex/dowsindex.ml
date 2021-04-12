@@ -132,16 +132,16 @@ let () = Args.add_cmd (module struct
   let usage = "<file> <package>..."
   let options = []
 
-  let file_name = ref None
+  let file = ref None
   let pkgs = ref []
 
   let anon_fun arg =
-    if CCOpt.is_none ! file_name then
-      file_name := Some arg
+    if CCOpt.is_none ! file then
+      file := Some arg
     else
       pkgs := ! pkgs @ [ arg ]
 
-  let main file_name pkgs =
+  let main file pkgs =
     Findlib.init () ;
     let pkgs () =
       if pkgs = [] then
@@ -167,12 +167,12 @@ let () = Args.add_cmd (module struct
         exit ~code:1 ()
     in
     Logs.app (fun m -> m "Found %i findlib packages" (List.length pkg_dirs));
-    Index.(save @@ make pkg_dirs) file_name
+    Index.(save @@ make pkg_dirs) file
 
   let main () =
-    if CCOpt.is_none ! file_name then
+    if CCOpt.is_none ! file then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! file_name) ! pkgs
+    main (Option.get ! file) ! pkgs
 
 end)
 
@@ -183,7 +183,7 @@ let () = Args.add_cmd (module struct
   let name = "stats"
   let usage = "<file> <type>"
 
-  let file_name = ref None
+  let file = ref None
   let ty = ref None
 
   let sz_kind = ref Type.Size.VarCount
@@ -209,23 +209,23 @@ let () = Args.add_cmd (module struct
   ]
 
   let anon_fun arg =
-    if CCOpt.is_none ! file_name then
-      file_name := Some arg
+    if CCOpt.is_none ! file then
+      file := Some arg
     else if CCOpt.is_none ! ty then
       ty := Some arg
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main sz_kind file_name str =
-    let env = Type.Env.make () in
-    let ty = type_of_string env str in
+  let main sz_kind file str =
     let idx =
-      try Index.load file_name
+      try Index.load file
       with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'." file_name
+        error @@ Printf.sprintf "cannot open file '%s'." file
     in
+    let env = Index.get_env idx in
+    let ty = type_of_string env str in
     let tbl = ref Type.Size.Map.empty in
-    idx |> Index.iter (fun _ Index.{ ty = ty' } ->
+    Index.iter idx (fun _ Index.{ ty = ty' } ->
       try
         Timer.start timer ;
         ignore @@ Unification.unifiable env [ ty, ty' ] ;
@@ -290,9 +290,9 @@ let () = Args.add_cmd (module struct
     CCFormat.printf "@\ntotal time: %g@." ! total_time
 
   let main () =
-    if CCOpt.(is_none ! file_name || is_none ! ty) then
+    if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! sz_kind (Option.get ! file_name) (Option.get ! ty)
+    main ! sz_kind (Option.get ! file) (Option.get ! ty)
 
 end)
 
@@ -304,24 +304,24 @@ let () = Args.add_cmd (module struct
   let usage = "<file> <type>"
   let options = []
 
-  let file_name = ref None
+  let file = ref None
   let ty = ref None
 
   let anon_fun arg =
-    if CCOpt.is_none ! file_name then
-      file_name := Some arg
+    if CCOpt.is_none ! file then
+      file := Some arg
     else if CCOpt.is_none ! ty then
       ty := Some arg
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main file_name str =
+  let main file str =
     let env = Type.Env.make () in
     let ty = type_of_string env str in
     let idx =
-      try Index.load file_name
+      try Index.load file
       with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'." file_name
+        error @@ Printf.sprintf "cannot open file '%s'." file
     in
     let find k lid Index.{ ty = ty' } =
       try
@@ -335,7 +335,7 @@ let () = Args.add_cmd (module struct
           Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
     in
     let res =
-      (fun k -> Index.iter (find k) idx)
+      (fun k -> Index.iter idx @@ find k)
       |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
     in
     Fmt.pr "@[<v>" ;
@@ -347,9 +347,9 @@ let () = Args.add_cmd (module struct
     Fmt.pr "@]@?"
 
   let main () =
-    if CCOpt.(is_none ! file_name || is_none ! ty) then
+    if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! file_name) (Option.get ! ty)
+    main (Option.get ! file) (Option.get ! ty)
 
 end)
 
@@ -360,7 +360,7 @@ let () = Args.add_cmd (module struct
   let name = "test"
   let usage = "<file> <type>"
 
-  let file_name = ref None
+  let file = ref None
   let ty = ref None
 
   let sz_kind = ref Type.Size.VarCount
@@ -376,25 +376,25 @@ let () = Args.add_cmd (module struct
   ]
 
   let anon_fun arg =
-    if CCOpt.is_none ! file_name then
-      file_name := Some arg
+    if CCOpt.is_none ! file then
+      file := Some arg
     else if CCOpt.is_none ! ty then
       ty := Some arg
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main sz_kind file_name str =
-    let env = Type.Env.make () in
+  let main sz_kind file str =
+    let idx =
+      try Index.load file
+      with Sys_error _ ->
+        error @@ Printf.sprintf "cannot open file '%s'." file
+    in
+    let env = Index.get_env idx in
     let ty = type_of_string env str in
     assert Type.(kind @@ head ty <> Kind.Var) ;
-    let idx =
-      try Index.load file_name
-      with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'." file_name
-    in
     let tys1 = LongIdent.HMap.create 17 in
     let tys2 = LongIdent.HMap.create 17 in
-    idx |> Index.iter (fun lid Index.{ ty = ty' } ->
+    Index.iter idx (fun lid Index.{ ty = ty' } ->
       if Type.(kind @@ head ty' = Kind.Var) then
         LongIdent.HMap.add tys2 lid ty'
       else
@@ -455,9 +455,9 @@ let () = Args.add_cmd (module struct
     CCFormat.print_newline ()
 
   let main () =
-    if CCOpt.(is_none ! file_name || is_none ! ty) then
+    if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! sz_kind (Option.get ! file_name) (Option.get ! ty)
+    main ! sz_kind (Option.get ! file) (Option.get ! ty)
 
 end)
 

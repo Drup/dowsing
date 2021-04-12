@@ -226,9 +226,9 @@ module Env = struct
     hcons : Hashcons.t ;
   }
 
-  let make () = {
-    var_gen = Variable.Gen.make 10 ;
-    var_names = Variable.HMap.create 17 ;
+  let make ?(var_gen = Variable.Gen.make 10) ?(var_names = Variable.HMap.create 17) () = {
+    var_gen ;
+    var_names ;
     hcons = Hashcons.make 17 ;
   }
 

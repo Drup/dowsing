@@ -77,7 +77,7 @@ module Env : sig
     hcons : Hashcons.t ;
   }
 
-  val make : Unit.t -> t
+  val make : ?var_gen:Variable.Gen.t -> ?var_names: String.t Variable.HMap.t -> Unit.t -> t
 
 end
 
