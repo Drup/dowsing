@@ -43,8 +43,8 @@ module rec Base : sig
   type t =
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of Set.t * t
-    | Tuple of Set.t
+    | Arrow of MSet.t * t
+    | Tuple of MSet.t
     | Other of Int.t
 
   val kind : t -> Kind.t
@@ -57,8 +57,8 @@ end = struct
   type t =
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of Set.t * t
-    | Tuple of Set.t
+    | Arrow of MSet.t * t
+    | Tuple of MSet.t
     | Other of Int.t
 
   let kind = function
@@ -83,9 +83,9 @@ end = struct
             <?> (CCArray.compare compare, args1, args2)
         | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
             compare ret1 ret2
-            <?> (Set.compare, arg1, arg2)
+            <?> (MSet.compare, arg1, arg2)
         | Tuple t1, Tuple t2 ->
-            Set.compare t1 t2
+            MSet.compare t1 t2
         | Other t1, Other t2 ->
             CCInt.compare t1 t2
         | _ ->
@@ -96,9 +96,9 @@ end = struct
 
 end
 
-(* Set *)
+(* MSet *)
 
-and Set : sig
+and MSet : sig
 
   type elt = Base.t
   type t
@@ -253,30 +253,30 @@ let make_var (env : Env.t) =
             t
 
 let make_constr lid = function
-  | [||] when lid = LongIdent.unit -> Tuple Set.empty
+  | [||] when lid = LongIdent.unit -> Tuple MSet.empty
   | args -> Constr (lid, args)
 
 let make_arrow arg ret =
   match arg, ret with
-  | Tuple tpl, _ when Set.is_empty tpl ->
+  | Tuple tpl, _ when MSet.is_empty tpl ->
       ret
   | Tuple tpl, Arrow (args, ret) ->
-      Arrow (Set.union tpl args, ret)
+      Arrow (MSet.union tpl args, ret)
   | _, Arrow (args, ret) ->
-      Arrow (Set.add arg args, ret)
+      Arrow (MSet.add arg args, ret)
   | Tuple tpl, _ ->
       Arrow (tpl, ret)
   | _, _ ->
-      Arrow (Set.singleton arg, ret)
+      Arrow (MSet.singleton arg, ret)
 
 let make_tuple elts =
   let aux = function
     | Tuple elts -> elts
-    | elt -> Set.singleton elt
+    | elt -> MSet.singleton elt
   in
-  let elts = Set.fold (fun elt -> Set.union @@ aux elt) elts Set.empty in
-  if Set.length elts = 1 then
-    Set.min_elt elts
+  let elts = MSet.fold (fun elt -> MSet.union @@ aux elt) elts MSet.empty in
+  if MSet.length elts = 1 then
+    MSet.min_elt elts
   else Tuple elts
 
 let make_other x =
@@ -298,7 +298,7 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       elts
       |> Iter.of_list
       |> Iter.map of_outcometree
-      |> Set.of_iter
+      |> MSet.of_iter
       |> make_tuple
   | Otyp_alias (out_ty, _) ->
       of_outcometree out_ty
@@ -336,7 +336,7 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
       elts
       |> Iter.of_list
       |> Iter.map of_parsetree
-      |> Set.of_iter
+      |> MSet.of_iter
       |> make_tuple
   | Ptyp_alias (parse_ty, _)
   | Ptyp_poly (_, parse_ty) ->
@@ -379,11 +379,11 @@ let head = function
 
 let tail = function
   | Arrow (args, _) -> args
-  | _ -> Set.empty
+  | _ -> MSet.empty
 
 let rec substitute sub =
   let substitute t = substitute sub t in
-  let substitute_set = Set.map substitute in
+  let substitute_set = MSet.map substitute in
   fun t ->
     match t with
     | Var var ->
@@ -409,9 +409,9 @@ let rec vars t k =
   | Constr (_, args) ->
       CCArray.iter (fun t -> vars t k) args
   | Tuple elts ->
-      Iter.flat_map vars (Set.to_iter elts) k
+      Iter.flat_map vars (MSet.to_iter elts) k
   | Arrow (args, ret) ->
-      Iter.flat_map vars (Set.to_iter args) k ;
+      Iter.flat_map vars (MSet.to_iter args) k ;
       vars ret k
 
 (* several notions of size *)
@@ -453,7 +453,7 @@ let rec size (sz_kind : Size.kind) t =
         | Tuple elts ->
             1 + aux_set elts
       and aux_set set =
-        Set.fold (fun t acc -> aux t + acc) set 0
+        MSet.fold (fun t acc -> aux t + acc) set 0
       in
       aux t
   | HeadKind ->
@@ -462,13 +462,13 @@ let rec size (sz_kind : Size.kind) t =
       let aux t =
         (+) @@ CCBool.to_int @@ (kind t = Kind.Var)
       in
-      Set.fold aux (tail t) 0
+      MSet.fold aux (tail t) 0
   | RootVarCount ->
       let sz = size Size.TailRootVarCount t in
       let hd_kind = kind @@ head t in
       sz + (CCBool.to_int @@ (hd_kind = Kind.Var))
   | TailLength ->
-      Set.length @@ tail t
+      MSet.length @@ tail t
 
 (* pretty printing *)
 
@@ -494,10 +494,10 @@ let rec pp var_names =
           LongIdent.pp lid
     | Arrow (args, ret) ->
         Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-          (Set.pp pp) args
+          (MSet.pp pp) args
           pp ret
     | Tuple elts ->
         Fmt.pf fmt "@[<2>%a@]"
-          (Set.pp pp) elts
+          (MSet.pp pp) elts
     | Other _ ->
         Fmt.string fmt "_"

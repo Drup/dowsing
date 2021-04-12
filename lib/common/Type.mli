@@ -21,8 +21,8 @@ module rec Base : sig
   type t =
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of Set.t * t
-    | Tuple of Set.t
+    | Arrow of MSet.t * t
+    | Tuple of MSet.t
     | Other of Int.t
 
   val kind : t -> Kind.t
@@ -32,7 +32,7 @@ module rec Base : sig
 
 end
 
-and Set : sig
+and MSet : sig
 
   type elt = Base.t
   type t
@@ -91,7 +91,7 @@ val of_string : Env.t -> String.t -> t
 (* utility functions *)
 
 val head : t -> t
-val tail : t -> Set.t
+val tail : t -> MSet.t
 
 val substitute : t Variable.Map.t -> t -> t
 

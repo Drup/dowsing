@@ -42,7 +42,7 @@ module Tuple = struct
     | [|x|] -> Pure.as_typexpr x
     | t ->
       Type.Tuple
-        (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.Set.of_iter)
+        (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
 
   let pp namefmt fmt t =
       Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (Pure.pp namefmt)) t
@@ -599,7 +599,7 @@ and variable_abstraction_all env stack a =
     r := stack ;
     x
   in
-  !r, Array.map f @@ Type.Set.as_array a
+  !r, Array.map f @@ Type.MSet.as_array a
 
 (* rule VA/Variable Abstraction
    Given a tuple, assign a variable to each subexpressions that is foreign
