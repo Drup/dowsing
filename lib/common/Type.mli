@@ -106,8 +106,10 @@ module Size : sig
     | NodeCount
     | HeadKind
     | TailRootVarCount
+    | RootVarCount
+    | TailLength
 
-  type t = private Int.t
+  type t = Int.t
 
   val pp : kind -> t Fmt.t
 

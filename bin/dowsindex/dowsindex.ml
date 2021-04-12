@@ -185,6 +185,7 @@ let () = Args.add_cmd (module struct
 
   let file = ref None
   let ty = ref None
+  let filter = ref false
 
   let sz_kind = ref Type.Size.VarCount
   let sz_kind_syms =
@@ -193,6 +194,8 @@ let () = Args.add_cmd (module struct
       "nodes", NodeCount ;
       "head", HeadKind ;
       "tail-root-vars", TailRootVarCount ;
+      "root-vars", RootVarCount ;
+      "tail-length", TailLength ;
     ]
   let set_sz_kind =
     let tbl = Hashtbl.create @@ CCList.length sz_kind_syms in
@@ -206,6 +209,7 @@ let () = Args.add_cmd (module struct
 
   let options = [
     "--size", Arg.Symbol (sz_kind_syms, set_sz_kind), "\tSet type size kind" ;
+    "--filter", Arg.Set filter, "\tEnable feature filtering" ;
   ]
 
   let anon_fun arg =
@@ -216,7 +220,7 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main sz_kind file str =
+  let main sz_kind filter file str =
     let idx =
       try Index.load file
       with Sys_error _ ->
@@ -224,6 +228,8 @@ let () = Args.add_cmd (module struct
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
+    if filter then
+      Index.filter idx ty ;
     let tbl = ref Type.Size.Map.empty in
     Index.iter idx (fun _ Index.{ ty = ty' } ->
       try
@@ -292,7 +298,7 @@ let () = Args.add_cmd (module struct
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! sz_kind (Option.get ! file) (Option.get ! ty)
+    main ! sz_kind ! filter (Option.get ! file) (Option.get ! ty)
 
 end)
 

@@ -423,6 +423,8 @@ module Size = struct
     | NodeCount
     | HeadKind
     | TailRootVarCount
+    | RootVarCount
+    | TailLength
 
   type t = Int.t
 
@@ -436,26 +438,11 @@ module Size = struct
 
 end
 
-let size sz_kind t =
+let rec size (sz_kind : Size.kind) t =
   match sz_kind with
-  | Size.VarCount ->
-      let vars = ref Variable.Set.empty in
-      let rec aux = function
-        | Var var ->
-            if Variable.Set.mem var ! vars then 0
-            else (vars := Variable.Set.add var ! vars ; 1)
-        | Constr (_, args) ->
-            CCArray.fold (fun acc t -> acc + aux t) 0 args
-        | Arrow (args, ret) ->
-            aux_set args + aux ret
-        | Tuple elts ->
-            aux_set elts
-        | Other _ ->
-            0
-      and aux_set set =
-        Set.fold (fun t acc -> aux t + acc) set 0
-      in aux t
-  | Size.NodeCount ->
+  | VarCount ->
+      Variable.Set.(cardinal @@ of_iter @@ vars t)
+  | NodeCount ->
       let rec aux = function
         | Var _ | Other _ ->
             1
@@ -469,15 +456,19 @@ let size sz_kind t =
         Set.fold (fun t acc -> aux t + acc) set 0
       in
       aux t
-  | Size.HeadKind ->
+  | HeadKind ->
       Kind.to_int @@ kind @@ head t
-  | Size.TailRootVarCount ->
-      let aux t acc =
-        match t with
-        | Var _ -> acc + 1
-        | _ -> acc
+  | TailRootVarCount ->
+      let aux t =
+        (+) @@ CCBool.to_int @@ (kind t = Kind.Var)
       in
       Set.fold aux (tail t) 0
+  | RootVarCount ->
+      let sz = size Size.TailRootVarCount t in
+      let hd_kind = kind @@ head t in
+      sz + (CCBool.to_int @@ (hd_kind = Kind.Var))
+  | TailLength ->
+      Set.length @@ tail t
 
 (* pretty printing *)
 

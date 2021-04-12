@@ -1,4 +1,4 @@
-module LIdMap = LongIdent.HMap
+module LIdHMap = LongIdent.HMap
 
 type key = LongIdent.t
 
@@ -6,7 +6,7 @@ type info = {
   ty : Type.t ;
 }
 
-type infos = info LIdMap.t
+type infos = info LIdHMap.t
 
 type t = {
   env : Type.Env.t ;
@@ -18,14 +18,14 @@ let get_infos (t : t) = t.infos
 
 let get, add =
   let (%) = CCFun.(%) in
-  LIdMap.get % get_infos,
-  LIdMap.add % get_infos
+  LIdHMap.get % get_infos,
+  LIdHMap.add % get_infos
 
-let iter t fn = LIdMap.iter fn @@ get_infos t
+let iter t fn = LIdHMap.iter fn @@ get_infos t
 
 let make () = {
   env = Type.Env.make () ;
-  infos = LIdMap.create 17 ;
+  infos = LIdHMap.create 17 ;
 }
 
 let make pkg_dirs =
@@ -45,6 +45,30 @@ let make pkg_dirs =
     | _ -> ()
   ) ;
   t
+
+let filter t ty =
+  let by_head =
+    let hd_kind = Type.(kind @@ head ty) in
+    fun ty' ->
+      let hd_kind' = Type.(kind @@ head ty') in
+      hd_kind' = Type.Kind.Var || hd_kind' = hd_kind
+  in
+  let by_root_var_cnt =
+    let root_var_cnt = Type.(size Size.RootVarCount ty) in
+    let tl_len = Type.(size Size.TailLength ty) in
+    fun ty' ->
+      let root_var_cnt' = Type.(size Size.RootVarCount ty') in
+      let tl_len' = Type.(size Size.TailLength ty') in
+      match root_var_cnt, root_var_cnt' with
+      | 0, 0 -> tl_len = tl_len'
+      | _, 0 -> tl_len <= tl_len'
+      | 0, _ -> tl_len >= tl_len'
+      | _ -> true
+  in
+  t.infos |> LIdHMap.filter_map_inplace (fun _ ({ ty = ty' } as info) ->
+    let ok = by_head ty' && by_root_var_cnt ty' in
+    CCOpt.return_if ok info
+  )
 
 module Archive = struct
 
