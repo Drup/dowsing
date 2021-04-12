@@ -9,31 +9,62 @@ let env = Type.Env.make ()
 (* Unification.unifiable *)
 
 let pos_tests = [
-  "int", "int" ;
-  "'a", "'b" ;
-  "int -> int", "int -> int" ;
-  "int -> int", "int -> 'a" ;
-  "int -> int", "'a -> int" ;
-  "int -> int", "'a -> 'a" ;
-  "int -> int -> int", "int * int -> int" ;
-  "'a -> 'b", "int -> int -> int" ;
-  "'a * 'b -> 'c", "int -> int -> int" ;
-  "'a * 'b -> 'c", "int * int -> int -> int" ;
-  "int -> int -> int -> int -> int", "int -> int * int -> int -> int" ;
-  "int -> int -> int -> int -> int", "int * int * int -> int -> int" ;
+  (* com-2 *)
+  "a * b", "b * a" ;
+  "a * (b * c)", "(c * b) * a" ;
+  "(a * b) f", "(b * a) f" ;
+  "a * b -> c", "b * a -> c" ;
+  "(a * b) f * c", "(b * a) f * c" ;
+  "(a * b) f -> c", "(b * a) f -> c" ;
+  "a -> (b * c) f", "a -> (c * b) f" ;
+  (* ass-2 *)
+  "(a * b) * c", "a * (b * c)" ;
+  "((a * b) * c) f", "(a * (b * c)) f" ;
+  "(a * b) * c -> d", "a * (b * c) -> d" ;
+  "a -> ((b * c) * d) f", "a -> (b * (c * d)) f" ;
+  (* ass-0 *)
+  "unit * a", "a" ;
+  "a * unit", "a" ;
+  "unit * a * b", "a * b" ;
+  "(unit * a) f", "a f" ;
+  "unit * a -> b", "a -> b" ;
+  "a -> unit * b", "a -> b" ;
+  (* cur-2 *)
+  "a * b -> c", "a -> b -> c" ;
+  "a * b * c -> d", "a -> b -> c -> d" ;
+  "a * b -> c", "b -> a -> c" ;
+  "a * b -> c -> d", "a -> b -> c -> d" ;
+  "a -> b * c -> d", "a -> b -> c -> d" ;
+  "(a * b -> c) f", "(a -> b -> c) f" ;
+  "(a * b * c -> d) f", "(a -> b -> c -> d) f" ;
+  (* cur-0 *)
+  "unit -> a", "a" ;
+  "unit -> unit -> a", "a" ;
+  "unit * unit -> a", "a" ;
+  "a -> unit -> b", "a -> b" ;
+  "(unit -> a) * b", "a * b" ;
+  "(unit -> a) f", "a f" ;
+  (* other *)
+  "a -> a", "a -> 'a" ;
+  "a -> a", "'a -> a" ;
+  "a -> a", "'a -> 'a" ;
+  "a -> a", "'a -> 'b" ;
+  "a -> a -> a", "'a -> 'b" ;
+  "a -> a -> a", "'a * 'b -> 'c" ;
+  "a * a -> a -> a", "'a * 'b -> 'c" ;
   "'a -> 'b -> 'c", "'x -> 'y * 'z" ;
-  "'a -> 'b list -> int", "'x array * 'y list -> 'x" ;
-  "'a -> 'a -> int", "'x * int -> 'x" ;
+  "'a -> 'b f -> a", "'x g * 'y f -> 'x" ;
+  "'a -> 'a -> a", "'x * a -> 'x" ;
 ]
 
 let neg_tests = [
-  "int", "int -> int" ;
-  "int", "int * int" ;
-  "int", "int list" ;
+  "a", "a -> a" ;
+  "a", "a * a" ;
+  "a", "a f" ;
   "'a -> 'b", "'a * 'b" ;
-  "'a list * int", "'x array * int" ;
-  "'a t -> 'b list -> int", "'x array * 'y -> 'x" ;
-  "'a -> 'a -> float", "'x * int -> 'x" ;
+  "'a f * a", "'x g * a" ;
+  "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
+  "'a -> 'a -> a", "'x * b -> 'x" ;
 ]
 
 let tests =
