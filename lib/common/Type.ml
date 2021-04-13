@@ -34,8 +34,8 @@ module Kind = struct
   let pp fmt t =
     Fmt.string fmt @@ to_string t
 
-  let compare = compare
-  let equal = (=)
+  let compare x y = CCInt.compare (to_int x) (to_int y)
+  let equal x y = compare x y = 0
   let hash = CCHash.poly
 
   module Map = CCMap.Make (struct
@@ -194,6 +194,8 @@ end = struct
 end
 
 include Base
+
+module Map = CCMap.Make(Base)
 
 (* Hashcons *)
 

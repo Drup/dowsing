@@ -12,6 +12,8 @@ module Kind : sig
 
   val to_string : t -> String.t
 
+  val compare : t -> t -> int
+  val equal : t -> t -> bool
   val pp : t Fmt.t
 
   module Map : CCMap.S with type key = t
@@ -62,6 +64,8 @@ and MSet : sig
 end
 
 include module type of Base with type t = Base.t
+
+module Map : CCMap.S with type key = Base.t
 
 module Hashcons : sig
 
