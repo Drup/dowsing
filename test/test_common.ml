@@ -15,11 +15,11 @@ let int = Type.Constr (LongIdent.Lident "int", [||])
 let tests =
   let open Type in [
     "int", int ;
-    "int -> int", Arrow (Set.of_list [ int ], int) ;
+    "int -> int", Arrow (MSet.of_list [ int ], int) ;
     "unit -> int", int ;
-    "int * int", Tuple (Set.of_list [ int ; int ]) ;
-    "int * int -> int", Arrow (Set.of_list [ int ; int ], int) ;
-    "int -> int -> int", Arrow (Set.of_list [ int ; int ], int) ;
+    "int * int", Tuple (MSet.of_list [ int ; int ]) ;
+    "int * int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
+    "int -> int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
   ]
 
 let tests =
