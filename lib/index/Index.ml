@@ -70,6 +70,61 @@ let filter t ty =
     CCOpt.return_if ok info
   )
 
+module type Node = sig
+
+  type t
+
+  val make : Unit.t -> t
+  val add : t -> info -> Unit.t
+  val get : t -> Type.t -> info Iter.t
+
+end
+
+module Leaf = struct
+
+  type t = info List.t ref
+
+  let make () = ref []
+  let add t info = t := info :: ! t
+  let get t _ = Iter.of_list ! t
+
+end
+
+module ByHead (Child : Node) = struct
+
+  type t = Child.t Type.Kind.Map.t ref
+
+  let make () =
+    ref Type.Kind.Map.empty
+
+  let add t info =
+    let kind = Type.(kind @@ head info.ty) in
+    t := ! t |> Type.Kind.Map.update kind (function
+      | None ->
+          let child = Child.make () in
+          Child.add child info ;
+          Some child
+      | Some child ->
+          Child.add child info ;
+          Some child
+    )
+
+  let get_child t kind =
+    Type.Kind.Map.get_or kind ! t ~default:(Child.make ())
+
+  let get t ty =
+    let kind = Type.(kind @@ head ty) in
+    if kind = Type.Kind.Var then
+      Type.Kind.Map.fold (fun _ child -> Iter.append @@ Child.get child ty) ! t Iter.empty
+    else
+      let child = get_child t Type.(kind @@ head ty) in
+      let var_child = get_child t Type.Kind.Var in
+      Iter.append (Child.get child ty) (Child.get var_child ty)
+
+end
+
+module Tree = ByHead (Leaf)
+
 module Archive = struct
 
   type index = t

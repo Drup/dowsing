@@ -1,4 +1,4 @@
 (library
   (name index)
   (libraries ocp-index.lib common)
-  (flags (:standard -open Common)))
+  (flags (:standard -open Common -w -32-34)))

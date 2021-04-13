@@ -14,6 +14,9 @@ module Kind : sig
 
   val pp : t Fmt.t
 
+  module Map : CCMap.S with type key = t
+  module HMap : CCHashtbl.S with type key = t
+
 end
 
 module rec Base : sig

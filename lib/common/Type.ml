@@ -34,6 +34,21 @@ module Kind = struct
   let pp fmt t =
     Fmt.string fmt @@ to_string t
 
+  let compare = compare
+  let equal = (=)
+  let hash = CCHash.poly
+
+  module Map = CCMap.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
+
+  module HMap = CCHashtbl.Make (struct
+    type nonrec t = t
+    let equal = equal
+    let hash = hash
+  end)
+
 end
 
 (* Base *)
