@@ -21,7 +21,7 @@ depends: [
   "fmt"
   "base-unix"
   "ocp-index"
-  "findlib"
+  "ocamlfind"
   "alcotest"
   "logs"
 ]
