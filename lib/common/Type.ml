@@ -31,11 +31,8 @@ module Kind = struct
     | Tuple -> "tuple"
     | Other -> "other"
 
-  let pp fmt t =
-    Fmt.string fmt @@ to_string t
-
-  let compare x y = CCInt.compare (to_int x) (to_int y)
-  let equal x y = compare x y = 0
+  let compare t1 t2 = CCInt.compare (to_int t1) (to_int t2)
+  let equal t1 t2 = compare t1 t2 = 0
   let hash = CCHash.poly
 
   module Map = CCMap.Make (struct
@@ -48,6 +45,9 @@ module Kind = struct
     let equal = equal
     let hash = hash
   end)
+
+  let pp fmt t =
+    Fmt.string fmt @@ to_string t
 
 end
 
@@ -489,25 +489,25 @@ let rec size (sz_kind : Size.kind) t =
 
 (* pretty printing *)
 
-let pp_array pp_elt fmt = function
-  | [||] ->
-      Fmt.string fmt "()"
-  | [| elt |] ->
-      pp_elt fmt elt
-  | arr ->
-      Fmt.pf fmt "@[<2>(%a)@]"
-        Fmt.(array ~sep:(any ", ") pp_elt) arr
-
-let rec pp var_names =
-  let pp fmt = pp var_names fmt in
-  fun fmt -> function
+let rec pp var_names fmt =
+  let pp = pp var_names in
+  let pp_array = function
+    | [||] ->
+        Fmt.string fmt "()"
+    | [| elt |] ->
+        pp fmt elt
+    | arr ->
+        Fmt.pf fmt "@[<2>(%a)@]"
+          Fmt.(array ~sep:(any ", ") pp) arr
+  in
+  function
     | Var var ->
         Variable.pp var_names fmt var
     | Constr (lid, [||]) ->
         LongIdent.pp fmt lid
     | Constr (lid, args) ->
         Fmt.pf fmt "%a@ %a"
-          (pp_array pp) args
+          pp_array args
           LongIdent.pp lid
     | Arrow (args, ret) ->
         Fmt.pf fmt "@[<2>%a@ ->@ %a@]"

@@ -12,12 +12,14 @@ module Kind : sig
 
   val to_string : t -> String.t
 
-  val compare : t -> t -> int
-  val equal : t -> t -> bool
-  val pp : t Fmt.t
+  val compare : t -> t -> Int.t
+  val equal : t -> t -> Bool.t
+  val hash : t -> Int.t
 
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
+
+  val pp : t Fmt.t
 
 end
 
