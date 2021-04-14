@@ -1,23 +1,22 @@
-module LIdHMap = LongIdent.HMap
+module Key = LongIdent
 
 type info = {
-  lid : LongIdent.t ;
+  key : Key.t ;
   ty : Type.t ;
 }
 
 module Tree = struct
-  module T = Trie.Node(Feature.ByHead)(
-      Trie.Node(Feature.TailLength)(
-        Trie.Leaf
-      )
-    )
+
+  module T =
+    Trie.Node (Feature.ByHead) (
+      Trie.Node (Feature.TailLength) (
+        Trie.Leaf))
+
   type 'a t = 'a T.t
 
-  let mk_features env ty = 
+  let mk_features env ty =
     let open Feature in
-    (ByHead.compute env ty,
-     (TailLength.compute env ty,
-      (ty)))
+    (ByHead.compute env ty, (TailLength.compute env ty, ty))
 
   let get env t ty =
     let features = mk_features env ty in
@@ -25,9 +24,10 @@ module Tree = struct
 
   let import env it =
     Iter.fold (fun m info ->
-        let features = mk_features env info.ty in
-        T.add features info m
-      ) T.empty it
+      let features = mk_features env info.ty in
+      T.add features info m
+    ) T.empty it
+
 end
 
 type t = {
@@ -37,12 +37,14 @@ type t = {
 
 let get_env (t : t) = t.env
 let get_infos (t : t) = t.infos
+let get t = Tree.get (get_env t) (get_infos t)
 
-let get t ty = Tree.get (get_env t) (get_infos t) ty
-let import env it =
-  { env ; infos = Tree.import env it }
+let import env it = {
+  env ;
+  infos = Tree.import env it ;
+}
 
-let iter_libindex pkg_dirs env kk = 
+let iter_libindex pkg_dirs env kk =
   pkg_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
@@ -53,8 +55,8 @@ let iter_libindex pkg_dirs env kk =
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let out_ty = out_ty.oval_type in
         let ty = Type.of_outcometree env out_ty in
-        let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
-        kk { lid ; ty }
+        let key = Key.of_list @@ info.path @ [ info.name ] in
+        kk { key ; ty }
     | _ -> ()
   )
 
@@ -67,24 +69,8 @@ let iter t fn = LIdHMap.iter fn @@ get_infos t
 
 module Archive = struct
 
-  type index = t
-
-  type t = {
-    var_gen : Variable.Gen.t ;
-    var_names : String.t Variable.HMap.t ;
-    infos : infos ;
-  }
-
-  let of_index (idx : index) = {
-    var_gen = idx.env.var_gen ;
-    var_names = idx.env.var_names ;
-    infos = idx.infos ;
-  }
-
-  let to_index t : index = {
-    env = Type.Env.make () ~var_gen:t.var_gen ~var_names:t.var_names ;
-    infos = t.infos ;
-  }
+  let of_index = CCFun.id
+  let to_index = CCFun.id
 
   let load file : t =
     CCIO.with_in file Marshal.from_channel
@@ -95,4 +81,4 @@ module Archive = struct
 end
 
 let load file = Archive.(to_index @@ load file)
-let save t file = Archive.(save (of_index t) file)
+let save t = Archive.(save @@ of_index t)

@@ -67,14 +67,16 @@ end
 
 include module type of Base with type t = Base.t
 
-module Map : CCMap.S with type key = Base.t
+module Map : CCMap.S with type key = t
+module Set : CCSet.S with type key = t
 
 module Hashcons : sig
 
+  type elt = t
   type t
 
-  val make : Int.t -> t
-  val hashcons : t -> Base.t -> Base.t
+  val make : Unit.t -> t
+  val hashcons : t -> elt -> elt
 
 end
 
@@ -86,7 +88,7 @@ module Env : sig
     hcons : Hashcons.t ;
   }
 
-  val make : ?var_gen:Variable.Gen.t -> ?var_names: String.t Variable.HMap.t -> Unit.t -> t
+  val make : Unit.t -> t
 
 end
 
@@ -120,10 +122,10 @@ module Size : sig
 
   type t = Int.t
 
-  val pp : kind -> t Fmt.t
-
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
+
+  val pp : kind -> t Fmt.t
 
 end
 

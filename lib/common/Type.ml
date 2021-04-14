@@ -195,41 +195,22 @@ end
 
 include Base
 
-module Map = CCMap.Make(Base)
+module Map = CCMap.Make (Base)
+module Set = CCSet.Make (Base)
 
 (* Hashcons *)
 
 module Hashcons = struct
 
-  type elt = {
-    node : t ;
-    mutable tag : Int.t ;
-  }
+  type elt = t
+  type t = ref Set.t
 
-  module Set = Weak.Make (struct
-    type t = elt
-    let equal lhs rhs = compare lhs.node rhs.node = 0
-    let hash self = CCHash.poly self.node
-  end)
-
-  type t = {
-    tbl : Set.t ;
-    mutable elt_cnt : Int.t ;
-  }
-
-  let make sz = {
-    tbl = Set.create sz ;
-    elt_cnt = 0 ;
-  }
+  let make () = ref Set.empty
 
   let hashcons t ty =
-    let elt = { node = ty ; tag = -1 } in
-    let elt' = Set.merge t.tbl elt in
-    if elt == elt' then begin
-      elt.tag <- t.elt_cnt ;
-      t.elt_cnt <- t.elt_cnt + 1
-    end ;
-    elt'.node
+    match Set.find_opt ty ! t with
+    | Some ty -> ty
+    | None -> Set.add ty ! t ; ty
 
 end
 
@@ -243,10 +224,10 @@ module Env = struct
     hcons : Hashcons.t ;
   }
 
-  let make ?(var_gen = Variable.Gen.make 10) ?(var_names = Variable.HMap.create 17) () = {
-    var_gen ;
-    var_names ;
-    hcons = Hashcons.make 17 ;
+  let make () = {
+    var_gen = Variable.Gen.make 10 ;
+    var_names Variable.HMap.create 17 ;
+    hcons = Hashcons.make () ;
   }
 
 end
@@ -445,13 +426,13 @@ module Size = struct
 
   type t = Int.t
 
+  module Map = CCMap.Make (CCInt)
+  module HMap = CCHashtbl.Make (CCInt)
+
   let pp kind fmt t =
     match kind with
     | HeadKind -> Kind.(pp fmt @@ of_int t)
     | _ -> Fmt.int fmt t
-
-  module Map = CCMap.Make (CCInt)
-  module HMap = CCHashtbl.Make (CCInt)
 
 end
 
