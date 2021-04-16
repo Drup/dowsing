@@ -1,0 +1,17 @@
+digraph {
+	f_0 [ label = "variable racine ?" ] ;
+	f_1_1 [ label = "longueur queue" ] ;
+	f_1_2 [ label = "longueur queue" ] ;
+	f_2_1 [ shape = triangle, label = "" ] ;
+	f_2_2 [ shape = triangle, label = "" ] ;
+	f_2_3 [ shape = triangle, label = "" ] ;
+	f_2_4 [ shape = triangle, label = "" ] ;
+	f_2_5 [ shape = triangle, label = "" ] ;
+	f_0 -> f_1_1 [ label = "oui" ] ;
+	f_0 -> f_1_2 [ label = "non" ] ;
+	f_1_1 -> f_2_1 [ label = "0" ] ;
+	f_1_1 -> f_2_2 [ label = "1" ] ;
+	f_1_1 -> f_2_3 [ label = "3" ] ;
+	f_1_2 -> f_2_4 [ label = "1" ] ;
+	f_1_2 -> f_2_5 [ label = "2" ] ;
+}

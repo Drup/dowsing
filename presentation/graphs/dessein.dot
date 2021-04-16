@@ -1,0 +1,12 @@
+digraph {
+	env [ shape = record, label = "Environnement OCaml\n(stdlib, opam)" ] ;
+	ppx [ shape = record, label = <{Prétraitement<br/><i>dowsindex save</i>}> ] ;
+	lookup [ shape = record, label = <{Recherche<br/><i>dowsindex search</i>}> ] ;
+	query [ shape = record, label = "Requête\n'a list -\> ('a -\> 'b -\> 'b) -\> 'b -\> 'b" ] ;
+	res [ shape = record, label = "Résultat\n... List.fold_left ..." ] ;
+
+	env -> ppx ;
+	ppx -> lookup ;
+	query -> lookup ;
+	lookup -> res ;
+}

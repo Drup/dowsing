@@ -1,0 +1,11 @@
+auto
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.pdf
+_minted-presentation/
