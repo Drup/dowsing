@@ -15,6 +15,7 @@ build: [
 depends: [
   "dune" { >= "1.1" }
   "odoc" {with-doc}
+  "zarith"
   "containers" { >= "3.0" & < "4.0" }
   "containers-data" { >= "3.0" & < "4.0" }
   "iter"
