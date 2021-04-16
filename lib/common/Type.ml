@@ -203,14 +203,14 @@ module Set = CCSet.Make (Base)
 module Hashcons = struct
 
   type elt = t
-  type t = ref Set.t
+  type t = Set.t ref
 
   let make () = ref Set.empty
 
   let hashcons t ty =
     match Set.find_opt ty ! t with
     | Some ty -> ty
-    | None -> Set.add ty ! t ; ty
+    | None -> t := Set.add ty ! t ; ty
 
 end
 
@@ -226,7 +226,7 @@ module Env = struct
 
   let make () = {
     var_gen = Variable.Gen.make 10 ;
-    var_names Variable.HMap.create 17 ;
+    var_names = Variable.HMap.create 17 ;
     hcons = Hashcons.make () ;
   }
 
@@ -470,9 +470,9 @@ let rec size (sz_kind : Size.kind) t =
 
 (* pretty printing *)
 
-let rec pp var_names fmt =
-  let pp = pp var_names in
-  let pp_array = function
+let rec pp var_names =
+  let pp fmt = pp var_names fmt in
+  let pp_array fmt = function
     | [||] ->
         Fmt.string fmt "()"
     | [| elt |] ->
@@ -481,7 +481,7 @@ let rec pp var_names fmt =
         Fmt.pf fmt "@[<2>(%a)@]"
           Fmt.(array ~sep:(any ", ") pp) arr
   in
-  function
+  fun fmt -> function
     | Var var ->
         Variable.pp var_names fmt var
     | Constr (lid, [||]) ->

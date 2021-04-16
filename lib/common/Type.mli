@@ -68,7 +68,7 @@ end
 include module type of Base with type t = Base.t
 
 module Map : CCMap.S with type key = t
-module Set : CCSet.S with type key = t
+module Set : CCSet.S with type elt = t
 
 module Hashcons : sig
 
