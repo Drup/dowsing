@@ -87,24 +87,24 @@ end = struct
     Kind.to_int @@ kind t
 
   let rec compare t1 t2 =
-      if t1 == t2 then 0
-      else
-        let (<?>) = CCOrd.(<?>) in
-        match t1, t2 with
-        | Var t1, Var t2 ->
-            Variable.compare t1 t2
-        | Constr (lid1, args1), Constr (lid2, args2) ->
-            LongIdent.compare lid1 lid2
-            <?> (CCArray.compare compare, args1, args2)
-        | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
-            compare ret1 ret2
-            <?> (MSet.compare, arg1, arg2)
-        | Tuple t1, Tuple t2 ->
-            MSet.compare t1 t2
-        | Other t1, Other t2 ->
-            CCInt.compare t1 t2
-        | _ ->
-            CCInt.compare (to_int t1) (to_int t2)
+    if t1 == t2 then 0
+    else
+      let (<?>) = CCOrd.(<?>) in
+      match t1, t2 with
+      | Var t1, Var t2 ->
+          Variable.compare t1 t2
+      | Constr (lid1, args1), Constr (lid2, args2) ->
+          LongIdent.compare lid1 lid2
+          <?> (CCArray.compare compare, args1, args2)
+      | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
+          compare ret1 ret2
+          <?> (MSet.compare, arg1, arg2)
+      | Tuple t1, Tuple t2 ->
+          MSet.compare t1 t2
+      | Other t1, Other t2 ->
+          CCInt.compare t1 t2
+      | _ ->
+          CCInt.compare (to_int t1) (to_int t2)
 
   let equal t1 t2 =
     compare t1 t2 = 0
