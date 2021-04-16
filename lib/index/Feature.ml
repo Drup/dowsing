@@ -24,6 +24,46 @@ module ByHead : S = struct
 
 end
 
+module ByHead' : S = struct
+
+  type t =
+    | Var
+    | Constr of LongIdent.t
+    | Arrow
+    | Tuple
+    | Other
+
+  let compute ty =
+    match Type.head ty with
+    | Var _ -> Var
+    | Constr (lid, _) -> Constr lid
+    | Arrow _ -> Arrow
+    | Tuple _ -> Tuple
+    | Other _ -> Other
+
+  let to_int = function
+    | Var -> 0
+    | Constr _ -> 1
+    | Arrow -> 2
+    | Tuple -> 3
+    | Other -> 4
+
+  let compare t1 t2 =
+    match t1, t2 with
+    | Var, Var
+    | Arrow, Arrow
+    | Tuple, Tuple
+    | Other, Other -> 0
+    | Constr lid1, Constr lid2 -> LongIdent.compare lid1 lid2
+    | _ -> CCInt.compare (to_int t1) (to_int t2)
+
+  let compatible src tgt =
+    match src, tgt with
+    | Var, _ | _, Var -> true
+    | _ -> compare src tgt = 0
+
+end
+
 module TailLength : S = struct
 
   type order = Eq | GEq

@@ -9,4 +9,5 @@ module type S = sig
 end
 
 module ByHead : S
+module ByHead' : S
 module TailLength : S
