@@ -1,41 +1,53 @@
 module type S = sig
+
   type t
 
-  val compute : Type.Env.t -> Type.t -> t
+  val compute : Type.t -> t
+  (* TODO: We should enforce that compatible is monotonic with respect to compare *)
+  val compare : t -> t -> Int.t
+  val compatible : t -> t -> Bool.t
 
-  (** TODO: We should enforce that compatible is monotonic with respect to
-      compare *)
-  val compare : t -> t -> int
-  val compatible : source:t -> target:t -> bool 
 end
 
-module ByHead = struct
+module ByHead : S = struct
+
   type t = Type.Kind.t
-  let compute _env ty = Type.(kind @@ head ty)
+
+  let compute ty = Type.(kind @@ head ty)
+
   let compare = Type.Kind.compare
-  let compatible ~source ~target = match source, target with
+
+  let compatible src tgt =
+    match src, tgt with
     | Type.Kind.Var, _ | _, Type.Kind.Var -> true
-    | _ -> Type.Kind.equal source target
-      
-end 
+    | _ -> Type.Kind.equal src tgt
 
-module TailLength = struct
+end
+
+module TailLength : S = struct
+
   type order = Eq | GEq
-  type t = { order : order ; length : int }
 
-  let compute _env ty =
+  type t = {
+    ord : order ;
+    len : Int.t ;
+  }
+
+  let compute ty =
     let root_var_cnt = Type.(size Size.RootVarCount ty) in
-    let length = Type.(size Size.TailLength ty) in
-    let order = if root_var_cnt = 0 then Eq else GEq in
-    { order ; length }
+    let ord = if root_var_cnt = 0 then Eq else GEq in
+    let len = Type.(size Size.TailLength ty) in
+    { ord ; len }
 
-  let compare tl1 tl2 =
-    CCOrd.(compare tl1.order tl2.order <?> (int, tl1.length, tl2.length))
-  
-  let compatible ~source:tl1 ~target:tl2 =
-    match tl1.order, tl2.order with
-    | Eq,  Eq  -> tl1.length = tl2.length
-    | Eq,  GEq -> tl1.length <= tl2.length
-    | GEq, Eq  -> tl1.length >= tl2.length
+  let compare t1 t2 =
+    CCOrd.(compare t1.ord t2.ord
+    <?> (int, t1.len, t2.len))
+
+  let compatible t1 t2 =
+    match t1.ord, t2.ord with
+    | Eq,  Eq  -> t1.len  = t2.len
+    | Eq,  GEq -> t1.len <= t2.len
+    | GEq, Eq  -> t1.len >= t2.len
     | GEq, GEq -> true
+
 end

@@ -1,50 +1,17 @@
-module Key = LongIdent
-
-type info = {
-  key : Key.t ;
-  ty : Type.t ;
-}
-
-module Tree = struct
-
-  module T =
+module Trie =
+  Trie.Make (
     Trie.Node (Feature.ByHead) (
       Trie.Node (Feature.TailLength) (
-        Trie.Leaf))
+        Trie.Leaf)))
 
-  type 'a t = 'a T.t
-
-  let mk_features env ty =
-    let open Feature in
-    (ByHead.compute env ty, (TailLength.compute env ty, ty))
-
-  let get env t ty =
-    let features = mk_features env ty in
-    T.get env t features
-
-  let import env it =
-    Iter.fold (fun m info ->
-      let features = mk_features env info.ty in
-      T.add features info m
-    ) T.empty it
-
-end
+type info = LongIdent.t
 
 type t = {
   env : Type.Env.t ;
-  infos : info Tree.t ;
+  infos : info Trie.t ;
 }
 
-let get_env (t : t) = t.env
-let get_infos (t : t) = t.infos
-let get t = Tree.get (get_env t) (get_infos t)
-
-let import env it = {
-  env ;
-  infos = Tree.import env it ;
-}
-
-let iter_libindex pkg_dirs env kk =
+let iter_libindex pkg_dirs env k =
   pkg_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
@@ -55,17 +22,30 @@ let iter_libindex pkg_dirs env kk =
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let out_ty = out_ty.oval_type in
         let ty = Type.of_outcometree env out_ty in
-        let key = Key.of_list @@ info.path @ [ info.name ] in
-        kk { key ; ty }
+        let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
+        k (ty, lid)
     | _ -> ()
   )
 
 let make pkg_dirs =
   let env = Type.Env.make () in
   let it = iter_libindex pkg_dirs env in
-  import env it
+  let infos =
+    Iter.fold (fun trie (ty, info) ->
+      Trie.add ty info trie
+    ) Trie.empty it
+  in
+  { env ; infos }
 
-let iter t fn = LIdHMap.iter fn @@ get_infos t
+let get_env t = t.env
+
+let iter, iteri =
+  let aux fn t = fn @@ t.infos in
+  aux Trie.iter, aux Trie.iteri
+
+let iter', iteri' =
+  let aux fn t env ty = fn env ty @@ t.infos in
+  aux Trie.iter', aux Trie.iteri'
 
 module Archive = struct
 

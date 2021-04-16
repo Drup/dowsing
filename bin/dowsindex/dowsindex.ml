@@ -228,24 +228,22 @@ let () = Args.add_cmd (module struct
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
-    if filter then
-      Index.filter idx ty ;
+    let iter_idx =
+      if filter then
+        Index.iteri' idx env ty
+      else
+        Index.iteri idx
+    in
     let tbl = ref Type.Size.Map.empty in
-    Index.iter idx (fun _ Index.{ ty = ty' } ->
-      try
-        Timer.start timer ;
-        ignore @@ Unification.unifiable env [ ty, ty' ] ;
-        Timer.stop timer ;
-        let time = Timer.get timer in
-        let sz = Type.size sz_kind ty' in
-        tbl := ! tbl |> Type.Size.Map.update sz @@ function
-          | None -> Some (time, 1)
-          | Some (time', cnt) -> Some (time +. time', cnt + 1)
-      with
-      | Assert_failure (file, line, col) ->
-          Logs.debug (fun m -> m "assertion failure in '%s':%d:%d" file line col) ;
-          Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
-          Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
+    iter_idx (fun (ty', _) ->
+      Timer.start timer ;
+      ignore @@ Unification.unifiable env [ ty, ty' ] ;
+      Timer.stop timer ;
+      let time = Timer.get timer in
+      let sz = Type.size sz_kind ty' in
+      tbl := ! tbl |> Type.Size.Map.update sz @@ function
+        | None -> Some (time, 1)
+        | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
     let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
     let sep = 4 in
@@ -329,19 +327,13 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file
     in
-    let find k lid Index.{ ty = ty' } =
-      try
-        [ ty, ty' ]
-        |> Unification.unify env
-        |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
-      with
-      | Assert_failure (file, line, col) ->
-          Logs.debug (fun m -> m "assertion failure in '%s':%d:%d" file line col) ;
-          Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty) ;
-          Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty')
+    let aux k (ty', lid) =
+      [ ty, ty' ]
+      |> Unification.unify env
+      |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
     in
     let res =
-      (fun k -> Index.iter idx @@ find k)
+      (fun k -> Index.iteri' idx env ty @@ aux k)
       |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
     in
     Fmt.pr "@[<v>" ;

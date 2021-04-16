@@ -1,59 +1,119 @@
 module type NODE = sig
+
   type key
-  type 'a t
+  type 'v t
 
-  val compute : Type.Env.t -> Type.t -> key
-  
-  val empty : 'a t
-  val singleton : key -> 'a -> 'a t
-  val add :  key -> 'a -> 'a t -> 'a t
-  val get : Type.Env.t -> 'a t -> key -> 'a Iter.t
+  val key : Type.t -> key
+
+  val empty : 'v t
+  val singleton : key -> 'v -> 'v t
+  val add : key -> 'v -> 'v t -> 'v t
+  val iter : 'v t -> 'v Iter.t
+  val iteri : 'v t -> (Type.t * 'v) Iter.t
+  val iter' : Type.Env.t -> key -> 'v t -> 'v Iter.t
+  val iteri' : Type.Env.t -> key -> 'v t -> (Type.t * 'v) Iter.t
+
 end
 
-module Leaf : NODE with type key = Type.t = struct
-  type key = Type.t 
-  type 'a t = 'a Type.Map.t
-  let compute _ ty = ty
+module Leaf : NODE = struct
+
+  type key = Type.t
+  type 'v t = 'v Type.Map.t
+
+  let key = CCFun.id
+
   let empty = Type.Map.empty
-  let singleton k v = Type.Map.singleton k v
-  let add k v m = Type.Map.add k v m
-  let get env m k0 =
-    let aux (k, v) =
-      if Unification.unifiable env [k0, k] then Some v else None
-    in
-    Type.Map.to_iter m
-    |> Iter.filter_map aux
+  let singleton = Type.Map.singleton
+  let add = Type.Map.add
+  let iter = Type.Map.values
+  let iteri = Type.Map.to_iter
+
+  let iter' env ty t =
+    t
+    |> Type.Map.to_iter
+    |> Iter.filter_map (fun (ty', v) ->
+      if Unification.unifiable env [ ty, ty' ] then
+        Some v
+      else None
+    )
+
+  let iteri' env ty t =
+    t
+    |> Type.Map.to_iter
+    |> Iter.filter_map (fun (ty', v) ->
+      if Unification.unifiable env [ ty, ty' ] then
+        Some (ty', v)
+      else None
+    )
+
 end
 
-module Node (Feature : Feature.S) (Sub : NODE)
-  : NODE with type key = Feature.t * Sub.key
-= struct
-  module M = CCMap.Make(Feature)
-  type key = Feature.t * Sub.key
-  type 'a t = 'a Sub.t M.t
+module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
 
-  let compute env ty = Feature.compute env ty, Sub.compute env ty
+  module FeatMap = CCMap.Make (Feat)
 
-  let empty = M.empty
-  let singleton (k,k') v = M.singleton k (Sub.singleton k' v)
-  let add (k,k') v m =
-    match M.find_opt k m with 
-    | None -> M.add k (Sub.singleton k' v) m
-    | Some subm -> M.add k (Sub.add k' v subm) m
+  type key = Feat.t * Sub.key
+  type 'v t = 'v Sub.t FeatMap.t
+
+  let key ty = Feat.compute ty, Sub.key ty
+
+  let empty = FeatMap.empty
+
+  let singleton (k, k') v =
+    FeatMap.singleton k @@ Sub.singleton k' v
+
+  let add (k, k') v t =
+    match FeatMap.find_opt k t with
+    | None -> FeatMap.add k (Sub.singleton k' v) t
+    | Some sub -> FeatMap.add k (Sub.add k' v sub) t
+
+  let iter t =
+    t
+    |> FeatMap.values
+    |> Iter.flat_map Sub.iter
+
+  let iteri t =
+    t
+    |> FeatMap.values
+    |> Iter.flat_map Sub.iteri
 
   (* TODO: this should be more clever to avoid having
      to walk through the whole feature dictionary.
-
      In theory, we should be able to make `compare` and `compatible`
      ... compatible, so that we can make a range query.
   *)
-  let get env m (k0,k') =
-    let aux (k, m) =
-      if Feature.compatible ~source:k0 ~target:k then
-        Sub.get env m k'
+
+  let iter' env (k, k') t =
+    t
+    |> FeatMap.to_iter
+    |> Iter.flat_map (fun (feat, sub) ->
+      if Feat.compatible k feat then
+        Sub.iter' env k' sub
       else
         Iter.empty
-    in
-    let it = M.to_iter m in
-    Iter.flat_map aux it
+    )
+
+  let iteri' env (k, k') t =
+    t
+    |> FeatMap.to_iter
+    |> Iter.flat_map (fun (feat, sub) ->
+      if Feat.compatible k feat then
+        Sub.iteri' env k' sub
+      else
+        Iter.empty
+    )
+
+end
+
+module Make (Node : NODE) = struct
+
+  type 'v t = 'v Node.t
+
+  let empty = Node.empty
+  let add ty = Node.add @@ Node.key ty
+  let iter = Node.iter
+  let iteri = Node.iteri
+  let iter' env ty = Node.iter' env @@ Node.key ty
+  let iteri' env ty = Node.iteri' env @@ Node.key ty
+
 end
