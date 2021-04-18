@@ -17,10 +17,10 @@ module ByHead : S = struct
 
   let compare = Type.Kind.compare
 
-  let compatible src tgt =
-    match src, tgt with
+  let compatible t1 t2 =
+    match t1, t2 with
     | Type.Kind.Var, _ | _, Type.Kind.Var -> true
-    | _ -> Type.Kind.equal src tgt
+    | _ -> Type.Kind.equal t1 t2
 
 end
 
@@ -57,10 +57,10 @@ module ByHead' : S = struct
     | Constr lid1, Constr lid2 -> LongIdent.compare lid1 lid2
     | _ -> CCInt.compare (to_int t1) (to_int t2)
 
-  let compatible src tgt =
-    match src, tgt with
+  let compatible t1 t2 =
+    match t1, t2 with
     | Var, _ | _, Var -> true
-    | _ -> compare src tgt = 0
+    | _ -> compare t1 t2 = 0
 
 end
 

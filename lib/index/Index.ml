@@ -2,7 +2,10 @@ module Trie =
   Trie.Make (
     Trie.Node (Feature.ByHead) (
       Trie.Node (Feature.TailLength) (
-        Trie.Leaf)))
+        Trie.Leaf
+      )
+    )
+  )
 
 type info = LongIdent.t
 
