@@ -44,13 +44,8 @@ let make pkg_dirs =
 
 let get_env t = t.env
 
-let iter, iteri =
-  let aux fn t = fn @@ t.infos in
-  aux Trie.iter, aux Trie.iteri
-
-let iter', iteri' =
-  let aux fn t env ty = fn env ty @@ t.infos in
-  aux Trie.iter', aux Trie.iteri'
+let iter t = Trie.iter @@ t.infos
+let iter' t env ty = Trie.iter' env ty @@ t.infos
 
 module Archive = struct
 

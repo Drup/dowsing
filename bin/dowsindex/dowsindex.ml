@@ -230,9 +230,9 @@ let () = Args.add_cmd (module struct
     let ty = type_of_string env str in
     let iter_idx =
       if filter then
-        Index.iteri' idx env ty
+        Index.iter' idx env ty
       else
-        Index.iteri idx
+        Index.iter idx
     in
     let tbl = ref Type.Size.Map.empty in
     iter_idx (fun (ty', _) ->
@@ -333,7 +333,7 @@ let () = Args.add_cmd (module struct
       |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
     in
     let res =
-      (fun k -> Index.iteri' idx env ty @@ aux k)
+      (fun k -> Index.iter' idx env ty @@ aux k)
       |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
     in
     Fmt.pr "@[<v>" ;

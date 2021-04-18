@@ -8,10 +8,8 @@ module type NODE = sig
   val empty : 'v t
   val singleton : key -> 'v -> 'v t
   val add : key -> 'v -> 'v t -> 'v t
-  val iter : 'v t -> 'v Iter.t
-  val iteri : 'v t -> (Type.t * 'v) Iter.t
-  val iter' : Type.Env.t -> key -> 'v t -> 'v Iter.t
-  val iteri' : Type.Env.t -> key -> 'v t -> (Type.t * 'v) Iter.t
+  val iter : 'v t -> (Type.t * 'v) Iter.t
+  val iter' : Type.Env.t -> key -> 'v t -> (Type.t * 'v) Iter.t
 
 end
 
@@ -24,9 +22,7 @@ module Make (Node : NODE) : sig
 
   val empty : 'v t
   val add : Type.t -> 'v -> 'v t -> 'v t
-  val iter : 'v t -> 'v Iter.t
-  val iteri : 'v t -> (Type.t * 'v) Iter.t
-  val iter' : Type.Env.t -> Type.t -> 'v t -> 'v Iter.t
-  val iteri' : Type.Env.t -> Type.t -> 'v t -> (Type.t * 'v) Iter.t
+  val iter : 'v t -> (Type.t * 'v) Iter.t
+  val iter' : Type.Env.t -> Type.t -> 'v t -> (Type.t * 'v) Iter.t
 
 end
