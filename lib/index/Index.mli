@@ -1,4 +1,7 @@
-type info = LongIdent.t
+type info = {
+  lid : LongIdent.t ;
+}
+
 type t
 
 val make : String.t List.t -> t

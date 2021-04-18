@@ -327,7 +327,7 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file
     in
-    let aux k (ty', lid) =
+    let aux k (ty', Index.{ lid }) =
       [ ty, ty' ]
       |> Unification.unify env
       |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))

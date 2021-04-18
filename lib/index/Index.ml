@@ -7,7 +7,9 @@ module Trie =
     )
   )
 
-type info = LongIdent.t
+type info = {
+  lid : LongIdent.t ;
+}
 
 type t = {
   env : Type.Env.t ;
@@ -26,7 +28,7 @@ let iter_libindex pkg_dirs env k =
         let out_ty = out_ty.oval_type in
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
-        k (ty, lid)
+        k (ty, { lid })
     | _ -> ()
   )
 
