@@ -193,8 +193,8 @@ let () = Args.add_cmd (module struct
       "vars", VarCount ;
       "nodes", NodeCount ;
       "head", HeadKind ;
-      "tail-root-vars", TailRootVarCount ;
-      "root-vars", RootVarCount ;
+      "tail-spine-vars", TailSpineVarCount ;
+      "spine-vars", SpineVarCount ;
       "tail-length", TailLength ;
     ]
   let set_sz_kind =

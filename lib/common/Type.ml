@@ -420,8 +420,8 @@ module Size = struct
     | VarCount
     | NodeCount
     | HeadKind
-    | TailRootVarCount
-    | RootVarCount
+    | TailSpineVarCount
+    | SpineVarCount
     | TailLength
 
   type t = Int.t
@@ -456,13 +456,13 @@ let rec size (sz_kind : Size.kind) t =
       aux t
   | HeadKind ->
       Kind.to_int @@ kind @@ head t
-  | TailRootVarCount ->
+  | TailSpineVarCount ->
       let aux t =
         (+) @@ CCBool.to_int @@ (kind t = Kind.Var)
       in
       MSet.fold aux (tail t) 0
-  | RootVarCount ->
-      let sz = size Size.TailRootVarCount t in
+  | SpineVarCount ->
+      let sz = size Size.TailSpineVarCount t in
       let hd_kind = kind @@ head t in
       sz + (CCBool.to_int @@ (hd_kind = Kind.Var))
   | TailLength ->

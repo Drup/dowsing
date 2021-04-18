@@ -74,8 +74,8 @@ module TailLength : S = struct
   }
 
   let compute ty =
-    let root_var_cnt = Type.(size Size.RootVarCount ty) in
-    let ord = if root_var_cnt = 0 then Eq else GEq in
+    let spine_var_cnt = Type.(size Size.SpineVarCount ty) in
+    let ord = if spine_var_cnt = 0 then Eq else GEq in
     let len = Type.(size Size.TailLength ty) in
     { ord ; len }
 

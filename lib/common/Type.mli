@@ -116,8 +116,8 @@ module Size : sig
     | VarCount
     | NodeCount
     | HeadKind
-    | TailRootVarCount
-    | RootVarCount
+    | TailSpineVarCount
+    | SpineVarCount
     | TailLength
 
   type t = Int.t
