@@ -230,7 +230,7 @@ let () = Args.add_cmd (module struct
     let ty = type_of_string env str in
     let iter_idx =
       if filter then
-        Index.iter' idx env ty
+        Index.iter_filter idx ty
       else
         Index.iter idx
     in
@@ -333,7 +333,7 @@ let () = Args.add_cmd (module struct
       |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
     in
     let res =
-      (fun k -> Index.iter' idx env ty @@ aux k)
+      (fun k -> Index.find idx env ty @@ aux k)
       |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
     in
     Fmt.pr "@[<v>" ;

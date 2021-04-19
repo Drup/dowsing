@@ -1,6 +1,6 @@
 module Trie =
   Trie.Make (
-    Trie.Node (Feature.ByHead) (
+    Trie.Node (Feature.ByHead') (
       Trie.Node (Feature.TailLength) (
         Trie.Leaf
       )
@@ -44,8 +44,16 @@ let make pkg_dirs =
 
 let get_env t = t.env
 
-let iter t = Trie.iter @@ t.infos
-let iter' t env ty = Trie.iter' env ty @@ t.infos
+let iter t =
+  Trie.iter @@ t.infos
+
+let iter_filter t ?(pred = CCFun.const true) ty =
+  Trie.iter_filter ty pred @@ t.infos
+
+let find t env ty =
+  iter_filter t ty ~pred: (fun ty' ->
+    Unification.unifiable env [ ty, ty' ]
+  )
 
 module Archive = struct
 

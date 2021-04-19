@@ -9,7 +9,7 @@ module type NODE = sig
   val singleton : key -> 'v -> 'v t
   val add : key -> 'v -> 'v t -> 'v t
   val iter : 'v t -> (Type.t * 'v) Iter.t
-  val iter' : Type.Env.t -> key -> 'v t -> (Type.t * 'v) Iter.t
+  val iter_filter : key -> (Type.t -> Bool.t) -> 'v t -> (Type.t * 'v) Iter.t
 
 end
 
@@ -25,14 +25,9 @@ module Leaf : NODE = struct
   let add = Type.Map.add
   let iter = Type.Map.to_iter
 
-  let iter' env ty t =
-    t
-    |> Type.Map.to_iter
-    |> Iter.filter_map (fun (ty', v) ->
-      if Unification.unifiable env [ ty, ty' ] then
-        Some (ty', v)
-      else None
-    )
+  let iter_filter _ pred t =
+    iter t
+    |> Iter.filter (fun (ty, _) -> pred ty)
 
 end
 
@@ -66,12 +61,12 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
      ... compatible, so that we can make a range query.
   *)
 
-  let iter' env (k, k') t =
+  let iter_filter (k, k') pred t =
     t
     |> FeatMap.to_iter
     |> Iter.flat_map (fun (feat, sub) ->
       if Feat.compatible k feat then
-        Sub.iter' env k' sub
+        Sub.iter_filter k' pred sub
       else
         Iter.empty
     )
@@ -85,6 +80,6 @@ module Make (Node : NODE) = struct
   let empty = Node.empty
   let add ty = Node.add @@ Node.key ty
   let iter = Node.iter
-  let iter' env ty = Node.iter' env @@ Node.key ty
+  let iter_filter ty = Node.iter_filter @@ Node.key ty
 
 end
