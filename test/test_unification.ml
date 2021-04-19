@@ -36,13 +36,6 @@ let pos_tests = [
   "a -> b * c -> d", "a -> b -> c -> d" ;
   "(a * b -> c) f", "(a -> b -> c) f" ;
   "(a * b * c -> d) f", "(a -> b -> c -> d) f" ;
-  (* cur-0 *)
-  "unit -> a", "a" ;
-  "unit -> unit -> a", "a" ;
-  "unit * unit -> a", "a" ;
-  "a -> unit -> b", "a -> b" ;
-  "(unit -> a) * b", "a * b" ;
-  "(unit -> a) f", "a f" ;
   (* other *)
   "a -> a", "a -> 'a" ;
   "a -> a", "'a -> a" ;
@@ -57,6 +50,13 @@ let pos_tests = [
 ]
 
 let neg_tests = [
+  (* cur-0 *)
+  "unit -> a", "a" ;
+  "unit -> unit -> a", "a" ;
+  "unit * unit -> a", "a" ;
+  "(unit -> a) * b", "a * b" ;
+  "(unit -> a) f", "a f" ;
+  (* other *)
   "a", "a -> a" ;
   "a", "a * a" ;
   "a", "a f" ;

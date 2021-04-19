@@ -317,8 +317,6 @@ let make_constr lid = function
 
 let make_arrow arg ret =
   match arg, ret with
-  | Tuple tpl, _ when MSet.is_empty tpl ->
-      ret
   | Tuple tpl, Arrow (args, ret) ->
       Arrow (MSet.union tpl args, ret)
   | _, Arrow (args, ret) ->

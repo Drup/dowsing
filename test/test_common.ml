@@ -15,7 +15,6 @@ let tests =
   let open Type in [
     "int", int ;
     "int -> int", Arrow (MSet.of_list [ int ], int) ;
-    "unit -> int", int ;
     "int * int", Tuple (MSet.of_list [ int ; int ]) ;
     "int * int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
     "int -> int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
