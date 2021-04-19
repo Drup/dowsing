@@ -3,9 +3,6 @@ type t = Longident.t =
   | Ldot of t * String.t
   | Lapply of t * t
 
-let compare = compare
-let equal = (=)
-
 let unit = Lident "unit"
 
 let of_list strs =
@@ -36,6 +33,9 @@ let rec to_iter t k =
   | Lapply (t1, t2) ->
       to_iter t1 k ;
       to_iter t2 k
+
+let compare = compare
+let equal = (=)
 
 module Map = CCTrie.Make (struct
   type nonrec t = t
