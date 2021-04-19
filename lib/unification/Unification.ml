@@ -4,8 +4,8 @@
     Competing for the AC-unification Race by Boudet (1993)
 *)
 
-(* module Logs = (val Logs.(src_log @@ Src.create __MODULE__)) *)
-(* let log = Logs.debug *)
+module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
+let log = Logs.debug
 
 module Pure = struct
 
@@ -497,7 +497,7 @@ end = struct
         let sol = solutions.(i) in
         (* assert (Array.length sol = Array.length vars) ; *)
         let symb = symbols.(i) in
-        (* Fmt.epr "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset; *)
+        (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
           | Pure.Constant _ -> ()
@@ -506,8 +506,9 @@ end = struct
             Variable.HMap.add_list unifiers var (multiplicity, symb)
         done;
     done;
-    (* Fmt.epr "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@
-       pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers ; *)
+    (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
+    (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
+    (* ) ; *)
     let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
     let tbl = Variable.HMap.create (Variable.HMap.length unifiers) in
     Variable.HMap.iter
@@ -759,33 +760,33 @@ let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
     if not (occur_check env) then ()
     else
       let system = process_arrows env in
-      (* log @@ fun m -> m "@[<v2>System:@,%a" System.pp system ; *)
+      log (fun m -> m "@[<v2>System:@,%a" System.pp system) ;
       let solutions = solve_system env system in
-      (* log @@ fun m -> m "@]@." ; *)
+      log (fun m -> m "@]@.") ;
       let f sol k =
-        (* log @@ fun m -> m "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol ; *)
+        log (fun m -> m "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol) ;
         try
           let env = fork_with_solutions env sol in
           match Env.is_solved env with
           | Some map ->
-            (* log @@ fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env ; *)
+            log (fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env) ;
             k map
           | None ->
-            (* log @@ fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env ; *)
+            log (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
             solving_loop env k
         with
-        | FailUnif (_t1, _t2) ->
-          (* log @@ fun m -> m "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@." *)
-          (*   (Type.pp tyenv.var_names) t1 *)
-          (*   (Type.pp tyenv.var_names) t2 *)
-          ()
+        | FailUnif (t1, t2) ->
+          log (fun m -> m "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
+            (Type.pp tyenv.var_names) t1
+            (Type.pp tyenv.var_names) t2
+          )
       in
       Iter.flat_map f solutions k
   in
   let env0 = Env.make tyenv in
   try
     List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-    (* log @@ fun m -> m "@[<v2>env0: @,%a@]@." Env.pp env0 ; *)
+    log (fun m -> m "@[<v2>env0: @,%a@]@." Env.pp env0) ;
     solving_loop env0
   with
   | FailUnif _ -> Iter.empty
