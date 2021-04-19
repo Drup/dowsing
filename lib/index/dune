@@ -1,4 +1,4 @@
 (library
   (name index)
-  (libraries ocp-index.lib common unification)
+  (libraries ocp-index.lib iter common unification)
   (flags (:standard -open Common)))
