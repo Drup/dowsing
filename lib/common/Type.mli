@@ -23,6 +23,26 @@ module Kind : sig
 
 end
 
+module Kind' : sig
+
+  type t =
+    | Var
+    | Constr of LongIdent.t
+    | Arrow
+    | Tuple
+    | Other
+
+  val to_int : t -> Int.t
+
+  val compare : t -> t -> Int.t
+  val equal : t -> t -> Bool.t
+  val hash : t -> Int.t
+
+  module Map : CCMap.S with type key = t
+  module HMap : CCHashtbl.S with type key = t
+
+end
+
 module rec Base : sig
 
   type t =
@@ -33,6 +53,7 @@ module rec Base : sig
     | Other of Int.t
 
   val kind : t -> Kind.t
+  val kind' : t -> Kind'.t
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t

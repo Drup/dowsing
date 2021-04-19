@@ -51,6 +51,49 @@ module Kind = struct
 
 end
 
+(* Kind' *)
+
+module Kind' = struct
+
+  type t =
+    | Var
+    | Constr of LongIdent.t
+    | Arrow
+    | Tuple
+    | Other
+
+  let to_int = function
+    | Var -> 0
+    | Constr _ -> 1
+    | Arrow -> 2
+    | Tuple -> 3
+    | Other -> 4
+
+  let compare t1 t2 =
+    match t1, t2 with
+    | Var, Var
+    | Arrow, Arrow
+    | Tuple, Tuple
+    | Other, Other -> 0
+    | Constr lid1, Constr lid2 -> LongIdent.compare lid1 lid2
+    | _ -> CCInt.compare (to_int t1) (to_int t2)
+
+  let equal t1 t2 = compare t1 t2 = 0
+  let hash = CCHash.poly
+
+  module Map = CCMap.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
+
+  module HMap = CCHashtbl.Make (struct
+    type nonrec t = t
+    let equal = equal
+    let hash = hash
+  end)
+
+end
+
 (* Base *)
 
 module rec Base : sig
@@ -63,6 +106,7 @@ module rec Base : sig
     | Other of Int.t
 
   val kind : t -> Kind.t
+  val kind' : t -> Kind'.t
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t
@@ -76,12 +120,19 @@ end = struct
     | Tuple of MSet.t
     | Other of Int.t
 
-  let kind = function
-    | Var _ -> Kind.Var
-    | Constr _ -> Kind.Constr
-    | Arrow _ -> Kind.Arrow
-    | Tuple _ -> Kind.Tuple
-    | Other _ -> Kind.Other
+  let kind : t -> Kind.t = function
+    | Var _ -> Var
+    | Constr _ -> Constr
+    | Arrow _ -> Arrow
+    | Tuple _ -> Tuple
+    | Other _ -> Other
+
+  let kind' : t -> Kind'.t = function
+    | Var _ -> Var
+    | Constr (lid, _) -> Constr lid
+    | Arrow _ -> Arrow
+    | Tuple _ -> Tuple
+    | Other _ -> Other
 
   let to_int t =
     Kind.to_int @@ kind t

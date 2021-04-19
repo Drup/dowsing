@@ -19,48 +19,25 @@ module ByHead : S = struct
 
   let compatible t1 t2 =
     match t1, t2 with
-    | Type.Kind.Var, _ | _, Type.Kind.Var -> true
+    | Type.Kind.Var, _
+    | _, Type.Kind.Var -> true
     | _ -> Type.Kind.equal t1 t2
 
 end
 
 module ByHead' : S = struct
 
-  type t =
-    | Var
-    | Constr of LongIdent.t
-    | Arrow
-    | Tuple
-    | Other
+  type t = Type.Kind'.t
 
-  let compute ty =
-    match Type.head ty with
-    | Var _ -> Var
-    | Constr (lid, _) -> Constr lid
-    | Arrow _ -> Arrow
-    | Tuple _ -> Tuple
-    | Other _ -> Other
+  let compute ty = Type.(kind' @@ head ty)
 
-  let to_int = function
-    | Var -> 0
-    | Constr _ -> 1
-    | Arrow -> 2
-    | Tuple -> 3
-    | Other -> 4
-
-  let compare t1 t2 =
-    match t1, t2 with
-    | Var, Var
-    | Arrow, Arrow
-    | Tuple, Tuple
-    | Other, Other -> 0
-    | Constr lid1, Constr lid2 -> LongIdent.compare lid1 lid2
-    | _ -> CCInt.compare (to_int t1) (to_int t2)
+  let compare = Type.Kind'.compare
 
   let compatible t1 t2 =
     match t1, t2 with
-    | Var, _ | _, Var -> true
-    | _ -> compare t1 t2 = 0
+    | Type.Kind'.Var, _
+    | _, Type.Kind'.Var -> true
+    | _ -> Type.Kind'.equal t1 t2
 
 end
 
