@@ -4,7 +4,7 @@ module type S = sig
 
   val compute : Type.t -> t
   val compare : t -> t -> Int.t
-  val compatible : t -> t -> Bool.t
+  val compatible : query:t -> data:t -> Bool.t
 
 end
 

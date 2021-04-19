@@ -65,7 +65,7 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
     t
     |> FeatMap.to_iter
     |> Iter.flat_map (fun (feat, sub) ->
-      if Feat.compatible k feat then
+      if Feat.compatible ~query:k ~data:feat then
         Sub.iter_filter k' pred sub
       else
         Iter.empty

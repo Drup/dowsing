@@ -5,7 +5,7 @@ module type S = sig
   val compute : Type.t -> t
   (* TODO: We should enforce that compatible is monotonic with respect to compare *)
   val compare : t -> t -> Int.t
-  val compatible : t -> t -> Bool.t
+  val compatible : query:t -> data:t -> Bool.t
 
 end
 
@@ -17,7 +17,7 @@ module ByHead : S = struct
 
   let compare = Type.Kind.compare
 
-  let compatible t1 t2 =
+  let compatible ~query:t1 ~data:t2 =
     match t1, t2 with
     | Type.Kind.Var, _
     | _, Type.Kind.Var -> true
@@ -33,7 +33,7 @@ module ByHead' : S = struct
 
   let compare = Type.Kind'.compare
 
-  let compatible t1 t2 =
+  let compatible ~query:t1 ~data:t2 =
     match t1, t2 with
     | Type.Kind'.Var, _
     | _, Type.Kind'.Var -> true
@@ -60,7 +60,7 @@ module TailLength : S = struct
     CCOrd.(compare t1.ord t2.ord
     <?> (int, t1.len, t2.len))
 
-  let compatible t1 t2 =
+  let compatible ~query:t1 ~data:t2 =
     match t1.ord, t2.ord with
     | Eq,  Eq  -> t1.len  = t2.len
     | Eq,  GEq -> t1.len <= t2.len
@@ -89,7 +89,7 @@ end
 (*     CCOrd.(Type.Kind'.compare t1.hd t2.hd *)
 (*     <?> (Type.Kind'.MSet.compare, t1.tl, t2.tl)) *)
 
-(*   let compatible t1 t2 = *)
+(*   let compatible ~query:t1 ~data:t2 = *)
 (*     let is_var = (=) Type.Kind'.Var in *)
 (*     let var_cnt1, var_cnt2 = *)
 (*       let aux acc _ kind = acc + CCBool.to_int @@ is_var kind in *)
