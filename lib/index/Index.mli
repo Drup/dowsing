@@ -5,6 +5,8 @@ type info = {
 type t
 
 val make : String.t List.t -> t
+val add : t -> Type.t -> LongIdent.t -> Unit.t
+
 val get_env : t -> Type.Env.t
 
 val iter : t -> (Type.t * info) Iter.t

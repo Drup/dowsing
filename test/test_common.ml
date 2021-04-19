@@ -1,12 +1,11 @@
-let all_tests = ref []
-let test_cnt = ref 0
-
-let add_tests name tests =
-  all_tests := ! all_tests @ [ name, tests ]
-
 let env = Type.Env.make ()
 
-let type_testable = Alcotest.of_pp @@ Type.pp env.var_names
+let type_testable = Alcotest.testable (Type.pp env.var_names) Type.equal
+
+let all_tests = ref []
+let test_cnt = ref 0
+let add_tests name tests =
+  all_tests := ! all_tests @ [ name, tests ]
 
 let int = Type.Constr (LongIdent.Lident "int", [||])
 

@@ -1,4 +1,4 @@
 (tests
-  (names test_common test_unification)
-  (libraries alcotest common unification)
-  (flags (:standard -open Common -open Unification)))
+  (names test_common test_unification test_index)
+  (libraries alcotest common unification index)
+  (flags (:standard -open Common)))

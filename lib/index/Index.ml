@@ -13,10 +13,10 @@ type info = {
 
 type t = {
   env : Type.Env.t ;
-  infos : info Trie.t ;
+  mutable infos : info Trie.t ;
 }
 
-let iter_libindex pkg_dirs env k =
+let iter_libindex env pkg_dirs k =
   pkg_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
@@ -32,15 +32,18 @@ let iter_libindex pkg_dirs env k =
     | _ -> ()
   )
 
+let add t (ty, info) =
+  t.infos <- Trie.add ty info t.infos
+
 let make pkg_dirs =
   let env = Type.Env.make () in
-  let it = iter_libindex pkg_dirs env in
-  let infos =
-    Iter.fold (fun trie (ty, info) ->
-      Trie.add ty info trie
-    ) Trie.empty it
-  in
-  { env ; infos }
+  let t = { env ; infos = Trie.empty } in
+  iter_libindex env pkg_dirs
+  |> Iter.iter @@ add t ;
+  t
+
+let add t ty lid =
+  add t (ty, { lid })
 
 let get_env t = t.env
 

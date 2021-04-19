@@ -2,4 +2,4 @@
   (name dowsindex)
   (public_name dowsindex)
   (libraries findlib logs utils common unification index)
-  (flags (:standard -open Utils -open Common -open Index)))
+  (flags (:standard -open Utils -open Common)))

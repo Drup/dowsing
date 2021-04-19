@@ -1,10 +1,9 @@
+let env = Type.Env.make ()
+
 let all_tests = ref []
 let test_cnt = ref 0
-
 let add_tests name tests =
   all_tests := ! all_tests @ [ name, tests ]
-
-let env = Type.Env.make ()
 
 (* Unification.unifiable *)
 
@@ -75,7 +74,7 @@ let tests =
       Alcotest.(check bool) "" res @@ Unification.unifiable env [ ty1, ty2 ]
     in
     incr test_cnt ;
-    Alcotest.test_case (Int.to_string ! test_cnt) `Quick test
+    Alcotest.test_case (CCInt.to_string ! test_cnt) `Quick test
   in
   CCList.map (make_test true) pos_tests @
   CCList.map (make_test false) neg_tests
