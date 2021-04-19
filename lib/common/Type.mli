@@ -18,6 +18,7 @@ module Kind : sig
 
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
+  module MSet : CCMultiSet.S with type elt = t
 
   val pp : t Fmt.t
 
@@ -40,6 +41,7 @@ module Kind' : sig
 
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
+  module MSet : CCMultiSet.S with type elt = t
 
 end
 

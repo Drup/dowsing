@@ -46,6 +46,11 @@ module Kind = struct
     let hash = hash
   end)
 
+  module MSet = CCMultiSet.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
+
   let pp fmt t =
     Fmt.string fmt @@ to_string t
 
@@ -90,6 +95,11 @@ module Kind' = struct
     type nonrec t = t
     let equal = equal
     let hash = hash
+  end)
+
+  module MSet = CCMultiSet.Make (struct
+    type nonrec t = t
+    let compare = compare
   end)
 
 end
@@ -509,13 +519,13 @@ let rec size (sz_kind : Size.kind) t =
       Kind.to_int @@ kind @@ head t
   | TailSpineVarCount ->
       let aux t =
-        (+) @@ CCBool.to_int @@ (kind t = Kind.Var)
+        (+) @@ CCBool.to_int (kind t = Kind.Var)
       in
       MSet.fold aux (tail t) 0
   | SpineVarCount ->
       let sz = size Size.TailSpineVarCount t in
       let hd_kind = kind @@ head t in
-      sz + (CCBool.to_int @@ (hd_kind = Kind.Var))
+      sz + CCBool.to_int (hd_kind = Kind.Var)
   | TailLength ->
       MSet.length @@ tail t
 

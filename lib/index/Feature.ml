@@ -68,3 +68,38 @@ module TailLength : S = struct
     | GEq, GEq -> true
 
 end
+
+(* module BySpine : S = struct *)
+
+(*   type t = { *)
+(*     hd : Type.Kind'.t ; *)
+(*     tl : Type.Kind'.MSet.t ; *)
+(*   } *)
+
+(*   let compute ty = *)
+(*     let hd = Type.(kind' @@ head ty) in *)
+(*     let tl = *)
+(*     Type.MSet.fold (fun ty kinds -> *)
+(*       Type.Kind'.MSet.add kinds @@ Type.kind' ty *)
+(*     ) (Type.tail ty) Type.Kind'.MSet.empty *)
+(*     in *)
+(*     { hd ; tl } *)
+
+(*   let compare t1 t2 = *)
+(*     CCOrd.(Type.Kind'.compare t1.hd t2.hd *)
+(*     <?> (Type.Kind'.MSet.compare, t1.tl, t2.tl)) *)
+
+(*   let compatible t1 t2 = *)
+(*     let is_var = (=) Type.Kind'.Var in *)
+(*     let var_cnt1, var_cnt2 = *)
+(*       let aux acc _ kind = acc + CCBool.to_int @@ is_var kind in *)
+(*       let aux t = Type.Kind'.MSet.fold t.tl 0 aux in *)
+(*       aux t1, aux t2 *)
+(*     in *)
+(*     match is_var t1.hd, is_var t2.hd with *)
+(*     | true, true -> *)
+(*     | true, false *)
+(*     | false, true -> *)
+(*     | false, false -> *)
+
+(* end *)
