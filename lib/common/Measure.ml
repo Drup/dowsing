@@ -9,6 +9,16 @@ type kind =
   | SpineVarCount
   | TailLength
 
+let all = [
+  "vars", VarCount ;
+  "allvars", AllVarCount ;
+  "nodes", NodeCount ;
+  "head", HeadKind ;
+  "tail-spine-vars", TailSpineVarCount ;
+  "spine-vars", SpineVarCount ;
+  "tail-length", TailLength ;
+]
+
 type t = Int.t
 
 module Map = CCMap.Make (CCInt)

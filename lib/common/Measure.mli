@@ -9,6 +9,8 @@ type kind =
   | SpineVarCount
   | TailLength
 
+val all : (string * kind) list
+
 type t = Int.t
 
 module Map : CCMap.S with type key = t

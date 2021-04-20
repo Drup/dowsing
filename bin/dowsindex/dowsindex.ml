@@ -187,29 +187,17 @@ let () = Args.add_cmd (module struct
   let ty = ref None
   let filter = ref false
 
-  let sz_kind = ref Measure.VarCount
-  let sz_kind_syms =
-    let open Measure in [
-      "vars", VarCount ;
-      "allvars", AllVarCount ;
-      "nodes", NodeCount ;
-      "head", HeadKind ;
-      "tail-spine-vars", TailSpineVarCount ;
-      "spine-vars", SpineVarCount ;
-      "tail-length", TailLength ;
-    ]
-  let set_sz_kind =
-    let tbl = Hashtbl.create @@ CCList.length sz_kind_syms in
-    CCList.iter (CCFun.uncurry @@ Hashtbl.add tbl) sz_kind_syms ;
-    fun sym ->
-      match Hashtbl.find_opt tbl sym with
-      | Some sz_kind' -> sz_kind := sz_kind'
-      | None -> assert false
-  let sz_kind_syms =
-    CCList.map fst sz_kind_syms
+  let measure_kind = ref Measure.VarCount
+  let set_measure_kind sym =
+    match List.assoc_opt sym Measure.all with
+    | Some measure_kind' -> measure_kind := measure_kind'
+    | None -> assert false
+  let measure_kind_options =
+    CCList.map fst Measure.all
 
   let options = [
-    "--size", Arg.Symbol (sz_kind_syms, set_sz_kind), "\tSet type size kind" ;
+    "--measure",
+    Arg.Symbol (measure_kind_options, set_measure_kind), "\tSet type size kind" ;
     "--filter", Arg.Set filter, "\tEnable feature filtering" ;
   ]
 
@@ -297,7 +285,7 @@ let () = Args.add_cmd (module struct
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! sz_kind ! filter (Option.get ! file) (Option.get ! ty)
+    main ! measure_kind ! filter (Option.get ! file) (Option.get ! ty)
 
 end)
 
