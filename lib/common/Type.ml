@@ -297,22 +297,6 @@ end
 
 let var v = Var v
 
-let fresh_var (env : Env.t) =
-  let module StringHMap = CCHashtbl.Make (CCString) in
-  let vars = StringHMap.create 17 in
-  function
-    | None ->
-        var (Variable.Gen.gen env.var_gen)
-    | Some name ->
-        match StringHMap.get vars name with
-        | Some t -> t
-        | None ->
-            let v = Variable.Gen.gen env.var_gen in
-            let t = var v in
-            Variable.HMap.add env.var_names v name ;
-            StringHMap.add vars name t ;
-            t
-
 let constr lid = function
   | [||] when lid = LongIdent.unit -> Tuple MSet.empty
   | args -> Constr (lid, args)
@@ -342,6 +326,20 @@ let tuple elts =
 
 let other x =
   Other (CCHash.poly x)
+
+module StringHMap = CCHashtbl.Make (CCString)
+let fresh_var vars (env : Env.t) = function
+  | None ->
+    var (Variable.Gen.gen env.var_gen)
+  | Some name ->
+    match StringHMap.get vars name with
+    | Some t -> t
+    | None ->
+      let v = Variable.Gen.gen env.var_gen in
+      let t = var v in
+      Variable.HMap.add env.var_names v name ;
+      StringHMap.add vars name t ;
+      t
 
 let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   match out_ty with
@@ -411,7 +409,8 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
       other parse_ty
 
 let wrap fn (env : Env.t) x =
-  let make_var = fresh_var env in
+  let vars = StringHMap.create 17 in
+  let make_var = fresh_var vars env in
   let rec fn' x =
     x
     |> fn fn' make_var
