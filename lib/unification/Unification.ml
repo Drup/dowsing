@@ -58,17 +58,21 @@ end = struct
 
 end
 
-(* The [F] unification problem. *)
 
-exception FailUnif of Type.t * Type.t
-let fail t1 t2 = raise (FailUnif (t1, t2))
+(* Return type.
+   Distinguish main loop from side-effecting functions.
+*)
+type return =
+  | Done
+  | FailUnif of Type.t * Type.t
+  | FailedOccurCheck of Env.t
+
+let (let*) x1 f = match x1 with Done -> f () | _ -> x1
 
 (** Checking for cycles *)
 
-exception FailedOccurCheck of Env.t
-
 (* TO OPTIM/MEASURE *)
-let occur_check env : unit =
+let occur_check env : return =
   debug (fun m -> m "@[<v>Occur check in@,%a@]" Env.pp env);
   let nb_predecessors = Variable.HMap.create 17 in
   let successors = Variable.HMap.create 17 in
@@ -101,8 +105,8 @@ let occur_check env : unit =
   
   let rec loop n vars_without_predecessors = match vars_without_predecessors with
     (* We eliminated all the variables: there are no cycles *)
-    | _ when n = nb_representatives -> ()
-    | [] -> raise @@ FailedOccurCheck env
+    | _ when n = nb_representatives -> Done
+    | [] -> FailedOccurCheck env
     | x :: q ->
       let aux l v =
         Variable.HMap.decr nb_predecessors v ;
@@ -118,18 +122,13 @@ let occur_check env : unit =
 
 (** Main process *)
 
-(* Alternative unit type.
-   Distinguish main loop from side-effecting functions.
-*)
-type done_ty = Done
-
-let rec process_stack env (stack:Stack.t) : done_ty =
+let rec process_stack env (stack:Stack.t) : return =
   match Stack.pop stack with
   | Some (Expr (t1, t2), stack) -> insert_rec env stack t1 t2
   | Some (Var (v, t), stack) -> insert_var env stack v t
   | None -> Done
 
-and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : done_ty =
+and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   match t1, t2 with
   (* Decomposition rule
      (s₁,...,sₙ) p ≡ (t₁,...,tₙ) p  --> ∀i, sᵢ ≡ tᵢ
@@ -172,7 +171,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : done_ty =
   | (Constr _ | Tuple _ | Arrow _ | Other _),
     (Constr _ | Tuple _ | Arrow _ | Other _)
     ->
-    fail t1 t2
+    FailUnif (t1, t2)
 
 (* Repeated application of VA on an array of subexpressions. *)
 and variable_abstraction_all env stack a =
@@ -223,7 +222,7 @@ and quasi_solved env stack x s =
   (* Rule representative *)
   match Env.representative env x with
   | V x ->
-    attach env x s ;
+    let* () = attach env x s in
     process_stack env stack
   (* Rule AC-Merge *)
   | E (_, (Type.Tuple _ as t)) ->
@@ -244,32 +243,35 @@ and non_proper env stack (x:Variable.t) (y:Variable.t) =
     process_stack env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
-    attach env x' (Type.var y') ;
+    let* () = attach env x' (Type.var y') in
     process_stack env stack
   | E (x', s), E (y', t) ->
     if Measure.size NodeCount s < Measure.size NodeCount t then begin
-      attach env y' (Type.var x');
+      let* () = attach env y' (Type.var x') in
       insert_rec env stack s t
     end
     else begin
-      attach env x' (Type.var y');
+      let* () = attach env x' (Type.var y') in
       insert_rec env stack t s
     end
 
-and attach env v t =
+and attach env v t : return =
   Env.add env v t;
   occur_check env
 
-let insert env t u : unit =
-  let Done = insert_rec env Stack.empty t u in
-  ()
-let insert_var env x ty : unit =
-  let Done = insert_var env Stack.empty x ty in
-  ()
+let insert env t u : return =
+  insert_rec env Stack.empty t u
+let insert_var env x ty : return =
+  insert_var env Stack.empty x ty
 
 let insert_tuple_solution env (_, sol) =
-  Variable.HMap.iter
-    (fun k v -> insert_var env k (ACTerm.as_tuple v)) sol
+  let rec aux seq = match seq () with
+    | Seq.Nil -> Done
+    | Seq.Cons ((k, v), rest) ->
+      let* () = insert_var env k (ACTerm.as_tuple v) in
+      aux rest
+  in
+  aux @@ Variable.HMap.to_seq sol 
 
 (* Elementary AC theory *)
 let rec solve_tuple_problems env0 =
@@ -286,30 +288,29 @@ let rec solve_tuple_problems env0 =
 (* TODO : Solve this properly *)
 and solve_arrow_problem env0 {ArrowTerm. left; right } k =
   let f env () =
-    insert env left.ret right.ret;
     Env.push_tuple env left.args right.args;
+    insert env left.ret right.ret;
   in
   try_with_solution env0 f () k
 
 and try_with_solution
-  : type a. _ -> (Env.t -> a -> unit) -> a -> _
+  : type a. _ -> (Env.t -> a -> return) -> a -> _
   = fun env f sol k ->
-  try
     let env = Env.copy env in
-    f env sol;
-    solve_loop env k
-  with
-  | FailUnif (t1, t2) ->
-    debug (fun m ->
-        m "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-          (Type.pp @@ Env.var_names env) t1
-          (Type.pp @@ Env.var_names env) t2
-      )
-  | FailedOccurCheck env -> 
-    debug (fun m ->
-        m "@[<v>Failed occur check in env@;%a"
-          Env.pp env
-      )
+    match f env sol with
+    | Done -> 
+      solve_loop env k
+    | FailUnif (t1, t2) ->
+      debug (fun m ->
+          m "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
+            (Type.pp @@ Env.var_names env) t1
+            (Type.pp @@ Env.var_names env) t2
+        )
+    | FailedOccurCheck env -> 
+      debug (fun m ->
+          m "@[<v>Failed occur check in env@;%a"
+            Env.pp env
+        )
 
 and solve_loop env k =
   match Env.is_solved env with
@@ -332,11 +333,10 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
       m {|@[<v>Unify:@ "%a"@ "%a"@]|}
         (Type.pp tyenv.var_names) t1
         (Type.pp tyenv.var_names) t2);
-  try
-    insert env0 t1 t2; 
+  match insert env0 t1 t2 with
+  | Done ->
     debug (fun m -> m "env0: @,%a" Env.pp env0) ;
     solve_loop env0
-  with 
   | FailUnif _ 
   | FailedOccurCheck _
     -> Iter.empty
