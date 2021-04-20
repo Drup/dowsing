@@ -201,14 +201,13 @@ module Env : sig
   val make : Type.Env.t -> t
   val copy : t -> t
   val gen : t -> Variable.t
-  val get : t -> Variable.t -> Type.t option
   val vars : t -> Type.t Variable.Map.t
   val var_names : t -> string Variable.HMap.t
   val representative : t -> Variable.t -> representative
 
   val push_tuple : t -> Tuple.t -> Tuple.t -> unit
   val push_arrow : t -> Arrow.t -> Arrow.t -> unit
-  val attach : t -> Variable.t -> Type.t -> unit
+  val add : t -> Variable.t -> Type.t -> unit
 
   val pop_tuple : t -> Tuple.problem option
   val pop_arrow : t -> Arrow.problem option
@@ -238,9 +237,8 @@ end = struct
 
   let vars e = e.vars
   let gen e = Variable.Gen.gen e.tyenv.var_gen
-  let get e x = Variable.Map.get x e.vars
   let var_names e = e.tyenv.var_names
-  let attach e v t =
+  let add e v t =
     e.vars <- Variable.Map.add v t e.vars
 
   let push_tuple e left right =
@@ -684,42 +682,28 @@ and variable_abstraction env stack t =
     stack, Pure.var var
 
 and insert_var env stack x s =
-  (* let nameenv = Env.var_names env in
-   * debug (fun m -> m "Insert %a = %a"
-   *           (Variable.pp nameenv) x (Type.pp nameenv) s ); *)
-  match Env.representative env x with
-  | V x ->
-    begin match s with
-      | Type.Constr (_, [||])
-      | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _ ->
-        quasi_solved env stack x s
-      | Type.Var y ->
-        non_proper env stack x y
-    end
-  | E (_,u) ->
-    (* variable was already bound *)
-    (* debug (fun m -> m "Var already bound in@ %a" Env.pp env );  *)
-    insert_rec env stack u s
-
+  match s with
+  | Type.Constr (_, [||])
+  | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _ ->
+    quasi_solved env stack x s
+  | Type.Var y ->
+    non_proper env stack x y
+  
 (* Quasi solved equation
    'x = (s₁,...sₙ)
    'x = (s₁,...sₙ) p
 *)
 and quasi_solved env stack x s =
-  match Env.get env x with
-  | None ->
-    Env.attach env x s ;
-    occur_check env;
-    process_stack env stack
-
   (* Rule representative *)
-  | Some (Type.Var y) ->
-    Env.attach env y s ;
-    occur_check env;
+  match Env.representative env x with
+  | V x ->
+    attach env x s ;
     process_stack env stack
-
   (* Rule AC-Merge *)
-  | Some t ->
+  | E (_, (Type.Tuple _ as t)) ->
+    insert_rec env stack t s
+  (* Rule Merge *)
+  | E (_, t) ->
     if Measure.size NodeCount t < Measure.size NodeCount s then
       insert_rec env stack t s
     else
@@ -729,23 +713,26 @@ and quasi_solved env stack x s =
    'x ≡ 'y
 *)
 and non_proper env stack (x:Variable.t) (y:Variable.t) =
-  let xr = Env.representative env x
-  and yr = Env.representative env y
-  in
-  match xr, yr with
+  match Env.representative env x, Env.representative env y with
   | V x', V y' when Variable.equal x' y' ->
-    debug (fun m -> m "Same var %a" (Variable.pp @@ Env.var_names env) x');
     process_stack env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
-    Env.attach env x' (Type.var y') ;
-    occur_check env;
+    attach env x' (Type.var y') ;
     process_stack env stack
-  | E (_, t), E (_, s) ->
-    if Measure.size NodeCount t < Measure.size NodeCount s then
-      insert_rec env stack t s
-    else
+  | E (x', s), E (y', t) ->
+    if Measure.size NodeCount s < Measure.size NodeCount t then begin
+      attach env y' (Type.var x');
       insert_rec env stack s t
+    end
+    else begin
+      attach env x' (Type.var y');
+      insert_rec env stack t s
+    end
+
+and attach env v t =
+  Env.add env v t;
+  occur_check env
 
 let insert env t u : unit =
   let Done = insert_rec env Stack.empty t u in
