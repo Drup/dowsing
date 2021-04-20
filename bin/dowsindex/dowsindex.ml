@@ -15,6 +15,43 @@ let type_of_string env str =
   with Syntaxerr.Error _ ->
     error "syntax error in type argument."
 
+let pp_table ?(sep = 4) col_names row_it =
+  let col_cnt = CCArray.length col_names in
+  let col_widths = CCArray.map CCString.length col_names in
+  let row_it = Iter.persistent row_it in
+  row_it |> Iter.iter (fun row ->
+    assert (CCArray.length row = col_cnt) ;
+    for i = 0 to col_cnt - 1 do
+      col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
+    done
+  ) ;
+  for i = 0 to col_cnt - 2 do
+    col_widths.(i) <- col_widths.(i) + sep
+  done ;
+  let print_hline =
+    let width = CCArray.fold (+) 0 col_widths in
+    let hline = CCString.make width '-' in
+    fun () -> CCFormat.print_string hline
+  in
+  CCFormat.open_tbox () ;
+  print_hline () ;
+  CCFormat.printf "@\n" ;
+  for i = 0 to col_cnt - 1 do
+    CCFormat.set_tab () ;
+    CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
+  done ;
+  CCFormat.print_tab () ;
+  print_hline () ;
+  row_it |> Iter.iter (fun row ->
+    for i = 0 to col_cnt - 1 do
+      CCFormat.print_tab () ;
+      CCFormat.print_string row.(i)
+    done
+  ) ;
+  CCFormat.print_tab () ;
+  print_hline () ;
+  CCFormat.close_tbox ()
+
 (* command line arguments *)
 
 module Args = struct
@@ -245,13 +282,11 @@ let () = Args.add_cmd (module struct
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
-    let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
-    let sep = 4 in
-    let col_cnt = CCArray.length col_names in
-    let col_widths = CCArray.map CCString.length col_names in
     let total_time = ref 0. in
-    let tbl =
-      ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
+    let row_it =
+      ! tbl
+      |> Type.Size.Map.to_iter
+      |> Iter.map (fun (sz, (time, cnt)) ->
         total_time := ! total_time +. time ;
         let row = [|
           CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
@@ -259,38 +294,10 @@ let () = Args.add_cmd (module struct
           Printf.sprintf "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
           CCInt.to_string cnt ;
         |] in
-        for i = 0 to col_cnt - 1 do
-          col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
-        done ;
         row
       )
     in
-    for i = 0 to col_cnt - 2 do
-      col_widths.(i) <- col_widths.(i) + sep
-    done ;
-    let print_hline =
-      let width = CCArray.fold (+) 0 col_widths in
-      let hline = CCString.make width '-' in
-      fun () -> CCFormat.print_string hline
-    in
-    CCFormat.open_tbox () ;
-    print_hline () ;
-    CCFormat.printf "@\n" ;
-    for i = 0 to col_cnt - 1 do
-      CCFormat.set_tab () ;
-      CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
-    done ;
-    CCFormat.print_tab () ;
-    print_hline () ;
-    Type.Size.Map.values tbl (fun row ->
-      for i = 0 to col_cnt - 1 do
-        CCFormat.print_tab () ;
-        CCFormat.print_string row.(i)
-      done
-    ) ;
-    CCFormat.print_tab () ;
-    print_hline () ;
-    CCFormat.close_tbox () ;
+    pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] row_it ;
     CCFormat.printf "@\ntotal time: %g@." ! total_time
 
   let main () =
