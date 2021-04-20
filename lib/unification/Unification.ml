@@ -146,8 +146,8 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : done_ty =
   | Type.Arrow (arg1, ret1), Type.Arrow (arg2, ret2)->
     let stack, arg1 = variable_abstraction_all env stack arg1 in
     let stack, arg2 = variable_abstraction_all env stack arg2 in
-    let stack, ret1 = variable_abstraction env stack ret1 in
-    let stack, ret2 = variable_abstraction env stack ret2 in
+    (* let stack, ret1 = variable_abstraction env stack ret1 in
+     * let stack, ret2 = variable_abstraction env stack ret2 in *)
     Env.push_arrow env
       (ArrowTerm.make arg1 ret1)
       (ArrowTerm.make arg2 ret2) ;
@@ -283,13 +283,13 @@ let rec solve_tuple_problems env0 =
   |> Iter.flat_map (try_with_solution env0 insert_tuple_solution)
 
 (* Elementary Arrow theory *)
-and solve_arrow_problem env {ArrowTerm. left; right } k =
-  (* let f env () = *)
-    Env.push_tuple env [|left.ret|] [|right.ret|];
+(* TODO : Solve this properly *)
+and solve_arrow_problem env0 {ArrowTerm. left; right } k =
+  let f env () =
+    insert env left.ret right.ret;
     Env.push_tuple env left.args right.args;
-  (* in
-   * try_with_solution env f () k *)
-    solve_loop env k
+  in
+  try_with_solution env0 f () k
 
 and try_with_solution
   : type a. _ -> (Env.t -> a -> unit) -> a -> _

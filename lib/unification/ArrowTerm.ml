@@ -1,6 +1,6 @@
 type t = {
   args: ACTerm.t;
-  ret: Pure.t;
+  ret: Type.t;
 }
 
 type problem = {
@@ -14,6 +14,6 @@ let make_problem left right = {left; right}
 let pp_problem namefmt fmt self =
   Fmt.pf fmt "%a -> %a = %a -> %a"
     Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.left.args
-    (Pure.pp namefmt) self.left.ret
+    (Type.pp namefmt) self.left.ret
     Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.right.args
-    (Pure.pp namefmt) self.right.ret
+    (Type.pp namefmt) self.right.ret
