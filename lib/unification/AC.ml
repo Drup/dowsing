@@ -114,21 +114,18 @@ end
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
 
-  type t = Bitv.t * ACTerm.t Variable.HMap.t
-
-  val[@warning "-32"] pp : Env.t -> t Fmt.t
+  type t = (Variable.t * ACTerm.t) Iter.t
 
   val get_solutions :
-    Env.t -> System.t -> System.dioph_solution Iter.t ->
-    t Iter.t
+    Env.t -> System.t -> System.dioph_solution Iter.t -> t Iter.t
 
 end = struct
   (** In the following, [i] is always the row/solution index and [j] is always
       the column/variable index. *)
 
-  type t = Bitv.t * ACTerm.t Variable.HMap.t
+  type t = (Variable.t * ACTerm.t) Iter.t
 
-  let pp env ppf (subset, unif) =
+  let _pp env ppf (subset, unif) =
     let namefmt = Env.var_names env in
     let pp_pair ppf (v,t) =
       Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (ACTerm.pp namefmt) t
@@ -225,13 +222,12 @@ end = struct
     (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
     (* ) ; *)
     let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
-    let tbl = Variable.HMap.create (Variable.HMap.length unifiers) in
-    Variable.HMap.iter
-      (fun k l ->
-         let pure_term = make_term buffer l in
-         Variable.HMap.add tbl k pure_term)
-      unifiers ;
-    subset, tbl
+    fun k -> 
+      Variable.HMap.iter
+        (fun key l -> 
+           let pure_term = make_term buffer l in
+           k (key, pure_term))
+        unifiers
 
   (** Combine everything *)
   let get_solutions env

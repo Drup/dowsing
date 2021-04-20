@@ -264,14 +264,18 @@ let insert env t u : return =
 let insert_var env x ty : return =
   insert_var env Stack.empty x ty
 
-let insert_tuple_solution env (_, sol) =
-  let rec aux seq = match seq () with
-    | Seq.Nil -> Done
-    | Seq.Cons ((k, v), rest) ->
-      let* () = insert_var env k (ACTerm.as_tuple v) in
-      aux rest
-  in
-  aux @@ Variable.HMap.to_seq sol 
+let insert_tuple_solution env sol =
+  let exception Bail of return in
+  try
+    let f (k,v) =
+      match insert_var env k (ACTerm.as_tuple v) with
+      | Done -> ()
+      | r -> raise (Bail r)
+    in
+    sol f;
+    Done
+  with
+  | Bail r -> r
 
 (* Elementary AC theory *)
 let rec solve_tuple_problems env0 =
