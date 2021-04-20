@@ -16,7 +16,7 @@ let add_tests name bdgs queries =
       let test () =
         ty
         |> Index.find idx env
-        |> Iter.map (fun (_, Index.{ lid }) -> lid)
+        |> Iter.map (fun (_, Index.{ lid }, _) -> lid)
         |> Iter.to_list
         |> Alcotest.(check @@ list lid_testable) "" res
       in

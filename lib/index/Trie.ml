@@ -9,7 +9,7 @@ module type NODE = sig
   val singleton : key -> 'v -> 'v t
   val add : key -> 'v -> 'v t -> 'v t
   val iter : 'v t -> (Type.t * 'v) Iter.t
-  val iter_filter : key -> (Type.t -> Bool.t) -> 'v t -> (Type.t * 'v) Iter.t
+  val iter_with : key -> 'v t -> (Type.t * 'v) Iter.t
 
 end
 
@@ -25,9 +25,7 @@ module Leaf : NODE = struct
   let add = Type.Map.add
   let iter = Type.Map.to_iter
 
-  let iter_filter _ pred t =
-    iter t
-    |> Iter.filter (fun (ty, _) -> pred ty)
+  let iter_with _ t = iter t
 
 end
 
@@ -61,12 +59,12 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
      ... compatible, so that we can make a range query.
   *)
 
-  let iter_filter (k, k') pred t =
+  let iter_with (k, k') t =
     t
     |> FeatMap.to_iter
     |> Iter.flat_map (fun (feat, sub) ->
       if Feat.compatible k feat then
-        Sub.iter_filter k' pred sub
+        Sub.iter_with k' sub
       else
         Iter.empty
     )
@@ -80,6 +78,6 @@ module Make (Node : NODE) = struct
   let empty = Node.empty
   let add ty = Node.add @@ Node.key ty
   let iter = Node.iter
-  let iter_filter ty = Node.iter_filter @@ Node.key ty
+  let iter_with ty = Node.iter_with @@ Node.key ty
 
 end

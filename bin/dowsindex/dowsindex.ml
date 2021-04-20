@@ -218,7 +218,7 @@ let () = Args.add_cmd (module struct
     let ty = type_of_string env str in
     let iter_idx =
       if filter then
-        Index.iter_filter idx ty
+        Index.iter_with idx ty
       else
         Index.iter idx
     in
@@ -308,25 +308,25 @@ let () = Args.add_cmd (module struct
       raise @@ Arg.Bad "too many arguments"
 
   let main file str =
-    let env = Type.Env.make () in
-    let ty = type_of_string env str in
     let idx =
       try Index.load file
       with Sys_error _ ->
         error @@ Printf.sprintf "cannot open file '%s'." file
     in
-    let aux k (ty', Index.{ lid }) =
-      Unification.unify env ty ty'
-      |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
+    let env = Index.get_env idx in
+    let ty = type_of_string env str in
+    let compare_results (_ty1, info1, unif1) (_ty2, info2, unif2) =
+      CCOrd.(Unification.Unifier.compare unif1 unif2 <?>
+             (LongIdent.compare, info1.Index.lid, info2.Index.lid))
     in
     let res =
-      (fun k -> Index.find idx env ty @@ aux k)
-      |> Iter.sort ~cmp:CCOrd.(triple int LongIdent.compare Type.compare)
+      Index.find idx env ty
+      |> Iter.sort ~cmp:compare_results
     in
     Fmt.pr "@[<v>" ;
-    res |> Iter.iter (fun (_, lid, ty) ->
+    res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
-        LongIdent.pp lid
+        LongIdent.pp info.Index.lid
         (Type.pp env.var_names) ty
     ) ;
     Fmt.pr "@]@?"

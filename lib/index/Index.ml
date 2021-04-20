@@ -50,13 +50,17 @@ let get_env t = t.env
 let iter t =
   Trie.iter @@ t.infos
 
-let iter_filter t ?(pred = CCFun.const true) ty =
-  Trie.iter_filter ty pred @@ t.infos
+let iter_with t ty =
+  Trie.iter_with ty t.infos
 
 let find t env ty =
-  iter_filter t ty ~pred: (fun ty' ->
-    Unification.unifiable env ty ty'
-  )
+  iter_with t ty
+  |> Iter.filter_map
+    (fun (ty', info) ->
+       match Unification.unify env ty ty' with
+       | Some unif -> Some (ty', info, unif)
+       | None -> None
+    )
 
 module Archive = struct
 
