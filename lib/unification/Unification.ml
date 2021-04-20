@@ -5,7 +5,7 @@
 *)
 
 module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
-let info = Logs.info
+let _info = Logs.info
 let debug = Logs.debug
 
 module Pure = struct
@@ -278,7 +278,7 @@ end = struct
 
   let pp fmt { vars ; tuples ; arrows; tyenv } =
     let {Type.Env. var_names ; _ } = tyenv in
-    Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]"
+    Fmt.pf fmt "@[<v>@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]@]"
       Fmt.(iter_bindings ~sep:cut Variable.Map.iter @@ pp_binding var_names) vars
       Fmt.(list ~sep:cut @@ Tuple.pp_problem var_names) tuples
       Fmt.(list ~sep:cut @@ Arrow.pp_problem var_names) arrows
@@ -792,11 +792,9 @@ let solve_system env system =
 
 let unifiers (tyenv : Type.Env.t) t1 t2 : Unifier.t Iter.t =
   let rec solving_loop env k =
-    occur_check env;
     let system = process_arrows env in
-    debug (fun m -> m "@[<v2>System:@,%a" System.pp system) ;
+    debug (fun m -> m "@[<v2>System:@,%a@]" System.pp system) ;
     let solutions = solve_system env system in
-    debug (fun m -> m "@]@.") ;
     let f sol k =
       debug (fun m -> m "@[<v2>Potential solution:@,%a@]@." (Dioph2Sol.pp env) sol) ;
       try
@@ -825,7 +823,7 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Unifier.t Iter.t =
   in
   let env0 = Env.make tyenv in
   try
-    info (fun m -> m "@[<v>Unify:@ - %a@ - %a@]"
+    debug (fun m -> m {|@[<v>Unify:@ "%a"@ "%a"@]|}
              (Type.pp tyenv.var_names) t1
              (Type.pp tyenv.var_names) t2);
     insert env0 t1 t2;
