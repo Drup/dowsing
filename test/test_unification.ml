@@ -67,6 +67,8 @@ let neg_tests = [
   (* Requires occur check *)
   "'X -> 'X",
   "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t";
+  "'a -> 'a list -> 'a",
+  "'x -> 'x -> 'x";
 ]
 
 let tests =
