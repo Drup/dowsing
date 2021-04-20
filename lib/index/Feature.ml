@@ -51,9 +51,9 @@ module TailLength : S = struct
   }
 
   let compute ty =
-    let spine_var_cnt = Type.(size Size.SpineVarCount ty) in
+    let spine_var_cnt = Measure.size SpineVarCount ty in
     let ord = if spine_var_cnt = 0 then Eq else GEq in
-    let len = Type.(size Size.TailLength ty) in
+    let len = Measure.size TailLength ty in
     { ord ; len }
 
   let compare t1 t2 =

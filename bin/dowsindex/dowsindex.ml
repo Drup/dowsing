@@ -187,9 +187,9 @@ let () = Args.add_cmd (module struct
   let ty = ref None
   let filter = ref false
 
-  let sz_kind = ref Type.Size.VarCount
+  let sz_kind = ref Measure.VarCount
   let sz_kind_syms =
-    let open Type.Size in [
+    let open Measure in [
       "vars", VarCount ;
       "allvars", AllVarCount ;
       "nodes", NodeCount ;
@@ -235,14 +235,14 @@ let () = Args.add_cmd (module struct
       else
         Index.iter idx
     in
-    let tbl = ref Type.Size.Map.empty in
+    let tbl = ref Measure.Map.empty in
     iter_idx (fun (ty', _) ->
       Timer.start timer ;
       ignore @@ Unification.unifiable env [ ty, ty' ] ;
       Timer.stop timer ;
       let time = Timer.get timer in
-      let sz = Type.size sz_kind ty' in
-      tbl := ! tbl |> Type.Size.Map.update sz @@ function
+      let sz = Measure.size sz_kind ty' in
+      tbl := ! tbl |> Measure.Map.update sz @@ function
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
@@ -252,10 +252,10 @@ let () = Args.add_cmd (module struct
     let col_widths = CCArray.map CCString.length col_names in
     let total_time = ref 0. in
     let tbl =
-      ! tbl |> Type.Size.Map.mapi (fun sz (time, cnt) ->
+      ! tbl |> Measure.Map.mapi (fun sz (time, cnt) ->
         total_time := ! total_time +. time ;
         let row = [|
-          CCFormat.asprintf "%a" (Type.Size.pp sz_kind) sz ;
+          CCFormat.asprintf "%a" (Measure.pp sz_kind) sz ;
           Printf.sprintf "%g" @@ 1e3 *. time ;
           Printf.sprintf "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
           CCInt.to_string cnt ;
@@ -283,7 +283,7 @@ let () = Args.add_cmd (module struct
     done ;
     CCFormat.print_tab () ;
     print_hline () ;
-    Type.Size.Map.values tbl (fun row ->
+    Measure.Map.values tbl (fun row ->
       for i = 0 to col_cnt - 1 do
         CCFormat.print_tab () ;
         CCFormat.print_string row.(i)

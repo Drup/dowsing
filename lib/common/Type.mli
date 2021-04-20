@@ -131,30 +131,6 @@ val substitute : t Variable.Map.t -> t -> t
 
 val vars : t -> Variable.t Iter.t
 
-(* several notions of size *)
-
-module Size : sig
-
-  type kind =
-    | VarCount
-    | AllVarCount
-    | NodeCount
-    | HeadKind
-    | TailSpineVarCount
-    | SpineVarCount
-    | TailLength
-
-  type t = Int.t
-
-  module Map : CCMap.S with type key = t
-  module HMap : CCHashtbl.S with type key = t
-
-  val pp : kind -> t Fmt.t
-
-end
-
-val size : Size.kind -> t -> Size.t
-
 (* pretty printing *)
 
 val pp : String.t Variable.HMap.t -> t Fmt.t
