@@ -8,99 +8,8 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 let _info = Logs.info
 let debug = Logs.debug
 
-module Pure = struct
-
-  type t =
-    | Var of Variable.t
-    | Constant of LongIdent.t
-
-  let dummy = Constant (Longident.Lident "dummy")
-  let var x = Var x
-  let constant p = Constant p
-
-  let pp namefmt fmt = function
-    | Var i -> Variable.pp namefmt fmt i
-    | Constant p -> LongIdent.pp fmt p
-
-  let as_typexpr = function
-    | Var v -> Type.var v
-    | Constant c -> Type.constr c [||]
-
-end
-
-module Tuple = struct
-
-  type t = Pure.t array
-
-  let make p = p
-
-  type problem = {left : t ; right : t }
-
-  let make_problem left right = {left;right}
-
-  let as_typexpr t : Type.t =
-    match t with
-    | [|x|] -> Pure.as_typexpr x
-    | t ->
-      Type.tuple
-        (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
-
-  let pp namefmt fmt t =
-    match t with
-    | [|x|] -> Pure.pp namefmt fmt x
-    | t -> 
-      Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (Pure.pp namefmt)) t
-
-  let pp_problem namefmt fmt {left ; right} =
-    Fmt.pf fmt "%a = %a"
-      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) left
-      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) right
-
-end
-
-module Arrow : sig
-
-  type t = {
-    args: Pure.t array;
-    ret: Pure.t;
-  }
-
-  type problem = {
-    left: t;
-    right: t;
-  }
-
-  val make : Pure.t array -> Pure.t -> t
-  val make_problem : t -> t -> problem
-  val pp_problem : string Variable.HMap.t -> problem Fmt.t
-
-end = struct
-
-  type t = {
-    args: Pure.t array;
-    ret: Pure.t;
-  }
-
-  type problem = {
-    left: t;
-    right: t;
-  }
-
-  let make args ret : t = {args; ret}
-  let make_problem left right = {left; right}
-
-  let pp_problem namefmt fmt self =
-    Fmt.pf fmt "%a -> %a = %a -> %a"
-      Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.left.args
-      (Pure.pp namefmt) self.left.ret
-      Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.right.args
-      (Pure.pp namefmt) self.right.ret
-
-end
-
-type representative =
-  | V of Variable.t
-  | E of Variable.t * Type.t
+module Env = Env
+module Subst = Subst
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
@@ -153,391 +62,6 @@ end
 
 exception FailUnif of Type.t * Type.t
 let fail t1 t2 = raise (FailUnif (t1, t2))
-
-module Unifier : sig
-
-  type t = Type.t Variable.Map.t
-
-  val simplify : string Variable.HMap.t -> t -> t
-
-  val size : t -> int
-  val compare : t -> t -> int
-  val lt : t -> t -> bool
-
-  val pp : string Variable.HMap.t -> t Fmt.t
-
-end = struct
-
-  type t = Type.t Variable.Map.t
-
-  let simplify namefmt unif =
-    let named_vars, anonymous_vars =
-      Variable.Map.partition (fun v _ -> Variable.HMap.mem namefmt v) unif
-    in
-    Variable.Map.map (Type.substitute anonymous_vars) named_vars
-
-  let size = Variable.Map.cardinal
-
-  let compare t1 t2 =
-    compare (size t1) (size t2)
-
-  let lt t1 t2 =
-    compare t1 t2 < 0
-
-  let pp namefmt ppf (unif : t) =
-    let pp_pair ppf (v,t) =
-      Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (Type.pp namefmt) t in
-    Fmt.pf ppf "@[<v>%a@]"
-      (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
-         Variable.Map.iter pp_pair)
-      unif
-
-end
-
-module Env : sig
-
-  type t
-
-  val make : Type.Env.t -> t
-  val copy : t -> t
-  val gen : t -> Variable.t
-  val vars : t -> Type.t Variable.Map.t
-  val var_names : t -> string Variable.HMap.t
-  val representative : t -> Variable.t -> representative
-
-  val push_tuple : t -> Tuple.t -> Tuple.t -> unit
-  val push_arrow : t -> Arrow.t -> Arrow.t -> unit
-  val add : t -> Variable.t -> Type.t -> unit
-
-  val pop_tuple : t -> Tuple.problem option
-  val pop_arrow : t -> Arrow.problem option
-
-  val is_solved : t -> Unifier.t option
-
-  val pp : t Fmt.t
-
-end = struct
-
-  type t = {
-    tyenv : Type.Env.t ;
-    mutable vars : Type.t Variable.Map.t ;
-    mutable tuples : Tuple.problem list ;
-    mutable arrows : Arrow.problem list ;
-  }
-
-  let make (tyenv : Type.Env.t) = {
-    tyenv ;
-    vars = Variable.Map.empty ;
-    tuples = [] ;
-    arrows = [] ;
-  }
-
-  let copy { tyenv ; vars ; tuples ; arrows } =
-    { tyenv ; vars ; tuples ; arrows }
-
-  let vars e = e.vars
-  let gen e = Variable.Gen.gen e.tyenv.var_gen
-  let var_names e = e.tyenv.var_names
-  let add e v t =
-    e.vars <- Variable.Map.add v t e.vars
-
-  let push_tuple e left right =
-    e.tuples <- Tuple.make_problem left right :: e.tuples
-  let push_arrow e left right =
-    e.arrows <- Arrow.make_problem left right :: e.arrows
-
-  let pop_tuple e =
-    match e.tuples with
-    | [] -> None
-    | pb :: tl -> e.tuples <- tl; Some pb
-
-  let pop_arrow e =
-    match e.arrows with
-    | [] -> None
-    | pb :: tl -> e.arrows <- tl; Some pb
-
-  let rec representative_rec m x =
-    match Variable.Map.get x m with
-    | None -> V x
-    | Some (Type.Var x') -> representative_rec m x'
-    | Some t -> E (x, t)
-  let representative e x = representative_rec e.vars x
-
-  let pp_binding namefmt fmt (x,t) =
-    Fmt.pf fmt "@[%a = %a@]"  (Variable.pp namefmt) x (Type.pp namefmt) t
-
-  let is_solved env =
-    if CCList.is_empty env.tuples
-    && CCList.is_empty env.arrows
-    then
-      Some (Unifier.simplify env.tyenv.var_names env.vars)
-    else
-      None
-
-  let pp fmt { vars ; tuples ; arrows; tyenv } =
-    let {Type.Env. var_names ; _ } = tyenv in
-    Fmt.pf fmt "@[<v>@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]@]"
-      Fmt.(iter_bindings ~sep:cut Variable.Map.iter @@ pp_binding var_names) vars
-      Fmt.(list ~sep:cut @@ Tuple.pp_problem var_names) tuples
-      Fmt.(list ~sep:cut @@ Arrow.pp_problem var_names) arrows
-
-end
-
-(** Elementary AC-Unif *)
-module System : sig
-
-  type t = {
-    nb_atom : int ; (* Number of atoms in each equation *)
-    assoc_pure : Pure.t array ; (* Map from indices to the associated pure terms *)
-    first_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
-    system : int array array ;
-  }
-
-  val[@warning "-32"] pp : t Fmt.t
-
-  val simplify_problem : Env.t -> Tuple.problem -> Tuple.problem
-
-  val make : Tuple.problem list -> t
-
-  type dioph_solution
-  val get_solution : dioph_solution -> int -> int
-
-  val solve : t -> dioph_solution Iter.t
-
-end = struct
-
-  module Dioph = Diophantine.Make()
-  module Solver = Dioph.Homogeneous_system
-
-  type t = {
-    nb_atom : int ; (* Number of atoms in each equation *)
-    assoc_pure : Pure.t array ; (* Map from indices to the associated pure terms *)
-    first_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
-    system : int array array ;
-  }
-
-  let pp ppf {system; _} =
-    Fmt.(vbox (array ~sep:cut @@ array ~sep:(unit ", ") int)) ppf system
-
-  (* Replace variables by their representative/a constant *)
-  let simplify_problem env {Tuple. left ; right} =
-    let f x = match x with
-      | Pure.Constant _ -> x
-      | Pure.Var v ->
-        match Env.representative env v with
-        | V v' -> Var v'
-        | E (_,Constr (p,[||])) -> Constant p
-        | E _ -> x
-    in
-    {Tuple. left = Array.map f left ; right = Array.map f right }
-
-  let add_problem get_index nb_atom {Tuple. left; right} =
-    let equation = Array.make nb_atom 0 in
-    let add dir r =
-      let i = get_index r in
-      equation.(i) <- equation.(i) + dir
-    in
-    Array.iter (add 1) left ;
-    Array.iter (add (-1)) right ;
-    equation
-
-  (* The number of constants and variables in a system *)
-  let make_mapping problems =
-    let vars = Variable.HMap.create 4 in
-    let nb_vars = ref 0 in
-    let consts = LongIdent.HMap.create 4 in
-    let nb_consts = ref 0 in
-    let f = function
-      | Pure.Var v ->
-        if Variable.HMap.mem vars v then () else
-          Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
-      | Constant p ->
-        if LongIdent.HMap.mem consts p then () else
-          LongIdent.HMap.add consts p @@ CCRef.get_then_incr nb_consts
-    in
-    let aux {Tuple. left ; right} =
-      Array.iter f left ; Array.iter f right
-    in
-    List.iter aux problems ;
-    vars, !nb_vars, consts, !nb_consts
-
-  let make problems : t =
-    let vars, nb_vars, consts, nb_consts = make_mapping problems in
-    let get_index = function
-      | Pure.Constant p -> LongIdent.HMap.find consts p
-      | Pure.Var v -> Variable.HMap.find vars v + nb_consts
-    in
-    let nb_atom = nb_vars + nb_consts in
-
-    let assoc_pure = Array.make nb_atom Pure.dummy in
-    LongIdent.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
-    Variable.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
-
-    let first_var = nb_consts in
-    let system =
-      Iter.of_list problems
-      |> Iter.map (add_problem get_index nb_atom)
-      |> Iter.to_array (* TO OPTIM *)
-    in
-    { nb_atom ; assoc_pure ; first_var ; system }
-
-  type dioph_solution = int array
-  let get_solution = Array.get
-
-  let solve { first_var ; system ; _ } : dioph_solution Iter.t =
-    let rec cut_aux i stop sum solution =
-      if i < stop then
-        let v = solution.(i) in
-        v > 1 || cut_aux (i+1) stop (sum+v) solution
-      else
-        sum > 1
-    in
-    let cut x = cut_aux 0 first_var 0 x in
-    Solver.solve ~cut @@ Solver.make system
-
-end
-
-(** See section 6.2 and 6.3 *)
-module Dioph2Sol : sig
-
-  type t = Bitv.t * Tuple.t Variable.HMap.t
-
-  val[@warning "-32"] pp : Env.t -> t Fmt.t
-
-  val get_solutions :
-    Env.t -> System.t -> System.dioph_solution Iter.t ->
-    t Iter.t
-
-end = struct
-  (** In the following, [i] is always the row/solution index and [j] is always
-      the column/variable index. *)
-
-  type t = Bitv.t * Tuple.t Variable.HMap.t
-
-  let pp env ppf (subset, unif : t) =
-    let namefmt = Env.var_names env in
-    let pp_pair ppf (v,t) =
-      Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (Tuple.pp namefmt) t
-    in
-    Fmt.pf ppf "@[<v2>%a: {@ %a@]@ }"
-      Bitv.pp subset
-      (Fmt.iter_bindings ~sep:Fmt.cut
-         Variable.HMap.iter pp_pair)
-      unif
-
-  (** Construction of the hullot tree to iterate through subsets. *)
-
-  let rec for_all2_range f a k stop : bool =
-    k = stop || f a.(k) && for_all2_range f a (k+1) stop
-
-  let large_enough bitvars subset =
-    let f col = Bitv.is_subset col subset in
-    for_all2_range f bitvars 0 @@ Array.length bitvars
-
-  let small_enough first_var bitvars bitset =
-    let f col = Bitv.(is_singleton (bitset && col)) in
-    for_all2_range f bitvars 0 first_var
-
-  let iterate_subsets len system bitvars =
-    Hullot.Default.iter ~len
-      ~small:(small_enough system.System.first_var bitvars)
-      ~large:(large_enough bitvars)
-
-  (** Constructions of the mapping from solutions to variable/constant *)
-  let symbol_of_solution gen {System. first_var ; assoc_pure; _ } sol =
-    (* By invariant, we know that solutions have at most one non-null
-       factor associated with a constant, so we scan them linearly, and if
-       non is found, we create a fresh variable. *)
-    (* assert (Array.length sol >= first_var) ; *)
-    let rec aux j =
-      if j >= first_var then Pure.var (Env.gen gen)
-      else if System.get_solution sol j <> 0 then
-        assoc_pure.(j)
-      else aux (j+1)
-    in
-    aux 0
-
-  let symbols_of_solutions gen system solutions =
-    let pures = Array.make (CCVector.length solutions) Pure.dummy in
-    let f i sol = pures.(i) <- symbol_of_solution gen system sol in
-    CCVector.iteri f solutions;
-    pures
-
-  let extract_solutions stack nb_atom
-      (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
-    let nb_columns = nb_atom in
-    let bitvars = Array.make nb_columns Bitv.empty in
-    let counter = ref 0 in
-    seq_solutions begin fun sol ->
-      CCVector.push stack sol ;
-      let i = CCRef.get_then_incr counter in
-      for j = 0 to nb_columns - 1 do
-        if System.get_solution sol j <> 0 then
-          bitvars.(j) <- Bitv.add bitvars.(j) i
-        else ()
-      done;
-    end;
-    assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
-    bitvars
-
-  (* TO OPTIM *)
-  let make_term buffer l : Tuple.t =
-    CCVector.clear buffer;
-    let f (n, symb) =
-      for _ = 1 to n do CCVector.push buffer symb done
-    in
-    List.iter f l;
-    Tuple.make @@ CCVector.to_array buffer
-
-  let unifier_of_subset
-      vars solutions symbols subset : t =
-    assert (CCVector.length solutions = Array.length symbols);
-    let unifiers = Variable.HMap.create (Array.length vars) in
-    let solutions = CCVector.unsafe_get_array solutions in
-    for i = 0 to Array.length symbols - 1 do
-      if Bitv.mem i subset then
-        let sol = solutions.(i) in
-        (* assert (Array.length sol = Array.length vars) ; *)
-        let symb = symbols.(i) in
-        (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
-        for j = 0 to Array.length vars - 1 do
-          match vars.(j) with
-          | Pure.Constant _ -> ()
-          | Pure.Var var ->
-            let multiplicity = System.get_solution sol j in
-            Variable.HMap.add_list unifiers var (multiplicity, symb)
-        done;
-    done;
-    (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
-    (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
-    (* ) ; *)
-    let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
-    let tbl = Variable.HMap.create (Variable.HMap.length unifiers) in
-    Variable.HMap.iter
-      (fun k l ->
-         let pure_term = make_term buffer l in
-         Variable.HMap.add tbl k pure_term)
-      unifiers ;
-    subset, tbl
-
-  (** Combine everything *)
-  let get_solutions env
-      ({System. nb_atom; assoc_pure;_} as system)
-      (seq_solutions:System.dioph_solution Iter.t) : t Iter.t =
-    let stack_solutions = CCVector.create () in
-    let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
-    (* Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
-     * Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
-     *   (CCVector.pp @@ Fmt.Dump.array Fmt.int) stack_solutions; *)
-    let symbols = symbols_of_solutions env system stack_solutions in
-    (* Fmt.epr "@[Symbols: %a@]@," (Fmt.Dump.array @@ Pure.pp namefmt) symbols; *)
-    let subsets = iterate_subsets (Array.length symbols) system bitvars in
-    Iter.map
-      (unifier_of_subset assoc_pure stack_solutions symbols)
-      subsets
-
-end
-
 
 (** Checking for cycles *)
 
@@ -620,11 +144,13 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : done_ty =
      (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r'  -->  an equivalent arrow problem
   *)
   | Type.Arrow (arg1, ret1), Type.Arrow (arg2, ret2)->
-    let stack, pure_arg1 = variable_abstraction_all env stack arg1 in
-    let stack, pure_ret1 = variable_abstraction env stack ret1 in
-    let stack, pure_arg2 = variable_abstraction_all env stack arg2 in
-    let stack, pure_ret2 = variable_abstraction env stack ret2 in
-    Env.push_arrow env (Arrow.make pure_arg1 pure_ret1) (Arrow.make pure_arg2 pure_ret2) ;
+    let stack, arg1 = variable_abstraction_all env stack arg1 in
+    let stack, arg2 = variable_abstraction_all env stack arg2 in
+    let stack, ret1 = variable_abstraction env stack ret1 in
+    let stack, ret2 = variable_abstraction env stack ret2 in
+    Env.push_arrow env
+      (ArrowTerm.make arg1 ret1)
+      (ArrowTerm.make arg2 ret2) ;
     process_stack env stack
 
   (* Two tuples, we apply VA repeatedly
@@ -737,92 +263,86 @@ and attach env v t =
 let insert env t u : unit =
   let Done = insert_rec env Stack.empty t u in
   ()
+let insert_var env x ty : unit =
+  let Done = insert_var env Stack.empty x ty in
+  ()
 
+let insert_tuple_solution env (_, sol) =
+  Variable.HMap.iter
+    (fun k v -> insert_var env k (ACTerm.as_tuple v)) sol
 
-
-let process_tuples env : System.t =
-  let rec iter acc =
+(* Elementary AC theory *)
+let rec solve_tuple_problems env0 =
+  (* Call the AC solver on all tuple problems at once *)
+  let rec pop_all_tuples acc env =
     match Env.pop_tuple env with
     | None -> acc
-    | Some pb ->
-      let pb = System.simplify_problem env pb in
-      iter (pb::acc)
+    | Some pb -> pop_all_tuples (pb::acc) env
   in
-  let l = iter [] in
-  let sys = System.make l in
-  sys
+  AC.solve env0 @@ pop_all_tuples [] env0
+  |> Iter.flat_map (try_with_solution env0 insert_tuple_solution)
 
-let rec process_arrows env : System.t =
-  match Env.pop_arrow env with
-  | None -> process_tuples env
-  | Some {Arrow. left; right } ->
+(* Elementary Arrow theory *)
+and solve_arrow_problem env {ArrowTerm. left; right } k =
+  (* let f env () = *)
     Env.push_tuple env [|left.ret|] [|right.ret|];
     Env.push_tuple env left.args right.args;
-    process_arrows env
+  (* in
+   * try_with_solution env f () k *)
+    solve_loop env k
 
-(* Insertion of unifiers *)
-and insert_substitution env stack x p =
-  let ty = Tuple.as_typexpr p in
-  let Done = insert_var env stack x ty in
-  ()
-let fork_with_solution env ((_, map) : Dioph2Sol.t) =
-  let s = Stack.empty in
-  let env = Env.copy env in
-  Variable.HMap.iter (insert_substitution env s) map;
-  env
-
-
-let solve_system env system =
-  let dioph_sols = System.solve system in
-  Dioph2Sol.get_solutions env system dioph_sols
-
-
-let unifiers (tyenv : Type.Env.t) t1 t2 : Unifier.t Iter.t =
-  let rec solving_loop env k =
-    let system = process_arrows env in
-    debug (fun m -> m "@[<v2>System:@,%a@]" System.pp system) ;
-    let solutions = solve_system env system in
-    let f sol k =
-      debug (fun m -> m "@[<v2>Potential solution:@,%a@]@." (Dioph2Sol.pp env) sol) ;
-      try
-        let env = fork_with_solution env sol in
-        match Env.is_solved env with
-        | Some map ->
-          debug (fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env) ;
-          k map
-        | None ->
-          debug (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
-          solving_loop env k
-      with
-      | FailUnif (t1, t2) ->
-        debug (fun m -> m
-                  "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-                  (Type.pp tyenv.var_names) t1
-                  (Type.pp tyenv.var_names) t2
-              )
-      | FailedOccurCheck env -> 
-        debug (fun m -> m
-                  "@[<v>Failed occur check in env@;%a"
-                  Env.pp env
-              )
-    in
-    Iter.flat_map f solutions k
-  in
-  let env0 = Env.make tyenv in
+and try_with_solution
+  : type a. _ -> (Env.t -> a -> unit) -> a -> _
+  = fun env f sol k ->
   try
-    debug (fun m -> m {|@[<v>Unify:@ "%a"@ "%a"@]|}
-             (Type.pp tyenv.var_names) t1
-             (Type.pp tyenv.var_names) t2);
-    insert env0 t1 t2;
-    debug (fun m -> m "env0: @,%a" Env.pp env0) ;
-    solving_loop env0
+    let env = Env.copy env in
+    f env sol;
+    solve_loop env k
   with
+  | FailUnif (t1, t2) ->
+    debug (fun m ->
+        m "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
+          (Type.pp @@ Env.var_names env) t1
+          (Type.pp @@ Env.var_names env) t2
+      )
+  | FailedOccurCheck env -> 
+    debug (fun m ->
+        m "@[<v>Failed occur check in env@;%a"
+          Env.pp env
+      )
+
+and solve_loop env k =
+  match Env.is_solved env with
+  | Some map ->
+    debug (fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env) ;
+    k map
+  | None ->
+    debug (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
+    begin 
+      match Env.pop_arrow env with
+      | Some pb ->
+        solve_arrow_problem env pb k
+      | None ->
+        solve_tuple_problems env k
+    end
+
+let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
+  let env0 = Env.make tyenv in
+  debug (fun m ->
+      m {|@[<v>Unify:@ "%a"@ "%a"@]|}
+        (Type.pp tyenv.var_names) t1
+        (Type.pp tyenv.var_names) t2);
+  try
+    insert env0 t1 t2; 
+    debug (fun m -> m "env0: @,%a" Env.pp env0) ;
+    solve_loop env0
+  with 
   | FailUnif _ 
   | FailedOccurCheck _
     -> Iter.empty
 
 let unify (env : Type.Env.t) t1 t2 =
-  Iter.min ~lt:Unifier.lt @@ unifiers env t1 t2
+  Iter.min ~lt:Subst.lt @@ unifiers env t1 t2
 
 let unifiable (env : Type.Env.t) t1 t2 =
   not @@ Iter.is_empty @@ unifiers env t1 t2

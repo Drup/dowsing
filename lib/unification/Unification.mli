@@ -9,7 +9,7 @@ module Env : sig
 
 end
 
-module Unifier : sig
+module Subst : sig
 
   type t
 
@@ -23,10 +23,10 @@ end
 (** [unifiers tyenv t1 t2] computes the unification for all equations in [l]
     and returns a lazy sequence of all potential unifiers.
 *)
-val unifiers : Type.Env.t -> Type.t -> Type.t -> Unifier.t Iter.t
+val unifiers : Type.Env.t -> Type.t -> Type.t -> Subst.t Iter.t
 
 (** [unify tyenv t1 t2] is as {!unifiers}, but returns only the smallest unifier. *)
-val unify : Type.Env.t -> Type.t -> Type.t -> Unifier.t Option.t
+val unify : Type.Env.t -> Type.t -> Type.t -> Subst.t Option.t
 
 (** [unifiable tyenv t1 t2] is as {!unifiers} but returns [true] if there exists
     a unifier, and [false] otherwise. *)
