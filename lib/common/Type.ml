@@ -120,6 +120,7 @@ module rec Base : sig
 
   val compare : t -> t -> Int.t
   val equal : t -> t -> Bool.t
+  val hash : t -> Int.t
 
 end = struct
 
@@ -169,6 +170,8 @@ end = struct
 
   let equal t1 t2 =
     compare t1 t2 = 0
+
+  let hash = Hashtbl.hash
 
 end
 
@@ -243,19 +246,19 @@ end = struct
 
   let min_elt t = t.(0)
 
-  let pp pp_elt fmt = function
+  let pp pp_ty fmt = function
     | [||] ->
-        Fmt.string fmt "()"
+      Fmt.string fmt "()"
     | [| elt |] ->
-        pp_elt fmt elt
-    | t ->
-        Fmt.pf fmt "(@ %a@ )"
-          Fmt.(array ~sep:(any ", ") pp_elt) t
-
+      pp_ty fmt elt
+    | arr ->
+      Fmt.pf fmt "@[<2>%a@]"
+        Fmt.(array ~sep:(any " *@ ") pp_ty) arr
 end
 
 include Base
 
+module HMap = CCHashtbl.Make (Base)
 module Map = CCMap.Make (Base)
 module Set = CCSet.Make (Base)
 
@@ -264,14 +267,14 @@ module Set = CCSet.Make (Base)
 module Hashcons = struct
 
   type elt = t
-  type t = Set.t ref
+  type t = elt HMap.t 
 
-  let make () = ref Set.empty
+  let make () = HMap.create 17
 
   let hashcons t ty =
-    match Set.find_opt ty ! t with
+    match HMap.find_opt t ty with
     | Some ty -> ty
-    | None -> t := Set.add ty ! t ; ty
+    | None -> HMap.add t ty ty ; ty
 
 end
 
@@ -476,32 +479,29 @@ let rec vars t k =
 
 (* pretty printing *)
 
-let rec pp var_names =
-  let pp fmt = pp var_names fmt in
-  let pp_array fmt = function
-    | [||] ->
-        Fmt.string fmt "()"
-    | [| elt |] ->
-        pp fmt elt
-    | arr ->
-        Fmt.pf fmt "@[<2>(%a)@]"
-          Fmt.(array ~sep:(any ", ") pp) arr
-  in
-  fun fmt -> function
-    | Var var ->
-        Variable.pp var_names fmt var
-    | Constr (lid, [||]) ->
-        LongIdent.pp fmt lid
-    | Constr (lid, args) ->
-        Fmt.pf fmt "%a@ %a"
-          pp_array args
-          LongIdent.pp lid
-    | Arrow (args, ret) ->
-        Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-          (MSet.pp pp) args
-          pp ret
-    | Tuple elts ->
-        Fmt.pf fmt "@[<2>%a@]"
-          (MSet.pp pp) elts
-    | Other _ ->
-        Fmt.string fmt "_"
+let rec pp var_names fmt = function
+  | Var var ->
+    Variable.pp var_names fmt var
+  | Constr (lid, [||]) ->
+    LongIdent.pp fmt lid
+  | Constr (lid, args) ->
+    Fmt.pf fmt "%a@ %a"
+      (pp_array var_names) args
+      LongIdent.pp lid
+  | Arrow (args, ret) ->
+    Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
+      (MSet.pp @@ pp var_names) args
+      (pp var_names) ret
+  | Tuple elts ->
+    Fmt.pf fmt "@[<2>%a@]"
+      (MSet.pp @@ pp var_names) elts
+  | Other i ->
+    Fmt.pf fmt "other%i" i
+and pp_array var_names fmt = function
+  | [||] ->
+    Fmt.string fmt "()"
+  | [| elt |] ->
+    pp var_names fmt elt
+  | arr ->
+    Fmt.pf fmt "@[<2>(%a)@]"
+      Fmt.(array ~sep:(any ", ") @@ pp var_names) arr

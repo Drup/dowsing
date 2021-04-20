@@ -55,7 +55,7 @@ let iter_filter t ?(pred = CCFun.const true) ty =
 
 let find t env ty =
   iter_filter t ty ~pred: (fun ty' ->
-    Unification.unifiable env [ ty, ty' ]
+    Unification.unifiable env ty ty'
   )
 
 module Archive = struct

@@ -64,6 +64,9 @@ let neg_tests = [
   "'a f * a", "'x g * a" ;
   "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   "'a -> 'a -> a", "'x * b -> 'x" ;
+  (* Requires occur check *)
+  "'X -> 'X",
+  "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t";
 ]
 
 let tests =
@@ -71,7 +74,8 @@ let tests =
     let test () =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
-      Alcotest.(check bool) "" res @@ Unification.unifiable env [ ty1, ty2 ]
+      let name = Fmt.strf "%s ≡ %s" str1 str2 in
+      Alcotest.(check bool) name res @@ Unification.unifiable env ty1 ty2
     in
     incr test_cnt ;
     Alcotest.test_case (CCInt.to_string ! test_cnt) `Quick test

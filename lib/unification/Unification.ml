@@ -5,7 +5,8 @@
 *)
 
 module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
-let log = Logs.debug
+let info = Logs.info
+let debug = Logs.debug
 
 module Pure = struct
 
@@ -45,6 +46,9 @@ module Tuple = struct
         (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
 
   let pp namefmt fmt t =
+    match t with
+    | [|x|] -> Pure.pp namefmt fmt x
+    | t -> 
       Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (Pure.pp namefmt)) t
 
   let pp_problem namefmt fmt {left ; right} =
@@ -87,9 +91,9 @@ end = struct
 
   let pp_problem namefmt fmt self =
     Fmt.pf fmt "%a -> %a = %a -> %a"
-      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) self.left.args
+      Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.left.args
       (Pure.pp namefmt) self.left.ret
-      Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) self.right.args
+      Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.right.args
       (Pure.pp namefmt) self.right.ret
 
 end
@@ -183,7 +187,7 @@ end = struct
   let pp namefmt ppf (unif : t) =
     let pp_pair ppf (v,t) =
       Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (Type.pp namefmt) t in
-    Fmt.pf ppf "@[%a@]"
+    Fmt.pf ppf "@[<v>%a@]"
       (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
          Variable.Map.iter pp_pair)
       unif
@@ -274,7 +278,7 @@ end = struct
 
   let pp fmt { vars ; tuples ; arrows; tyenv } =
     let {Type.Env. var_names ; _ } = tyenv in
-    Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Pure:@ %a@]@,@[<v2>Arrows:@ %a@]"
+    Fmt.pf fmt "@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]"
       Fmt.(iter_bindings ~sep:cut Variable.Map.iter @@ pp_binding var_names) vars
       Fmt.(list ~sep:cut @@ Tuple.pp_problem var_names) tuples
       Fmt.(list ~sep:cut @@ Arrow.pp_problem var_names) arrows
@@ -417,9 +421,9 @@ end = struct
     let pp_pair ppf (v,t) =
       Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (Tuple.pp namefmt) t
     in
-    Fmt.pf ppf "@[%a: { %a }@]"
+    Fmt.pf ppf "@[<v2>%a: {@ %a@]@ }"
       Bitv.pp subset
-      (Fmt.iter_bindings ~sep:(Fmt.unit ";@ ")
+      (Fmt.iter_bindings ~sep:Fmt.cut
          Variable.HMap.iter pp_pair)
       unif
 
@@ -536,6 +540,60 @@ end = struct
 
 end
 
+
+(** Checking for cycles *)
+
+exception FailedOccurCheck of Env.t
+
+(* TO OPTIM/MEASURE *)
+let occur_check env : unit =
+  debug (fun m -> m "@[<v>Occur check in@,%a@]" Env.pp env);
+  let nb_predecessors = Variable.HMap.create 17 in
+  let successors = Variable.HMap.create 17 in
+
+  let fill_nb_predecessors x ty =
+    let aux y =
+      Variable.HMap.incr nb_predecessors y ;
+      Variable.HMap.add_list successors x y ;
+    in
+    begin
+      if not @@ Variable.HMap.mem nb_predecessors x then
+        Variable.HMap.add nb_predecessors x 0
+    end;
+    Type.vars ty |> Iter.iter aux
+  in
+  Variable.Map.iter fill_nb_predecessors (Env.vars env);
+
+  let nb_representatives = Variable.HMap.length nb_predecessors in
+  let vars_without_predecessors =
+    Variable.HMap.fold
+      (fun x count_preds l -> if count_preds = 0 then x :: l else l)
+      nb_predecessors []
+  in
+  debug (fun m -> m "Predecessors: %a"
+            (Variable.HMap.pp (Variable.pp @@ Env.var_names env) Fmt.int)
+          nb_predecessors);
+  debug (fun m -> m "Vars without predecessor: %a"
+            (Fmt.Dump.list @@ Variable.pp @@ Env.var_names env)
+          vars_without_predecessors);
+  
+  let rec loop n vars_without_predecessors = match vars_without_predecessors with
+    (* We eliminated all the variables: there are no cycles *)
+    | _ when n = nb_representatives -> ()
+    | [] -> raise @@ FailedOccurCheck env
+    | x :: q ->
+      let aux l v =
+        Variable.HMap.decr nb_predecessors v ;
+        let n = Variable.HMap.get_or ~default:0 nb_predecessors v in
+        if n = 0 then v :: l
+        else l
+      in
+      let succs_x = Variable.HMap.get_or ~default:[] successors x in
+      let q = List.fold_left aux q succs_x in
+      loop (n+1) q
+  in
+  loop 0 vars_without_predecessors
+
 (** Main process *)
 
 (* Alternative unit type.
@@ -626,6 +684,9 @@ and variable_abstraction env stack t =
     stack, Pure.var var
 
 and insert_var env stack x s =
+  (* let nameenv = Env.var_names env in
+   * debug (fun m -> m "Insert %a = %a"
+   *           (Variable.pp nameenv) x (Type.pp nameenv) s ); *)
   match Env.representative env x with
   | V x ->
     begin match s with
@@ -637,6 +698,7 @@ and insert_var env stack x s =
     end
   | E (_,u) ->
     (* variable was already bound *)
+    (* debug (fun m -> m "Var already bound in@ %a" Env.pp env );  *)
     insert_rec env stack u s
 
 (* Quasi solved equation
@@ -647,17 +709,21 @@ and quasi_solved env stack x s =
   match Env.get env x with
   | None ->
     Env.attach env x s ;
+    occur_check env;
     process_stack env stack
 
   (* Rule representative *)
   | Some (Type.Var y) ->
     Env.attach env y s ;
+    occur_check env;
     process_stack env stack
 
   (* Rule AC-Merge *)
   | Some t ->
-    (* TODO: use size of terms *)
-    insert_rec env stack t s
+    if Measure.size NodeCount t < Measure.size NodeCount s then
+      insert_rec env stack t s
+    else
+      insert_rec env stack s t
 
 (* Non proper equations
    'x ≡ 'y
@@ -668,10 +734,12 @@ and non_proper env stack (x:Variable.t) (y:Variable.t) =
   in
   match xr, yr with
   | V x', V y' when Variable.equal x' y' ->
+    debug (fun m -> m "Same var %a" (Variable.pp @@ Env.var_names env) x');
     process_stack env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
     Env.attach env x' (Type.var y') ;
+    occur_check env;
     process_stack env stack
   | E (_, t), E (_, s) ->
     if Measure.size NodeCount t < Measure.size NodeCount s then
@@ -710,7 +778,7 @@ and insert_substitution env stack x p =
   let ty = Tuple.as_typexpr p in
   let Done = insert_var env stack x ty in
   ()
-let fork_with_solutions env ((_, map) : Dioph2Sol.t) =
+let fork_with_solution env ((_, map) : Dioph2Sol.t) =
   let s = Stack.empty in
   let env = Env.copy env in
   Variable.HMap.iter (insert_substitution env s) map;
@@ -721,80 +789,55 @@ let solve_system env system =
   let dioph_sols = System.solve system in
   Dioph2Sol.get_solutions env system dioph_sols
 
-(** Checking for cycles *)
-(* TO OPTIM/MEASURE *)
-let occur_check env : bool =
-  let nb_preds = Variable.HMap.create 17 in
-  let succs = Variable.HMap.create 17 in
-  let nb_representatives = Variable.HMap.length nb_preds in
 
-  let fill_nb_preds x ty =
-    let aux v =
-      Variable.HMap.incr nb_preds v ;
-      Variable.HMap.add_list succs x v ;
-    in
-    Type.vars ty |> Iter.iter aux
-  in
-  Variable.Map.iter fill_nb_preds (Env.vars env);
-
-  let rec loop n q = match q with
-    | _ when n = nb_representatives -> true
-    (* We eliminated all the variables: there are no cycles *)
-    | [] -> false (* there is a cycle *)
-    | x :: q ->
-      let aux l v =
-        Variable.HMap.decr nb_preds v ;
-        let n = Variable.HMap.find nb_preds v in
-        if n = 0 then v :: l
-        else l
-      in
-      let q = List.fold_left aux q (Variable.HMap.find succs x) in
-      loop (n+1) q
-  in
-
-  let no_preds =
-    Variable.HMap.fold (fun x p l -> if p = 0 then x :: l else l) nb_preds []
-  in
-  loop 0 no_preds
-
-let unifiers (tyenv : Type.Env.t) (pairs: _ list) : Unifier.t Iter.t =
+let unifiers (tyenv : Type.Env.t) t1 t2 : Unifier.t Iter.t =
   let rec solving_loop env k =
-    if not (occur_check env) then ()
-    else
-      let system = process_arrows env in
-      log (fun m -> m "@[<v2>System:@,%a" System.pp system) ;
-      let solutions = solve_system env system in
-      log (fun m -> m "@]@.") ;
-      let f sol k =
-        log (fun m -> m "@[<v2>Solution:@,%a@]@." (Dioph2Sol.pp env) sol) ;
-        try
-          let env = fork_with_solutions env sol in
-          match Env.is_solved env with
-          | Some map ->
-            log (fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env) ;
-            k map
-          | None ->
-            log (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
-            solving_loop env k
-        with
-        | FailUnif (t1, t2) ->
-          log (fun m -> m "@[<v2>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-            (Type.pp tyenv.var_names) t1
-            (Type.pp tyenv.var_names) t2
-          )
-      in
-      Iter.flat_map f solutions k
+    occur_check env;
+    let system = process_arrows env in
+    debug (fun m -> m "@[<v2>System:@,%a" System.pp system) ;
+    let solutions = solve_system env system in
+    debug (fun m -> m "@]@.") ;
+    let f sol k =
+      debug (fun m -> m "@[<v2>Potential solution:@,%a@]@." (Dioph2Sol.pp env) sol) ;
+      try
+        let env = fork_with_solution env sol in
+        match Env.is_solved env with
+        | Some map ->
+          debug (fun m -> m "@[<v2>Solved env:@,%a@]@." Env.pp env) ;
+          k map
+        | None ->
+          debug (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
+          solving_loop env k
+      with
+      | FailUnif (t1, t2) ->
+        debug (fun m -> m
+                  "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
+                  (Type.pp tyenv.var_names) t1
+                  (Type.pp tyenv.var_names) t2
+              )
+      | FailedOccurCheck env -> 
+        debug (fun m -> m
+                  "@[<v>Failed occur check in env@;%a"
+                  Env.pp env
+              )
+    in
+    Iter.flat_map f solutions k
   in
   let env0 = Env.make tyenv in
   try
-    List.iter (fun (t1,t2) -> insert env0 t1 t2) pairs;
-    log (fun m -> m "@[<v2>env0: @,%a@]@." Env.pp env0) ;
+    info (fun m -> m "@[<v>Unify:@ - %a@ - %a@]"
+             (Type.pp tyenv.var_names) t1
+             (Type.pp tyenv.var_names) t2);
+    insert env0 t1 t2;
+    debug (fun m -> m "env0: @,%a" Env.pp env0) ;
     solving_loop env0
   with
-  | FailUnif _ -> Iter.empty
+  | FailUnif _ 
+  | FailedOccurCheck _
+    -> Iter.empty
 
-let unify (env : Type.Env.t) pairs =
-  Iter.min ~lt:Unifier.lt @@ unifiers env pairs
+let unify (env : Type.Env.t) t1 t2 =
+  Iter.min ~lt:Unifier.lt @@ unifiers env t1 t2
 
-let unifiable (env : Type.Env.t) pairs =
-  not @@ Iter.is_empty @@ unifiers env pairs
+let unifiable (env : Type.Env.t) t1 t2 =
+  not @@ Iter.is_empty @@ unifiers env t1 t2

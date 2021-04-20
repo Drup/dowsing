@@ -102,8 +102,7 @@ let () = Args.add_cmd (module struct
     Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty1) ;
     Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty2) ;
     let unifs =
-      [ ty1, ty2 ]
-      |> Unification.unifiers env
+      Unification.unifiers env ty1 ty2
       |> Iter.sort ~cmp:Unification.Unifier.compare
       |> Iter.to_list
     in
@@ -226,7 +225,7 @@ let () = Args.add_cmd (module struct
     let tbl = ref Measure.Map.empty in
     iter_idx (fun (ty', _) ->
       Timer.start timer ;
-      ignore @@ Unification.unifiable env [ ty, ty' ] ;
+      ignore @@ Unification.unifiable env ty ty' ;
       Timer.stop timer ;
       let time = Timer.get timer in
       let sz = Measure.size sz_kind ty' in
@@ -317,8 +316,7 @@ let () = Args.add_cmd (module struct
         error @@ Printf.sprintf "cannot open file '%s'." file
     in
     let aux k (ty', Index.{ lid }) =
-      [ ty, ty' ]
-      |> Unification.unify env
+      Unification.unify env ty ty'
       |> CCOpt.iter (fun unif -> k (Unification.Unifier.size unif, lid, ty'))
     in
     let res =

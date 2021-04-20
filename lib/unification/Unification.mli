@@ -20,14 +20,14 @@ module Unifier : sig
 
 end
 
-(** [unifiers tyenv l] computes the unification for all equations in [l]
+(** [unifiers tyenv t1 t2] computes the unification for all equations in [l]
     and returns a lazy sequence of all potential unifiers.
 *)
-val unifiers : Type.Env.t -> (Type.t * Type.t) List.t -> Unifier.t Iter.t
+val unifiers : Type.Env.t -> Type.t -> Type.t -> Unifier.t Iter.t
 
-(** [unify tyenv l] is as {!unifiers}, but returns only the smallest unifier. *)
-val unify : Type.Env.t -> (Type.t * Type.t) List.t -> Unifier.t Option.t
+(** [unify tyenv t1 t2] is as {!unifiers}, but returns only the smallest unifier. *)
+val unify : Type.Env.t -> Type.t -> Type.t -> Unifier.t Option.t
 
-(** [unifiable tyenv l] is as {!unifiers} but returns [true] if there exists
+(** [unifiable tyenv t1 t2] is as {!unifiers} but returns [true] if there exists
     a unifier, and [false] otherwise. *)
-val unifiable : Type.Env.t -> (Type.t * Type.t) List.t -> Bool.t
+val unifiable : Type.Env.t -> Type.t -> Type.t -> Bool.t
