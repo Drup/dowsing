@@ -490,13 +490,21 @@ let rec pp var_names fmt = function
       LongIdent.pp lid
   | Arrow (args, ret) ->
     Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-      (MSet.pp @@ pp var_names) args
-      (pp var_names) ret
+      (MSet.pp @@ pp_maybe_parens var_names) args
+      (pp_maybe_parens var_names) ret
   | Tuple elts ->
     Fmt.pf fmt "@[<2>%a@]"
-      (MSet.pp @@ pp var_names) elts
+      (MSet.pp @@ pp_maybe_parens var_names) elts
   | Other i ->
     Fmt.pf fmt "other%i" i
+
+and pp_maybe_parens var_names fmt ty =
+  match ty with
+  | Var _ | Other _ | Constr _
+    -> pp var_names fmt ty
+  | Arrow _ | Tuple _
+    -> Fmt.parens (pp var_names) fmt ty
+
 and pp_array var_names fmt = function
   | [||] ->
     Fmt.string fmt "()"
