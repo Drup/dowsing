@@ -295,27 +295,29 @@ end
 
 (* importation functions *)
 
-let make_var (env : Env.t) =
+let var v = Var v
+
+let fresh_var (env : Env.t) =
   let module StringHMap = CCHashtbl.Make (CCString) in
   let vars = StringHMap.create 17 in
   function
     | None ->
-        Var (Variable.Gen.gen env.var_gen)
+        var (Variable.Gen.gen env.var_gen)
     | Some name ->
         match StringHMap.get vars name with
         | Some t -> t
         | None ->
-            let var = Variable.Gen.gen env.var_gen in
-            let t = Var var in
-            Variable.HMap.add env.var_names var name ;
+            let v = Variable.Gen.gen env.var_gen in
+            let t = var v in
+            Variable.HMap.add env.var_names v name ;
             StringHMap.add vars name t ;
             t
 
-let make_constr lid = function
+let constr lid = function
   | [||] when lid = LongIdent.unit -> Tuple MSet.empty
   | args -> Constr (lid, args)
 
-let make_arrow arg ret =
+let arrow arg ret =
   match arg, ret with
   | Tuple tpl, _ when MSet.is_empty tpl ->
       ret
@@ -328,7 +330,7 @@ let make_arrow arg ret =
   | _, _ ->
       Arrow (MSet.singleton arg, ret)
 
-let make_tuple elts =
+let tuple elts =
   let aux = function
     | Tuple elts -> elts
     | elt -> MSet.singleton elt
@@ -338,7 +340,7 @@ let make_tuple elts =
     MSet.min_elt elts
   else Tuple elts
 
-let make_other x =
+let other x =
   Other (CCHash.poly x)
 
 let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
@@ -350,15 +352,15 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
-      |> make_constr (LongIdent.of_outcometree id)
+      |> constr (LongIdent.of_outcometree id)
   | Otyp_arrow (_, arg, ret) ->
-      make_arrow (of_outcometree arg) (of_outcometree ret)
+      arrow (of_outcometree arg) (of_outcometree ret)
   | Otyp_tuple elts ->
       elts
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> MSet.of_iter
-      |> make_tuple
+      |> tuple
   | Otyp_alias (out_ty, _) ->
       of_outcometree out_ty
   (* not handled *)
@@ -375,7 +377,7 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   | Otyp_manifest _
   | Otyp_record _
   | Otyp_sum _ ->
-      make_other out_ty
+      other out_ty
 
 let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
   match parse_ty.ptyp_desc with
@@ -388,15 +390,15 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
       |> Iter.of_list
       |> Iter.map of_parsetree
       |> Iter.to_array
-      |> make_constr id.txt
+      |> constr id.txt
   | Ptyp_arrow (_, arg, ret) ->
-      make_arrow (of_parsetree arg) (of_parsetree ret)
+      arrow (of_parsetree arg) (of_parsetree ret)
   | Ptyp_tuple elts ->
       elts
       |> Iter.of_list
       |> Iter.map of_parsetree
       |> MSet.of_iter
-      |> make_tuple
+      |> tuple
   | Ptyp_alias (parse_ty, _)
   | Ptyp_poly (_, parse_ty) ->
       of_parsetree parse_ty
@@ -406,10 +408,10 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
   | Ptyp_variant _
   | Ptyp_package _
   | Ptyp_extension _ ->
-      make_other parse_ty
+      other parse_ty
 
 let wrap fn (env : Env.t) x =
-  let make_var = make_var env in
+  let make_var = fresh_var env in
   let rec fn' x =
     x
     |> fn fn' make_var
@@ -451,11 +453,11 @@ let rec substitute sub =
           | Some t -> t
         end
     | Constr (lid, args) ->
-        make_constr lid @@ CCArray.map substitute args
+        constr lid @@ CCArray.map substitute args
     | Arrow (args, ret) ->
-        make_arrow (make_tuple @@ substitute_set args) (substitute ret)
+        arrow (tuple @@ substitute_set args) (substitute ret)
     | Tuple elts ->
-        make_tuple @@ substitute_set elts
+        tuple @@ substitute_set elts
     | Other _ ->
         t
 

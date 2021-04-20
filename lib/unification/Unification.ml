@@ -22,8 +22,8 @@ module Pure = struct
     | Constant p -> LongIdent.pp fmt p
 
   let as_typexpr = function
-    | Var v -> Type.Var v
-    | Constant c -> Type.Constr (c, [||])
+    | Var v -> Type.var v
+    | Constant c -> Type.constr c [||]
 
 end
 
@@ -41,7 +41,7 @@ module Tuple = struct
     match t with
     | [|x|] -> Pure.as_typexpr x
     | t ->
-      Type.Tuple
+      Type.tuple
         (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
 
   let pp namefmt fmt t =
@@ -671,11 +671,13 @@ and non_proper env stack (x:Variable.t) (y:Variable.t) =
     process_stack env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
-    Env.attach env x' (Type.Var y') ;
+    Env.attach env x' (Type.var y') ;
     process_stack env stack
   | E (_, t), E (_, s) ->
-    (* TODO: use size of terms *)
-    insert_rec env stack t s
+    if Measure.size NodeCount t < Measure.size NodeCount s then
+      insert_rec env stack t s
+    else
+      insert_rec env stack s t
 
 let insert env t u : unit =
   let Done = insert_rec env Stack.empty t u in

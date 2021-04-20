@@ -47,7 +47,7 @@ end
 
 module rec Base : sig
 
-  type t =
+  type t = private
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
     | Arrow of MSet.t * t
@@ -92,6 +92,13 @@ include module type of Base with type t = Base.t
 
 module Map : CCMap.S with type key = t
 module Set : CCSet.S with type elt = t
+
+(** Smart constructors *)
+
+val var : Variable.t -> t
+val constr : LongIdent.t -> t array -> t
+val tuple : MSet.t -> t
+val arrow : t -> t -> t
 
 module Hashcons : sig
 

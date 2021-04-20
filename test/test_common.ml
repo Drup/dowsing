@@ -7,18 +7,19 @@ let test_cnt = ref 0
 let add_tests name tests =
   all_tests := ! all_tests @ [ name, tests ]
 
-let int = Type.Constr (LongIdent.Lident "int", [||])
+let int = Type.constr (LongIdent.Lident "int") [||]
+let (-->) = Type.arrow
 
 (* Type.of_string *)
 
 let tests =
   let open Type in [
     "int", int ;
-    "int -> int", Arrow (MSet.of_list [ int ], int) ;
+    "int -> int", int --> int ;
     "unit -> int", int ;
-    "int * int", Tuple (MSet.of_list [ int ; int ]) ;
-    "int * int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
-    "int -> int -> int", Arrow (MSet.of_list [ int ; int ], int) ;
+    "int * int", tuple (MSet.of_list [ int ; int ]) ;
+    "int * int -> int", (tuple @@ MSet.of_list [ int ; int ]) --> int ;
+    "int -> int -> int", int --> (int --> int) ;
   ]
 
 let tests =
