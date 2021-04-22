@@ -1,0 +1,22 @@
+#!/bin/bash
+
+dowsindex="dune exec --no-print-directory dowsindex"
+
+pkgs="containers"
+if [[ ! -e index.db ]] ; then
+	echo "creating index for diff tests..."
+	$dowsindex save index.db $pkgs || exit 1
+fi
+
+echo "running diff tests..."
+
+i=1
+while [[ -e test$i.input && -e test$i.expected ]] ; do
+	output=$($dowsindex search index.db "$(< test$i.input)")
+	if [[ $output != $(< test$i.expected) ]] ; then
+		echo "error: test$i failed"
+		exit 1
+	fi
+	echo "test$i verified"
+	((i ++))
+done

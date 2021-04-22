@@ -198,7 +198,7 @@ let () = Args.add_cmd (module struct
           error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
     in
     Logs.app (fun m ->
-      m "@[<hv2>found %i findlib packages:@ %a@]"
+      m "@[<hv2>found %i packages:@ %a@]"
         (CCList.length pkg_dirs)
         Fmt.(list ~sep:sp string) pkg_dirs
     ) ;

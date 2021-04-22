@@ -10,6 +10,7 @@ build :
 .PHONY : test
 test :
 	@$(DUNE) runtest --no-buffer --force
+	@cd test/diff_tests && ./run
 
 .PHONY : clean
 clean :

@@ -1,0 +1,2 @@
+Containers.Hashtbl.hash_param: 'a * int * int -> int
+ContainersLabels.Hashtbl.hash_param: 'a * int * int -> int
