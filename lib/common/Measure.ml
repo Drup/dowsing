@@ -8,6 +8,7 @@ module Kind = struct
     | NodeCount
     | HeadKind
     | TailSpineVarCount
+    | TailSpineNonVarCount
     | SpineVarCount
     | TailLength
 
@@ -17,6 +18,7 @@ module Kind = struct
     NodeCount, "nodes" ;
     HeadKind, "head" ;
     TailSpineVarCount, "tail-spine-vars" ;
+    TailSpineNonVarCount, "tail-spine-non-vars" ;
     SpineVarCount, "spine-vars" ;
     TailLength, "tail-length" ;
   ]
@@ -61,6 +63,11 @@ let rec make (kind : Kind.t) ty =
   | TailSpineVarCount ->
       let aux ty =
         (+) @@ CCBool.to_int Type.(kind ty = Var)
+      in
+      Type.(MSet.fold aux (tail ty) 0)
+  | TailSpineNonVarCount ->
+      let aux ty =
+        (+) @@ CCBool.to_int Type.(kind ty <> Var)
       in
       Type.(MSet.fold aux (tail ty) 0)
   | SpineVarCount ->

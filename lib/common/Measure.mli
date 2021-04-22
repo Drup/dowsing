@@ -6,6 +6,7 @@ module Kind : sig
     | NodeCount
     | HeadKind
     | TailSpineVarCount
+    | TailSpineNonVarCount
     | SpineVarCount
     | TailLength
 

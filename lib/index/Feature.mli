@@ -10,4 +10,5 @@ end
 
 module Head : S
 module Head' : S
-module TailLength : S
+module Tail : S
+module Tail' : S

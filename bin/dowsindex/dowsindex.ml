@@ -117,13 +117,14 @@ let () = Args.add_cmd (module struct
   let name = "unify"
   let usage = "<type1> <type2>"
 
-  let ty1 = ref None
-  let ty2 = ref None
   let all_unifs = ref false
 
   let options = [
     "-a", Arg.Set all_unifs, "\tReport all unifiers" ;
   ]
+
+  let ty1 = ref None
+  let ty2 = ref None
 
   let anon_fun arg =
     if CCOpt.is_none ! ty1 then
@@ -167,7 +168,12 @@ let () = Args.add_cmd (module struct
 
   let name = "save"
   let usage = "<file> <package>..."
-  let options = []
+
+  let verbose = ref false
+
+  let options = [
+    "--verbose", Arg.Set verbose, "\tEnable verbose output" ;
+  ]
 
   let file = ref None
   let pkgs = ref []
@@ -178,7 +184,7 @@ let () = Args.add_cmd (module struct
     else
       pkgs := ! pkgs @ [ arg ]
 
-  let main file pkgs =
+  let main verbose file pkgs =
     Findlib.init () ;
     let pkgs () =
       if pkgs = [] then
@@ -193,21 +199,21 @@ let () = Args.add_cmd (module struct
         (* we need this because [Findlib.list_packages'] is faulty:
            it gives some unknown packages *)
         |> CCList.filter Sys.file_exists
+        |> CCList.sort_uniq ~cmp:CCString.compare
       with
       | Findlib.No_such_package (pkg, _) ->
           error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
     in
-    Logs.app (fun m ->
-      m "@[<hv2>found %i packages:@ %a@]"
+    if verbose then
+      Fmt.pr "@[<v2>found %i packages:@ %a@]"
         (CCList.length pkg_dirs)
-        Fmt.(list ~sep:sp string) pkg_dirs
-    ) ;
+        Fmt.(list ~sep:sp string) pkg_dirs ;
     Index.(save @@ make pkg_dirs) file
 
   let main () =
     if CCOpt.is_none ! file then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! file) ! pkgs
+    main ! verbose (Option.get ! file) ! pkgs
 
 end)
 
@@ -218,20 +224,21 @@ let () = Args.add_cmd (module struct
   let name = "stats"
   let usage = "<file> <type>"
 
-  let file = ref None
-  let ty = ref None
-  let filter = ref false
-
   let meas_kind = ref Measure.Kind.VarCount
   let set_meas_kind str =
     meas_kind := Measure.Kind.of_string str
   let meas_kinds_strs =
     Measure.Kind.(CCList.map to_string all)
 
+  let filter = ref false
+
   let options = [
     "--measure", Arg.Symbol (meas_kinds_strs, set_meas_kind), "\tSet type size kind" ;
     "--filter", Arg.Set filter, "\tEnable feature filtering" ;
   ]
+
+  let file = ref None
+  let ty = ref None
 
   let anon_fun arg =
     if CCOpt.is_none ! file then
@@ -249,7 +256,7 @@ let () = Args.add_cmd (module struct
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
-    let aux iter_idx =
+    let aux ?stats0 iter_idx =
       let tbl = ref Measure.Map.empty in
       iter_idx (fun (ty', _) ->
         Timer.start timer ;
@@ -271,24 +278,31 @@ let () = Args.add_cmd (module struct
           total_cnt := ! total_cnt + cnt ;
           [|
             Fmt.to_to_string (Measure.pp meas_kind) meas ;
-            Fmt.(to_to_string float) @@ time *. 1e6 ;
+            Fmt.(to_to_string float) @@ time *. 1e3 ;
             Fmt.(to_to_string float) @@ time /. CCFloat.of_int cnt *. 1e6 ;
             CCInt.to_string cnt ;
           |]
         )
       in
       pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
-      Fmt.pr "@,total time: %g" ! total_time ;
-      Fmt.pr "@,total # unif.: %i" ! total_cnt ;
-      ! total_time, CCFloat.of_int ! total_cnt
+      let total_time = ! total_time in
+      let total_cnt = ! total_cnt in
+      Fmt.pr "@,total time: %g" total_time ;
+      stats0 |> CCOpt.iter (fun (total_time', _) ->
+        Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.
+      ) ;
+      Fmt.pr "@,total # unif.: %i" total_cnt ;
+      let total_cnt = CCFloat.of_int total_cnt in
+      stats0 |> CCOpt.iter (fun (_, total_cnt') ->
+        Fmt.pr " (%g %%)" @@ total_cnt /. total_cnt' *. 100.
+      ) ;
+      total_time, total_cnt
     in
     Fmt.pr "@[<v>" ;
-    let time, cnt = aux @@ Index.iter idx in
+    let stats0 = aux @@ Index.iter idx in
     if filter then begin
       Fmt.pr "@," ;
-      let time', cnt' = aux @@ Index.iter_with idx ty in
-      Fmt.pr "@,%% total time: %g" @@ time' /. time *. 100. ;
-      Fmt.pr "@,%% total # unif.: %g" @@ cnt' /. cnt *. 100.
+      ignore @@ aux ~stats0 @@ Index.iter_with idx ty
     end ;
     Fmt.pr "@]@."
 
@@ -305,7 +319,13 @@ let () = Args.add_cmd (module struct
 
   let name = "search"
   let usage = "<file> <type>"
-  let options = []
+
+  let cnt = ref None
+  let set_cnt i = cnt := Some i
+
+  let options = [
+    "--take", Arg.Int set_cnt, "\tReport only the first results" ;
+  ]
 
   let file = ref None
   let ty = ref None
@@ -318,7 +338,7 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main file str =
+  let main cnt file str =
     let idx =
       try Index.load file
       with Sys_error _ ->
@@ -326,11 +346,15 @@ let () = Args.add_cmd (module struct
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
-    let cmp (_, info1, unif1) (_, info2, unif2) =
-      CCOrd.(Unification.Subst.compare unif1 unif2
-      <?> (LongIdent.compare, info1.Index.lid, info2.Index.lid))
+    let res =
+      let cmp (_, info1, unif1) (_, info2, unif2) =
+        CCOrd.(Unification.Subst.compare unif1 unif2
+          <?> (LongIdent.compare, info1.Index.lid, info2.Index.lid))
+      in
+      Index.find idx env ty
+      |> CCOpt.map_or ~default:CCFun.id Iter.take cnt
+      |> Iter.sort ~cmp
     in
-    let res = Iter.sort ~cmp @@ Index.find idx env ty in
     Fmt.pr "@[<v>" ;
     res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
@@ -342,7 +366,7 @@ let () = Args.add_cmd (module struct
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main (Option.get ! file) (Option.get ! ty)
+    main ! cnt (Option.get ! file) (Option.get ! ty)
 
 end)
 

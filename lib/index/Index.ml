@@ -1,7 +1,7 @@
 module Trie =
   Trie.Make (
     Trie.Node (Feature.Head') (
-      Trie.Node (Feature.TailLength) (
+      Trie.Node (Feature.Tail') (
         Trie.Leaf
       )
     )
