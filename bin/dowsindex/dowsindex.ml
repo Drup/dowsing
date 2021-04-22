@@ -1,19 +1,58 @@
 let prog_name = "dowsindex"
 
+module StringHMap = CCHashtbl.Make (CCString)
+
 let timer = Timer.make ()
 
 let exit ?(code = 0) ?(out = stdout) ?msg () =
   CCOpt.iter (Printf.fprintf out "%s\n") msg ;
   exit code
 
-let error msg =
-  let msg = Printf.sprintf "error: %s" msg in
-  exit () ~code:1 ~out:stderr ~msg
+let error ?msg () =
+  let msg = CCOpt.map (Fmt.str "error: %s") msg in
+  exit () ~code:1 ~out:stderr ?msg
 
 let type_of_string env str =
   try Type.of_string env str
   with Syntaxerr.Error _ ->
-    error "syntax error in type argument."
+    error () ~msg:"syntax error in type argument."
+
+let pp_table ?(sep = 4) col_names row_it =
+  let col_cnt = CCArray.length col_names in
+  let col_widths = CCArray.map CCString.length col_names in
+  let row_it = Iter.persistent row_it in
+  row_it |> Iter.iter (fun row ->
+    assert (CCArray.length row = col_cnt) ;
+    for i = 0 to col_cnt - 1 do
+      col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
+    done
+  ) ;
+  for i = 0 to col_cnt - 2 do
+    col_widths.(i) <- col_widths.(i) + sep
+  done ;
+  let print_hline =
+    let width = CCArray.fold (+) 0 col_widths in
+    let hline = CCString.make width '-' in
+    fun () -> CCFormat.print_string hline
+  in
+  CCFormat.open_tbox () ;
+  print_hline () ;
+  CCFormat.printf "@\n" ;
+  for i = 0 to col_cnt - 1 do
+    CCFormat.set_tab () ;
+    CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
+  done ;
+  CCFormat.print_tab () ;
+  print_hline () ;
+  row_it |> Iter.iter (fun row ->
+    for i = 0 to col_cnt - 1 do
+      CCFormat.print_tab () ;
+      CCFormat.print_string row.(i)
+    done
+  ) ;
+  CCFormat.print_tab () ;
+  print_hline () ;
+  CCFormat.close_tbox ()
 
 (* command line arguments *)
 
@@ -33,7 +72,6 @@ module Args = struct
     "--debug", Arg.Set debug, "\tEnable debug mode" ;
   ]
 
-  module StringHMap = CCHashtbl.Make (CCString)
   let cmds = StringHMap.create 17
 
   let add_cmd ((module Cmd : Command) as cmd) =
@@ -41,13 +79,13 @@ module Args = struct
 
   let parse () =
     let error usage msg =
-      error @@ msg ^ ".\n" ^ usage
+      error () ~msg:(msg ^ ".\n" ^ usage)
     in
     let usage =
       cmds
       |> StringHMap.keys_list
       |> CCString.concat "|"
-      |> Printf.sprintf "usage: %s {%s} <argument>..." prog_name
+      |> Fmt.str "usage: %s {%s} <argument>..." prog_name
     in
     let error' = error usage in
     if CCArray.length Sys.argv < 2 then
@@ -60,7 +98,7 @@ module Args = struct
     | Some (module Cmd) ->
         let name = prog_name ^ " " ^ Cmd.name in
         let options = Arg.align @@ options @ Cmd.options in
-        let usage = Printf.sprintf "usage: %s [<option>...] %s\noptions:" name Cmd.usage in
+        let usage = Fmt.str "usage: %s [<option>...] %s\noptions:" name Cmd.usage in
         Sys.argv.(1) <- "error" ;
         Arg.current := 1 ;
         Arg.parse options Cmd.anon_fun usage ;
@@ -142,30 +180,29 @@ let () = Args.add_cmd (module struct
 
   let main file pkgs =
     Findlib.init () ;
-    let pkgs () =
-      if pkgs = [] then
-        Findlib.list_packages' ()
-      else
-        let pkgs = Findlib.package_deep_ancestors [] pkgs in
-        Logs.app (fun m ->
-            m "@[<hv 2>Findlib packages:@ %a@]"
-              Fmt.(list ~sep:sp string) pkgs
-          );
-        pkgs
-    in
     let pkg_dirs =
       try
-        pkgs ()
+        let pkgs =
+          if pkgs = [] then
+            Findlib.list_packages' ()
+          else
+            let pkgs = Findlib.package_deep_ancestors [] pkgs in
+            Logs.app (fun m ->
+              m "@[<hv 2>Findlib packages:@ %a@]"
+                Fmt.(list ~sep:sp string) pkgs
+            ) ;
+            pkgs
+        in
+        pkgs
         |> CCList.map Findlib.package_directory
         (* we need this because [Findlib.list_packages'] is faulty:
            it gives some unknown packages *)
         |> CCList.filter Sys.file_exists
       with
       | Findlib.No_such_package (pkg, _) ->
-        Logs.err (fun m -> m "Cannot find package '%s'." pkg);
-        exit ~code:1 ()
+          error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
     in
-    Logs.app (fun m -> m "Found %i findlib packages" (List.length pkg_dirs));
+    Logs.app (fun m -> m "Found %i findlib packages" @@ List.length pkg_dirs) ;
     Index.(save @@ make pkg_dirs) file
 
   let main () =
@@ -186,17 +223,14 @@ let () = Args.add_cmd (module struct
   let ty = ref None
   let filter = ref false
 
-  let measure_kind = ref Measure.VarCount
-  let set_measure_kind sym =
-    match List.assoc_opt sym Measure.all with
-    | Some measure_kind' -> measure_kind := measure_kind'
-    | None -> assert false
-  let measure_kind_options =
-    CCList.map fst Measure.all
+  let meas_kind = ref Measure.Kind.VarCount
+  let set_meas_kind str =
+    meas_kind := Measure.Kind.of_string str
+  let meas_kinds_strs =
+    Measure.Kind.(CCList.map to_string all)
 
   let options = [
-    "--measure",
-    Arg.Symbol (measure_kind_options, set_measure_kind), "\tSet type size kind" ;
+    "--measure", Arg.Symbol (meas_kinds_strs, set_meas_kind), "\tSet type size kind" ;
     "--filter", Arg.Set filter, "\tEnable feature filtering" ;
   ]
 
@@ -208,11 +242,11 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main sz_kind filter file str =
+  let main meas_kind filter file str =
     let idx =
       try Index.load file
       with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'." file
+        error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
@@ -228,63 +262,33 @@ let () = Args.add_cmd (module struct
       ignore @@ Unification.unifiable env ty ty' ;
       Timer.stop timer ;
       let time = Timer.get timer in
-      let sz = Measure.size sz_kind ty' in
+      let sz = Measure.make meas_kind ty' in
       tbl := ! tbl |> Measure.Map.update sz @@ function
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
-    let col_names = [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] in
-    let sep = 4 in
-    let col_cnt = CCArray.length col_names in
-    let col_widths = CCArray.map CCString.length col_names in
     let total_time = ref 0. in
-    let tbl =
-      ! tbl |> Measure.Map.mapi (fun sz (time, cnt) ->
+    let row_it =
+      ! tbl
+      |> Measure.Map.to_iter
+      |> Iter.map (fun (sz, (time, cnt)) ->
         total_time := ! total_time +. time ;
         let row = [|
-          CCFormat.asprintf "%a" (Measure.pp sz_kind) sz ;
-          Printf.sprintf "%g" @@ 1e3 *. time ;
-          Printf.sprintf "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
+          Fmt.str "%a" (Measure.pp meas_kind) sz ;
+          Fmt.str "%g" @@ 1e3 *. time ;
+          Fmt.str "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
           CCInt.to_string cnt ;
         |] in
-        for i = 0 to col_cnt - 1 do
-          col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
-        done ;
         row
       )
     in
-    for i = 0 to col_cnt - 2 do
-      col_widths.(i) <- col_widths.(i) + sep
-    done ;
-    let print_hline =
-      let width = CCArray.fold (+) 0 col_widths in
-      let hline = CCString.make width '-' in
-      fun () -> CCFormat.print_string hline
-    in
-    CCFormat.open_tbox () ;
-    print_hline () ;
-    CCFormat.printf "@\n" ;
-    for i = 0 to col_cnt - 1 do
-      CCFormat.set_tab () ;
-      CCFormat.printf "%-*s" col_widths.(i) col_names.(i)
-    done ;
-    CCFormat.print_tab () ;
-    print_hline () ;
-    Measure.Map.values tbl (fun row ->
-      for i = 0 to col_cnt - 1 do
-        CCFormat.print_tab () ;
-        CCFormat.print_string row.(i)
-      done
-    ) ;
-    CCFormat.print_tab () ;
-    print_hline () ;
-    CCFormat.close_tbox () ;
-    CCFormat.printf "@\ntotal time: %g@." ! total_time
+    pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] row_it ;
+    Fmt.pr "@\ntotal time: %g@." ! total_time
 
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! measure_kind ! filter (Option.get ! file) (Option.get ! ty)
+    main ! meas_kind ! filter (Option.get ! file) (Option.get ! ty)
 
 end)
 
@@ -311,18 +315,15 @@ let () = Args.add_cmd (module struct
     let idx =
       try Index.load file
       with Sys_error _ ->
-        error @@ Printf.sprintf "cannot open file '%s'." file
+        error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
-    let compare_results (_ty1, info1, unif1) (_ty2, info2, unif2) =
-      CCOrd.(Unification.Subst.compare unif1 unif2 <?>
-             (LongIdent.compare, info1.Index.lid, info2.Index.lid))
+    let cmp (_, info1, unif1) (_, info2, unif2) =
+      CCOrd.(Unification.Subst.compare unif1 unif2
+      <?> (LongIdent.compare, info1.Index.lid, info2.Index.lid))
     in
-    let res =
-      Index.find idx env ty
-      |> Iter.sort ~cmp:compare_results
-    in
+    let res = Iter.sort ~cmp @@ Index.find idx env ty in
     Fmt.pr "@[<v>" ;
     res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"

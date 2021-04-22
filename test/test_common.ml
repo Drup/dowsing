@@ -16,7 +16,6 @@ let tests =
   let open Type in [
     "int", int ;
     "int -> int", int --> int ;
-    "unit -> int", int ;
     "int * int", tuple (MSet.of_list [ int ; int ]) ;
     "int * int -> int", (tuple @@ MSet.of_list [ int ; int ]) --> int ;
     "int -> int -> int", int --> (int --> int) ;
@@ -25,7 +24,7 @@ let tests =
 let tests =
   let make_test (str, ty) =
     let test () =
-      Alcotest.check type_testable "" (Type.of_string env str) ty
+      Alcotest.check type_testable str (Type.of_string env str) ty
     in
     incr test_cnt ;
     Alcotest.test_case (Int.to_string ! test_cnt) `Quick test

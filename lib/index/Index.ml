@@ -1,6 +1,6 @@
 module Trie =
   Trie.Make (
-    Trie.Node (Feature.ByHead') (
+    Trie.Node (Feature.Head') (
       Trie.Node (Feature.TailLength) (
         Trie.Leaf
       )
@@ -47,20 +47,16 @@ let add t ty lid =
 
 let get_env t = t.env
 
-let iter t =
-  Trie.iter @@ t.infos
-
-let iter_with t ty =
-  Trie.iter_with ty t.infos
+let iter t = Trie.iter t.infos
+let iter_with t ty = Trie.iter_with ty t.infos
 
 let find t env ty =
   iter_with t ty
-  |> Iter.filter_map
-    (fun (ty', info) ->
-       match Unification.unify env ty ty' with
-       | Some unif -> Some (ty', info, unif)
-       | None -> None
-    )
+  |> Iter.filter_map (fun (ty', info) ->
+     match Unification.unify env ty ty' with
+     | Some unif -> Some (ty', info, unif)
+     | None -> None
+  )
 
 module Archive = struct
 

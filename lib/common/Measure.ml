@@ -1,82 +1,79 @@
-open Type
+module StringHMap = CCHashtbl.Make (CCString)
 
-type kind =
-  | VarCount
-  | AllVarCount
-  | NodeCount
-  | HeadKind
-  | TailSpineVarCount
-  | SpineVarCount
-  | TailLength
+module Kind = struct
 
-let all = [
-  "vars", VarCount ;
-  "allvars", AllVarCount ;
-  "nodes", NodeCount ;
-  "head", HeadKind ;
-  "tail-spine-vars", TailSpineVarCount ;
-  "spine-vars", SpineVarCount ;
-  "tail-length", TailLength ;
-]
+  type t =
+    | VarCount
+    | UniqueVarCount
+    | NodeCount
+    | HeadKind
+    | TailSpineVarCount
+    | SpineVarCount
+    | TailLength
+
+  let all = [
+    VarCount, "vars" ;
+    UniqueVarCount, "unique-vars" ;
+    NodeCount, "nodes" ;
+    HeadKind, "head" ;
+    TailSpineVarCount, "tail-spine-vars" ;
+    SpineVarCount, "spine-vars" ;
+    TailLength, "tail-length" ;
+  ]
+
+  let of_string =
+    let tbl = StringHMap.create @@ CCList.length all in
+    CCList.iter (fun (t, str) -> StringHMap.add tbl str t) all ;
+    fun str ->
+      match StringHMap.get tbl str with
+      | Some t -> t
+      | None -> invalid_arg "Common.Measure.Kind.of_string"
+
+  let to_string t = CCList.assoc ~eq:(=) t all
+
+  let all = List.map fst all
+
+end
 
 type t = Int.t
+
+let rec make (kind : Kind.t) ty =
+  match kind with
+  | VarCount ->
+      Iter.length @@ Type.vars ty
+  | UniqueVarCount ->
+      Variable.Set.(cardinal @@ of_iter @@ Type.vars ty)
+  | NodeCount ->
+      let rec aux (ty : Type.t) =
+        match ty with
+        | Var _ | Other _ -> 1
+        | Constr (_, args) -> 1 + aux_array args
+        | Arrow (args, ret) -> 1 + aux_set args + aux ret
+        | Tuple elts -> 1 + aux_set elts
+      and aux_array ty_arr =
+        CCArray.fold (fun acc ty -> acc + aux ty) 0 ty_arr
+      and aux_set ty_set =
+        Type.MSet.fold (fun ty acc -> aux ty + acc) ty_set 0
+      in
+      aux ty
+  | HeadKind ->
+      Type.(Kind.to_int @@ kind @@ head ty)
+  | TailSpineVarCount ->
+      let aux ty =
+        (+) @@ CCBool.to_int Type.(kind ty = Var)
+      in
+      Type.(MSet.fold aux (tail ty) 0)
+  | SpineVarCount ->
+      let meas = make TailSpineVarCount ty in
+      let hd_kind = Type.(kind @@ head ty) in
+      meas + CCBool.to_int (hd_kind = Var)
+  | TailLength ->
+      Type.(MSet.length @@ tail ty)
 
 module Map = CCMap.Make (CCInt)
 module HMap = CCHashtbl.Make (CCInt)
 
-let pp kind fmt t =
+let pp (kind : Kind.t) fmt t =
   match kind with
-  | HeadKind -> Kind.(pp fmt @@ of_int t)
-  | VarCount | AllVarCount | NodeCount
-  | TailSpineVarCount | SpineVarCount
-  | TailLength -> Fmt.int fmt t
-
-(** The counting functions *)
-
-let var t =
-  Variable.Set.cardinal @@ Variable.Set.of_iter @@ vars t
-
-let all_var t =
-  Iter.length @@ Type.vars t
-
-let node =
-  let rec aux = function
-    | Var _ | Other _ ->
-      1
-    | Constr (_, args) ->
-      1 + CCArray.fold (fun acc t -> acc + aux t) 0 args
-    | Arrow (args, ret) ->
-      1 + aux_set args + aux ret
-    | Tuple elts ->
-      1 + aux_set elts
-  and aux_set set =
-    MSet.fold (fun t acc -> aux t + acc) set 0
-  in
-  aux
-
-let head_kind t = 
-  Kind.to_int @@ kind @@ head t
-
-let tail_spine_var t =
-  let aux t =
-    (+) @@ CCBool.to_int (kind t = Kind.Var)
-  in
-  MSet.fold aux (tail t) 0
-
-let spine_var t = 
-  let sz = tail_spine_var t in
-  let hd_kind = kind @@ head t in
-  sz + CCBool.to_int (hd_kind = Kind.Var)
-
-let tail_length t =
-  MSet.length @@ tail t
-
-let size (sz_kind : kind) t =
-  match sz_kind with
-  | VarCount -> var t
-  | AllVarCount -> all_var t
-  | NodeCount -> node t
-  | HeadKind -> head_kind t
-  | TailSpineVarCount -> tail_spine_var t
-  | SpineVarCount -> spine_var t
-  | TailLength -> tail_length t
+  | HeadKind -> Type.Kind.(pp fmt @@ of_int t)
+  | _ -> Fmt.int fmt t

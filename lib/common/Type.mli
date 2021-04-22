@@ -20,7 +20,7 @@ module Kind : sig
   module HMap : CCHashtbl.S with type key = t
   module MSet : CCMultiSet.S with type elt = t
 
-  val pp : t Fmt.t
+  val pp : t Fmt.t [@@ocaml.toplevel_printer]
 
 end
 
@@ -84,7 +84,7 @@ and MSet : sig
   val map : (elt -> elt) -> t -> t
   val min_elt : t -> elt
 
-  val pp : elt Fmt.t -> t Fmt.t
+  val pp : elt Fmt.t -> t Fmt.t [@@ocaml.toplevel_printer]
 
 end
 
@@ -92,13 +92,6 @@ include module type of Base with type t = Base.t
 
 module Map : CCMap.S with type key = t
 module Set : CCSet.S with type elt = t
-
-(** Smart constructors *)
-
-val var : Variable.t -> t
-val constr : LongIdent.t -> t array -> t
-val tuple : MSet.t -> t
-val arrow : t -> t -> t
 
 module Hashcons : sig
 
@@ -122,6 +115,13 @@ module Env : sig
 
 end
 
+(* smart constructors *)
+
+val var : Variable.t -> t
+val constr : LongIdent.t -> t Array.t -> t
+val tuple : MSet.t -> t
+val arrow : t -> t -> t
+
 (* importation functions *)
 
 val of_outcometree : Env.t -> Outcometree.out_type -> t
@@ -140,4 +140,4 @@ val vars : t -> Variable.t Iter.t
 
 (* pretty printing *)
 
-val pp : String.t Variable.HMap.t -> t Fmt.t
+val pp : String.t Variable.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]

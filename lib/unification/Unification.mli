@@ -13,8 +13,8 @@ module Subst : sig
 
   type t
 
-  val size : t -> int
-  val compare : t -> t -> int
+  val size : t -> Int.t
+  val compare : t -> t -> Int.t
 
   val pp : String.t Variable.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
 

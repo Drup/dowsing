@@ -24,8 +24,7 @@ module Leaf : NODE = struct
   let singleton = Type.Map.singleton
   let add = Type.Map.add
   let iter = Type.Map.to_iter
-
-  let iter_with _ t = iter t
+  let iter_with _ = iter
 
 end
 
@@ -40,13 +39,16 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
 
   let empty = FeatMap.empty
 
-  let singleton (k, k') v =
-    FeatMap.singleton k @@ Sub.singleton k' v
+  let singleton (key, key') v =
+    FeatMap.singleton key @@ Sub.singleton key' v
 
-  let add (k, k') v t =
-    match FeatMap.find_opt k t with
-    | None -> FeatMap.add k (Sub.singleton k' v) t
-    | Some sub -> FeatMap.add k (Sub.add k' v sub) t
+  let add (key, key') v t =
+    let sub =
+      match FeatMap.find_opt key t with
+      | None -> Sub.singleton key' v
+      | Some sub -> Sub.add key' v sub
+    in
+    FeatMap.add key sub t
 
   let iter t =
     t
@@ -59,12 +61,12 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
      ... compatible, so that we can make a range query.
   *)
 
-  let iter_with (k, k') t =
+  let iter_with (key, key') t =
     t
     |> FeatMap.to_iter
     |> Iter.flat_map (fun (feat, sub) ->
-      if Feat.compatible k feat then
-        Sub.iter_with k' sub
+      if Feat.compatible ~query:key ~data:feat then
+        Sub.iter_with key' sub
       else
         Iter.empty
     )

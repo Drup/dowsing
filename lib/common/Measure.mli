@@ -1,21 +1,26 @@
-(** Several notions of size *)
+module Kind : sig
 
-type kind =
-  | VarCount
-  | AllVarCount
-  | NodeCount
-  | HeadKind
-  | TailSpineVarCount
-  | SpineVarCount
-  | TailLength
+  type t =
+    | VarCount
+    | UniqueVarCount
+    | NodeCount
+    | HeadKind
+    | TailSpineVarCount
+    | SpineVarCount
+    | TailLength
 
-val all : (string * kind) list
+  val all : t List.t
+
+  val of_string : String.t -> t
+  val to_string : t -> String.t
+
+end
 
 type t = Int.t
+
+val make : Kind.t -> Type.t -> t
 
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t
 
-val pp : kind -> t Fmt.t
-
-val size : kind -> Type.t -> t
+val pp : Kind.t -> t Fmt.t [@@ocaml.toplevel_printer]

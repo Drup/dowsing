@@ -1,10 +1,8 @@
-module Map = CCMap.Make (CCInt)
-module HMap = CCHashtbl.Make (CCInt)
-module Set = CCSet.Make (CCInt)
+type t = Int.t
 
 module Gen = struct
 
-  type var = int
+  type var = t
   type t = var ref
 
   let make = ref
@@ -16,15 +14,19 @@ module Gen = struct
 
 end
 
-type t = Gen.var
 let equal = Int.equal
 let compare = Int.compare
+
+module Map = CCMap.Make (CCInt)
+module HMap = CCHashtbl.Make (CCInt)
+module Set = CCSet.Make (CCInt)
 
 let pp names fmt t =
   match HMap.get names t with
   | Some name ->
-    if Logs.level () = Some Debug then 
-      Fmt.pf fmt "'%s/%i" name t
-    else
-      Fmt.pf fmt "'%s" name
-  | None -> Fmt.pf fmt "\\%i" t
+      if Logs.level () = Some Debug then
+        Fmt.pf fmt "'%s/%i" name t
+      else
+        Fmt.pf fmt "'%s" name
+  | None ->
+      Fmt.pf fmt "\\%i" t

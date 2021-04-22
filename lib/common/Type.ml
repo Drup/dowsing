@@ -1,3 +1,5 @@
+module StringHMap = CCHashtbl.Make (CCString)
+
 (* Kind *)
 
 module Kind = struct
@@ -248,12 +250,13 @@ end = struct
 
   let pp pp_ty fmt = function
     | [||] ->
-      Fmt.string fmt "()"
+        Fmt.string fmt "()"
     | [| elt |] ->
-      pp_ty fmt elt
-    | arr ->
-      Fmt.pf fmt "@[<2>%a@]"
-        Fmt.(array ~sep:(any " *@ ") pp_ty) arr
+        pp_ty fmt elt
+    | t ->
+        Fmt.pf fmt "@[<2>%a@]"
+          Fmt.(array ~sep:(any " *@ ") pp_ty) t
+
 end
 
 include Base
@@ -267,7 +270,7 @@ module Set = CCSet.Make (Base)
 module Hashcons = struct
 
   type elt = t
-  type t = elt HMap.t 
+  type t = elt HMap.t
 
   let make () = HMap.create 17
 
@@ -296,7 +299,7 @@ module Env = struct
 
 end
 
-(* importation functions *)
+(* smart constructors *)
 
 let var v = Var v
 
@@ -306,8 +309,6 @@ let constr lid = function
 
 let arrow arg ret =
   match arg, ret with
-  | Tuple tpl, _ when MSet.is_empty tpl ->
-      ret
   | Tuple tpl, Arrow (args, ret) ->
       Arrow (MSet.union tpl args, ret)
   | _, Arrow (args, ret) ->
@@ -330,19 +331,20 @@ let tuple elts =
 let other x =
   Other (CCHash.poly x)
 
-module StringHMap = CCHashtbl.Make (CCString)
+(* importation functions *)
+
 let fresh_var vars (env : Env.t) = function
   | None ->
-    var (Variable.Gen.gen env.var_gen)
+      var @@ Variable.Gen.gen env.var_gen
   | Some name ->
-    match StringHMap.get vars name with
-    | Some t -> t
-    | None ->
-      let v = Variable.Gen.gen env.var_gen in
-      let t = var v in
-      Variable.HMap.add env.var_names v name ;
-      StringHMap.add vars name t ;
-      t
+      match StringHMap.get vars name with
+      | Some t -> t
+      | None ->
+          let v = Variable.Gen.gen env.var_gen in
+          let t = var v in
+          Variable.HMap.add env.var_names v name ;
+          StringHMap.add vars name t ;
+          t
 
 let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   match out_ty with
@@ -353,7 +355,7 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
-      |> constr (LongIdent.of_outcometree id)
+      |> constr @@ LongIdent.of_outcometree id
   | Otyp_arrow (_, arg, ret) ->
       arrow (of_outcometree arg) (of_outcometree ret)
   | Otyp_tuple elts ->
@@ -481,35 +483,35 @@ let rec vars t k =
 
 let rec pp var_names fmt = function
   | Var var ->
-    Variable.pp var_names fmt var
+      Variable.pp var_names fmt var
   | Constr (lid, [||]) ->
-    LongIdent.pp fmt lid
+      LongIdent.pp fmt lid
   | Constr (lid, args) ->
-    Fmt.pf fmt "%a@ %a"
-      (pp_array var_names) args
-      LongIdent.pp lid
+      Fmt.pf fmt "%a@ %a"
+        (pp_array var_names) args
+        LongIdent.pp lid
   | Arrow (args, ret) ->
-    Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-      (MSet.pp @@ pp_maybe_parens var_names) args
-      (pp_maybe_parens var_names) ret
+      Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
+        (MSet.pp @@ pp_maybe_parens var_names) args
+        (pp_maybe_parens var_names) ret
   | Tuple elts ->
-    Fmt.pf fmt "@[<2>%a@]"
-      (MSet.pp @@ pp_maybe_parens var_names) elts
+      Fmt.pf fmt "@[<2>%a@]"
+        (MSet.pp @@ pp_maybe_parens var_names) elts
   | Other i ->
-    Fmt.pf fmt "other%i" i
+      Fmt.pf fmt "other%i" i
 
 and pp_maybe_parens var_names fmt ty =
   match ty with
-  | Var _ | Other _ | Constr _
-    -> pp var_names fmt ty
-  | Arrow _ | Tuple _
-    -> Fmt.parens (pp var_names) fmt ty
+  | Var _ | Other _ | Constr _ ->
+      pp var_names fmt ty
+  | Arrow _ | Tuple _ ->
+      Fmt.parens (pp var_names) fmt ty
 
 and pp_array var_names fmt = function
   | [||] ->
-    Fmt.string fmt "()"
+      Fmt.string fmt "()"
   | [| elt |] ->
-    pp var_names fmt elt
+      pp var_names fmt elt
   | arr ->
-    Fmt.pf fmt "@[<2>(%a)@]"
-      Fmt.(array ~sep:(any ", ") @@ pp var_names) arr
+      Fmt.pf fmt "@[<2>(%a)@]"
+        Fmt.(array ~sep:(any ", ") @@ pp var_names) arr

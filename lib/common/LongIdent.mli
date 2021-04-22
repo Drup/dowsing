@@ -15,4 +15,4 @@ val equal : t -> t -> Bool.t
 module Map : CCTrie.S with type key = t and type char_ = String.t
 module HMap : CCHashtbl.S with type key = t
 
-val pp : t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]

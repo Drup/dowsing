@@ -1,12 +1,5 @@
 type t [@@ocaml.immediate]
 
-val equal : t -> t -> Bool.t
-val compare : t -> t -> Int.t
-
-module Map : CCMap.S with type key = t
-module Set: CCSet.S with type elt = t
-module HMap : CCHashtbl.S with type key = t
-
 module Gen : sig
 
   type var = t
@@ -17,4 +10,11 @@ module Gen : sig
 
 end
 
-val pp : String.t HMap.t -> t Fmt.t
+val equal : t -> t -> Bool.t
+val compare : t -> t -> Int.t
+
+module Map : CCMap.S with type key = t
+module Set: CCSet.S with type elt = t
+module HMap : CCHashtbl.S with type key = t
+
+val pp : String.t HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]

@@ -36,13 +36,6 @@ let pos_tests = [
   "a -> b * c -> d", "a -> b -> c -> d" ;
   "(a * b -> c) f", "(a -> b -> c) f" ;
   "(a * b * c -> d) f", "(a -> b -> c -> d) f" ;
-  (* cur-0 *)
-  "unit -> a", "a" ;
-  "unit -> unit -> a", "a" ;
-  "unit * unit -> a", "a" ;
-  "a -> unit -> b", "a -> b" ;
-  "(unit -> a) * b", "a * b" ;
-  "(unit -> a) f", "a f" ;
   (* other *)
   "a -> a", "a -> 'a" ;
   "a -> a", "'a -> a" ;
@@ -57,6 +50,13 @@ let pos_tests = [
 ]
 
 let neg_tests = [
+  (* cur-0 *)
+  "unit -> a", "a" ;
+  "unit -> unit -> a", "a" ;
+  "unit * unit -> a", "a" ;
+  "(unit -> a) * b", "a * b" ;
+  "(unit -> a) f", "a f" ;
+  (* other *)
   "a", "a -> a" ;
   "a", "a * a" ;
   "a", "a f" ;
@@ -64,11 +64,9 @@ let neg_tests = [
   "'a f * a", "'x g * a" ;
   "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   "'a -> 'a -> a", "'x * b -> 'x" ;
-  (* Requires occur check *)
-  "'X -> 'X",
-  "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t";
-  "'a -> 'a list -> 'a",
-  "'x -> 'x -> 'x";
+  (* require occur check *)
+  "'X -> 'X", "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t" ;
+  "'a -> 'a list -> 'a", "'x -> 'x -> 'x" ;
 ]
 
 let tests =
@@ -76,7 +74,7 @@ let tests =
     let test () =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
-      let name = Fmt.strf "%s ≡ %s" str1 str2 in
+      let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Unification.unifiable env ty1 ty2
     in
     incr test_cnt ;

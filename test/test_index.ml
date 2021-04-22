@@ -10,15 +10,15 @@ let add_tests name bdgs queries =
     Index.add idx ty @@ LongIdent.Lident id
   ) ;
   let tests =
-    queries |> CCList.map (fun (ty, res) ->
-      let ty = Type.of_string env ty in
+    queries |> CCList.map (fun (ty_str, res) ->
+      let ty = Type.of_string env ty_str in
       let res = CCList.map (fun id -> LongIdent.Lident id) res in
       let test () =
         ty
         |> Index.find idx env
         |> Iter.map (fun (_, Index.{ lid }, _) -> lid)
         |> Iter.to_list
-        |> Alcotest.(check @@ list lid_testable) "" res
+        |> Alcotest.(check @@ list lid_testable) ty_str res
       in
       Alcotest.test_case (CCInt.to_string ! test_cnt) `Quick test
     )

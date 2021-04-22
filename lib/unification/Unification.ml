@@ -102,7 +102,7 @@ let occur_check env : return =
   debug (fun m -> m "Vars without predecessor: %a"
             (Fmt.Dump.list @@ Variable.pp @@ Env.var_names env)
           vars_without_predecessors);
-  
+
   let rec loop n vars_without_predecessors = match vars_without_predecessors with
     (* We eliminated all the variables: there are no cycles *)
     | _ when n = nb_representatives -> Done
@@ -213,7 +213,7 @@ and insert_var env stack x s =
     quasi_solved env stack x s
   | Type.Var y ->
     non_proper env stack x y
-  
+
 (* Quasi solved equation
    'x = (s₁,...sₙ)
    'x = (s₁,...sₙ) p
@@ -229,7 +229,7 @@ and quasi_solved env stack x s =
     insert_rec env stack t s
   (* Rule Merge *)
   | E (_, t) ->
-    if Measure.size NodeCount t < Measure.size NodeCount s then
+    if Measure.make NodeCount t < Measure.make NodeCount s then
       insert_rec env stack t s
     else
       insert_rec env stack s t
@@ -246,7 +246,7 @@ and non_proper env stack (x:Variable.t) (y:Variable.t) =
     let* () = attach env x' (Type.var y') in
     process_stack env stack
   | E (x', s), E (y', t) ->
-    if Measure.size NodeCount s < Measure.size NodeCount t then begin
+    if Measure.make NodeCount s < Measure.make NodeCount t then begin
       let* () = attach env y' (Type.var x') in
       insert_rec env stack s t
     end
@@ -302,7 +302,7 @@ and try_with_solution
   = fun env f sol k ->
     let env = Env.copy env in
     match f env sol with
-    | Done -> 
+    | Done ->
       solve_loop env k
     | FailUnif (t1, t2) ->
       debug (fun m ->
@@ -310,7 +310,7 @@ and try_with_solution
             (Type.pp @@ Env.var_names env) t1
             (Type.pp @@ Env.var_names env) t2
         )
-    | FailedOccurCheck env -> 
+    | FailedOccurCheck env ->
       debug (fun m ->
           m "@[<v>Failed occur check in env@;%a"
             Env.pp env
@@ -323,7 +323,7 @@ and solve_loop env k =
     k map
   | None ->
     debug (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env) ;
-    begin 
+    begin
       match Env.pop_arrow env with
       | Some pb ->
         solve_arrow_problem env pb k
@@ -341,7 +341,7 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   | Done ->
     debug (fun m -> m "env0: @,%a" Env.pp env0) ;
     solve_loop env0
-  | FailUnif _ 
+  | FailUnif _
   | FailedOccurCheck _
     -> Iter.empty
 
