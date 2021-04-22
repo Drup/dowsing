@@ -17,11 +17,11 @@ let type_of_string env str =
   with Syntaxerr.Error _ ->
     error () ~msg:"syntax error in type argument."
 
-let pp_table ?(sep = 4) col_names row_it =
+let pp_table ?(sep = 4) col_names rows =
   let col_cnt = CCArray.length col_names in
   let col_widths = CCArray.map CCString.length col_names in
-  let row_it = Iter.persistent row_it in
-  row_it |> Iter.iter (fun row ->
+  let rows = Iter.persistent rows in
+  rows |> Iter.iter (fun row ->
     assert (CCArray.length row = col_cnt) ;
     for i = 0 to col_cnt - 1 do
       col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
@@ -44,7 +44,7 @@ let pp_table ?(sep = 4) col_names row_it =
   done ;
   CCFormat.print_tab () ;
   print_hline () ;
-  row_it |> Iter.iter (fun row ->
+  rows |> Iter.iter (fun row ->
     for i = 0 to col_cnt - 1 do
       CCFormat.print_tab () ;
       CCFormat.print_string row.(i)
@@ -180,20 +180,15 @@ let () = Args.add_cmd (module struct
 
   let main file pkgs =
     Findlib.init () ;
+    let pkgs () =
+      if pkgs = [] then
+        Findlib.list_packages' ()
+      else
+        Findlib.package_deep_ancestors [] pkgs
+    in
     let pkg_dirs =
       try
-        let pkgs =
-          if pkgs = [] then
-            Findlib.list_packages' ()
-          else
-            let pkgs = Findlib.package_deep_ancestors [] pkgs in
-            Logs.app (fun m ->
-              m "@[<hv 2>Findlib packages:@ %a@]"
-                Fmt.(list ~sep:sp string) pkgs
-            ) ;
-            pkgs
-        in
-        pkgs
+        pkgs ()
         |> CCList.map Findlib.package_directory
         (* we need this because [Findlib.list_packages'] is faulty:
            it gives some unknown packages *)
@@ -202,7 +197,11 @@ let () = Args.add_cmd (module struct
       | Findlib.No_such_package (pkg, _) ->
           error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
     in
-    Logs.app (fun m -> m "Found %i findlib packages" @@ List.length pkg_dirs) ;
+    Logs.app (fun m ->
+      m "@[<hv2>found %i findlib packages:@ %a@]"
+        (CCList.length pkg_dirs)
+        Fmt.(list ~sep:sp string) pkg_dirs
+    ) ;
     Index.(save @@ make pkg_dirs) file
 
   let main () =
@@ -250,40 +249,48 @@ let () = Args.add_cmd (module struct
     in
     let env = Index.get_env idx in
     let ty = type_of_string env str in
-    let iter_idx =
-      if filter then
-        Index.iter_with idx ty
-      else
-        Index.iter idx
+    let aux iter_idx =
+      let tbl = ref Measure.Map.empty in
+      iter_idx (fun (ty', _) ->
+        Timer.start timer ;
+        ignore @@ Unification.unifiable env ty ty' ;
+        Timer.stop timer ;
+        let time = Timer.get timer in
+        let meas = Measure.make meas_kind ty' in
+        tbl := ! tbl |> Measure.Map.update meas @@ function
+          | None -> Some (time, 1)
+          | Some (time', cnt) -> Some (time +. time', cnt + 1)
+      ) ;
+      let total_time = ref 0. in
+      let total_cnt = ref 0 in
+      let rows =
+        ! tbl
+        |> Measure.Map.to_iter
+        |> Iter.map (fun (meas, (time, cnt)) ->
+          total_time := ! total_time +. time ;
+          total_cnt := ! total_cnt + cnt ;
+          [|
+            Fmt.to_to_string (Measure.pp meas_kind) meas ;
+            Fmt.(to_to_string float) @@ time *. 1e6 ;
+            Fmt.(to_to_string float) @@ time /. CCFloat.of_int cnt *. 1e6 ;
+            CCInt.to_string cnt ;
+          |]
+        )
+      in
+      pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
+      Fmt.pr "@,total time: %g" ! total_time ;
+      Fmt.pr "@,total # unif.: %i" ! total_cnt ;
+      ! total_time, CCFloat.of_int ! total_cnt
     in
-    let tbl = ref Measure.Map.empty in
-    iter_idx (fun (ty', _) ->
-      Timer.start timer ;
-      ignore @@ Unification.unifiable env ty ty' ;
-      Timer.stop timer ;
-      let time = Timer.get timer in
-      let sz = Measure.make meas_kind ty' in
-      tbl := ! tbl |> Measure.Map.update sz @@ function
-        | None -> Some (time, 1)
-        | Some (time', cnt) -> Some (time +. time', cnt + 1)
-    ) ;
-    let total_time = ref 0. in
-    let row_it =
-      ! tbl
-      |> Measure.Map.to_iter
-      |> Iter.map (fun (sz, (time, cnt)) ->
-        total_time := ! total_time +. time ;
-        let row = [|
-          Fmt.str "%a" (Measure.pp meas_kind) sz ;
-          Fmt.str "%g" @@ 1e3 *. time ;
-          Fmt.str "%g" @@ 1e6 *. time /. CCFloat.of_int cnt ;
-          CCInt.to_string cnt ;
-        |] in
-        row
-      )
-    in
-    pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] row_it ;
-    Fmt.pr "@\ntotal time: %g@." ! total_time
+    Fmt.pr "@[<v>" ;
+    let time, cnt = aux @@ Index.iter idx in
+    if filter then begin
+      Fmt.pr "@," ;
+      let time', cnt' = aux @@ Index.iter_with idx ty in
+      Fmt.pr "@,%% total time: %g" @@ time' /. time *. 100. ;
+      Fmt.pr "@,%% total # unif.: %g" @@ cnt' /. cnt *. 100.
+    end ;
+    Fmt.pr "@]@."
 
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
