@@ -185,27 +185,18 @@ let () = Args.add_cmd (module struct
       pkgs := ! pkgs @ [ arg ]
 
   let main verbose file pkgs =
-    Findlib.init () ;
-    let pkgs () =
-      if pkgs = [] then
-        Findlib.list_packages' ()
-      else
-        Findlib.package_deep_ancestors [] pkgs
-    in
     let pkg_dirs =
       try
-        pkgs ()
-        |> CCList.map Findlib.package_directory
-        (* we need this because [Findlib.list_packages'] is faulty:
-           it gives some unknown packages *)
-        |> CCList.filter Sys.file_exists
-        |> CCList.sort_uniq ~cmp:CCString.compare
+        if pkgs = [] then
+          FindPackage.find_all ()
+        else
+          FindPackage.find pkgs
       with
-      | Findlib.No_such_package (pkg, _) ->
+      | FindPackage.Error pkg ->
           error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
     in
     if verbose then
-      Fmt.pr "@[<v2>found %i packages:@ %a@]"
+      Fmt.pr "@[<v2>found %i packages:@ %a@]@."
         (CCList.length pkg_dirs)
         Fmt.(list ~sep:sp string) pkg_dirs ;
     Index.(save @@ make pkg_dirs) file
