@@ -224,17 +224,18 @@ let () = Args.add_cmd (module struct
   let name = "stats"
   let usage = "<file> <type>"
 
-  let meas_kind = ref Measure.Kind.VarCount
+  let filter = ref false
+
+  let meas_kind =
+    ref Measure.Kind.VarCount
   let set_meas_kind str =
     meas_kind := Measure.Kind.of_string str
   let meas_kinds_strs =
     Measure.Kind.(CCList.map to_string all)
 
-  let filter = ref false
-
   let options = [
-    "--measure", Arg.Symbol (meas_kinds_strs, set_meas_kind), "\tSet type size kind" ;
     "--filter", Arg.Set filter, "\tEnable feature filtering" ;
+    "--measure", Arg.Symbol (meas_kinds_strs, set_meas_kind), "\tSet type size kind" ;
   ]
 
   let file = ref None
@@ -320,10 +321,13 @@ let () = Args.add_cmd (module struct
   let name = "search"
   let usage = "<file> <type>"
 
+  let exhaustive = ref false
+
   let cnt = ref None
   let set_cnt i = cnt := Some i
 
   let options = [
+    "--exhaustive", Arg.Set exhaustive, "\tUse exhaustive search (slow)" ;
     "--take", Arg.Int set_cnt, "\tReport only the first results" ;
   ]
 
@@ -338,7 +342,7 @@ let () = Args.add_cmd (module struct
     else
       raise @@ Arg.Bad "too many arguments"
 
-  let main cnt file str =
+  let main exhaustive cnt file str =
     let idx =
       try Index.load file
       with Sys_error _ ->
@@ -347,14 +351,14 @@ let () = Args.add_cmd (module struct
     let env = Index.get_env idx in
     let ty = type_of_string env str in
     let res =
-      let cmp (_, info1, unif1) (_, info2, unif2) =
+      let find = if exhaustive then Index.find else Index.find_with in
+      find idx env ty
+      |> Iter.sort ~cmp:(fun (_, info1, unif1) (_, info2, unif2) ->
         CCOrd.(Unification.Subst.compare unif1 unif2
           <?> (LongIdent.compare, info1.Index.lid, info2.Index.lid))
-      in
-      Index.find idx env ty
-      |> CCOpt.map_or ~default:CCFun.id Iter.take cnt
-      |> Iter.sort ~cmp
+      )
     in
+    let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
     Fmt.pr "@[<v>" ;
     res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
@@ -366,7 +370,7 @@ let () = Args.add_cmd (module struct
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
       raise @@ Arg.Bad "too few arguments" ;
-    main ! cnt (Option.get ! file) (Option.get ! ty)
+    main ! exhaustive ! cnt (Option.get ! file) (Option.get ! ty)
 
 end)
 

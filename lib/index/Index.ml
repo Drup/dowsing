@@ -50,13 +50,16 @@ let get_env t = t.env
 let iter t = Trie.iter t.infos
 let iter_with t ty = Trie.iter_with ty t.infos
 
-let find t env ty =
-  iter_with t ty
-  |> Iter.filter_map (fun (ty', info) ->
-     match Unification.unify env ty ty' with
-     | Some unif -> Some (ty', info, unif)
-     | None -> None
-  )
+let find, find_with =
+  let aux iter t env ty =
+    iter t ty
+    |> Iter.filter_map (fun (ty', info) ->
+       match Unification.unify env ty ty' with
+       | Some unif -> Some (ty', info, unif)
+       | None -> None
+    )
+  in
+  aux (fun t _ -> iter t), aux iter_with
 
 module Archive = struct
 
