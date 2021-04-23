@@ -1,9 +1,0 @@
-CCShimsInt_.compare: int * int -> int
-Containers.Hashtbl.hash: 'a -> int
-Containers.Hashtbl.seeded_hash: 'a * int -> int
-ContainersLabels.Hashtbl.hash: 'a -> int
-ContainersLabels.Hashtbl.seeded_hash: 'a * int -> int
-CCFun.const: 'a * 'b -> 'a
-CCShimsFun_.const: 'a * 'b -> 'a
-Containers.Fun.const: 'a * 'b -> 'a
-ContainersLabels.Fun.const: 'a * 'b -> 'a
