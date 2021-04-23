@@ -84,7 +84,7 @@ and MSet : sig
   val map : (elt -> elt) -> t -> t
   val min_elt : t -> elt
 
-  val pp : elt Fmt.t -> t Fmt.t [@@ocaml.toplevel_printer]
+  val pp : elt Fmt.t -> t Fmt.t
 
 end
 
@@ -140,4 +140,4 @@ val vars : t -> Variable.t Iter.t
 
 (* pretty printing *)
 
-val pp : String.t Variable.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
+val pp : String.t Variable.HMap.t -> t Fmt.t

@@ -17,4 +17,4 @@ module Map : CCMap.S with type key = t
 module Set: CCSet.S with type elt = t
 module HMap : CCHashtbl.S with type key = t
 
-val pp : String.t HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
+val pp : String.t HMap.t -> t Fmt.t

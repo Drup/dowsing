@@ -16,8 +16,11 @@ type t = {
   mutable infos : info Trie.t ;
 }
 
-let iter_libindex env pkg_dirs k =
-  pkg_dirs
+type iter = (Type.t * info) Iter.t
+type iter' = (Type.t * info * Unification.Subst.t) Iter.t
+
+let iter_libindex env pkgs_dirs k =
+  pkgs_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
   |> LibIndex.all
@@ -35,10 +38,10 @@ let iter_libindex env pkg_dirs k =
 let add t (ty, info) =
   t.infos <- Trie.add ty info t.infos
 
-let make pkg_dirs =
+let make pkgs_dirs =
   let env = Type.Env.make () in
   let t = { env ; infos = Trie.empty } in
-  iter_libindex env pkg_dirs
+  iter_libindex env pkgs_dirs
   |> Iter.iter @@ add t ;
   t
 
@@ -76,3 +79,42 @@ end
 
 let load file = Archive.(to_index @@ load file)
 let save t = Archive.(save @@ of_index t)
+
+module Explorer = struct
+
+  exception Error
+  let error () = raise Error
+
+  type index = t
+
+  type t = {
+    idx_sz : Int.t ;
+    its : iter Stack.t ;
+  }
+
+  let make idx =
+    let it = iter idx in
+    let idx_sz = Iter.length it in
+    let its = Stack.create () in
+    Stack.push it its ;
+    { idx_sz ; its }
+
+  let iter t =
+    Stack.top t.its
+
+  let select t filt =
+    let filt = CCPair.fst_map filt in
+    Stack.push (Iter.filter filt @@ iter t) t.its
+
+  let unselect t =
+    if Stack.length t.its = 1 then
+      error () ;
+    ignore @@ Stack.pop t.its
+
+  let pp fmt t =
+    let sz = Iter.length @@ iter t in
+    Fmt.pf fmt "{ explored subset: %i (%g %%) }"
+      sz
+      (CCFloat.of_int sz /. CCFloat.of_int t.idx_sz *. 100.)
+
+end

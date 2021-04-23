@@ -185,7 +185,7 @@ let () = Args.add_cmd (module struct
       pkgs := ! pkgs @ [ arg ]
 
   let main verbose file pkgs =
-    let pkg_dirs =
+    let pkgs_dirs =
       try
         if pkgs = [] then
           FindPackage.find_all ()
@@ -197,9 +197,9 @@ let () = Args.add_cmd (module struct
     in
     if verbose then
       Fmt.pr "@[<v2>found %i packages:@ %a@]@."
-        (CCList.length pkg_dirs)
-        Fmt.(list ~sep:sp string) pkg_dirs ;
-    Index.(save @@ make pkg_dirs) file
+        (CCList.length pkgs_dirs)
+        Fmt.(list ~sep:sp string) pkgs_dirs ;
+    Index.(save @@ make pkgs_dirs) file
 
   let main () =
     if CCOpt.is_none ! file then

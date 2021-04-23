@@ -16,7 +16,7 @@ module Subst : sig
   val size : t -> Int.t
   val compare : t -> t -> Int.t
 
-  val pp : String.t Variable.HMap.t -> t Fmt.t [@@ocaml.toplevel_printer]
+  val pp : String.t Variable.HMap.t -> t Fmt.t
 
 end
 

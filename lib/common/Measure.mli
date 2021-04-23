@@ -24,4 +24,4 @@ val make : Kind.t -> Type.t -> t
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t
 
-val pp : Kind.t -> t Fmt.t [@@ocaml.toplevel_printer]
+val pp : Kind.t -> t Fmt.t

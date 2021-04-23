@@ -22,4 +22,4 @@ val pop_arrow : t -> ArrowTerm.problem option
 
 val is_solved : t -> Subst.t option
 
-val pp : t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]
