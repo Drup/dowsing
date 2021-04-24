@@ -5,20 +5,20 @@ all : build
 
 .PHONY : build
 build :
-	@$(DUNE) build @install
+	@ $(DUNE) build @install
 
 .PHONY : test
 test :
-	@$(DUNE) runtest --no-buffer
+	@ $(DUNE) runtest --no-buffer
 
 .PHONY : clean
 clean :
-	@$(DUNE) clean
+	@ $(DUNE) clean
 
 .PHONY : doc
 doc :
-	@$(DUNE) build @doc
+	@ $(DUNE) build @doc
 
 .PHONY : watch
 watch :
-	@$(DUNE) build @all -w
+	@ $(DUNE) build @all -w
