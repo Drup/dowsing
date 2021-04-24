@@ -9,17 +9,17 @@ let add_tests name tests =
 
 let int = Type.constr (LongIdent.Lident "int") [||]
 let (-->) = Type.arrow
+let tuple tys = Type.(tuple @@ MSet.of_list tys)
 
 (* Type.of_string *)
 
-let tests =
-  let open Type in [
-    "int", int ;
-    "int -> int", int --> int ;
-    "int * int", tuple (MSet.of_list [ int ; int ]) ;
-    "int * int -> int", (tuple @@ MSet.of_list [ int ; int ]) --> int ;
-    "int -> int -> int", int --> (int --> int) ;
-  ]
+let tests = [
+  "int", int ;
+  "int -> int", int --> int ;
+  "int * int", tuple [ int ; int ] ;
+  "int * int -> int", tuple [ int ; int ] --> int ;
+  "int -> int -> int", int --> (int --> int) ;
+]
 
 let tests =
   let make_test (str, ty) =

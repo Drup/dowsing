@@ -156,13 +156,13 @@ end = struct
       match t1, t2 with
       | Var t1, Var t2 ->
           Variable.compare t1 t2
-      | Constr (lid1, args1), Constr (lid2, args2) ->
+      | Constr (lid1, params1), Constr (lid2, params2) ->
           CCOrd.(LongIdent.compare lid1 lid2
-            <?> (CCArray.compare compare, args1, args2))
-      | Arrow (arg1, ret1), Arrow (arg2, ret2) ->
+            <?> (CCArray.compare compare, params1, params2))
+      | Arrow (param1, ret1), Arrow (param2, ret2) ->
           let cmp = compare in
           CCOrd.(cmp ret1 ret2
-            <?> (MSet.compare, arg1, arg2))
+            <?> (MSet.compare, param1, param2))
       | Tuple t1, Tuple t2 ->
           MSet.compare t1 t2
       | Other t1, Other t2 ->
@@ -195,7 +195,7 @@ and MSet : sig
   val is_empty : t -> Bool.t
   val length : t -> Int.t
   val singleton : elt -> t
-  val is_singleton : t -> elt option
+  val is_singleton : t -> elt Option.t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
@@ -308,18 +308,18 @@ let var v = Var v
 
 let constr lid = function
   | [||] when lid = LongIdent.unit -> Tuple MSet.empty
-  | args -> Constr (lid, args)
+  | params -> Constr (lid, params)
 
-let arrow arg ret =
-  match arg, ret with
-  | Tuple tpl, Arrow (args, ret) ->
-      Arrow (MSet.union tpl args, ret)
-  | _, Arrow (args, ret) ->
-      Arrow (MSet.add arg args, ret)
-  | Tuple tpl, _ ->
-      Arrow (tpl, ret)
+let arrow param ret =
+  match param, ret with
+  | Tuple elts, Arrow (params, ret) ->
+      Arrow (MSet.union elts params, ret)
+  | _, Arrow (params, ret) ->
+      Arrow (MSet.add param params, ret)
+  | Tuple elts, _ ->
+      Arrow (elts, ret)
   | _, _ ->
-      Arrow (MSet.singleton arg, ret)
+      Arrow (MSet.singleton param, ret)
 
 let tuple elts =
   let aux = function
@@ -336,30 +336,18 @@ let other x =
 
 (* importation functions *)
 
-let fresh_var vars (env : Env.t) = function
-  | None ->
-    var @@ Variable.Gen.gen env.var_gen
-  | Some name ->
-    match StringHMap.get vars name with
-    | Some t -> t
-    | None ->
-      let v = Variable.Gen.gen env.var_gen in
-      let t = var v in
-      StringHMap.add vars name t ;
-      t
-
-let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
+let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
   match out_ty with
   | Otyp_var (_, name) ->
-      make_var @@ Some name
-  | Otyp_constr (id, args) ->
-      args
+      var @@ Some name
+  | Otyp_constr (id, params) ->
+      params
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
       |> constr @@ LongIdent.of_outcometree id
-  | Otyp_arrow (_, arg, ret) ->
-      arrow (of_outcometree arg) (of_outcometree ret)
+  | Otyp_arrow (_, param, ret) ->
+      arrow (of_outcometree param) (of_outcometree ret)
   | Otyp_tuple elts ->
       elts
       |> Iter.of_list
@@ -384,20 +372,20 @@ let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   | Otyp_sum _ ->
       other out_ty
 
-let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
+let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
   match parse_ty.ptyp_desc with
   | Ptyp_any ->
-      make_var None
+      var None
   | Ptyp_var name ->
-      make_var @@ Some name
-  | Ptyp_constr (id, args) ->
-      args
+      var @@ Some name
+  | Ptyp_constr (id, params) ->
+      params
       |> Iter.of_list
       |> Iter.map of_parsetree
       |> Iter.to_array
       |> constr id.txt
-  | Ptyp_arrow (_, arg, ret) ->
-      arrow (of_parsetree arg) (of_parsetree ret)
+  | Ptyp_arrow (_, param, ret) ->
+      arrow (of_parsetree param) (of_parsetree ret)
   | Ptyp_tuple elts ->
       elts
       |> Iter.of_list
@@ -415,18 +403,32 @@ let of_parsetree of_parsetree make_var (parse_ty : Parsetree.core_type) =
   | Ptyp_extension _ ->
       other parse_ty
 
-let wrap fn (env : Env.t) x =
-  let vars = StringHMap.create 17 in
-  let make_var = fresh_var vars env in
-  let rec fn' x =
-    x
-    |> fn fn' make_var
-    |> Hashcons.hashcons env.hcons
-  in
-  fn' x
+let var' vars (env : Env.t) = function
+  | None ->
+      var @@ Variable.Gen.gen env.var_gen
+  | Some name ->
+      match StringHMap.get vars name with
+      | Some t -> t
+      | None ->
+          let v = Variable.Gen.gen env.var_gen in
+          let t = var v in
+          Variable.HMap.add env.var_names v name ;
+          StringHMap.add vars name t ;
+          t
 
-let of_outcometree = wrap of_outcometree
-let of_parsetree = wrap of_parsetree
+let of_outcometree, of_parsetree =
+  let wrap fn (env : Env.t) x =
+    let vars = StringHMap.create 17 in
+    let var = var' vars env in
+    let rec fn' x =
+      x
+      |> fn fn' var
+      |> Hashcons.hashcons env.hcons
+    in
+    fn' x
+  in
+  wrap of_outcometree,
+  wrap of_parsetree
 
 let of_lexing env lexbuf =
   lexbuf
@@ -445,23 +447,23 @@ let head = function
   | t -> t
 
 let tail = function
-  | Arrow (args, _) -> args
+  | Arrow (params, _) -> params
   | _ -> MSet.empty
 
-let rec substitute sub =
-  let substitute t = substitute sub t in
+let rec substitute subst =
+  let substitute t = substitute subst t in
   let substitute_set = MSet.map substitute in
   fun t ->
     match t with
     | Var var ->
-        begin match Variable.Map.find_opt var sub with
+        begin match Variable.Map.find_opt var subst with
           | None -> t
           | Some t -> t
         end
-    | Constr (lid, args) ->
-        constr lid @@ CCArray.map substitute args
-    | Arrow (args, ret) ->
-        arrow (tuple @@ substitute_set args) (substitute ret)
+    | Constr (lid, params) ->
+        constr lid @@ CCArray.map substitute params
+    | Arrow (params, ret) ->
+        arrow (tuple @@ substitute_set params) (substitute ret)
     | Tuple elts ->
         tuple @@ substitute_set elts
     | Other _ ->
@@ -473,12 +475,12 @@ let rec vars t k =
       ()
   | Var var ->
       k var
-  | Constr (_, args) ->
-      CCArray.iter (fun t -> vars t k) args
+  | Constr (_, params) ->
+      CCArray.iter (fun t -> vars t k) params
   | Tuple elts ->
       Iter.flat_map vars (MSet.to_iter elts) k
-  | Arrow (args, ret) ->
-      Iter.flat_map vars (MSet.to_iter args) k ;
+  | Arrow (params, ret) ->
+      Iter.flat_map vars (MSet.to_iter params) k ;
       vars ret k
 
 (* pretty printing *)
@@ -488,13 +490,13 @@ let rec pp fmt = function
       Variable.pp fmt var
   | Constr (lid, [||]) ->
       LongIdent.pp fmt lid
-  | Constr (lid, args) ->
+  | Constr (lid, params) ->
       Fmt.pf fmt "%a@ %a"
-        pp_array args
+        pp_array params
         LongIdent.pp lid
-  | Arrow (args, ret) ->
+  | Arrow (params, ret) ->
       Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-        (MSet.pp pp_parens) args
+        (MSet.pp pp_parens) params
         pp_parens ret
   | Tuple elts ->
       Fmt.pf fmt "@[<2>%a@]"

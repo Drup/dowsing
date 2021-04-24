@@ -78,12 +78,12 @@ and MSet : sig
   val is_empty : t -> Bool.t
   val length : t -> Int.t
   val singleton : elt -> t
-  val is_singleton : t -> elt option
+  val is_singleton : t -> elt Option.t
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   val map : (elt -> elt) -> t -> t
-  
+
   val pp : elt Fmt.t -> t Fmt.t
 
 end
@@ -119,8 +119,8 @@ end
 
 val var : Variable.t -> t
 val constr : LongIdent.t -> t Array.t -> t
-val tuple : MSet.t -> t
 val arrow : t -> t -> t
+val tuple : MSet.t -> t
 
 (* importation functions *)
 
