@@ -51,4 +51,4 @@ module HMap = CCHashtbl.Make (struct
   let hash = CCHash.poly
 end)
 
-let pp = Pprintast.longident
+let pp = Fmt.hbox Pprintast.longident
