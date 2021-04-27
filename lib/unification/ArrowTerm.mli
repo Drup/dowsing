@@ -12,4 +12,4 @@ type problem = {
 
 val make : Pure.t array -> Type.t -> t
 val make_problem : t -> t -> problem
-val pp_problem : string Variable.HMap.t -> problem Fmt.t
+val pp_problem : problem Fmt.t [@@ocaml.toplevel_printer]

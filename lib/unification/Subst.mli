@@ -2,10 +2,10 @@
 
 type t = Type.t Variable.Map.t
 
-val simplify : string Variable.HMap.t -> t -> t
+val simplify : Variable.Set.t -> t -> t
 
 val size : t -> int
 val compare : t -> t -> int
 val lt : t -> t -> bool
 
-val pp : string Variable.HMap.t -> t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]

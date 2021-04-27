@@ -11,9 +11,9 @@ type problem = {
 let make args ret : t = {args; ret}
 let make_problem left right = {left; right}
 
-let pp_problem namefmt fmt self =
+let pp_problem fmt self =
   Fmt.pf fmt "%a -> %a = %a -> %a"
-    Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.left.args
-    (Type.pp namefmt) self.left.ret
-    Fmt.(array ~sep:(unit " * ") @@ Pure.pp namefmt) self.right.args
-    (Type.pp namefmt) self.right.ret
+    Fmt.(array ~sep:(unit " * ") Pure.pp) self.left.args
+    Type.pp self.left.ret
+    Fmt.(array ~sep:(unit " * ") Pure.pp) self.right.args
+    Type.pp self.right.ret

@@ -107,7 +107,6 @@ module Env : sig
 
   type t = {
     var_gen : Variable.Gen.t ;
-    var_names : String.t Variable.HMap.t ;
     hcons : Hashcons.t ;
   }
 
@@ -140,4 +139,6 @@ val vars : t -> Variable.t Iter.t
 
 (* pretty printing *)
 
-val pp : String.t Variable.HMap.t -> t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]
+val pp_parens : t Fmt.t
+

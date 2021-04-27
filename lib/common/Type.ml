@@ -287,13 +287,11 @@ module Env = struct
 
   type t = {
     var_gen : Variable.Gen.t ;
-    var_names : String.t Variable.HMap.t ;
     hcons : Hashcons.t ;
   }
 
   let make () = {
-    var_gen = Variable.Gen.make 10 ;
-    var_names = Variable.HMap.create 17 ;
+    var_gen = Variable.Gen.make () ;
     hcons = Hashcons.make () ;
   }
 
@@ -335,16 +333,15 @@ let other x =
 
 let fresh_var vars (env : Env.t) = function
   | None ->
-      var @@ Variable.Gen.gen env.var_gen
+    var @@ Variable.Gen.gen env.var_gen
   | Some name ->
-      match StringHMap.get vars name with
-      | Some t -> t
-      | None ->
-          let v = Variable.Gen.gen env.var_gen in
-          let t = var v in
-          Variable.HMap.add env.var_names v name ;
-          StringHMap.add vars name t ;
-          t
+    match StringHMap.get vars name with
+    | Some t -> t
+    | None ->
+      let v = Variable.Gen.gen env.var_gen in
+      let t = var v in
+      StringHMap.add vars name t ;
+      t
 
 let of_outcometree of_outcometree make_var (out_ty : Outcometree.out_type) =
   match out_ty with
@@ -481,37 +478,37 @@ let rec vars t k =
 
 (* pretty printing *)
 
-let rec pp var_names fmt = function
+let rec pp fmt = function
   | Var var ->
-      Variable.pp var_names fmt var
+      Variable.pp fmt var
   | Constr (lid, [||]) ->
       LongIdent.pp fmt lid
   | Constr (lid, args) ->
       Fmt.pf fmt "%a@ %a"
-        (pp_array var_names) args
+        pp_array args
         LongIdent.pp lid
   | Arrow (args, ret) ->
       Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-        (MSet.pp @@ pp_maybe_parens var_names) args
-        (pp_maybe_parens var_names) ret
+        (MSet.pp pp_parens) args
+        pp_parens ret
   | Tuple elts ->
       Fmt.pf fmt "@[<2>%a@]"
-        (MSet.pp @@ pp_maybe_parens var_names) elts
+        (MSet.pp pp_parens) elts
   | Other i ->
       Fmt.pf fmt "other%i" i
 
-and pp_maybe_parens var_names fmt ty =
+and pp_parens fmt ty =
   match ty with
   | Var _ | Other _ | Constr _ ->
-      pp var_names fmt ty
+      pp fmt ty
   | Arrow _ | Tuple _ ->
-      Fmt.parens (pp var_names) fmt ty
+      Fmt.parens pp fmt ty
 
-and pp_array var_names fmt = function
+and pp_array fmt = function
   | [||] ->
       Fmt.string fmt "()"
   | [| elt |] ->
-      pp var_names fmt elt
+      pp fmt elt
   | arr ->
       Fmt.pf fmt "@[<2>(%a)@]"
-        Fmt.(array ~sep:(any ", ") @@ pp var_names) arr
+        Fmt.(array ~sep:(any ", ") pp) arr

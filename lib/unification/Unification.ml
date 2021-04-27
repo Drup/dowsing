@@ -25,7 +25,7 @@ module Stack : sig
   val push_quasi_solved : t -> Variable.t -> Type.t -> t
   val push_array2 : Type.t array -> Type.t array -> t -> t
 
-  val[@warning "-32"] pp : string Variable.HMap.t -> t Fmt.t
+  val[@warning "-32"] pp : t Fmt.t [@@ocaml.toplevel_printer]
 
 end = struct
 
@@ -49,12 +49,11 @@ end = struct
   let push_array2 a1 a2 stack =
     CCArray.fold2 push stack a1 a2
 
-  let pp_elt namefmt fmt = function
-    | Var (v, t) -> Fmt.pf fmt "%a = %a" (Variable.pp namefmt) v (Type.pp namefmt) t
-    | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" (Type.pp namefmt) t1 (Type.pp namefmt) t2
+  let pp_elt fmt = function
+    | Var (v, t) -> Fmt.pf fmt "%a = %a" Variable.pp v Type.pp t
+    | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" Type.pp t1 Type.pp t2
 
-  let pp namefmt =
-    Fmt.(vbox (list ~sep:cut @@ pp_elt namefmt))
+  let pp = Fmt.(vbox (list ~sep:cut pp_elt))
 
 end
 
@@ -97,10 +96,10 @@ let occur_check env : return =
       nb_predecessors []
   in
   debug (fun m -> m "Predecessors: %a"
-            (Variable.HMap.pp (Variable.pp @@ Env.var_names env) Fmt.int)
+            (Variable.HMap.pp Variable.pp Fmt.int)
           nb_predecessors);
   debug (fun m -> m "Vars without predecessor: %a"
-            (Fmt.Dump.list @@ Variable.pp @@ Env.var_names env)
+            (Fmt.Dump.list Variable.pp)
           vars_without_predecessors);
 
   let rec loop n vars_without_predecessors = match vars_without_predecessors with
@@ -307,8 +306,8 @@ and try_with_solution
     | FailUnif (t1, t2) ->
       debug (fun m ->
           m "@[<v>Conflict between:@;<1 2>@[%a@]@ and@;<1 2>@[%a@]@]@.@."
-            (Type.pp @@ Env.var_names env) t1
-            (Type.pp @@ Env.var_names env) t2
+            Type.pp t1
+            Type.pp t2
         )
     | FailedOccurCheck env ->
       debug (fun m ->
@@ -335,8 +334,8 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   let env0 = Env.make tyenv in
   debug (fun m ->
       m {|@[<v>Unify:@ "%a"@ "%a"@]|}
-        (Type.pp tyenv.var_names) t1
-        (Type.pp tyenv.var_names) t2);
+        Type.pp t1
+        Type.pp t2);
   match insert env0 t1 t2 with
   | Done ->
     debug (fun m -> m "env0: @,%a" Env.pp env0) ;

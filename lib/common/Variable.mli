@@ -5,7 +5,7 @@ module Gen : sig
   type var = t
   type t
 
-  val make : Int.t -> t
+  val make : unit -> t
   val gen : t -> var
 
 end
@@ -17,4 +17,4 @@ module Map : CCMap.S with type key = t
 module Set: CCSet.S with type elt = t
 module HMap : CCHashtbl.S with type key = t
 
-val pp : String.t HMap.t -> t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]

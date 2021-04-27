@@ -1,6 +1,6 @@
 let env = Type.Env.make ()
 
-let type_testable = Alcotest.testable (Type.pp env.var_names) Type.equal
+let type_testable = Alcotest.testable Type.pp Type.equal
 
 let all_tests = ref []
 let test_cnt = ref 0

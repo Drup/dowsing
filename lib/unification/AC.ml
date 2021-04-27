@@ -125,10 +125,9 @@ end = struct
 
   type t = (Variable.t * ACTerm.t) Iter.t
 
-  let _pp env ppf (subset, unif) =
-    let namefmt = Env.var_names env in
+  let _pp ppf (subset, unif) =
     let pp_pair ppf (v,t) =
-      Fmt.pf ppf "@[%a → %a@]" (Variable.pp namefmt) v (ACTerm.pp namefmt) t
+      Fmt.pf ppf "@[%a → %a@]" Variable.pp v ACTerm.pp t
     in
     Fmt.pf ppf "@[<v2>%a: {@ %a@]@ }"
       Bitv.pp subset

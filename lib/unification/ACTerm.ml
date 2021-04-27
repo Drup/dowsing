@@ -15,13 +15,13 @@ let as_tuple t : Type.t =
     Type.tuple
       (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
 
-let pp namefmt fmt t =
+let pp fmt t =
   match t with
-  | [|x|] -> Pure.pp namefmt fmt x
+  | [|x|] -> Pure.pp fmt x
   | t -> 
-    Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") (Pure.pp namefmt)) t
+    Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") Pure.pp) t
 
-let pp_problem namefmt fmt {left ; right} =
+let pp_problem fmt {left ; right} =
   Fmt.pf fmt "%a = %a"
-    Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) left
-    Fmt.(array ~sep:(unit ",") @@ Pure.pp namefmt) right
+    Fmt.(array ~sep:(unit ",") Pure.pp) left
+    Fmt.(array ~sep:(unit ",") Pure.pp) right

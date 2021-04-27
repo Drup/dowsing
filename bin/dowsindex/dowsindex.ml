@@ -138,8 +138,8 @@ let () = Args.add_cmd (module struct
     let env = Type.Env.make () in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
-    Logs.debug (fun m -> m "@[<2>type1:@ %a@]" (Type.pp env.var_names) ty1) ;
-    Logs.debug (fun m -> m "@[<2>type2:@ %a@]" (Type.pp env.var_names) ty2) ;
+    Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp ty1) ;
+    Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp ty2) ;
     let unifs =
       Unification.unifiers env ty1 ty2
       |> Iter.sort ~cmp:Unification.Subst.compare
@@ -153,7 +153,7 @@ let () = Args.add_cmd (module struct
       Fmt.pr "no unifier@."
     else
       Fmt.pr "@[<v2>unifiers:@ %a@]@."
-        Fmt.(list ~sep:sp @@ Unification.Subst.pp env.var_names) unifs
+        Fmt.(list ~sep:sp Unification.Subst.pp) unifs
 
   let main () =
     if CCOpt.(is_none ! ty1 || is_none ! ty2) then
@@ -354,7 +354,7 @@ let () = Args.add_cmd (module struct
     res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
         LongIdent.pp info.Index.lid
-        (Type.pp env.var_names) ty
+        Type.pp ty
     ) ;
     Fmt.pr "@]@?"
 
