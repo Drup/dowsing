@@ -10,16 +10,17 @@ module Trie =
 type info = {
   lid : LongIdent.t ;
 }
+let compare_info i1 i2 = LongIdent.compare i1.lid i2.lid
+let pp_info fmt p = LongIdent.pp fmt p.lid
 
 type t = {
-  env : Type.Env.t ;
   mutable infos : info Trie.t ;
 }
 
-type iter = (Type.t * info) Iter.t
-type iter' = (Type.t * info * Unification.Subst.t) Iter.t
+type iter = (Type.t * info list) Iter.t
+type iter' = (Type.t * info list * Unification.Subst.t) Iter.t
 
-let iter_libindex env pkgs_dirs k =
+let iter_libindex hcons pkgs_dirs k =
   pkgs_dirs
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
@@ -29,6 +30,7 @@ let iter_libindex env pkgs_dirs k =
     | LibIndex.Value ->
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let out_ty = out_ty.oval_type in
+        let env = Type.Env.from_hashcons `Data hcons in
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
         k (ty, { lid })
@@ -39,16 +41,14 @@ let add t (ty, info) =
   t.infos <- Trie.add ty info t.infos
 
 let make pkgs_dirs =
-  let env = Type.Env.make () in
-  let t = { env ; infos = Trie.empty } in
-  iter_libindex env pkgs_dirs
+  let hcons = Type.Hashcons.make () in
+  let t = { infos = Trie.empty } in
+  iter_libindex hcons pkgs_dirs
   |> Iter.iter @@ add t ;
   t
 
 let add t ty lid =
   add t (ty, { lid })
-
-let get_env t = t.env
 
 let iter t = Trie.iter t.infos
 let iter_with t ty = Trie.iter_with ty t.infos

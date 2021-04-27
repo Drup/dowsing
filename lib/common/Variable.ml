@@ -3,13 +3,21 @@ type t = Int.t
 module Gen = struct
 
   type var = t
-  type t = var ref
+  type t = {
+    mutable content : int ;
+    dir : int ;
+  }   
 
-  let make () = ref 0
+  let dir_as_int = function `Data -> 1 | `Query -> -1
+  
+  let make dir = {
+    content = 0 ;
+    dir = dir_as_int dir ;
+  }
 
   let gen t =
-    let var = ! t in
-    incr t ;
+    let var = t.content in
+    t.content <- var + t.dir ;
     var
 
 end
@@ -30,7 +38,7 @@ let rec base_26 start_chr i =
   )
 let to_string i =
   let root = if i >= 0 then Char.code 'a' else Char.code 'A' in
-  CCString.of_list @@ base_26 root i
+  CCString.of_list @@ base_26 root @@ abs i
 
 let pp fmt t =
   Fmt.pf fmt "'%s" (to_string t)

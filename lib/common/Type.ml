@@ -290,9 +290,13 @@ module Env = struct
     hcons : Hashcons.t ;
   }
 
-  let make () = {
-    var_gen = Variable.Gen.make () ;
+  let make dir = {
+    var_gen = Variable.Gen.make dir ;
     hcons = Hashcons.make () ;
+  }
+  let from_hashcons dir hcons = {
+    var_gen = Variable.Gen.make dir ;
+    hcons ;
   }
 
 end

@@ -135,7 +135,7 @@ let () = Args.add_cmd (module struct
       raise @@ Arg.Bad "too many arguments"
 
   let main all_unifs str1 str2 =
-    let env = Type.Env.make () in
+    let env = Type.Env.make `Query in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
     Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp ty1) ;
@@ -246,7 +246,7 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
-    let env = Index.get_env idx in
+    let env = Type.Env.make `Query in
     let ty = type_of_string env str in
     let aux ?stats0 iter_idx =
       let tbl = ref Measure.Map.empty in
@@ -339,22 +339,22 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
-    let env = Index.get_env idx in
+    let env = Type.Env.make `Query in
     let ty = type_of_string env str in
     let res =
       let find = if exhaustive then Index.find else Index.find_with in
       find idx env ty
       |> Iter.sort ~cmp:(fun (_, info1, unif1) (_, info2, unif2) ->
         CCOrd.(Unification.Subst.compare unif1 unif2
-          <?> (LongIdent.compare, info1.Index.lid, info2.Index.lid))
+          <?> (CCOrd.list Index.compare_info, info1, info2))
       )
     in
     let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
     Fmt.pr "@[<v>" ;
     res |> Iter.iter (fun (ty, info, _) ->
-      Fmt.pr "@[<2>%a:@ @[<2>%a@]@]@,"
-        LongIdent.pp info.Index.lid
+      Fmt.pr "@[<v2>@[%a@]:@ %a@]@,"
         Type.pp ty
+        (Fmt.list Index.pp_info) info
     ) ;
     Fmt.pr "@]@?"
 

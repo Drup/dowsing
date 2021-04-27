@@ -110,7 +110,8 @@ module Env : sig
     hcons : Hashcons.t ;
   }
 
-  val make : Unit.t -> t
+  val make : [< `Query | `Data] -> t
+  val from_hashcons : [< `Query | `Data] -> Hashcons.t -> t
 
 end
 

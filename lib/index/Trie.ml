@@ -8,21 +8,22 @@ module type NODE = sig
   val empty : 'v t
   val singleton : key -> 'v -> 'v t
   val add : key -> 'v -> 'v t -> 'v t
-  val iter : 'v t -> (Type.t * 'v) Iter.t
-  val iter_with : key -> 'v t -> (Type.t * 'v) Iter.t
+  val iter : 'v t -> (Type.t * 'v list) Iter.t
+  val iter_with : key -> 'v t -> (Type.t * 'v list) Iter.t
 
 end
 
 module Leaf : NODE = struct
 
   type key = Type.t
-  type 'v t = 'v Type.Map.t
+  type 'v t = 'v list Type.Map.t
 
   let key = CCFun.id
 
   let empty = Type.Map.empty
-  let singleton = Type.Map.singleton
-  let add = Type.Map.add
+  let singleton key v = Type.Map.singleton key [v]
+  let add k v m =
+    Type.Map.update k (function None -> Some [v] | Some l -> Some (v::l)) m
   let iter = Type.Map.to_iter
   let iter_with _ = iter
 

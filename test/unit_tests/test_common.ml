@@ -1,4 +1,4 @@
-let env = Type.Env.make ()
+let env = Type.Env.make `Query
 
 let type_testable = Alcotest.testable Type.pp Type.equal
 
