@@ -412,7 +412,6 @@ let var' vars (env : Env.t) = function
       | None ->
           let v = Variable.Gen.gen env.var_gen in
           let t = var v in
-          Variable.HMap.add env.var_names v name ;
           StringHMap.add vars name t ;
           t
 
@@ -453,6 +452,7 @@ let tail = function
 let rec substitute subst =
   let substitute t = substitute subst t in
   let substitute_set = MSet.map substitute in
+  let substitute_array = CCArray.map substitute in
   fun t ->
     match t with
     | Var var ->
@@ -461,7 +461,7 @@ let rec substitute subst =
           | Some t -> t
         end
     | Constr (lid, params) ->
-        constr lid @@ CCArray.map substitute params
+        constr lid @@ substitute_array params
     | Arrow (params, ret) ->
         arrow (tuple @@ substitute_set params) (substitute ret)
     | Tuple elts ->
@@ -469,19 +469,33 @@ let rec substitute subst =
     | Other _ ->
         t
 
-let rec vars t k =
+let iter =
+  let iter_subs = function
+    | Constr (_, params) -> Iter.of_array params
+    | Arrow (params, ret) -> Iter.snoc (MSet.to_iter params) ret
+    | Tuple elts -> MSet.to_iter elts
+    | _ -> Iter.empty
+  in
+  fun t k ->
+    let rec aux t =
+      k t ;
+      iter_subs t aux
+    in
+    aux t
+
+let rec iter_vars t k =
   match t with
   | Other _ ->
       ()
   | Var var ->
       k var
   | Constr (_, params) ->
-      CCArray.iter (fun t -> vars t k) params
-  | Tuple elts ->
-      Iter.flat_map vars (MSet.to_iter elts) k
+      CCArray.iter (fun t -> iter_vars t k) params
   | Arrow (params, ret) ->
-      Iter.flat_map vars (MSet.to_iter params) k ;
-      vars ret k
+      Iter.flat_map iter_vars (MSet.to_iter params) k ;
+      iter_vars ret k
+  | Tuple elts ->
+      Iter.flat_map iter_vars (MSet.to_iter elts) k
 
 (* pretty printing *)
 

@@ -85,7 +85,7 @@ let occur_check env : return =
       if not @@ Variable.HMap.mem nb_predecessors x then
         Variable.HMap.add nb_predecessors x 0
     end;
-    Type.vars ty |> Iter.iter aux
+    Type.iter_vars ty |> Iter.iter aux
   in
   Variable.Map.iter fill_nb_predecessors (Env.vars env);
 
