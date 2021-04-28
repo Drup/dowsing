@@ -3,7 +3,6 @@ module type S = sig
   type t
 
   val compute : Type.t -> t
-  (* TODO: We should enforce that compatible is monotonic with respect to compare *)
   val compare : t -> t -> Int.t
   val compatible : query:t -> data:t -> Bool.t
 
@@ -122,5 +121,52 @@ module Tail' = struct
     | Eq,  GEq -> t1.cnt >= t2.cnt && Type.Kind'.MSet.contains t1.tl t2.tl
     | GEq, Eq  -> t2.cnt >= t1.cnt && Type.Kind'.MSet.contains t2.tl t1.tl
     | GEq, GEq -> true
+
+end
+
+module Constructors : S = struct
+
+  type t = {
+    mutable has_var : Bool.t ;
+    mutable constrs : Int.t Type.Kind'.Map.t ;
+  }
+
+  let compute ty =
+    let t = {
+      has_var = false ;
+      constrs = Type.Kind'.Map.empty ;
+    } in
+    Type.iter ty (fun ty ->
+      let kind = Type.kind' ty in
+      match kind with
+      | Var ->
+          t.has_var <- true
+      | Constr _ | Arrow | Tuple ->
+          t.constrs <-
+            Type.Kind'.Map.update kind (function
+              | None -> Some 1
+              | Some cnt -> Some (cnt + 1)
+            ) t.constrs
+      | _ -> ()
+    ) ;
+    t
+
+  let compare t1 t2 =
+    CCOrd.(Bool.compare t1.has_var t2.has_var
+      <?> (compare, t1.constrs, t2.constrs))
+
+  let compatible =
+    let aux t1 t2 =
+      Type.Kind'.Map.for_all (fun kind cnt2 ->
+        let cnt1 = Type.Kind'.Map.get_or kind t1.constrs ~default:0 in
+        cnt1 >= cnt2
+      ) t2.constrs
+    in
+    fun ~query:t1 ~data:t2 ->
+      match t1.has_var, t2.has_var with
+      | false, true  -> aux t1 t2
+      | false, false -> aux t1 t2
+      | true,  false -> aux t2 t1
+      | true,  true  -> true
 
 end

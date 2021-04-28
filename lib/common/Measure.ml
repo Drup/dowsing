@@ -42,9 +42,9 @@ type t = Int.t
 let rec make (kind : Kind.t) ty =
   match kind with
   | VarCount ->
-      Iter.length @@ Type.vars ty
+      Iter.length @@ Type.iter_vars ty
   | UniqueVarCount ->
-      Variable.Set.(cardinal @@ of_iter @@ Type.vars ty)
+      Variable.Set.(cardinal @@ of_iter @@ Type.iter_vars ty)
   | NodeCount ->
       let rec aux (ty : Type.t) =
         match ty with

@@ -136,7 +136,8 @@ val tail : t -> MSet.t
 
 val substitute : t Variable.Map.t -> t -> t
 
-val vars : t -> Variable.t Iter.t
+val iter : t -> t Iter.t
+val iter_vars : t -> Variable.t Iter.t
 
 (* pretty printing *)
 
