@@ -1,9 +1,7 @@
 module Trie =
-  Trie.Make (
-    Trie.Node (Feature.Head') (
-      Trie.Node (Feature.Tail') (
-        Trie.Leaf
-      )
+  Trie.Node (Feature.Head') (
+    Trie.Node (Feature.Tail') (
+      Trie.Leaf
     )
   )
 
