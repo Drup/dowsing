@@ -45,12 +45,12 @@ Some initial basic tests.
   'a -> int:
     Containers.Hashtbl.hash
     ContainersLabels.Hashtbl.hash
-  'a * int * int -> int:
-    Containers.Hashtbl.hash_param
-    ContainersLabels.Hashtbl.hash_param
   'a * int -> int:
     Containers.Hashtbl.seeded_hash
     ContainersLabels.Hashtbl.seeded_hash
+  'a * int * int -> int:
+    Containers.Hashtbl.hash_param
+    ContainersLabels.Hashtbl.hash_param
   'a * 'b -> 'a:
     CCShimsFun_.const
     CCFun.const
@@ -58,53 +58,6 @@ Some initial basic tests.
     ContainersLabels.Fun.const
 
   $ dowsindex search index.db "int -> int -> 'a"
-  int * int -> (()):
-    CCFormat.safe_set_geometry
-    CCFormat.set_geometry
-    CCFormat.print_tbreak
-    CCFormat.print_break
-    Containers.Format.safe_set_geometry
-    Containers.Format.set_geometry
-    Containers.Format.print_tbreak
-    Containers.Format.print_break
-    ContainersLabels.Format.safe_set_geometry
-    ContainersLabels.Format.set_geometry
-    ContainersLabels.Format.print_tbreak
-    ContainersLabels.Format.print_break
-    Containers_codegen.Fmt.safe_set_geometry
-    Containers_codegen.Fmt.set_geometry
-    Containers_codegen.Fmt.print_tbreak
-    Containers_codegen.Fmt.print_break
-  int * int -> t/3 random_gen:
-    CCInt.random_range
-    Containers.Int.random_range
-    ContainersLabels.Int.random_range
-  int * int -> int t/3:
-    CCList.(--^)
-    CCList.(--)
-    CCList.range'
-    CCList.range
-    Containers.List.(--^)
-    Containers.List.(--)
-    Containers.List.range'
-    Containers.List.range
-  int * int -> int list option t/2:
-    CCRandom.split_list
-    Containers.Random.split_list
-    ContainersLabels.Random.split_list
-  int * int -> int t/2:
-    CCSeq.(--^)
-    CCSeq.(--)
-    CCSeq.range
-    CCRandom.int_range
-    Containers.Seq.(--^)
-    Containers.Seq.(--)
-    Containers.Seq.range
-    Containers.Random.int_range
-    ContainersLabels.Seq.(--^)
-    ContainersLabels.Seq.(--)
-    ContainersLabels.Seq.range
-    ContainersLabels.Random.int_range
   'a -> 'a:
     CCShimsFun_.id
     CCFun.opaque_identity
@@ -113,34 +66,6 @@ Some initial basic tests.
     Containers.Fun.id
     ContainersLabels.Fun.opaque_identity
     ContainersLabels.Fun.id
-  int * int -> int:
-    CCShimsInt_.compare
-    CCShimsInt_.logxor
-    CCShimsInt_.logor
-    CCShimsInt_.logand
-    CCShimsInt_.rem
-    CCShimsInt_.div
-    CCShimsInt_.shift_right_logical
-    CCShimsInt_.shift_right
-    CCShimsInt_.shift_left
-    CCShimsInt_.sub
-    CCShimsInt_.add
-    CCShimsInt_.mul
-    CCMonomorphic.max
-    CCMonomorphic.min
-    CCMonomorphic.compare
-    Containers.max
-    Containers.min
-    Containers.compare
-    Containers.Monomorphic.max
-    Containers.Monomorphic.min
-    Containers.Monomorphic.compare
-    ContainersLabels.max
-    ContainersLabels.min
-    ContainersLabels.compare
-    ContainersLabels.Monomorphic.max
-    ContainersLabels.Monomorphic.min
-    ContainersLabels.Monomorphic.compare
   int * int -> bool:
     CCShimsInt_.equal
     CCOrd.equiv
@@ -176,19 +101,41 @@ Some initial basic tests.
     ContainersLabels.Monomorphic.(<>)
     ContainersLabels.Monomorphic.(<)
     ContainersLabels.Monomorphic.(=)
-  int * int -> int t/1:
-    CCListLabels.Infix.(--^)
-    CCListLabels.Infix.(--)
-    CCArrayLabels.(--^)
-    CCArrayLabels.(--)
-    CCArrayLabels.Infix.(--^)
-    CCArrayLabels.Infix.(--)
-    ContainersLabels.List.Infix.(--^)
-    ContainersLabels.List.Infix.(--)
-    ContainersLabels.Array.(--^)
-    ContainersLabels.Array.(--)
-    ContainersLabels.Array.Infix.(--^)
-    ContainersLabels.Array.Infix.(--)
+  'a * int -> int:
+    Containers.Hashtbl.seeded_hash
+    ContainersLabels.Hashtbl.seeded_hash
+  int * int -> int:
+    CCShimsInt_.compare
+    CCShimsInt_.logxor
+    CCShimsInt_.logor
+    CCShimsInt_.logand
+    CCShimsInt_.rem
+    CCShimsInt_.div
+    CCShimsInt_.shift_right_logical
+    CCShimsInt_.shift_right
+    CCShimsInt_.shift_left
+    CCShimsInt_.sub
+    CCShimsInt_.add
+    CCShimsInt_.mul
+    CCMonomorphic.max
+    CCMonomorphic.min
+    CCMonomorphic.compare
+    Containers.max
+    Containers.min
+    Containers.compare
+    Containers.Monomorphic.max
+    Containers.Monomorphic.min
+    Containers.Monomorphic.compare
+    ContainersLabels.max
+    ContainersLabels.min
+    ContainersLabels.compare
+    ContainersLabels.Monomorphic.max
+    ContainersLabels.Monomorphic.min
+    ContainersLabels.Monomorphic.compare
+  int * int -> t/3 random_gen:
+    CCInt.random_range
+    Containers.Int.random_range
+    ContainersLabels.Int.random_range
   int * int -> int t:
     CCSeq.Infix.(--^)
     CCSeq.Infix.(--)
@@ -216,9 +163,62 @@ Some initial basic tests.
     ContainersLabels.List.(--)
     ContainersLabels.List.range'
     ContainersLabels.List.range
-  'a * int -> int:
-    Containers.Hashtbl.seeded_hash
-    ContainersLabels.Hashtbl.seeded_hash
+  int * int -> int t/1:
+    CCListLabels.Infix.(--^)
+    CCListLabels.Infix.(--)
+    CCArrayLabels.(--^)
+    CCArrayLabels.(--)
+    CCArrayLabels.Infix.(--^)
+    CCArrayLabels.Infix.(--)
+    ContainersLabels.List.Infix.(--^)
+    ContainersLabels.List.Infix.(--)
+    ContainersLabels.Array.(--^)
+    ContainersLabels.Array.(--)
+    ContainersLabels.Array.Infix.(--^)
+    ContainersLabels.Array.Infix.(--)
+  int * int -> int t/2:
+    CCSeq.(--^)
+    CCSeq.(--)
+    CCSeq.range
+    CCRandom.int_range
+    Containers.Seq.(--^)
+    Containers.Seq.(--)
+    Containers.Seq.range
+    Containers.Random.int_range
+    ContainersLabels.Seq.(--^)
+    ContainersLabels.Seq.(--)
+    ContainersLabels.Seq.range
+    ContainersLabels.Random.int_range
+  int * int -> int list option t/2:
+    CCRandom.split_list
+    Containers.Random.split_list
+    ContainersLabels.Random.split_list
+  int * int -> int t/3:
+    CCList.(--^)
+    CCList.(--)
+    CCList.range'
+    CCList.range
+    Containers.List.(--^)
+    Containers.List.(--)
+    Containers.List.range'
+    Containers.List.range
+  int * int -> (()):
+    CCFormat.safe_set_geometry
+    CCFormat.set_geometry
+    CCFormat.print_tbreak
+    CCFormat.print_break
+    Containers.Format.safe_set_geometry
+    Containers.Format.set_geometry
+    Containers.Format.print_tbreak
+    Containers.Format.print_break
+    ContainersLabels.Format.safe_set_geometry
+    ContainersLabels.Format.set_geometry
+    ContainersLabels.Format.print_tbreak
+    ContainersLabels.Format.print_break
+    Containers_codegen.Fmt.safe_set_geometry
+    Containers_codegen.Fmt.set_geometry
+    Containers_codegen.Fmt.print_tbreak
+    Containers_codegen.Fmt.print_break
   'a * 'b -> 'a:
     CCShimsFun_.const
     CCFun.const
