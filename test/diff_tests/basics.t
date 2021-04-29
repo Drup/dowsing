@@ -202,7 +202,7 @@ Some initial basic tests.
     Containers.List.(--)
     Containers.List.range'
     Containers.List.range
-  int * int -> (()):
+  int * int -> ():
     CCFormat.safe_set_geometry
     CCFormat.set_geometry
     CCFormat.print_tbreak

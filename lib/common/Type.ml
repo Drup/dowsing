@@ -195,11 +195,11 @@ and MSet : sig
   val is_empty : t -> Bool.t
   val length : t -> Int.t
   val singleton : elt -> t
+  val is_singleton : t -> elt option
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   val map : (elt -> elt) -> t -> t
-  val min_elt : t -> elt
 
   val pp : elt Fmt.t -> t Fmt.t
 
@@ -231,6 +231,9 @@ end = struct
   let length = CCArray.length
 
   let singleton elt = [| elt |]
+  let is_singleton = function
+    | [|elt|] -> Some elt
+    | _ -> None
 
   let union t1 t2 =
     let t = CCArray.append t1 t2 in
@@ -245,8 +248,6 @@ end = struct
 
   let map fn t =
     of_iter @@ Iter.map fn @@ to_iter t
-
-  let min_elt t = t.(0)
 
   let pp pp_ty fmt = function
     | [||] ->
@@ -326,9 +327,9 @@ let tuple elts =
     | elt -> MSet.singleton elt
   in
   let elts = MSet.fold (fun elt -> MSet.union @@ aux elt) elts MSet.empty in
-  if MSet.length elts = 1 then
-    MSet.min_elt elts
-  else Tuple elts
+  match MSet.is_singleton elts with
+  | Some elt -> elt
+  | None -> Tuple elts
 
 let other x =
   Other (CCHash.poly x)
@@ -504,8 +505,13 @@ let rec pp fmt = function
 and pp_parens fmt ty =
   match ty with
   | Var _ | Other _ | Constr _ ->
+    pp fmt ty
+  | Arrow _ ->
+    Fmt.parens pp fmt ty
+  | Tuple s ->
+    if MSet.length s <= 1 then
       pp fmt ty
-  | Arrow _ | Tuple _ ->
+    else
       Fmt.parens pp fmt ty
 
 and pp_array fmt = function

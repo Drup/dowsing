@@ -78,12 +78,12 @@ and MSet : sig
   val is_empty : t -> Bool.t
   val length : t -> Int.t
   val singleton : elt -> t
+  val is_singleton : t -> elt option
   val union : t -> t -> t
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   val map : (elt -> elt) -> t -> t
-  val min_elt : t -> elt
-
+  
   val pp : elt Fmt.t -> t Fmt.t
 
 end
