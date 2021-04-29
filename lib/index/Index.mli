@@ -10,7 +10,6 @@ type iter = (Type.t * info list) Iter.t
 type iter' = (Type.t * info list * Unification.Subst.t) Iter.t
 
 val make : String.t List.t -> t
-val add : t -> Type.t -> LongIdent.t -> Unit.t
 
 val iter : t -> iter
 val iter_with : t -> Type.t -> iter

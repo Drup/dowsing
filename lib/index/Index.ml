@@ -11,9 +11,7 @@ type info = {
 let compare_info i1 i2 = LongIdent.compare i1.lid i2.lid
 let pp_info fmt p = LongIdent.pp fmt p.lid
 
-type t = {
-  mutable infos : info list Trie.t ;
-}
+type t = info list Trie.t
 
 type iter = (Type.t * info list) Iter.t
 type iter' = (Type.t * info list * Unification.Subst.t) Iter.t
@@ -40,20 +38,15 @@ let add t (ty, info) =
     | None -> [info]
     | Some l -> info :: l
   in
-  t.infos <- Trie.add_or_update ty aux t.infos
+  Trie.add_or_update ty aux t
 
 let make pkgs_dirs =
   let hcons = Type.Hashcons.make () in
-  let t = { infos = Trie.empty } in
   iter_libindex hcons pkgs_dirs
-  |> Iter.iter @@ add t ;
-  t
+  |> Iter.fold add Trie.empty
 
-let add t ty lid =
-  add t (ty, { lid })
-
-let iter t = Trie.iter t.infos
-let iter_with t ty = Trie.iter_with ty t.infos
+let iter t = Trie.iter t
+let iter_with t ty = Trie.iter_with ty t
 
 let find, find_with =
   let aux iter t env ty =
