@@ -16,3 +16,4 @@ module Map : CCTrie.S with type key = t and type char_ = String.t
 module HMap : CCHashtbl.S with type key = t
 
 val pp : t Fmt.t [@@ocaml.toplevel_printer]
+val compare_humans : t -> t -> int
