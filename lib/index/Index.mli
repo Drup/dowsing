@@ -1,13 +1,9 @@
-type info = {
-  lid : LongIdent.t ;
-}
-val compare_info : info -> info -> int
-val pp_info : info Fmt.t
+module Info = Info
 
 type t
 
-type iter = (Type.t * info list) Iter.t
-type iter' = (Type.t * info list * Unification.Subst.t) Iter.t
+type iter = (Type.t * Info.t) Iter.t
+type iter' = (Type.t * Info.t * Unification.Subst.t) Iter.t
 
 val make : String.t List.t -> t
 

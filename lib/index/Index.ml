@@ -1,3 +1,5 @@
+module Info = Info
+
 module Trie =
   Trie.Node (Feature.Head') (
     Trie.Node (Feature.Tail') (
@@ -5,16 +7,10 @@ module Trie =
     )
   )
 
-type info = {
-  lid : LongIdent.t ;
-}
-let compare_info i1 i2 = LongIdent.compare i1.lid i2.lid
-let pp_info fmt p = LongIdent.pp fmt p.lid
+type t = Info.t Trie.t
 
-type t = info list Trie.t
-
-type iter = (Type.t * info list) Iter.t
-type iter' = (Type.t * info list * Unification.Subst.t) Iter.t
+type iter = (Type.t * Info.t) Iter.t
+type iter' = (Type.t * Info.t * Unification.Subst.t) Iter.t
 
 let iter_libindex hcons pkgs_dirs k =
   pkgs_dirs
@@ -29,16 +25,13 @@ let iter_libindex hcons pkgs_dirs k =
         let env = Type.Env.from_hashcons `Data hcons in
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
-        k (ty, { lid })
+        let orig_lid = LongIdent.of_list @@ info.orig_path @ [ info.name ] in
+        k (ty, orig_lid, {Info.Signature. lid })
     | _ -> ()
   )
 
-let add t (ty, info) =
-  let aux = function
-    | None -> [info]
-    | Some l -> info :: l
-  in
-  Trie.add_or_update ty aux t
+let add t (ty, lid, info) =
+  Trie.add_or_update ty (Info.update lid info) t
 
 let make pkgs_dirs =
   let hcons = Type.Hashcons.make () in

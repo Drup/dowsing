@@ -344,10 +344,9 @@ let () = Args.add_cmd (module struct
     let res =
       let find = if exhaustive then Index.find else Index.find_with in
       find idx env ty
-      |> Iter.sort ~cmp:(fun (ty1, info1, unif1) (ty2, info2, unif2) ->
+      |> Iter.sort ~cmp:(fun (ty1, _info1, unif1) (ty2, _info2, unif2) ->
           CCOrd.(Unification.Subst.compare unif1 unif2
-                 <?> (Type.compare, ty1, ty2)
-                 <?> (CCOrd.list Index.compare_info, info1, info2))
+                 <?> (Type.compare, ty1, ty2))
       )
     in
     let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
@@ -355,7 +354,7 @@ let () = Args.add_cmd (module struct
     res |> Iter.iter (fun (ty, info, _) ->
       Fmt.pr "@[<v2>@[%a@]:@ %a@]@,"
         Type.pp ty
-        (Fmt.list Index.pp_info) info
+        Index.Info.pp info
     ) ;
     Fmt.pr "@]@?"
 
