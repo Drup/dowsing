@@ -4,20 +4,20 @@ module type NODE = sig
 
   val empty : 'v t
   val singleton : Type.t -> 'v -> 'v t
-  val add : Type.t -> 'v -> 'v t -> 'v t
-  val iter : 'v t -> (Type.t * 'v list) Iter.t
-  val iter_with : Type.t -> 'v t -> (Type.t * 'v list) Iter.t
+  val add_or_update : Type.t -> ('v option -> 'v) -> 'v t -> 'v t
+  val iter : 'v t -> (Type.t * 'v) Iter.t
+  val iter_with : Type.t -> 'v t -> (Type.t * 'v) Iter.t
 
 end
 
 module Leaf : NODE = struct
 
-  type 'v t = 'v list Type.Map.t
+  type 'v t = 'v Type.Map.t
 
   let empty = Type.Map.empty
-  let singleton key v = Type.Map.singleton key [v]
-  let add k v m =
-    Type.Map.update k (function None -> Some [v] | Some l -> Some (v::l)) m
+  let singleton key v = Type.Map.singleton key v
+  let add_or_update k f m =
+    Type.Map.update k (fun v -> Some (f v)) m
   let iter = Type.Map.to_iter
   let iter_with _ = iter
 
@@ -34,12 +34,12 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
   let singleton ty v =
     FeatMap.singleton (Feat.compute ty) (Sub.singleton ty v)
 
-  let add ty v t =
+  let add_or_update ty f t =
     let key = Feat.compute ty in
     let sub =
       match FeatMap.find_opt key t with
-      | None -> Sub.singleton ty v
-      | Some sub -> Sub.add ty v sub
+      | None -> Sub.singleton ty @@ f None
+      | Some sub -> Sub.add_or_update ty f sub
     in
     FeatMap.add key sub t
 
