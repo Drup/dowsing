@@ -12,6 +12,9 @@ type t = Info.t Trie.t
 type iter = (Type.t * Info.t) Iter.t
 type iter' = (Type.t * Info.t * Unification.Subst.t) Iter.t
 
+(* Temporary fix to avoid issues with LibIndex and name mangling *)
+let () = Printtyp.Naming_context.enable false
+
 let iter_libindex hcons pkgs_dirs k =
   pkgs_dirs
   |> LibIndex.Misc.unique_subdirs

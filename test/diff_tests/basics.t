@@ -98,40 +98,37 @@ Some initial basic tests.
     CCShimsInt_.shift_right
     ContainersLabels.compare
     CCShimsInt_.shift_right_logical
-  int * int -> t/3 random_gen:
+  int * int -> t random_gen:
     CCInt.random_range
   int * int -> int t:
+    CCSeq.(--)
+    CCList.(--)
+    CCSeq.(--^)
+    CCSeq.range
     CCArray.(--)
+    CCList.(--^)
+    CCList.range
     CCArray.(--^)
+    CCList.range'
     CCSeq.Infix.(--)
     CCList.Infix.(--)
     CCListLabels.(--)
     CCSeq.Infix.(--^)
     CCArray.Infix.(--)
+    CCArrayLabels.(--)
     CCList.Infix.(--^)
     CCListLabels.(--^)
     CCListLabels.range
+    CCRandom.int_range
     CCArray.Infix.(--^)
-    CCListLabels.range'
-  int * int -> int t/1:
-    CCArrayLabels.(--)
     CCArrayLabels.(--^)
+    CCListLabels.range'
     CCListLabels.Infix.(--)
     CCArrayLabels.Infix.(--)
     CCListLabels.Infix.(--^)
     CCArrayLabels.Infix.(--^)
-  int * int -> int t/2:
-    CCSeq.(--)
-    CCSeq.(--^)
-    CCSeq.range
-    CCRandom.int_range
-  int * int -> int list option t/2:
+  int * int -> int list option t:
     CCRandom.split_list
-  int * int -> int t/3:
-    CCList.(--)
-    CCList.(--^)
-    CCList.range
-    CCList.range'
   int * int -> ():
     CCFormat.print_break
     CCFormat.print_tbreak
