@@ -5,7 +5,7 @@ module Gen : sig
   type var = t
   type t
 
-  val make : [< `Query | `Data] -> t
+  val make : [< `Query | `Data ] -> t
   val gen : t -> var
 
 end

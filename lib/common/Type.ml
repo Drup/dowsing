@@ -521,14 +521,14 @@ let rec pp fmt = function
 and pp_parens fmt ty =
   match ty with
   | Var _ | Other _ | Constr _ ->
-    pp fmt ty
-  | Arrow _ ->
-    Fmt.parens pp fmt ty
-  | Tuple s ->
-    if MSet.length s <= 1 then
       pp fmt ty
-    else
+  | Arrow _ ->
       Fmt.parens pp fmt ty
+  | Tuple elts ->
+      if MSet.length elts <= 1 then
+        pp fmt ty
+      else
+        Fmt.parens pp fmt ty
 
 and pp_array fmt = function
   | [||] ->

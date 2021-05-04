@@ -143,4 +143,3 @@ val iter_vars : t -> Variable.t Iter.t
 
 val pp : t Fmt.t [@@ocaml.toplevel_printer]
 val pp_parens : t Fmt.t
-
