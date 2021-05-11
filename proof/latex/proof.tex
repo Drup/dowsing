@@ -1,0 +1,422 @@
+\documentclass [a4paper,12pt] {article}
+\usepackage [T1] {fontenc}
+\usepackage [utf8] {inputenc}
+\usepackage [french] {babel}
+
+%============================================================
+
+\usepackage {amsmath}	% align*
+\usepackage {amssymb}	% mathbb
+\usepackage {mathrsfs}	% mathscr
+\usepackage {amsthm}	% newtheorem
+\usepackage {ebproof}	% prooftree
+
+%============================================================
+
+\setlength \parindent {0pt}
+
+%============================================================
+
+\usepackage {enumitem}
+\setlist [itemize] {leftmargin=*}
+
+%============================================================
+
+\newtheoremstyle {definition}
+	{}		% space above
+	{}		% space below
+	{}		% body font
+	{}		% indent
+	{\bf}	% head font
+	{\\}	% head punctuation
+	{ }		% head space
+	{}		% head spec
+
+\newenvironment {preuve} 
+	{\begin {proof} ~\\} 
+	{\end {proof}}
+
+\theoremstyle {definition}
+
+\newtheorem {définition} {Définition} [section]
+\newtheorem {lemme} {Lemme} [section]
+\newtheorem {théorème} {Théorème} [section]
+
+%============================================================
+
+\title {
+	Recherche de fonctions par types \\[0.5em]
+	\large Un peu de théorie
+}
+\date {}
+
+%============================================================
+
+\newcommand {\interval} [2] {[\![#1\,;#2]\!]}
+
+\newcommand {\ssi} {\textit {ssi}}
+
+\newcommand {\V} {\mathscr V}
+\newcommand {\C} {\mathscr C}
+\newcommand {\T} {\mathscr T}
+\newcommand {\E} {\mathscr E}
+
+\newcommand {\qeq} {\stackrel ? =}
+\newcommand {\Eeq} {\stackrel \E =}
+
+%============================================================
+%============================================================
+
+\begin {document}
+
+\maketitle
+
+%============================================================
+
+\section {Signature}
+
+\begin {définition} [signature]
+	Une signature est un ensemble de symboles de fonctions d'arité finie. \\
+	On signifie par $(f : n) \in \Sigma$ le fait que le symbole $f$ de fonction d'arité $n$ appartienne à la signature $\Sigma$.
+\end {définition}
+
+Dans toute la suite, on se donne un ensemble dénombrable $\V$ de symboles de variables ainsi qu'une signature $\Sigma$ telle que $\V \cap \Sigma = \emptyset$, $(unit : 0) \in \Sigma$, $(\cdot * \cdot : 2) \in \Sigma$ et $(\cdot \rightarrow \cdot \, : 2) \in \Sigma$.
+
+%============================================================
+
+\section {Types}
+
+\begin {définition} [type]
+	L'ensemble des types, noté $T$, est défini inductivement par :
+	\begin {center}
+		\begin {prooftree}
+			\Infer 0 {\V \subseteq T}
+		\end {prooftree}
+		~~~
+		\begin {prooftree}
+			\Hypo {(f : n) \in  \Sigma}
+			\Hypo {\forall i \in \interval 1 n,\ \tau_i \in T}
+			\Infer 2 {f (\tau_1, \dots, \tau_n) \in T}
+		\end {prooftree}
+	\end {center}
+\end {définition}
+
+\begin {définition} [type-flèche]
+	Un type-flèche (ou une flèche) est un type de la forme : $\tau_1 \rightarrow \tau_2$.
+\end {définition}
+
+\begin {définition} [mot sur $\mathbb N$]
+	L'ensemble des mots sur $\mathbb N$ est défini inductivement par :
+	\begin {center}
+		\begin {prooftree}
+			\Infer 0 {\Lambda \text{ mot vide sur } \mathbb N}
+		\end {prooftree}
+		~~~
+		\begin {prooftree}
+			\Hypo {i \in \mathbb N}
+			\Hypo {p \text{ mot sur } \mathbb N}
+			\Infer 2 {i.p \text{ mot sur } \mathbb N}
+		\end {prooftree}
+	\end {center}
+\end {définition}
+
+\begin {définition} [positions d'un type]
+	L'ensemble des positions d'un type $\tau$, noté $Pos(\tau)$, est l'ensemble des mots sur $\mathbb N$ défini inductivement par :
+	\begin {center}
+		\begin {prooftree}
+			\Infer 0 {\Lambda \in Pos(\tau)}
+		\end {prooftree}
+		~~~
+		\begin {prooftree}
+			\Hypo {i \in \interval 1 n}
+			\Hypo {p \in Pos(\tau_i)}
+			\Infer 2 {i.p \in Pos(f (\tau_1, \dots, \tau_n))}
+		\end {prooftree}
+	\end {center}
+\end {définition}
+
+\begin {définition} [sous-type]
+	Le sous-type d'un type $\tau$ à la position $p$, noté $\tau [p]$, est défini par induction sur $p$ par :
+	\begin {align*}
+		\tau [\Lambda] &= \tau \\
+		f (\tau_1, \dots, \tau_n) [i.q] &= \tau_i [q]
+	\end {align*}
+\end {définition}
+
+\begin {définition} [affectation de types]
+	Une affectation de types est une fonction de $\V$ dans $T$.
+\end {définition}
+
+\begin {définition} [substitution de types]
+	Une substitution de type est un endomorphisme de $T$.
+\end {définition}
+
+\begin {définition} [substitution de types induite]
+	Soit $\alpha$ une affectation de types. \\
+	La substitution de types induite par $\alpha$, notée $\hat \alpha$, est la substitution de types dont la restriction à $\V$ est $\alpha$. \\
+	Autrement dit, $\hat \alpha$ est définie inductivement par :
+	\begin {align*}
+		\hat \alpha (v) &= \alpha (v) \\
+		\hat \alpha (f (\tau_1, \dots, \tau_n)) &= f (\hat \alpha (\tau_1), \dots, \hat \alpha (\tau_n))
+	\end {align*}
+\end {définition}
+
+\begin {définition} [instance de type]
+	Un type $\tau_1$ est une instance d'un type $\tau_2$, noté $\tau_2 \leqslant_T \tau_1$, s'il existe une substitution de types $\sigma$  telle que $\tau_1 = \sigma (\tau_2)$.
+\end {définition}
+
+%============================================================
+
+\section {Théorie équationnelle}
+
+\begin {définition} [axiome équationnel]
+	Un axiome équationnel est un couple de types de la forme $\tau_1 \doteq \tau_2$.
+\end {définition}
+
+\begin {définition} [instance d'axiome équationnel]
+	Une instance d'un axiome équationnel $\tau_1 \doteq \tau_2$ est un couple de types $(\tau_1', \tau_2')$ tels que $\tau_1'$ soit une instance de $\tau_1$ et $\tau_2'$ une instance de $\tau_2$.
+\end {définition}
+
+\begin {définition} [théorie équationnelle]
+	Soit $\E$ un ensemble d'axiomes équationnels. \\
+	La théorie équationnelle induite par $\E$, notée $\cdot \Eeq \cdot$, est la plus petite congruence sur $\Sigma$ contenant toutes les instances des axiomes équationnels de $\E$. \\
+	Autrement dit, c'est la plus petite relation binaire satisfaisant les règles d'inférence :
+	\begin {center}
+		\begin {prooftree}
+			\Hypo {\tau_1 \doteq \tau_2 \in \E}
+			\Infer 1 [($\Eeq$-ax)] {\hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2)}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Infer 0 [($\Eeq$-refl)] {\tau \Eeq \tau}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Hypo {\tau_1 \Eeq \tau_2}
+			\Hypo {\tau_2 \Eeq \tau_3}
+			\Infer 2 [($\Eeq$-trans)] {\tau_1 \Eeq \tau_3}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Hypo {\tau_1 \Eeq \tau_2}
+			\Infer 1 [($\Eeq$-sym)] {\tau_2 \Eeq \tau_1}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Hypo {(f : n) \in \Sigma}
+			\Hypo {\tau_i \Eeq \tau_i'}
+			\Infer 2 [($\Eeq$-congr)] {f (\tau_1, \dots, \tau_i, \dots, \tau_n) \Eeq f (\tau_1, \dots, \tau_i', \dots, \tau_n)}
+		\end {prooftree}
+	\end {center}
+\end {définition}
+
+\begin {définition} [$\E$-équivalence]
+	Soit $\E$ un ensemble d'axiomes équationnels. \\
+	Deux types $\tau_1$ et $\tau_2$ sont $\E$-équivalents {\ssi} $\tau_1 \Eeq \tau_2$.
+\end {définition}
+
+\begin {définition} [$\E$-unifiabilité]
+	Soit $\E$ un ensemble d'axiomes équationnels. \\
+	Deux types $\tau_1$ et $\tau_2$ sont $\E$-unifiables, noté $\tau_1 \bowtie_\E \tau_2$, \ssi :
+	\[ \exists \alpha \in \mathscr F (\mathscr V, T),\ \hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2) \]
+\end {définition}
+
+Dans toute la suite, on s'intéressa à l'ensemble $\E$ des axiomes équationnels (où $x$, $y$ et $z$ sont des variables) :
+\begin {align*}
+	x * (y * z) &\doteq (x * y) * z && \text {($*$-assoc)} \\
+	x * y &\doteq y * x && \text {($*$-comm)} \\
+	x * y \rightarrow z &\doteq x \rightarrow y \rightarrow z && \text {(curry)}
+\end {align*}
+
+On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite par $\E$ ; on parlera d'équivalence pour l'$\E$-équivalence et d'unifiabilité pour l'$\E$-unifiabilité (notée $\cdot \bowtie \cdot$).
+
+%============================================================
+
+\section {Premier critère}
+
+\begin {définition} [tête d'un type]
+	La tête d'un type, notée $\uparrow \cdot$, est définie inductivement par :
+	\begin {align*}
+		\uparrow (\tau_1 \rightarrow \tau_2) &=\ \uparrow \tau_2 \\
+		\uparrow \tau &= \tau
+	\end {align*}
+\end {définition}
+
+\begin {lemme} \label {=E-tête}
+	Si deux types sont équivalents, leurs têtes le sont aussi.
+\end {lemme}
+
+\begin {lemme} \label {tête-subst-tête}
+	$\forall \tau \in T,\ \forall \alpha \in \mathscr F (\mathscr V, T),\ \uparrow \hat \alpha (\tau) =\ \uparrow \hat \alpha (\uparrow \tau)$
+\end {lemme}
+
+\begin {lemme} \label {tête-non-flèche}
+	La tête d'un type n'est pas une flèche.
+\end {lemme}
+
+\begin {lemme} \label {cons-=E}
+	$\forall (f_1 : n_1) \in \Sigma,\ \forall (f_1 : n_2) \in \Sigma,$ \\
+	$\forall (\tau^1_i)_{i \in \interval 1 {n_1}} \in T^{n_1},\ \forall (\tau^2_i)_{i \in \interval 1 {n_2}} \in T^{n_2},$ \\
+	$f_1 (\tau^1_1, \dots, \tau^1_{n_1}) = f_2 (\tau^2_1, \dots, \tau^2_{n_2}) \implies f_1 = f_2$
+\end {lemme}
+
+\begin {théorème}
+	$\forall \tau_1 \in T,\ \forall \tau_2 \in T,$ \\
+	$\tau_1 \bowtie \tau_2 \wedge \left( \uparrow \tau_1 \right) [\Lambda] = f_1 \notin \V \wedge \left( \uparrow \tau_2 \right) [\Lambda] = f_2 \notin \V \implies f_1 = f_2$
+\end {théorème}
+
+\begin {preuve}
+	Par hypothèse, il existe une affectation de types $\alpha$ telle que :
+	\[ \hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2) \]
+	Par le lemme \ref {=E-tête}, les têtes sont équivalentes :
+	\[ \uparrow \hat \alpha (\tau_1) \Eeq\ \uparrow \hat \alpha (\tau_2) \]
+	Par le lemme \ref {tête-subst-tête}, on a donc :
+	\[ \uparrow \hat \alpha (\uparrow \tau_1) \Eeq\ \uparrow \hat \alpha (\uparrow \tau_2) \]
+	Par hypothèse, il existe $(f_1 : n_1)$ et $(f_2 : n_2)$ dans $\Sigma$ ainsi que $(\tau^1_i)_{i \in \interval 1 {n_1}}$ dans $T^{n_1}$ et $(\tau^2_i)_{i \in \interval 1 {n_2}}$ dans $T^{n_2}$ tels que :
+	\begin {align*}
+		\tau_1 &= f_1 (\tau^1_1, \dots \tau^1_{n_1}) \\
+		\tau_2 &= f_2 (\tau^2_1, \dots \tau^2_{n_2})
+	\end {align*}
+	Par le lemme \ref {tête-non-flèche}, $f_1$ et $f_2$ sont différents de $\cdot \rightarrow \cdot$. \\
+	Par définition de $\uparrow \cdot$ et $\hat \alpha$, il vient alors :
+	\[ f_1 (\hat \alpha (\tau^1_1), \dots, \hat \alpha (\tau^1_{n_1})) \Eeq f_2 (\hat \alpha (\tau^2_1), \dots, \hat \alpha (\tau^2_{n_2})) \]
+	Enfin, le lemme \ref {cons-=E} donne :
+	\[ f_1 = f_2 \]
+\end {preuve}
+
+%============================================================
+
+\section {Deuxième critère}
+
+\begin {définition} [multiplicité de symbole de fonctions]
+	La multiplicité d'un symbole de fonction $f$, notée $\mu_f$, est définie inductivement par :
+	\begin {align*}
+		\mu_f (\tau_1 \rightarrow \tau_2) &= \mu_f' (\tau_1) + \mu_f (\tau_2) \\
+		\mu_f (\tau) &= 0 \\
+		\mu_f' (\tau_1 * \tau_2) &= \mu_f' (\tau_1) + \mu_f' (\tau_2) \\
+		\mu_f' (f (\tau_1, \dots, \tau_n)) &= 1 \\
+		\mu_f' (\tau) &= 0
+	\end {align*}
+\end {définition}
+
+\begin {définition} [$\V$-multiplicité]
+	La $\V$-multiplicité est définie inductivement par :
+	\begin {align*}
+		\mu_\V (\tau_1 \rightarrow \tau_2) &= \mu_\V' (\tau_1) + \mu_\V (\tau_2) \\
+		\mu_\V (\tau) &= 0 \\
+		\mu_\V' (v) &= 1 \\
+		\mu_\V' (\tau_1 * \tau_2) &= \mu_\V' (\tau_1) + \mu_\V' (\tau_2) \\
+		\mu_\V' (\tau) &= 0
+	\end {align*}
+\end {définition}
+
+\begin {définition} [type simpe]
+	Un type $\tau$ est simple si sa $\V$-multiplicité est nulle.
+\end {définition}
+
+\begin {lemme} \label {mu-=E}
+	Si deux type $\tau_1$ et $\tau_2$ sont équivalents, alors, pour tout symbole de fonction $f$, on a : $\mu_f (\tau_1) = \mu_f (\tau_2)$.
+\end {lemme}
+
+\begin {lemme} \label {mu-subst-simple}
+	Si un type $\tau$ est simple, alors, pour tout symbole de fonction $f$ et toute affectation de types $\alpha$, on a : $\mu_f (\hat \alpha (\tau)) = \mu_f (\tau)$.
+\end {lemme}
+
+\begin {lemme} \label {mu-subst}
+	La multiplicité de tout symbole de fonction $f$ dans un type est inférieure à celle de toute instance de ce type.
+\end {lemme}
+
+\begin {théorème}
+	Soit deux types $\tau_1$ et $\tau_2$. \\
+	Si $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ simple, alors la multiplicité de tout symbole de fonction dans $\tau_1$ est supérieure à celle dans $\tau_2$.
+\end {théorème}
+
+\begin {preuve}
+	Par hypothèse, il existe une affectation $\alpha$ telle que :
+	\[ \hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2) \]
+	Soit $f$ un symbole de fonction. \\
+	Par le lemme \ref {mu-=E}, les multiplicités sont égales :
+	\[ \mu_f (\hat \alpha (\tau_1)) = \mu_f (\hat \alpha (\tau_2)) \]
+	Par le lemme \ref {mu-subst-simple}, la simplicité de $\tau_1$ apporte :
+	\[ \mu_f (\hat \alpha (\tau_1)) = \mu_f (\tau_1) \]
+	Par le lemme \ref {mu-subst}, on a par ailleurs :
+	\[ \mu_f (\hat \alpha (\tau_2)) \geqslant \mu_f (\tau_2) \]
+	Il vient donc le résultat attendu :
+	\[ \mu_f (\tau_1) \geqslant \mu_f (\tau_2) \]
+\end {preuve}
+
+%============================================================
+
+\section {Normalisation}
+
+\begin {définition} [multi-ensemble]
+	Un multi-ensemble sur un ensemble $X$ est une fonction de $X$ dans $\mathbb N$. \\
+	L'ensemble des multi-ensembles sur $X$ est noté $X^\sharp$.
+\end {définition}
+
+\begin {définition} [domaine de multi-ensemble]
+	Le domaine d'un multi-ensemble sur $X$ est l'ensemble des éléments de $X$ dont l'image est non-nulle. \\
+	Si le domaine d'un multi-ensemble $m$ est fini, on note ce dernier $\{ x_1 : m (x_1) ; \dots ; x_n : m (x_n) \}$ où $(x_i)_{i \in \interval 1 n}$ est le domaine de $m$.
+\end {définition}
+
+\begin {définition} [somme de multi-ensembles]
+	La somme de deux multi-ensemble sur $X$ $m_1$ et $m_2$, notée $m_1 +_m m_2$, est le multi-ensemble $x \mapsto m_1 (x) + m_2 (x)$.
+\end {définition}
+
+\begin {définition} [type normalisé]
+	L'ensemble des types normalisés (ou $\nu$-types), noté $N$, est défini inductivement par :
+	\begin {center}
+		\begin {prooftree}
+			\Infer 0 {\V \subseteq N}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Hypo {(f : n) \in  \Sigma}
+			\Hypo {\forall i \in \interval 1 n,\ \nu_i \in N}
+			\Infer 2 {f (\nu_1, \dots, \nu_n) \in N}
+		\end {prooftree}
+		\\[1em]
+		\begin {prooftree}
+			\Hypo {m \in N^\sharp}
+			\Hypo {\nu \in N}
+			\Infer 2 {m \rightarrow_\nu \nu \in N}
+		\end {prooftree}
+	\end {center}
+\end {définition}
+
+%============================================================
+
+\end {document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

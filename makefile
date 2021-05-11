@@ -22,3 +22,7 @@ doc :
 .PHONY : watch
 watch :
 	@ $(DUNE) build @all -w
+
+.PHONY : proof
+proof :
+	@ $(MAKE) -C proof
