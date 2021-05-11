@@ -1,9 +1,13 @@
 .PHONY : all
-all : agda
+all : agda latex
 
 .PHONY : agda
 agda :
 	@ $(MAKE) -C agda
+
+latex :
+	@ $(MAKE) -C latex
+
 
 .PHONY : clean
 clean :
