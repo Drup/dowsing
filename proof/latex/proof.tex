@@ -9,7 +9,9 @@
 \usepackage {amssymb}	% mathbb
 \usepackage {mathrsfs}	% mathscr
 \usepackage {amsthm}	% newtheorem
-\usepackage {ebproof}	% prooftree
+%\usepackage {ebproof}	% prooftree
+
+\usepackage{mathpartir}
 
 %============================================================
 
@@ -38,9 +40,9 @@
 
 \theoremstyle {definition}
 
-\newtheorem {définition} {Définition} [section]
+\newtheorem {definition} {Définition} [section]
 \newtheorem {lemme} {Lemme} [section]
-\newtheorem {théorème} {Théorème} [section]
+\newtheorem {theoreme} {Théorème} [section]
 
 %============================================================
 
@@ -75,10 +77,12 @@
 
 \section {Signature}
 
-\begin {définition} [signature]
+%%%%\inferrule{toto}{totoi}
+
+\begin {definition} [signature]
 	Une signature est un ensemble de symboles de fonctions d'arité finie. \\
 	On signifie par $(f : n) \in \Sigma$ le fait que le symbole $f$ de fonction d'arité $n$ appartienne à la signature $\Sigma$.
-\end {définition}
+\end {definition}
 
 Dans toute la suite, on se donne un ensemble dénombrable $\V$ de symboles de variables ainsi qu'une signature $\Sigma$ telle que $\V \cap \Sigma = \emptyset$, $(unit : 0) \in \Sigma$, $(\cdot * \cdot : 2) \in \Sigma$ et $(\cdot \rightarrow \cdot \, : 2) \in \Sigma$.
 
@@ -86,72 +90,75 @@ Dans toute la suite, on se donne un ensemble dénombrable $\V$ de symboles de va
 
 \section {Types}
 
-\begin {définition} [type]
+\begin {definition} [type]
 	L'ensemble des types, noté $T$, est défini inductivement par :
 	\begin {center}
-		\begin {prooftree}
-			\Infer 0 {\V \subseteq T}
-		\end {prooftree}
-		~~~
-		\begin {prooftree}
-			\Hypo {(f : n) \in  \Sigma}
-			\Hypo {\forall i \in \interval 1 n,\ \tau_i \in T}
-			\Infer 2 {f (\tau_1, \dots, \tau_n) \in T}
-		\end {prooftree}
+          \inferrule{0}{\V \subseteq T}  %% voilà un exemple
+		% \begin {prooftree}
+		% 	\Infer 0 {\V \subseteq T}
+		% \end {prooftree}
+		% ~~~
+		% \begin {prooftree}
+		% 	\Hypo {(f : n) \in  \Sigma}
+		% 	\Hypo {\forall i \in \interval 1 n,\ \tau_i \in T}
+		% 	\Infer 2 {f (\tau_1, \dots, \tau_n) \in T}
+		% \end {prooftree}
 	\end {center}
-\end {définition}
+\end {definition}
 
-\begin {définition} [type-flèche]
+
+
+\begin {definition} [type-flèche]
 	Un type-flèche (ou une flèche) est un type de la forme : $\tau_1 \rightarrow \tau_2$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [mot sur $\mathbb N$]
+\begin {definition} [mot sur $\mathbb N$]
 	L'ensemble des mots sur $\mathbb N$ est défini inductivement par :
 	\begin {center}
-		\begin {prooftree}
-			\Infer 0 {\Lambda \text{ mot vide sur } \mathbb N}
-		\end {prooftree}
-		~~~
-		\begin {prooftree}
-			\Hypo {i \in \mathbb N}
-			\Hypo {p \text{ mot sur } \mathbb N}
-			\Infer 2 {i.p \text{ mot sur } \mathbb N}
-		\end {prooftree}
+		% \begin {prooftree}
+		% 	\Infer 0 {\Lambda \text{ mot vide sur } \mathbb N}
+		% \end {prooftree}
+		% ~~~
+		% \begin {prooftree}
+		% 	\Hypo {i \in \mathbb N}
+		% 	\Hypo {p \text{ mot sur } \mathbb N}
+		% 	\Infer 2 {i.p \text{ mot sur } \mathbb N}
+		% \end {prooftree}
 	\end {center}
-\end {définition}
+\end {definition}
 
-\begin {définition} [positions d'un type]
+\begin {definition} [positions d'un type]
 	L'ensemble des positions d'un type $\tau$, noté $Pos(\tau)$, est l'ensemble des mots sur $\mathbb N$ défini inductivement par :
 	\begin {center}
-		\begin {prooftree}
-			\Infer 0 {\Lambda \in Pos(\tau)}
-		\end {prooftree}
-		~~~
-		\begin {prooftree}
-			\Hypo {i \in \interval 1 n}
-			\Hypo {p \in Pos(\tau_i)}
-			\Infer 2 {i.p \in Pos(f (\tau_1, \dots, \tau_n))}
-		\end {prooftree}
+		% \begin {prooftree}
+		% 	\Infer 0 {\Lambda \in Pos(\tau)}
+		% \end {prooftree}
+		% ~~~
+		% \begin {prooftree}
+		% 	\Hypo {i \in \interval 1 n}
+		% 	\Hypo {p \in Pos(\tau_i)}
+		% 	\Infer 2 {i.p \in Pos(f (\tau_1, \dots, \tau_n))}
+		% \end {prooftree}
 	\end {center}
-\end {définition}
+\end {definition}
 
-\begin {définition} [sous-type]
+\begin {definition} [sous-type]
 	Le sous-type d'un type $\tau$ à la position $p$, noté $\tau [p]$, est défini par induction sur $p$ par :
 	\begin {align*}
 		\tau [\Lambda] &= \tau \\
 		f (\tau_1, \dots, \tau_n) [i.q] &= \tau_i [q]
 	\end {align*}
-\end {définition}
+\end {definition}
 
-\begin {définition} [affectation de types]
+\begin {definition} [affectation de types]
 	Une affectation de types est une fonction de $\V$ dans $T$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [substitution de types]
+\begin {definition} [substitution de types]
 	Une substitution de type est un endomorphisme de $T$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [substitution de types induite]
+\begin {definition} [substitution de types induite]
 	Soit $\alpha$ une affectation de types. \\
 	La substitution de types induite par $\alpha$, notée $\hat \alpha$, est la substitution de types dont la restriction à $\V$ est $\alpha$. \\
 	Autrement dit, $\hat \alpha$ est définie inductivement par :
@@ -159,67 +166,67 @@ Dans toute la suite, on se donne un ensemble dénombrable $\V$ de symboles de va
 		\hat \alpha (v) &= \alpha (v) \\
 		\hat \alpha (f (\tau_1, \dots, \tau_n)) &= f (\hat \alpha (\tau_1), \dots, \hat \alpha (\tau_n))
 	\end {align*}
-\end {définition}
+\end {definition}
 
-\begin {définition} [instance de type]
+\begin {definition} [instance de type]
 	Un type $\tau_1$ est une instance d'un type $\tau_2$, noté $\tau_2 \leqslant_T \tau_1$, s'il existe une substitution de types $\sigma$  telle que $\tau_1 = \sigma (\tau_2)$.
-\end {définition}
+\end {definition}
 
 %============================================================
 
 \section {Théorie équationnelle}
 
-\begin {définition} [axiome équationnel]
+\begin {definition} [axiome équationnel]
 	Un axiome équationnel est un couple de types de la forme $\tau_1 \doteq \tau_2$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [instance d'axiome équationnel]
+\begin {definition} [instance d'axiome équationnel]
 	Une instance d'un axiome équationnel $\tau_1 \doteq \tau_2$ est un couple de types $(\tau_1', \tau_2')$ tels que $\tau_1'$ soit une instance de $\tau_1$ et $\tau_2'$ une instance de $\tau_2$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [théorie équationnelle]
+\begin {definition} [théorie équationnelle]
 	Soit $\E$ un ensemble d'axiomes équationnels. \\
 	La théorie équationnelle induite par $\E$, notée $\cdot \Eeq \cdot$, est la plus petite congruence sur $\Sigma$ contenant toutes les instances des axiomes équationnels de $\E$. \\
 	Autrement dit, c'est la plus petite relation binaire satisfaisant les règles d'inférence :
 	\begin {center}
-		\begin {prooftree}
-			\Hypo {\tau_1 \doteq \tau_2 \in \E}
-			\Infer 1 [($\Eeq$-ax)] {\hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2)}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Infer 0 [($\Eeq$-refl)] {\tau \Eeq \tau}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Hypo {\tau_1 \Eeq \tau_2}
-			\Hypo {\tau_2 \Eeq \tau_3}
-			\Infer 2 [($\Eeq$-trans)] {\tau_1 \Eeq \tau_3}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Hypo {\tau_1 \Eeq \tau_2}
-			\Infer 1 [($\Eeq$-sym)] {\tau_2 \Eeq \tau_1}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Hypo {(f : n) \in \Sigma}
-			\Hypo {\tau_i \Eeq \tau_i'}
-			\Infer 2 [($\Eeq$-congr)] {f (\tau_1, \dots, \tau_i, \dots, \tau_n) \Eeq f (\tau_1, \dots, \tau_i', \dots, \tau_n)}
-		\end {prooftree}
+		% \begin {prooftree}
+		% 	\Hypo {\tau_1 \doteq \tau_2 \in \E}
+		% 	\Infer 1 [($\Eeq$-ax)] {\hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2)}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Infer 0 [($\Eeq$-refl)] {\tau \Eeq \tau}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Hypo {\tau_1 \Eeq \tau_2}
+		% 	\Hypo {\tau_2 \Eeq \tau_3}
+		% 	\Infer 2 [($\Eeq$-trans)] {\tau_1 \Eeq \tau_3}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Hypo {\tau_1 \Eeq \tau_2}
+		% 	\Infer 1 [($\Eeq$-sym)] {\tau_2 \Eeq \tau_1}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Hypo {(f : n) \in \Sigma}
+		% 	\Hypo {\tau_i \Eeq \tau_i'}
+		% 	\Infer 2 [($\Eeq$-congr)] {f (\tau_1, \dots, \tau_i, \dots, \tau_n) \Eeq f (\tau_1, \dots, \tau_i', \dots, \tau_n)}
+		% \end {prooftree}
 	\end {center}
-\end {définition}
+\end {definition}
 
-\begin {définition} [$\E$-équivalence]
+\begin {definition} [$\E$-équivalence]
 	Soit $\E$ un ensemble d'axiomes équationnels. \\
 	Deux types $\tau_1$ et $\tau_2$ sont $\E$-équivalents {\ssi} $\tau_1 \Eeq \tau_2$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [$\E$-unifiabilité]
+\begin {definition} [$\E$-unifiabilité]
 	Soit $\E$ un ensemble d'axiomes équationnels. \\
 	Deux types $\tau_1$ et $\tau_2$ sont $\E$-unifiables, noté $\tau_1 \bowtie_\E \tau_2$, \ssi :
 	\[ \exists \alpha \in \mathscr F (\mathscr V, T),\ \hat \alpha (\tau_1) \Eeq \hat \alpha (\tau_2) \]
-\end {définition}
+\end {definition}
 
 Dans toute la suite, on s'intéressa à l'ensemble $\E$ des axiomes équationnels (où $x$, $y$ et $z$ sont des variables) :
 \begin {align*}
@@ -234,13 +241,13 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 
 \section {Premier critère}
 
-\begin {définition} [tête d'un type]
+\begin {definition} [tête d'un type]
 	La tête d'un type, notée $\uparrow \cdot$, est définie inductivement par :
 	\begin {align*}
 		\uparrow (\tau_1 \rightarrow \tau_2) &=\ \uparrow \tau_2 \\
 		\uparrow \tau &= \tau
 	\end {align*}
-\end {définition}
+\end {definition}
 
 \begin {lemme} \label {=E-tête}
 	Si deux types sont équivalents, leurs têtes le sont aussi.
@@ -260,10 +267,10 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 	$f_1 (\tau^1_1, \dots, \tau^1_{n_1}) = f_2 (\tau^2_1, \dots, \tau^2_{n_2}) \implies f_1 = f_2$
 \end {lemme}
 
-\begin {théorème}
+\begin {theoreme}
 	$\forall \tau_1 \in T,\ \forall \tau_2 \in T,$ \\
 	$\tau_1 \bowtie \tau_2 \wedge \left( \uparrow \tau_1 \right) [\Lambda] = f_1 \notin \V \wedge \left( \uparrow \tau_2 \right) [\Lambda] = f_2 \notin \V \implies f_1 = f_2$
-\end {théorème}
+\end {theoreme}
 
 \begin {preuve}
 	Par hypothèse, il existe une affectation de types $\alpha$ telle que :
@@ -278,7 +285,7 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 		\tau_2 &= f_2 (\tau^2_1, \dots \tau^2_{n_2})
 	\end {align*}
 	Par le lemme \ref {tête-non-flèche}, $f_1$ et $f_2$ sont différents de $\cdot \rightarrow \cdot$. \\
-	Par définition de $\uparrow \cdot$ et $\hat \alpha$, il vient alors :
+	Par definition de $\uparrow \cdot$ et $\hat \alpha$, il vient alors :
 	\[ f_1 (\hat \alpha (\tau^1_1), \dots, \hat \alpha (\tau^1_{n_1})) \Eeq f_2 (\hat \alpha (\tau^2_1), \dots, \hat \alpha (\tau^2_{n_2})) \]
 	Enfin, le lemme \ref {cons-=E} donne :
 	\[ f_1 = f_2 \]
@@ -288,7 +295,7 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 
 \section {Deuxième critère}
 
-\begin {définition} [multiplicité de symbole de fonctions]
+\begin {definition} [multiplicité de symbole de fonctions]
 	La multiplicité d'un symbole de fonction $f$, notée $\mu_f$, est définie inductivement par :
 	\begin {align*}
 		\mu_f (\tau_1 \rightarrow \tau_2) &= \mu_f' (\tau_1) + \mu_f (\tau_2) \\
@@ -297,9 +304,9 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 		\mu_f' (f (\tau_1, \dots, \tau_n)) &= 1 \\
 		\mu_f' (\tau) &= 0
 	\end {align*}
-\end {définition}
+\end {definition}
 
-\begin {définition} [$\V$-multiplicité]
+\begin {definition} [$\V$-multiplicité]
 	La $\V$-multiplicité est définie inductivement par :
 	\begin {align*}
 		\mu_\V (\tau_1 \rightarrow \tau_2) &= \mu_\V' (\tau_1) + \mu_\V (\tau_2) \\
@@ -308,11 +315,11 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 		\mu_\V' (\tau_1 * \tau_2) &= \mu_\V' (\tau_1) + \mu_\V' (\tau_2) \\
 		\mu_\V' (\tau) &= 0
 	\end {align*}
-\end {définition}
+\end {definition}
 
-\begin {définition} [type simpe]
+\begin {definition} [type simpe]
 	Un type $\tau$ est simple si sa $\V$-multiplicité est nulle.
-\end {définition}
+\end {definition}
 
 \begin {lemme} \label {mu-=E}
 	Si deux type $\tau_1$ et $\tau_2$ sont équivalents, alors, pour tout symbole de fonction $f$, on a : $\mu_f (\tau_1) = \mu_f (\tau_2)$.
@@ -326,10 +333,10 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 	La multiplicité de tout symbole de fonction $f$ dans un type est inférieure à celle de toute instance de ce type.
 \end {lemme}
 
-\begin {théorème}
+\begin {theoreme}
 	Soit deux types $\tau_1$ et $\tau_2$. \\
 	Si $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ simple, alors la multiplicité de tout symbole de fonction dans $\tau_1$ est supérieure à celle dans $\tau_2$.
-\end {théorème}
+\end {theoreme}
 
 \begin {preuve}
 	Par hypothèse, il existe une affectation $\alpha$ telle que :
@@ -349,40 +356,40 @@ On considérera également la théorie équationnelle $\cdot \Eeq \cdot$ induite
 
 \section {Normalisation}
 
-\begin {définition} [multi-ensemble]
+\begin {definition} [multi-ensemble]
 	Un multi-ensemble sur un ensemble $X$ est une fonction de $X$ dans $\mathbb N$. \\
 	L'ensemble des multi-ensembles sur $X$ est noté $X^\sharp$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [domaine de multi-ensemble]
+\begin {definition} [domaine de multi-ensemble]
 	Le domaine d'un multi-ensemble sur $X$ est l'ensemble des éléments de $X$ dont l'image est non-nulle. \\
 	Si le domaine d'un multi-ensemble $m$ est fini, on note ce dernier $\{ x_1 : m (x_1) ; \dots ; x_n : m (x_n) \}$ où $(x_i)_{i \in \interval 1 n}$ est le domaine de $m$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [somme de multi-ensembles]
+\begin {definition} [somme de multi-ensembles]
 	La somme de deux multi-ensemble sur $X$ $m_1$ et $m_2$, notée $m_1 +_m m_2$, est le multi-ensemble $x \mapsto m_1 (x) + m_2 (x)$.
-\end {définition}
+\end {definition}
 
-\begin {définition} [type normalisé]
+\begin {definition} [type normalisé]
 	L'ensemble des types normalisés (ou $\nu$-types), noté $N$, est défini inductivement par :
 	\begin {center}
-		\begin {prooftree}
-			\Infer 0 {\V \subseteq N}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Hypo {(f : n) \in  \Sigma}
-			\Hypo {\forall i \in \interval 1 n,\ \nu_i \in N}
-			\Infer 2 {f (\nu_1, \dots, \nu_n) \in N}
-		\end {prooftree}
-		\\[1em]
-		\begin {prooftree}
-			\Hypo {m \in N^\sharp}
-			\Hypo {\nu \in N}
-			\Infer 2 {m \rightarrow_\nu \nu \in N}
-		\end {prooftree}
+		% \begin {prooftree}
+		% 	\Infer 0 {\V \subseteq N}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Hypo {(f : n) \in  \Sigma}
+		% 	\Hypo {\forall i \in \interval 1 n,\ \nu_i \in N}
+		% 	\Infer 2 {f (\nu_1, \dots, \nu_n) \in N}
+		% \end {prooftree}
+		% \\[1em]
+		% \begin {prooftree}
+		% 	\Hypo {m \in N^\sharp}
+		% 	\Hypo {\nu \in N}
+		% 	\Infer 2 {m \rightarrow_\nu \nu \in N}
+		% \end {prooftree}
 	\end {center}
-\end {définition}
+\end {definition}
 
 %============================================================
 
