@@ -1,20 +1,31 @@
 type t [@@ocaml.immediate]
-
-module Gen : sig
-
-  type var = t
-  type t
-
-  val make : [< `Query | `Data ] -> t
-  val gen : t -> var
-
-end
+type var = t
 
 val equal : t -> t -> Bool.t
 val compare : t -> t -> Int.t
 
 module Map : CCMap.S with type key = t
-module Set: CCSet.S with type elt = t
 module HMap : CCHashtbl.S with type key = t
+module Set : CCSet.S with type elt = t
+
+module Namespace : sig
+
+  type t = Data | Query
+
+  val seed : t -> var
+  val next : var -> var
+  val get : var -> t
+  val count : var -> Int.t
+
+end
+
+module Gen : sig
+
+  type t
+
+  val make : Namespace.t -> t
+  val gen : t -> var
+
+end
 
 val pp : t Fmt.t [@@ocaml.toplevel_printer]

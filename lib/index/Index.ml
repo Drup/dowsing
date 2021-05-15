@@ -25,7 +25,7 @@ let iter_libindex hcons pkgs_dirs k =
     | LibIndex.Value ->
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let out_ty = out_ty.oval_type in
-        let env = Type.Env.from_hashcons `Data hcons in
+        let env = Type.Env.make Data ~hcons in
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
         let orig_lid = LongIdent.of_list @@ info.orig_path @ [ info.name ] in

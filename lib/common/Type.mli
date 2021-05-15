@@ -110,8 +110,7 @@ module Env : sig
     hcons : Hashcons.t ;
   }
 
-  val make : [< `Query | `Data] -> t
-  val from_hashcons : [< `Query | `Data] -> Hashcons.t -> t
+  val make : ?hcons:Hashcons.t -> Variable.Namespace.t -> t
 
 end
 

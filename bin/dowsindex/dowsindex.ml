@@ -135,7 +135,7 @@ let () = Args.add_cmd (module struct
       raise @@ Arg.Bad "too many arguments"
 
   let main all_unifs str1 str2 =
-    let env = Type.Env.make `Query in
+    let env = Type.Env.make Query in
     let ty1 = type_of_string env str1 in
     let ty2 = type_of_string env str2 in
     Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp ty1) ;
@@ -246,7 +246,7 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
-    let env = Type.Env.make `Query in
+    let env = Type.Env.make Query in
     let ty = type_of_string env str in
     let aux ?stats0 iter_idx =
       let tbl = ref Measure.Map.empty in
@@ -339,14 +339,14 @@ let () = Args.add_cmd (module struct
       with Sys_error _ ->
         error () ~msg:(Fmt.str "cannot open file '%s'." file)
     in
-    let env = Type.Env.make `Query in
+    let env = Type.Env.make Query in
     let ty = type_of_string env str in
     let res =
       let find = if exhaustive then Index.find else Index.find_with in
       find idx env ty
-      |> Iter.sort ~cmp:(fun (ty1, _info1, unif1) (ty2, _info2, unif2) ->
+      |> Iter.sort ~cmp:(fun (ty1, _, unif1) (ty2, _, unif2) ->
           CCOrd.(Unification.Subst.compare unif1 unif2
-                 <?> (Type.compare, ty1, ty2))
+            <?> (Type.compare, ty1, ty2))
       )
     in
     let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in

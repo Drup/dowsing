@@ -53,8 +53,7 @@ module Kind = struct
     let compare = compare
   end)
 
-  let pp fmt t =
-    Fmt.string fmt @@ to_string t
+  let pp = Fmt.of_to_string to_string
 
 end
 
@@ -154,8 +153,8 @@ end = struct
     if t1 == t2 then 0
     else
       match t1, t2 with
-      | Var t1, Var t2 ->
-          Variable.compare t1 t2
+      | Var var1, Var var2 ->
+          Variable.compare var1 var2
       | Constr (lid1, params1), Constr (lid2, params2) ->
           CCOrd.(LongIdent.compare lid1 lid2
             <?> (CCArray.compare compare, params1, params2))
@@ -163,10 +162,10 @@ end = struct
           let cmp = compare in
           CCOrd.(cmp ret1 ret2
             <?> (MSet.compare, param1, param2))
-      | Tuple t1, Tuple t2 ->
-          MSet.compare t1 t2
-      | Other t1, Other t2 ->
-          CCInt.compare t1 t2
+      | Tuple elts1, Tuple elts2 ->
+          MSet.compare elts1 elts2
+      | Other i1, Other i2 ->
+          CCInt.compare i1 i2
       | _ ->
           CCInt.compare (to_int t1) (to_int t2)
 
@@ -291,12 +290,8 @@ module Env = struct
     hcons : Hashcons.t ;
   }
 
-  let make dir = {
-    var_gen = Variable.Gen.make dir ;
-    hcons = Hashcons.make () ;
-  }
-  let from_hashcons dir hcons = {
-    var_gen = Variable.Gen.make dir ;
+  let make ?(hcons = Hashcons.make ()) namespace = {
+    var_gen = Variable.Gen.make namespace ;
     hcons ;
   }
 
