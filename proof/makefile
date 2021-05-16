@@ -1,9 +1,9 @@
 .PHONY : all
-all : agda latex
+all : coq latex
 
-.PHONY : agda
-agda :
-	@ $(MAKE) -C agda
+.PHONY : coq
+coq :
+	@ $(MAKE) -C coq
 
 .PHONY : latex
 latex :
@@ -11,5 +11,5 @@ latex :
 
 .PHONY : clean
 clean :
-	@ $(MAKE) -C agda clean
+	@ $(MAKE) -C coq clean
 	@ $(MAKE) -C latex clean
