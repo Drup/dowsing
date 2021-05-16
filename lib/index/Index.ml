@@ -10,9 +10,9 @@ module Trie =
 type t = Info.t Trie.t
 
 type iter = (Type.t * Info.t) Iter.t
-type iter' = (Type.t * Info.t * Unification.Subst.t) Iter.t
+type iter_with_unifier = (Type.t * Info.t * Unification.Subst.t) Iter.t
 
-(* Temporary fix to avoid issues with LibIndex and name mangling *)
+(* temporary fix to avoid issues with LibIndex and name mangling *)
 let () = Printtyp.Naming_context.enable false
 
 let iter_libindex hcons pkgs_dirs k =
@@ -29,7 +29,7 @@ let iter_libindex hcons pkgs_dirs k =
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
         let orig_lid = LongIdent.of_list @@ info.orig_path @ [ info.name ] in
-        k (ty, orig_lid, {Info.Signature. lid })
+        k (ty, orig_lid, Info.Signature.{ lid })
     | _ -> ()
   )
 

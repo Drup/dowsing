@@ -4,7 +4,7 @@ module type NODE = sig
 
   val empty : 'v t
   val singleton : Type.t -> 'v -> 'v t
-  val add_or_update : Type.t -> ('v option -> 'v) -> 'v t -> 'v t
+  val add_or_update : Type.t -> ('v Option.t -> 'v) -> 'v t -> 'v t
   val iter : 'v t -> (Type.t * 'v) Iter.t
   val iter_with : Type.t -> 'v t -> (Type.t * 'v) Iter.t
 
@@ -16,8 +16,7 @@ module Leaf : NODE = struct
 
   let empty = Type.Map.empty
   let singleton key v = Type.Map.singleton key v
-  let add_or_update k f m =
-    Type.Map.update k (fun v -> Some (f v)) m
+  let add_or_update k f = Type.Map.update k @@ fun v -> Some (f v)
   let iter = Type.Map.to_iter
   let iter_with _ = iter
 
@@ -48,7 +47,8 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
     |> FeatMap.values
     |> Iter.flat_map Sub.iter
 
-  (* TODO: this should be more clever to avoid having
+  (*
+     TODO: this should be more clever to avoid having
      to walk through the whole feature dictionary.
      In theory, we should be able to make `compare` and `compatible`
      ... compatible, so that we can make a range query.

@@ -3,15 +3,15 @@ module Info = Info
 type t
 
 type iter = (Type.t * Info.t) Iter.t
-type iter' = (Type.t * Info.t * Unification.Subst.t) Iter.t
+type iter_with_unifier = (Type.t * Info.t * Unification.Subst.t) Iter.t
 
 val make : String.t List.t -> t
 
 val iter : t -> iter
 val iter_with : t -> Type.t -> iter
 
-val find : t -> Type.Env.t -> Type.t -> iter'
-val find_with : t -> Type.Env.t -> Type.t -> iter'
+val find : t -> Type.Env.t -> Type.t -> iter_with_unifier
+val find_with : t -> Type.Env.t -> Type.t -> iter_with_unifier
 
 val load : String.t -> t
 val save : t -> String.t -> Unit.t

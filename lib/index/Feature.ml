@@ -8,9 +8,9 @@ module type S = sig
 
 end
 
-(* Strict type equality.
+(*
+   Strict type equality.
    Mostly used to obtain equivalence classes modulo AC.
-
    Obviously, we can't say anything about compatibility
 *)
 module TypeEq : S = struct
@@ -19,7 +19,6 @@ module TypeEq : S = struct
   let compare = Type.compare
   let compatible ~query:_ ~data:_ = true
 end
-
 
 module Head : S = struct
 

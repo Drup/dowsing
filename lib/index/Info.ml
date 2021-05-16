@@ -1,17 +1,19 @@
-
 module Signature = struct
+
   type t = {
     lid : LongIdent.t ;
   }
+
   let compare i1 i2 = LongIdent.compare_humans i1.lid i2.lid
   let pp fmt p = LongIdent.pp fmt p.lid
+
 end
 
 module Slot = struct
 
-  include CCSet.Make(Signature)
+  include CCSet.Make (Signature)
 
-  let prune sigs = 
+  let prune sigs =
     let not_internal {Signature. lid } =
       not @@ Iter.exists (CCString.mem ~start:0 ~sub:"__") @@ LongIdent.to_iter lid
     in
@@ -23,16 +25,18 @@ module Slot = struct
 
   let compare = CCOrd.map representative Signature.compare
   let pp = Fmt.using representative Signature.pp
+
 end
-  
+
 type t = Slot.t LongIdent.Map.t
 
 let singleton lid s =
   LongIdent.Map.(add lid (Slot.singleton s) empty)
 
-let add lid s (t : t) =
+let add lid s t =
   let aux cur_sigs =
-    let new_sigs = match cur_sigs with
+    let new_sigs =
+      match cur_sigs with
       | None -> Slot.singleton s
       | Some sigs -> Slot.add s sigs
     in
