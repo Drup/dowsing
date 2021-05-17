@@ -1,0 +1,72 @@
+\documentclass[a4paper,11pt]{scrartcl}
+\usepackage{minted}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{xspace}
+\usepackage{fullpage}
+
+\usepackage[scaled=0.8]{DejaVuSansMono} % A decent mono font
+\usepackage{enumitem}
+\setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+\setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+
+
+\usepackage[style=numeric,sorting=ynt,natbib=true]{biblatex}
+\addbibresource{diff.bib}
+
+\usepackage[bookmarks,colorlinks=true,citecolor=red]{hyperref}
+\usepackage[noabbrev,capitalize]{cleveref}
+
+\newcommand{\error}[1]{\textcolor{red}{#1}}
+\newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
+
+\title{The isomorphisms are back!}
+\subtitle{Smart indexing for search by types modulo isomorphism}
+\author{
+  Clement \textsc{Alain}\\
+  EnsL, UCBL, CNRS, LIP\\
+  EMAIL
+  \and
+  \and
+  Gabriel \textsc{Radanne}\\
+  Inria, EnsL, UCBL, CNRS, LIP\\
+  \href{mailto:gabriel.radanne@inria.fr}
+  {\nolinkurl{gabriel.radanne@inria.fr}}
+  \and
+  Laure \textsc{Gonnord}\\
+  Univ Lyon, EnsL, UCBL, CNRS, Inria, LIP\\
+  \href{mailto:laure.gonnord@ens-lyon.fr}
+  {\nolinkurl{laure.gonnord@ens-lyon.fr}}
+}
+\date{}
+\begin{document}
+\maketitle
+
+\begin{abstract}
+ABSTRACT
+\end{abstract}
+
+\section{Motivation}
+
+WHY?
+
+\begin{minted}{ocaml}
+(* OCaml code *)
+\end{minted}
+
+\section{Reminder on search by type modulo isomorphisms}
+
+\section{Fancy indexes and where to find them}
+
+\section{Conclusion}
+
+\printbibliography
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% TeX-command-extra-options: "-shell-escape"
+%%% End:
