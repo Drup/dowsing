@@ -3,7 +3,7 @@ name: Build
 on:
   - pull_request
   - push
-
+  
 jobs:
   build-native:
     strategy:
@@ -29,5 +29,5 @@ jobs:
       - run: opam pin add . --no-action
       - run: opam install . --deps-only --with-test
 
-      - run: make
-      - run: make test
+      - run: opam exec -- dune build
+      - run: opam exec -- dune runtest
