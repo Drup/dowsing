@@ -23,6 +23,7 @@ doc :
 watch :
 	@ $(DUNE) build @all -w
 
-.PHONY : proof
-proof :
-	@ $(MAKE) -C proof
+.PHONY : tex
+tex :
+	@ $(MAKE) -C proof/latex
+	@ $(MAKE) -C tex/mlworkshop
