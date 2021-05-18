@@ -1,3 +1,6 @@
+From Coq.Arith Require Import PeanoNat.
+From Coq.Arith Require Plus.
+
 Require Signature.
 Require Var.
 Require Vec.
@@ -11,6 +14,10 @@ Inductive Typ : Set :=
 
 Infix "**" := Prod (at level 20, right associativity).
 Infix "-->" := Arrow (at level 30, right associativity).
+
+Definition IsVar ty :=
+  exists v, ty = Var v
+.
 
 Definition IsProd ty :=
   exists ty1 ty2, ty = ty1 ** ty2
@@ -283,7 +290,7 @@ Fixpoint mu_cons f ty :=
 
 Fixpoint mu_var' ty :=
   match ty with
-  | Var v       => 1
+  | Var _       => 1
   | ty1 ** ty2  => mu_var' ty1 + mu_var' ty2
   | _           => 0
   end
@@ -291,6 +298,7 @@ Fixpoint mu_var' ty :=
 
 Fixpoint mu_var ty :=
   match ty with
+  | Var _       => 1
   | ty1 --> ty2 => mu_var' ty1 + mu_var ty2
   | _           => 0
   end
@@ -299,26 +307,104 @@ Fixpoint mu_var ty :=
 Definition Simple ty := mu_var ty = 0
 .
 
+Definition Simple' ty := mu_var' ty = 0
+.
+
 Lemma mu_cons_equiv :
   forall {ty1 ty2}, ty1 ~ ty2 ->
   forall f, mu_cons f ty1 = mu_cons f ty2
 .
 Proof.
-Admitted.
+  intros.
+  induction H ; try reflexivity.
+  - destruct H ; simpl ; try reflexivity.
+    symmetry. apply Nat.add_assoc.
+  - transitivity (mu_cons f ty2).
+    assumption.
+    assumption.
+  - symmetry.
+    assumption.
+Qed.
+
+Lemma simple_not_var :
+  forall {ty}, Simple ty -> ~ IsVar ty
+.
+Proof.
+  intros * ty_simple [v ty_eq_var].
+  subst.
+  inversion ty_simple.
+Qed.
+
+Lemma mu_cons'_subst_simple' :
+  forall {ty}, Simple' ty ->
+  forall f sigma, mu_cons' f (subst sigma ty) = mu_cons' f ty
+.
+Proof.
+  intros.
+  unfold Simple' in H.
+  induction ty ; simpl ; simpl in H.
+  - discriminate.
+  - apply Plus.plus_is_O in H.
+    destruct H.
+    specialize (IHty1 H).
+    specialize (IHty2 H0).
+    rewrite IHty1.
+    rewrite IHty2.
+    reflexivity.
+  - reflexivity.
+  - reflexivity.
+Qed.
 
 Lemma mu_cons_subst_simple :
   forall {ty}, Simple ty ->
   forall f sigma, mu_cons f (subst sigma ty) = mu_cons f ty
 .
 Proof.
-Admitted.
+  intros.
+  induction ty ; simpl.
+  - exfalso.
+    apply (simple_not_var H).
+    exists v. reflexivity.
+  - reflexivity.
+  - unfold Simple in H. simpl in H.
+    apply Plus.plus_is_O in H.
+    destruct H.
+    specialize (IHty2 H0).
+    rewrite IHty2.
+    rewrite (mu_cons'_subst_simple' H).
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Lemma mu_cons'_subst :
+  forall ty f sigma,
+  mu_cons' f (subst sigma ty) >= mu_cons' f ty
+.
+Proof.
+  intros.
+  induction ty ; simpl.
+  - apply le_0_n.
+  - apply Plus.plus_le_compat.
+    assumption.
+    assumption.
+  - apply le_0_n.
+  - apply le_n.
+Qed.
 
 Lemma mu_cons_subst :
   forall ty f sigma,
   mu_cons f (subst sigma ty) >= mu_cons f ty
 .
 Proof.
-Admitted.
+  intros.
+  induction ty ; simpl.
+  - apply le_0_n.
+  - apply le_0_n.
+  - apply Plus.plus_le_compat.
+    apply mu_cons'_subst.
+    apply IHty2.
+  - apply le_n.
+Qed.
 
 Theorem feature_tail :
   forall {ty1}, Simple ty1 ->
