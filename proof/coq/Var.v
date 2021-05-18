@@ -1,4 +1,4 @@
-Require String.
+From Coq Require String.
 
 Definition Var := String.string.
 
