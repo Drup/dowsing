@@ -1,28 +1,41 @@
-Require Export Typ.
+Require Signature.
+Require Typ.
+Require Var.
 Require Vec.
+
+Inductive NTypNonUnit : Set :=
+  | Var : Var.Var -> NTypNonUnit
+  | Prod : NTypNonUnit -> NTypNonUnit -> NTypNonUnit
+  | Arrow : NTyp -> NTyp -> NTypNonUnit
+  | Cons : forall f, Vec.t NTyp (Signature.arity f) -> NTypNonUnit
+
+with NTyp : Set :=
+  | Unit : NTyp
+  | NonUnit : NTypNonUnit -> NTyp
+.
 
 Fixpoint normalize ty :=
   match ty with
-  | Var _           => ty
-  | Unit            => Unit
-  | ty1 ** ty2 =>
+  | Typ.Var v => NonUnit (Var v)
+  | Typ.Unit => Unit
+  | Typ.Prod ty1 ty2 =>
       match normalize ty1, normalize ty2 with
-      | Unit, Unit  => Unit
-      | Unit, ty    => ty
-      | ty, Unit    => ty
-      | ty1, ty2    => ty1 ** ty2
+      | Unit, Unit => Unit
+      | Unit, nty => nty
+      | nty, Unit => nty
+      | NonUnit nty1, NonUnit nty2 => NonUnit (Prod nty1 nty2)
       end
-  | ty1 --> ty2     => normalize ty1 --> normalize ty2
-  | Cons f tys      => Cons f (Vec.map normalize tys)
+  | Typ.Arrow ty1 ty2 => NonUnit (Arrow (normalize ty1) (normalize ty2))
+  | Typ.Cons f tys => NonUnit (Cons f (Vec.map normalize tys))
   end
 .
 
-Theorem normalize_correctness :
-  forall ty1 ty2,
-  ty1 ~ ty2 <-> normalize ty1 ~ normalize ty2
-.
-Proof.
-Admitted.
+(* Theorem normalize_correctness : *)
+(*   forall ty1 ty2, *)
+(*   Typ.Equivalent ty1 ty2 <-> normalize ty1 ~ normalize ty2 *)
+(* . *)
+(* Proof. *)
+(* Admitted. *)
 
 (*
    feature 1: head
@@ -30,7 +43,7 @@ Admitted.
 
 Fixpoint head ty :=
   match ty with
-  | _ --> ty => head ty
+  | NonUnit (Arrow _ nty) => head nty
   | _ => ty
   end
 .
