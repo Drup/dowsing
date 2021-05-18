@@ -8,3 +8,8 @@ auto
 *.toc
 *.vrb
 *.pdf
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+_minted-*/

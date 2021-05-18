@@ -1,15 +1,15 @@
+RM := rm -f
+
+COQC := coqc
+
 .PHONY : all
-all : coq latex
+all : TypWithoutUnit.vo
 
-.PHONY : coq
-coq :
-	@ $(MAKE) -C coq
+TypWithoutUnit.vo : Signature.vo Var.vo Vec.vo
 
-.PHONY : latex
-latex :
-	@ $(MAKE) -C latex
+%.vo : %.v
+	@ $(COQC) $<
 
 .PHONY : clean
 clean :
-	@ $(MAKE) -C coq clean
-	@ $(MAKE) -C latex clean
+	$(RM) *.glob *.vo{,k,s}
