@@ -11,10 +11,6 @@ build :
 test :
 	@ $(DUNE) runtest --no-buffer
 
-.PHONY : clean
-clean :
-	@ $(DUNE) clean
-
 .PHONY : doc
 doc :
 	@ $(DUNE) build @doc
@@ -23,7 +19,16 @@ doc :
 watch :
 	@ $(DUNE) build @all -w
 
+.PHONY : proof
+proof :
+	@ $(MAKE) -C proof
+
 .PHONY : tex
 tex :
-	@ $(MAKE) -C proof/latex
-	@ $(MAKE) -C tex/mlworkshop
+	@ $(MAKE) -C tex
+
+.PHONY : clean
+clean :
+	@ $(DUNE) clean
+	@ $(MAKE) -C proof clean
+	@ $(MAKE) -C tex clean
