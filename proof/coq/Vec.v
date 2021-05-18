@@ -1,4 +1,4 @@
-Require Vector.
+From Coq Require Vector.
 
 Include Vector.
 
