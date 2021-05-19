@@ -1,8 +1,15 @@
 RM := rm -f
 PDFLATEX := pdflatex -shell-escape
+BIBER := biber
 
 .PHONY : all
 all : $(TARGET).pdf
+
+%.pdf : %.tex %.bib
+	$(PDFLATEX) $<
+	$(BIBER) $*
+	$(PDFLATEX) $<
+	$(PDFLATEX) $<
 
 %.pdf : %.tex
 	$(PDFLATEX) $<
