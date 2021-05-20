@@ -1,4 +1,4 @@
-let env = Type.Env.make `Query
+let env = Type.Env.make Query
 
 let all_tests = ref []
 let test_cnt = ref 0
