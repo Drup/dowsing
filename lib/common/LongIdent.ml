@@ -53,11 +53,10 @@ end)
 
 let pp = Fmt.hbox Pprintast.longident
 
-let compare_length_lexi s1 s2 =
-  CCOrd.(map CCString.length int s1 s2
-    <?> (string, s1, s2))
-
-(* Crude way of comparing, but useful for users *)
-let compare_humans lid1 lid2 =
-  let f = Fmt.strf "%a@." pp in
-  CCOrd.map f compare_length_lexi lid1 lid2
+(* crude way of comparing, but useful for users *)
+let compare_humans =
+  let compare_length_lexi str1 str2 =
+    CCOrd.(map CCString.length int str1 str2
+      <?> (string, str1, str2))
+  in
+  CCOrd.map (Fmt.to_to_string pp) compare_length_lexi

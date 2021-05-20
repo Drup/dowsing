@@ -14,7 +14,7 @@ module Subst : sig
   type t
 
   val size : t -> Int.t
-  val compare : t -> t -> Int.t
+  val compare : t CCOrd.t
 
   val pp : t Fmt.t [@@ocaml.toplevel_printer]
 

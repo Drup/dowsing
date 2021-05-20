@@ -3,7 +3,7 @@ module type S = sig
   type t
 
   val compute : Type.t -> t
-  val compare : t -> t -> Int.t
+  val compare : t CCOrd.t
   val compatible : query:t -> data:t -> Bool.t
 
 end
@@ -14,10 +14,13 @@ end
    Obviously, we can't say anything about compatibility
 *)
 module TypeEq : S = struct
+
   type t = Type.t
+
   let compute x = x
   let compare = Type.compare
   let compatible ~query:_ ~data:_ = true
+
 end
 
 module Head : S = struct
@@ -52,41 +55,36 @@ end
 
 module Tail : S = struct
 
-  type order = Eq | GEq
-
   type t = {
     (* type has at least one spine variable? *)
-    ord : order ;
+    has_var : Bool.t ;
     (* number of tail spine non-variables *)
     cnt : Int.t ;
   }
 
   let compute ty =
-    let spine_var_cnt = Measure.make SpineVarCount ty in
-    let ord = if spine_var_cnt = 0 then Eq else GEq in
+    let has_var = Measure.make SpineVarCount ty > 0 in
     let cnt = Measure.make TailSpineNonVarCount ty in
-    { ord ; cnt }
+    { has_var ; cnt }
 
   let compare t1 t2 =
-    CCOrd.(compare t1.ord t2.ord
+    CCOrd.(bool t1.has_var t2.has_var
       <?> (int, t1.cnt, t2.cnt))
 
   let compatible ~query:t1 ~data:t2 =
-    match t1.ord, t2.ord with
-    | Eq,  Eq  -> t1.cnt  = t2.cnt
-    | Eq,  GEq -> t1.cnt <= t2.cnt
-    | GEq, Eq  -> t1.cnt >= t2.cnt
-    | GEq, GEq -> true
+    match t1.has_var, t2.has_var with
+    | false,  false -> t1.cnt  = t2.cnt
+    | false,  true  -> t1.cnt <= t2.cnt
+    | true,   false -> t1.cnt >= t2.cnt
+    | true,   true  -> true
 
 end
 
 module Tail' = struct
 
-  type order = Eq | GEq
-
   type t = {
     (* type has at least one spine variable? *)
-    ord : order ;
+    has_var : Bool.t ;
     (* number of tail spine non-variables *)
     cnt : Int.t ;
     (* kinds of tail spine non-variables *)
@@ -94,8 +92,7 @@ module Tail' = struct
   }
 
   let compute ty =
-    let spine_var_cnt = Measure.make SpineVarCount ty in
-    let ord = if spine_var_cnt = 0 then Eq else GEq in
+    let has_var = Measure.make SpineVarCount ty > 0 in
     let cnt = ref 0 in
     let tl =
       Type.MSet.fold (fun ty kinds ->
@@ -107,19 +104,19 @@ module Tail' = struct
           kinds
       ) (Type.tail ty) Type.Kind'.MSet.empty
     in
-    { ord ; cnt = ! cnt ; tl }
+    { has_var ; cnt = ! cnt ; tl }
 
   let compare t1 t2 =
-    CCOrd.(compare t1.ord t2.ord
+    CCOrd.(bool t1.has_var t2.has_var
       <?> (int, t1.cnt, t2.cnt)
       <?> (Type.Kind'.MSet.compare, t1.tl, t2.tl))
 
   let compatible ~query:t1 ~data:t2 =
-    match t1.ord, t2.ord with
-    | Eq,  Eq  -> t1.cnt  = t2.cnt && Type.Kind'.MSet.equal    t1.tl t2.tl
-    | Eq,  GEq -> t1.cnt >= t2.cnt && Type.Kind'.MSet.contains t1.tl t2.tl
-    | GEq, Eq  -> t2.cnt >= t1.cnt && Type.Kind'.MSet.contains t2.tl t1.tl
-    | GEq, GEq -> true
+    match t1.has_var, t2.has_var with
+    | false,  false -> t1.cnt  = t2.cnt && Type.Kind'.MSet.equal    t1.tl t2.tl
+    | false,  true  -> t1.cnt >= t2.cnt && Type.Kind'.MSet.contains t1.tl t2.tl
+    | true,   false -> t2.cnt >= t1.cnt && Type.Kind'.MSet.contains t2.tl t1.tl
+    | true,   true  -> true
 
 end
 

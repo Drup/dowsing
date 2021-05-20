@@ -1,8 +1,8 @@
 type t = Int.t
 type var = t
 
-let equal = CCInt.equal
 let compare = CCInt.compare
+let equal = CCInt.equal
 
 module Map = CCMap.Make (CCInt)
 module HMap = CCHashtbl.Make (CCInt)

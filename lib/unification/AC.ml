@@ -221,9 +221,9 @@ end = struct
     (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
     (* ) ; *)
     let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
-    fun k -> 
+    fun k ->
       Variable.HMap.iter
-        (fun key l -> 
+        (fun key l ->
            let pure_term = make_term buffer l in
            k (key, pure_term))
         unifiers

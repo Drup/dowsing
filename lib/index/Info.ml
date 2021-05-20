@@ -4,8 +4,8 @@ module Signature = struct
     lid : LongIdent.t ;
   }
 
-  let compare i1 i2 = LongIdent.compare_humans i1.lid i2.lid
-  let pp fmt p = LongIdent.pp fmt p.lid
+  let compare t1 t2 = LongIdent.compare_humans t1.lid t2.lid
+  let pp fmt t = LongIdent.pp fmt t.lid
 
 end
 
@@ -14,15 +14,13 @@ module Slot = struct
   include CCSet.Make (Signature)
 
   let prune sigs =
-    let not_internal {Signature. lid } =
+    let not_internal Signature.{ lid } =
       not @@ Iter.exists (CCString.mem ~start:0 ~sub:"__") @@ LongIdent.to_iter lid
     in
     let sigs' = filter not_internal sigs in
     if not @@ is_empty sigs' then sigs' else sigs
 
-  let representative (infos : t) =
-    min_elt infos
-
+  let representative = min_elt
   let compare = CCOrd.map representative Signature.compare
   let pp = Fmt.using representative Signature.pp
 

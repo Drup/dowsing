@@ -1,8 +1,8 @@
 type t [@@ocaml.immediate]
 type var = t
 
-val equal : t -> t -> Bool.t
-val compare : t -> t -> Int.t
+val equal : t CCEqual.t
+val compare : t CCOrd.t
 
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t

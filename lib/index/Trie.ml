@@ -15,8 +15,11 @@ module Leaf : NODE = struct
   type 'v t = 'v Type.Map.t
 
   let empty = Type.Map.empty
-  let singleton key v = Type.Map.singleton key v
-  let add_or_update k f = Type.Map.update k @@ fun v -> Some (f v)
+  let singleton = Type.Map.singleton
+
+  let add_or_update ty update =
+    Type.Map.update ty @@ fun v -> Some (update v)
+
   let iter = Type.Map.to_iter
   let iter_with _ = iter
 
@@ -33,14 +36,11 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
   let singleton ty v =
     FeatMap.singleton (Feat.compute ty) (Sub.singleton ty v)
 
-  let add_or_update ty f t =
-    let key = Feat.compute ty in
-    let sub =
-      match FeatMap.find_opt key t with
-      | None -> Sub.singleton ty @@ f None
-      | Some sub -> Sub.add_or_update ty f sub
-    in
-    FeatMap.add key sub t
+  let add_or_update ty update t =
+    t |> FeatMap.update (Feat.compute ty) (function
+      | None -> Some (Sub.singleton ty @@ update None)
+      | Some sub -> Some (Sub.add_or_update ty update sub)
+    )
 
   let iter t =
     t

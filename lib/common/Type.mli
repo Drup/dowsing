@@ -12,9 +12,9 @@ module Kind : sig
 
   val to_string : t -> String.t
 
-  val compare : t -> t -> Int.t
-  val equal : t -> t -> Bool.t
-  val hash : t -> Int.t
+  val compare : t CCOrd.t
+  val equal : t CCEqual.t
+  val hash : t CCHash.t
 
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
@@ -35,9 +35,9 @@ module Kind' : sig
 
   val to_int : t -> Int.t
 
-  val compare : t -> t -> Int.t
-  val equal : t -> t -> Bool.t
-  val hash : t -> Int.t
+  val compare : t CCOrd.t
+  val equal : t CCEqual.t
+  val hash : t CCHash.t
 
   module Map : CCMap.S with type key = t
   module HMap : CCHashtbl.S with type key = t
@@ -57,8 +57,8 @@ module rec Base : sig
   val kind : t -> Kind.t
   val kind' : t -> Kind'.t
 
-  val compare : t -> t -> Int.t
-  val equal : t -> t -> Bool.t
+  val compare : t CCOrd.t
+  val equal : t CCEqual.t
 
 end
 
@@ -67,7 +67,7 @@ and MSet : sig
   type elt = Base.t
   type t
 
-  val compare : t -> t -> Int.t
+  val compare : t CCOrd.t
 
   val of_list : elt List.t -> t
   val of_iter : elt Iter.t -> t

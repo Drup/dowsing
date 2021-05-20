@@ -119,9 +119,9 @@ module rec Base : sig
   val kind : t -> Kind.t
   val kind' : t -> Kind'.t
 
-  val compare : t -> t -> Int.t
+  val compare : t CCOrd.t
   val equal : t -> t -> Bool.t
-  val hash : t -> Int.t
+  val hash : t CCHash.t
 
 end = struct
 
@@ -183,7 +183,7 @@ and MSet : sig
   type elt = Base.t
   type t
 
-  val compare : t -> t -> Int.t
+  val compare : t CCOrd.t
 
   val of_list : elt List.t -> t
   val of_iter : elt Iter.t -> t
@@ -452,8 +452,8 @@ let rec substitute subst =
     match t with
     | Var var ->
         begin match Variable.Map.find_opt var subst with
-          | None -> t
-          | Some t -> t
+        | None -> t
+        | Some t -> t
         end
     | Constr (lid, params) ->
         constr lid @@ substitute_array params
