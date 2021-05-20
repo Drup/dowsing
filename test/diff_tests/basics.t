@@ -48,10 +48,6 @@ Some initial basic tests.
     CCShimsFun_.const
 
   $ dowsindex search index.db "int -> int -> 'a"
-  'a -> 'a:
-    CCFun.id
-    CCShimsFun_.id
-    CCFun.opaque_identity
   int * int -> bool:
     CCOrd.equiv
     Containers.(<)
@@ -73,9 +69,6 @@ Some initial basic tests.
     ContainersLabels.(<=)
     ContainersLabels.(<>)
     ContainersLabels.(>=)
-  'a * int -> int:
-    Containers.Hashtbl.seeded_hash
-    ContainersLabels.Hashtbl.seeded_hash
   int * int -> int:
     Containers.max
     Containers.min
@@ -127,6 +120,9 @@ Some initial basic tests.
     CCArrayLabels.Infix.(--)
     CCListLabels.Infix.(--^)
     CCArrayLabels.Infix.(--^)
+  int * int -> (int, 'a) t:
+    CCVector.(--)
+    CCVector.(--^)
   int * int -> int list option t:
     CCRandom.split_list
   int * int -> ():
@@ -134,6 +130,67 @@ Some initial basic tests.
     CCFormat.print_tbreak
     CCFormat.set_geometry
     CCFormat.safe_set_geometry
+  'a -> 'a:
+    CCFun.id
+    CCShimsFun_.id
+    CCFun.opaque_identity
+  'a * int -> 'a array:
+    CCArray.make
+    CCArray.create
+    CCArrayLabels.make
+    CCShimsArray_.make
+    CCArrayLabels.create
+    CCShimsArray_.create
+    CCShimsArrayLabels_.make
+    CCShimsArrayLabels_.create
+  'a -> int:
+    Containers.Hashtbl.hash
+    ContainersLabels.Hashtbl.hash
+  'a * int -> int:
+    Containers.Hashtbl.seeded_hash
+    ContainersLabels.Hashtbl.seeded_hash
+  'a -> 'a t:
+    CCOpt.pure
+    CCSeq.pure
+    CCList.pure
+    CCOpt.return
+    CCParse.pure
+    CCRef.create
+    CCSeq.return
+    CCList.return
+    CCRandom.pure
+    CCParse.return
+    CCRandom.return
+    CCSeq.singleton
+    CCListLabels.pure
+    CCFun.Monad.return
+    CCSeq.MONAD.return
+    CCList.MONAD.return
+    CCListLabels.return
+    CCResult.MONAD.return
+    CCListLabels.MONAD.return
+  'a * int -> 'a t:
+    CCSeq.repeat
+    CCList.replicate
+    CCListLabels.replicate
+  'a -> ('a, 'b) t:
+    CCEither.left
+    CCResult.pure
+    CCResult.return
+    CCVector.return
+  'a * int -> ('a, 'b) t:
+    CCVector.make
+  'b -> ('a, 'b) t:
+    CCResult.fail
+    CCEither.right
+  'a * int -> ('a, rw) t:
+    CCVector.create_with
+  'a -> ('a * 'a):
+    CCPair.dup
   'a * 'b -> 'a:
     CCFun.const
     CCShimsFun_.const
+  'a * 'b -> ('a, 'b) t:
+    CCPair.make
+  'a * 'b -> ('a * 'b):
+    CCPair.swap
