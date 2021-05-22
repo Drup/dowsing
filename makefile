@@ -32,3 +32,7 @@ clean :
 	@ $(DUNE) clean
 	@ $(MAKE) -C proof clean
 	@ $(MAKE) -C tex clean
+
+.PHONY : distclean
+distclean :
+	@ $(MAKE) -C tex distclean
