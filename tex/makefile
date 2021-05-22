@@ -1,4 +1,4 @@
-subs := mlworkshop prez_unifAC proof
+subs := mlworkshop prez_unifAC proof proof2
 mk_sub = $(MAKE) -C $1 -f ../tex.mk TARGET=$1
 
 .PHONY : all
@@ -13,3 +13,9 @@ clean : $(addprefix clean_,$(subs))
 
 clean_% :
 	@ $(call mk_sub,$*) clean
+
+.PHONY : distclean
+distclean : $(addprefix distclean_,$(subs))
+
+distclean_% :
+	@ $(call mk_sub,$*) distclean

@@ -107,7 +107,7 @@ int list -> int:
   List.length
 'a -> int:
   Hashtbl.hash
-  
+
 'a list -> 'a:
   List.hd
   BatList.max
@@ -135,7 +135,7 @@ future plans.
 \section{Unification modulo type isomorphism}
 
 Type isomorphisms and their use in function search have been widely studied in the 90's \cite {rittri,dicosmo,DBLP:journals/jsyml/NarendranPS97}. The first requirement is that the order of function parameters do not matter.
-This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
+This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality.
 
 Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite{rittri} and Coq \cite{delahaye}. Following \cite{rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt{*}, neutrality of \texttt{unit} and curryfication:
 \begin{align*}
@@ -144,12 +144,11 @@ Function retrieval systems using type isomorphisms have been implemented in Lazy
   \texttt{unit * 'a} &\ \sim\ \texttt{'a} \\
   \texttt{('a * 'b) -> 'c} &\ \sim\ \texttt{'a -> ('b -> 'c)}
 \end{align*}
-An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \mintinline{ocaml}{'a list -> 'a} is such an instance. 
+An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \mintinline{ocaml}{'a list -> 'a} is such an instance.
 
 Such an optimized unification algorithm has already been proposed~\cite{boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions from Batteries and Core.
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
-
 
 %=================================================================
 
@@ -170,7 +169,7 @@ We propose a two steps approach:
 \item The query phase itself uses these \emph{feature vectors} to reduce the number of actual unification calls.
 \end{compactitem}
 Features are designed such that if the feature coming from the request
-is not compatible with a candidate feature in the database, then we know for sure that they cannot be unified.  The challenge is then to design features that are both sufficiently discriminating and compatible with our notion of unification. 
+is not compatible with a candidate feature in the database, then we know for sure that they cannot be unified.  The challenge is then to design features that are both sufficiently discriminating and compatible with our notion of unification.
 The development of new features can be informed by metrics regarding the actual
 time spent in the search procedure. If a lot of time is spent
 doing unification over highly polymorphic functions, features
@@ -185,10 +184,9 @@ while the head of \mintinline{ocaml}{'a array -> 'a array} is the ``constructor'
 based on this classification, we can quickly
 decide if two types might unify.
 
-
 % The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
-% Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. 
+% Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental.
 
 %This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit{trie}.
 
