@@ -27,9 +27,9 @@
 
 %=================================================================
 
-\title {The isomorphisms are back!}
+\title {Isomorphisms are back!}
 
-\subtitle {Smart indexing for function retrieval by unification modulo type isomorphisms}
+\subtitle {Smart indexing for function retrieval by unification modulo type isomorphism}
 
 \author {
     Clément \textsc {Allain} \\
@@ -68,39 +68,22 @@
 \section {Introduction}
 
 Sometimes, we need a function so deeply that we have to go out and search for it.
-How do we find it? Sometimes, we have clues: a function which manipulates \texttt{list} is probably
-in the \texttt{List} module \dots but not always!
-Sometime, all we have is its functionality: doing the sum of a list of integers.
+How do we find it? Sometimes, we have clues: a function which manipulates \mintinline{ocaml}/list/ is probably in the \mintinline{ocaml}/List/ module\dots but not always!
+Sometimes, all we have is its functionality: computing the sum of a list of integers.
 Unfortunately, search by functionality is difficult.
 
-Rittri~\cite{rittri} proposed an approximation: use the \emph{type} of the function as a key
-to search through libraries: in our case, \mintinline{ocaml}/int list -> int/.
-To avoid stumbling over details such
-as the order of arguments, he proposed to use matching \emph{module type isomorphism} --
-a notion broader than syntactic equality.
+Rittri~\cite{rittri} proposed an approximation: use the \emph{type} of the function as a key to search through libraries.
+To avoid stumbling over details such as the order of arguments, he proposed to use \emph{matching modulo type isomorphism}---a notion broader than syntactic equality.
 
-Unfortunately, algorithms for unification module type isomorphisms are extremely
-costly. Doing an exhaustive search over the whole ML ecosystem
-was possible at the time (with a standard library of 294 functions),
-but is certainly not possible anymore for the OCaml ecosystem,
-with 3259 opam packages, each containing several hundreds or thousands of
-functions.
+Unfortunately, algorithms for unification modulo type isomorphism are extremely costly.
+Doing an exhaustive search over the whole ML ecosystem
+was possible at the time (with a standard library of 294 functions), but is certainly not possible anymore for the OCaml ecosystem, with 3259 opam packages, each containing several hundreds or thousands of functions.
 
-We present \dowsing, a tool to search functions in OCaml libraries by
-using their types as key.
-\dowsing is a work in progress, but is already capable of
-executing queries over a full opam switch
-containing big libraries such as Core or batteries, in a few milliseconds.
-Such a feat is achieved through novel indexing techniques that allow
-to index types in way that is compatible with unification modulo type
-isomorphisms.
+We present \dowsing, a tool to search functions in OCaml libraries.
+It is a work in progress, but already capable of executing queries over a full \textit{opam} switch containing big libraries such as \textit{core} or \textit{batteries} in a few milliseconds.
+Such a feat is achieved through indexing techniques that allow to index types in a way that is compatible with \emph{unification modulo type isomorphism}.
 
-In this article, we give a quick introduction to our tool and hint at some
-details or our indexing techniques. The talk will present both practical
-and formal aspect of this work in greater details, along with
-future plans.
-
-
+In this article, we give a quick introduction to our tool and hint at some details of our indexing techniques. The talk will present both practical and formal aspect of this work in greater details, along with future plans.
 
 % For instance, given the \textit{fold}-like key \texttt {('a * int -> 'a) -> int list -> 'a -> 'a}, our tool retrieves the standard function \texttt {List.fold\_left} of type \texttt {('a -> 'b -> 'a) -> 'a -> 'b list -> 'a}.
 
@@ -108,14 +91,14 @@ future plans.
 
 \section {Unification modulo type isomorphism}
 
-Isomorphisms of types have been widely studied in the 90's \cite {dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
+Isomorphisms of types have been widely studied in the 90's \cite {dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \emph {equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
 
-Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
+Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \mintinline{ocaml}/*/, neutrality of \mintinline{ocaml}/unit/ and curryfication:
 \begin {align*}
-  \texttt {('a * 'b) * 'c} &\ \sim\ \texttt {'a * ('b * 'c)} \\
-  \texttt {'a * 'b} &\ \sim\ \texttt {'b * 'a} \\
-  \texttt {unit * 'a} &\ \sim\ \texttt {'a} \\
-  \texttt {('a * 'b) -> 'c} &\ \sim\ \texttt {'a -> ('b -> 'c)}
+  \mintinline{ocaml}/('a * 'b) * 'c/ &\ \sim\ \mintinline{ocaml}/'a * ('b * 'c)/ \\
+  \mintinline{ocaml}/'a * 'b/ &\ \sim\ \mintinline{ocaml}/'b * 'a/ \\
+  \mintinline{ocaml}/unit * 'a/ &\ \sim\ \mintinline{ocaml}/'a/ \\
+  \mintinline{ocaml}/('a * 'b) -> 'c/ &\ \sim\ \mintinline{ocaml}/'a -> ('b -> 'c)/
 \end {align*}
 
 What we also want is the ability to retrieve more general types that admit an instance equivalent to the query. This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
@@ -124,11 +107,11 @@ What we also want is the ability to retrieve more general types that admit an in
 
 \section {Smart indexing}
 
-One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit {opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
+One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit {opam} database---hundreds of thousands of function identifiers, if not more---in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
 
 The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
-Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. The function identifiers are stored in a \textit {trie} according to their \textit {feature vectors}, in the same fashion as \cite {schulz}. This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit {trie}.
+Furthermore, we precompute these features into an index. It is built once---it can also be optimized---and can be made incremental. The function identifiers are stored in a \emph {trie} according to their \emph {feature vectors}, in the same fashion as \cite {schulz}. This technique yields very good results for usual queries and can be easily improved by adding new features to the \emph {trie}.
 
 %=================================================================
 
