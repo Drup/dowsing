@@ -5,13 +5,13 @@ module Signature : sig
   }
 
   val compare : t CCOrd.t
+
   val pp : t Fmt.t
 
 end
 
 type t
 
-val add : Longident.t -> Signature.t -> t -> t
 val update : Longident.t -> Signature.t -> t Option.t -> t
 
-val pp : t Fmt.t
+val pp : t Fmt.t [@@ocaml.toplevel_printer]

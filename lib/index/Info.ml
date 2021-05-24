@@ -5,6 +5,7 @@ module Signature = struct
   }
 
   let compare t1 t2 = LongIdent.compare_humans t1.lid t2.lid
+
   let pp fmt t = LongIdent.pp fmt t.lid
 
 end
@@ -21,7 +22,7 @@ module Slot = struct
     if not @@ is_empty sigs' then sigs' else sigs
 
   let representative = min_elt
-  let compare = CCOrd.map representative Signature.compare
+
   let pp = Fmt.using representative Signature.pp
 
 end
@@ -32,15 +33,13 @@ let singleton lid s =
   LongIdent.Map.(add lid (Slot.singleton s) empty)
 
 let add lid s t =
-  let aux cur_sigs =
-    let new_sigs =
-      match cur_sigs with
+  t |> LongIdent.Map.update lid @@ fun sigs ->
+    let sigs =
+      match sigs with
       | None -> Slot.singleton s
       | Some sigs -> Slot.add s sigs
     in
-    Some new_sigs
-  in
-  LongIdent.Map.update lid aux t
+    Some sigs
 
 let update lid s = function
   | None -> singleton lid s

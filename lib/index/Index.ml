@@ -20,7 +20,7 @@ let iter_libindex hcons pkgs_dirs k =
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
   |> LibIndex.all
-  |> List.iter (fun info ->
+  |> CCList.iter (fun info ->
     match info.LibIndex.kind with
     | LibIndex.Value ->
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
@@ -34,14 +34,14 @@ let iter_libindex hcons pkgs_dirs k =
   )
 
 let add t (ty, lid, info) =
-  Trie.add_or_update ty (Info.update lid info) t
+  Trie.update ty (Info.update lid info) t
 
 let make pkgs_dirs =
   let hcons = Type.Hashcons.make () in
   iter_libindex hcons pkgs_dirs
   |> Iter.fold add Trie.empty
 
-let iter t = Trie.iter t
+let iter = Trie.iter
 let iter_with t ty = Trie.iter_with ty t
 
 let find, find_with =

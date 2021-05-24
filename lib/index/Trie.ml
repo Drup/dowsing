@@ -4,7 +4,7 @@ module type NODE = sig
 
   val empty : 'v t
   val singleton : Type.t -> 'v -> 'v t
-  val add_or_update : Type.t -> ('v Option.t -> 'v) -> 'v t -> 'v t
+  val update : Type.t -> ('v Option.t -> 'v) -> 'v t -> 'v t
   val iter : 'v t -> (Type.t * 'v) Iter.t
   val iter_with : Type.t -> 'v t -> (Type.t * 'v) Iter.t
 
@@ -17,7 +17,7 @@ module Leaf : NODE = struct
   let empty = Type.Map.empty
   let singleton = Type.Map.singleton
 
-  let add_or_update ty update =
+  let update ty update =
     Type.Map.update ty @@ fun v -> Some (update v)
 
   let iter = Type.Map.to_iter
@@ -36,11 +36,14 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
   let singleton ty v =
     FeatMap.singleton (Feat.compute ty) (Sub.singleton ty v)
 
-  let add_or_update ty update t =
-    t |> FeatMap.update (Feat.compute ty) (function
-      | None -> Some (Sub.singleton ty @@ update None)
-      | Some sub -> Some (Sub.add_or_update ty update sub)
-    )
+  let update ty update t =
+    t |> FeatMap.update (Feat.compute ty) @@ fun sub ->
+      let sub =
+        match sub with
+        | None -> Sub.singleton ty @@ update None
+        | Some sub -> Sub.update ty update sub
+      in
+      Some sub
 
   let iter t =
     t
