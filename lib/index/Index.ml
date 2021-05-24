@@ -29,7 +29,7 @@ let iter_libindex hcons pkgs_dirs k =
         let ty = Type.of_outcometree env out_ty in
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
         let orig_lid = LongIdent.of_list @@ info.orig_path @ [ info.name ] in
-        k (ty, orig_lid, Info.Signature.{ lid })
+        k (ty, orig_lid, Info.Signature.{ lid ; out_ty })
     | _ -> ()
   )
 

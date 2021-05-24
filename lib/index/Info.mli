@@ -2,6 +2,7 @@ module Signature : sig
 
   type t = {
     lid : LongIdent.t ;
+    out_ty : Outcometree.out_type ;
   }
 
   val compare : t CCOrd.t

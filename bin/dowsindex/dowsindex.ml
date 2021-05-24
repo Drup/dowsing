@@ -345,18 +345,13 @@ let () = Args.add_cmd (module struct
       let find = if exhaustive then Index.find else Index.find_with in
       find idx env ty
       |> Iter.sort ~cmp:(fun (ty1, _, unif1) (ty2, _, unif2) ->
-          CCOrd.(Unification.Subst.compare unif1 unif2
-            <?> (Type.compare, ty1, ty2))
+        CCOrd.(Unification.Subst.compare unif1 unif2
+          <?> (Type.compare, ty1, ty2))
       )
     in
     let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
-    Fmt.pr "@[<v>" ;
-    res |> Iter.iter (fun (ty, info, _) ->
-      Fmt.pr "@[<v2>@[%a@]:@ %a@]@,"
-        Type.pp ty
-        Index.Info.pp info
-    ) ;
-    Fmt.pr "@]@?"
+    Fmt.pr "@[<v>%a@]@."
+      (Fmt.iter Iter.iter @@ fun fmt (_, info, _) -> Index.Info.pp fmt info) res
 
   let main () =
     if CCOpt.(is_none ! file || is_none ! ty) then
