@@ -180,7 +180,7 @@ and variable_abstraction_all env stack a =
     r := stack ;
     x
   in
-  !r, Array.map f @@ Type.MSet.as_array a
+  !r, Array.map f @@ Type.NSet.as_array a
 
 (* rule VA/Variable Abstraction
    Given a tuple, assign a variable to each subexpressions that is foreign

@@ -13,12 +13,12 @@ let as_tuple t : Type.t =
   | [|x|] -> Pure.as_typexpr x
   | t ->
     Type.tuple
-      (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.MSet.of_iter)
+      (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.NSet.of_iter)
 
 let pp fmt t =
   match t with
   | [|x|] -> Pure.pp fmt x
-  | t -> 
+  | t ->
     Fmt.pf fmt "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") Pure.pp) t
 
 let pp_problem fmt {left ; right} =

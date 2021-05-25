@@ -50,8 +50,8 @@ module rec Base : sig
   type t = private
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of MSet.t * t
-    | Tuple of MSet.t
+    | Arrow of NSet.t * t
+    | Tuple of NSet.t
     | Other of Int.t
 
   val kind : t -> Kind.t
@@ -62,7 +62,7 @@ module rec Base : sig
 
 end
 
-and MSet : sig
+and NSet : sig
 
   type elt = Base.t
   type t
@@ -90,8 +90,10 @@ end
 
 include module type of Base with type t = Base.t
 
+module HMap : CCHashtbl.S with type key = t
 module Map : CCMap.S with type key = t
 module Set : CCSet.S with type elt = t
+module MSet : CCMultiSet.S with type elt = t
 
 module Hashcons : sig
 
@@ -119,7 +121,7 @@ end
 val var : Variable.t -> t
 val constr : LongIdent.t -> t Array.t -> t
 val arrow : t -> t -> t
-val tuple : MSet.t -> t
+val tuple : NSet.t -> t
 
 (* importation functions *)
 
@@ -131,7 +133,7 @@ val of_string : Env.t -> String.t -> t
 (* utility functions *)
 
 val head : t -> t
-val tail : t -> MSet.t
+val tail : t -> NSet.t
 
 val substitute : t Variable.Map.t -> t -> t
 

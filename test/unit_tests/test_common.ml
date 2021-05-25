@@ -9,7 +9,7 @@ let add_tests name tests =
 
 let int = Type.constr (LongIdent.Lident "int") [||]
 let (-->) = Type.arrow
-let tuple tys = Type.(tuple @@ MSet.of_list tys)
+let tuple tys = Type.(tuple @@ NSet.of_list tys)
 
 (* Type.of_string *)
 

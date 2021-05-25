@@ -112,8 +112,8 @@ module rec Base : sig
   type t =
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of MSet.t * t
-    | Tuple of MSet.t
+    | Arrow of NSet.t * t
+    | Tuple of NSet.t
     | Other of Int.t
 
   val kind : t -> Kind.t
@@ -128,8 +128,8 @@ end = struct
   type t =
     | Var of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of MSet.t * t
-    | Tuple of MSet.t
+    | Arrow of NSet.t * t
+    | Tuple of NSet.t
     | Other of Int.t
 
   let kind : t -> Kind.t = function
@@ -161,9 +161,9 @@ end = struct
       | Arrow (param1, ret1), Arrow (param2, ret2) ->
           let cmp = compare in
           CCOrd.(cmp ret1 ret2
-            <?> (MSet.compare, param1, param2))
+            <?> (NSet.compare, param1, param2))
       | Tuple elts1, Tuple elts2 ->
-          MSet.compare elts1 elts2
+          NSet.compare elts1 elts2
       | Other i1, Other i2 ->
           CCInt.compare i1 i2
       | _ ->
@@ -176,9 +176,9 @@ end = struct
 
 end
 
-(* MSet *)
+(* NSet *)
 
-and MSet : sig
+and NSet : sig
 
   type elt = Base.t
   type t
@@ -264,6 +264,7 @@ include Base
 module HMap = CCHashtbl.Make (Base)
 module Map = CCMap.Make (Base)
 module Set = CCSet.Make (Base)
+module MSet = CCMultiSet.Make (Base)
 
 (* Hashcons *)
 
@@ -302,27 +303,27 @@ end
 let var v = Var v
 
 let constr lid = function
-  | [||] when lid = LongIdent.unit -> Tuple MSet.empty
+  | [||] when lid = LongIdent.unit -> Tuple NSet.empty
   | params -> Constr (lid, params)
 
 let arrow param ret =
   match param, ret with
   | Tuple elts, Arrow (params, ret) ->
-      Arrow (MSet.union elts params, ret)
+      Arrow (NSet.union elts params, ret)
   | _, Arrow (params, ret) ->
-      Arrow (MSet.add param params, ret)
+      Arrow (NSet.add param params, ret)
   | Tuple elts, _ ->
       Arrow (elts, ret)
   | _, _ ->
-      Arrow (MSet.singleton param, ret)
+      Arrow (NSet.singleton param, ret)
 
 let tuple elts =
   let aux = function
     | Tuple elts -> elts
-    | elt -> MSet.singleton elt
+    | elt -> NSet.singleton elt
   in
-  let elts = MSet.fold (fun elt -> MSet.union @@ aux elt) elts MSet.empty in
-  match MSet.is_singleton elts with
+  let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
+  match NSet.is_singleton elts with
   | Some elt -> elt
   | None -> Tuple elts
 
@@ -347,7 +348,7 @@ let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
       elts
       |> Iter.of_list
       |> Iter.map of_outcometree
-      |> MSet.of_iter
+      |> NSet.of_iter
       |> tuple
   | Otyp_alias (out_ty, _) ->
       of_outcometree out_ty
@@ -385,7 +386,7 @@ let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
       elts
       |> Iter.of_list
       |> Iter.map of_parsetree
-      |> MSet.of_iter
+      |> NSet.of_iter
       |> tuple
   | Ptyp_alias (parse_ty, _)
   | Ptyp_poly (_, parse_ty) ->
@@ -442,11 +443,11 @@ let head = function
 
 let tail = function
   | Arrow (params, _) -> params
-  | _ -> MSet.empty
+  | _ -> NSet.empty
 
 let rec substitute subst =
   let substitute t = substitute subst t in
-  let substitute_set = MSet.map substitute in
+  let substitute_set = NSet.map substitute in
   let substitute_array = CCArray.map substitute in
   fun t ->
     match t with
@@ -467,8 +468,8 @@ let rec substitute subst =
 let iter =
   let iter_subs = function
     | Constr (_, params) -> Iter.of_array params
-    | Arrow (params, ret) -> Iter.snoc (MSet.to_iter params) ret
-    | Tuple elts -> MSet.to_iter elts
+    | Arrow (params, ret) -> Iter.snoc (NSet.to_iter params) ret
+    | Tuple elts -> NSet.to_iter elts
     | _ -> Iter.empty
   in
   fun t k ->
@@ -487,10 +488,10 @@ let rec iter_vars t k =
   | Constr (_, params) ->
       CCArray.iter (fun t -> iter_vars t k) params
   | Arrow (params, ret) ->
-      Iter.flat_map iter_vars (MSet.to_iter params) k ;
+      Iter.flat_map iter_vars (NSet.to_iter params) k ;
       iter_vars ret k
   | Tuple elts ->
-      Iter.flat_map iter_vars (MSet.to_iter elts) k
+      Iter.flat_map iter_vars (NSet.to_iter elts) k
 
 (* pretty printing *)
 
@@ -505,11 +506,11 @@ let rec pp fmt = function
         LongIdent.pp lid
   | Arrow (params, ret) ->
       Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
-        (MSet.pp pp_parens) params
+        (NSet.pp pp_parens) params
         pp_parens ret
   | Tuple elts ->
       Fmt.pf fmt "@[<2>%a@]"
-        (MSet.pp pp_parens) elts
+        (NSet.pp pp_parens) elts
   | Other i ->
       Fmt.pf fmt "other%i" i
 
@@ -520,7 +521,7 @@ and pp_parens fmt ty =
   | Arrow _ ->
       Fmt.parens pp fmt ty
   | Tuple elts ->
-      if MSet.length elts <= 1 then
+      if NSet.length elts <= 1 then
         pp fmt ty
       else
         Fmt.parens pp fmt ty

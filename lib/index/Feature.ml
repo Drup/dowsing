@@ -95,7 +95,7 @@ module Tail' = struct
     let has_var = Measure.make SpineVarCount ty > 0 in
     let cnt = ref 0 in
     let tl =
-      Type.MSet.fold (fun ty kinds ->
+      Type.NSet.fold (fun ty kinds ->
         let kind = Type.kind' ty in
         if kind <> Var then begin
           incr cnt ;
