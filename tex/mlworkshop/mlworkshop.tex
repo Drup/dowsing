@@ -134,19 +134,6 @@ future plans.
 
 \section{Unification modulo type isomorphism}
 
-<<<<<<< HEAD
-Isomorphisms of types have been widely studied in the 90's \cite{dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \textit{equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
-
-Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite{rittri} and Coq \cite{delahaye}. Following \cite{rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt{*}, neutrality of \texttt{unit} and curryfication:
-\begin{align*}
-  \texttt{('a * 'b) * 'c} &\ \sim\ \texttt{'a * ('b * 'c)} \\
-  \texttt{'a * 'b} &\ \sim\ \texttt{'b * 'a} \\
-  \texttt{unit * 'a} &\ \sim\ \texttt{'a} \\
-  \texttt{('a * 'b) -> 'c} &\ \sim\ \texttt{'a -> ('b -> 'c)}
-\end{align*}
-
-What we also want is the ability to retrieve more general types that admit an instance equivalent to the query. This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite{boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
-=======
 Type isomorphisms have been widely studied in the 90's \cite {dicosmo}. Intuitively, a type and all its rearrangements are equivalent. This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
 
 Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
@@ -161,7 +148,7 @@ An additional requirement is the ability to retrieve more general types that adm
 Such an unification algorithm has already been proposed~\cite {boudet}, still 
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
->>>>>>> fa2af88... sec2
+
 
 %=================================================================
 
