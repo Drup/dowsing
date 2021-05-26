@@ -155,6 +155,13 @@ Such an unification algorithm has already been proposed~\cite {boudet}, stil the
 
 \section{Smart indexing and smart queries}
 
+While the fundamental complexity of unification seems like a difficult
+obstacle to overcome, our aim is not to unify quickly, but to \emph{search}
+quickly. We can thus benefit from indexing and pre-computing databases.
+In particular, there has been important progress regarding
+term indexing~\cite{schulz,DBLP:books/el/RV01/RamakrishnanSV01} that allow
+to speed up such search procedures in numerous context and varied theories.
+
 % One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit{opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
 
 We propose a two steps approach:
@@ -162,6 +169,8 @@ We propose a two steps approach:
 \item We once preprocess the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz} that encode structural information on their types.
 \item The query phase itself uses these \emph{feature vectors} to reduce the number of actual unification calls.
 \end{compactitem}
+
+% The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
 As an exemple, we give an example of a feature.
 
