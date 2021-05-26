@@ -61,9 +61,15 @@
 
 %=================================================================
 
+<<<<<<< HEAD
 % \begin{abstract}
 %   Isomorphisms of types capture an intuitive notion of equivalence used in function retrieval systems with semantic unification. The tool we present implements this method for OCaml. Smart indexing based on necessary conditions for unifiability makes it practical and scalable.
 % \end{abstract}
+=======
+% \begin {abstract}
+%   Isomorphisms of types capture an intuitive notion of equivalence used in function retrieval systems with semantic unification. The tool we present implements this method for OCaml. Smart indexing based on necessary conditions for unifiability makes it practical and scalable.
+% \end {abstract}
+>>>>>>> fa2af88... sec2
 
 %=================================================================
 
@@ -118,8 +124,8 @@ to index types in way that is compatible with unification modulo type
 isomorphisms.
 
 In this article, we give a quick introduction to our tool and hint at some
-details or our indexing techniques. The talk will present both practical
-and formal aspect of this work in greater details, along with
+details of our indexing techniques. The talk will present both practical
+and formal aspects of this work in greater details, along with
 future plans.
 
 % For instance, given the \textit{fold}-like key \texttt{('a * int -> 'a) -> int list -> 'a -> 'a}, our tool retrieves the standard function \texttt{List.fold\_left} of type \texttt{('a -> 'b -> 'a) -> 'a -> 'b list -> 'a}.
@@ -128,6 +134,7 @@ future plans.
 
 \section{Unification modulo type isomorphism}
 
+<<<<<<< HEAD
 Isomorphisms of types have been widely studied in the 90's \cite{dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \textit{equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
 
 Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite{rittri} and Coq \cite{delahaye}. Following \cite{rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt{*}, neutrality of \texttt{unit} and curryfication:
@@ -139,6 +146,22 @@ Function retrieval systems using type isomorphisms have been implemented in Lazy
 \end{align*}
 
 What we also want is the ability to retrieve more general types that admit an instance equivalent to the query. This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite{boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
+=======
+Type isomorphisms have been widely studied in the 90's \cite {dicosmo}. Intuitively, a type and all its rearrangements are equivalent. This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
+
+Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
+\begin {align*}
+  \texttt {('a * 'b) * 'c} &\ \sim\ \texttt {'a * ('b * 'c)} \\
+  \texttt {'a * 'b} &\ \sim\ \texttt {'b * 'a} \\
+  \texttt {unit * 'a} &\ \sim\ \texttt {'a} \\
+  \texttt {('a * 'b) -> 'c} &\ \sim\ \texttt {'a -> ('b -> 'c)}
+\end {align*}
+An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \texttt {'a list -> 'a} is such an instance. 
+
+Such an unification algorithm has already been proposed~\cite {boudet}, still 
+
+% This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
+>>>>>>> fa2af88... sec2
 
 %=================================================================
 
