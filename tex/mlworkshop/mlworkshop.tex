@@ -146,7 +146,7 @@ Function retrieval systems using type isomorphisms have been implemented in Lazy
 \end {align*}
 An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \texttt {'a list -> 'a} is such an instance. 
 
-Such an unification algorithm has already been proposed~\cite {boudet}, still its intrinsic complexity leads to actual search times that can reach up to xx seconds on the personal laptop of the most OCaml fan of the coauthors of this abstract. 
+Such an unification algorithm has already been proposed~\cite {boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions coming from Batteries and Core.
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
 
