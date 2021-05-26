@@ -6,6 +6,8 @@
 \usepackage {xspace}
 \usepackage {fullpage}
 
+\usepackage{listings,multicol}
+\lstset{basicstyle=\ttfamily}
 \usepackage [scaled=0.8] {DejaVuSansMono} % decent mono font
 \usepackage {enumitem}
 \setitemize {noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
@@ -13,6 +15,7 @@
 
 \usepackage [style=numeric,sorting=ynt,natbib=true] {biblatex}
 \addbibresource {mlworkshop.bib}
+
 
 \usepackage [bookmarks,colorlinks=true,citecolor=red] {hyperref}
 \usepackage {amsmath} % align*
@@ -23,7 +26,7 @@
 \newcommand {\error} [1]  {\textcolor {red} {#1}}
 \newcommand {\ok} [1]     {\textcolor {OliveGreen} {#1}}
 
-\newcommand {\dowsing} {\textit {dowsing}}
+\newcommand {\dowsing} {\textit {Dowsing}\xspace}
 
 %=================================================================
 
@@ -75,15 +78,46 @@ Unfortunately, search by functionality is difficult.
 Rittri~\cite{rittri} proposed an approximation: use the \emph{type} of the function as a key to search through libraries.
 To avoid stumbling over details such as the order of arguments, he proposed to use \emph{matching modulo type isomorphism}---a notion broader than syntactic equality.
 
-Unfortunately, algorithms for unification modulo type isomorphism are extremely costly.
-Doing an exhaustive search over the whole ML ecosystem
-was possible at the time (with a standard library of 294 functions), but is certainly not possible anymore for the OCaml ecosystem, with 3259 opam packages, each containing several hundreds or thousands of functions.
+Unfortunately, algorithms for unification module type isomorphisms are extremely
+costly. Doing an exhaustive search over the whole ML ecosystem
+was possible at the time (with a standard library of 294 functions),
+but is certainly not possible anymore for the OCaml ecosystem,
+with 3259 opam packages, each containing several hundreds or thousands of
+functions.
 
-We present \dowsing, a tool to search functions in OCaml libraries.
-It is a work in progress, but already capable of executing queries over a full \textit{opam} switch containing big libraries such as \textit{core} or \textit{batteries} in a few milliseconds.
-Such a feat is achieved through indexing techniques that allow to index types in a way that is compatible with \emph{unification modulo type isomorphism}.
+We present \dowsing, a tool to search functions in OCaml libraries by
+using their types as key.
+Here is an example of the tool in action for the example above:
 
-In this article, we give a quick introduction to our tool and hint at some details of our indexing techniques. The talk will present both practical and formal aspect of this work in greater details, along with future plans.
+\begin{lstlisting}[multicols=2]
+> search db "int list -> int"
+int list -> int:
+  BatList.sum
+  Thread.wait_signal
+'a list -> int:
+  List.length
+'a -> int:
+  Hashtbl.hash
+
+'a list -> 'a:
+  List.hd
+  BatList.max
+  BatList.min
+  BatList.last
+  BatList.first
+\end{lstlisting}
+
+\dowsing is a work in progress, but is already capable of
+executing queries over a full opam switch
+containing big libraries such as Core or Batteries, in a few milliseconds.
+Such a feat is achieved through novel indexing techniques that allow
+to index types in way that is compatible with unification modulo type
+isomorphisms.
+
+In this article, we give a quick introduction to our tool and hint at some
+details or our indexing techniques. The talk will present both practical
+and formal aspect of this work in greater details, along with
+future plans.
 
 % For instance, given the \textit{fold}-like key \texttt {('a * int -> 'a) -> int list -> 'a -> 'a}, our tool retrieves the standard function \texttt {List.fold\_left} of type \texttt {('a -> 'b -> 'a) -> 'a -> 'b list -> 'a}.
 
