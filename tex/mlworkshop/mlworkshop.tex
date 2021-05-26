@@ -134,7 +134,8 @@ future plans.
 
 \section{Unification modulo type isomorphism}
 
-Type isomorphisms and their use in function search have been widely studied in the 90's \cite {rittri,dicosmo,DBLP:journals/jsyml/NarendranPS97}. Intuitively, a type and all its rearrangements are equivalent. This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
+Type isomorphisms and their use in function search have been widely studied in the 90's \cite {rittri,dicosmo,DBLP:journals/jsyml/NarendranPS97}. The first requirement is that the order of function parameters do not matter.
+This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
 
 Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
 \begin {align*}
@@ -145,7 +146,7 @@ Function retrieval systems using type isomorphisms have been implemented in Lazy
 \end {align*}
 An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \texttt {'a list -> 'a} is such an instance. 
 
-Such an unification algorithm has already been proposed~\cite {boudet}, still 
+Such an unification algorithm has already been proposed~\cite {boudet}, stil the intrinsic complexity of the problem 
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
 
