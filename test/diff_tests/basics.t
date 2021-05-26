@@ -1,196 +1,167 @@
 Some initial basic tests.
 
   $ dowsindex search index.db "int -> int -> int"
-  int * int -> int:
-    Containers.max
-    Containers.min
-    CCShimsInt_.add
-    CCShimsInt_.div
-    CCShimsInt_.mul
-    CCShimsInt_.rem
-    CCShimsInt_.sub
-    CCMonomorphic.max
-    CCMonomorphic.min
-    CCShimsInt_.logor
-    CCShimsInt_.logand
-    CCShimsInt_.logxor
-    Containers.compare
-    CCShimsInt_.compare
-    ContainersLabels.max
-    ContainersLabels.min
-    CCMonomorphic.compare
-    CCShimsInt_.shift_left
-    CCShimsInt_.shift_right
-    ContainersLabels.compare
-    CCShimsInt_.shift_right_logical
-  'a -> int:
-    Containers.Hashtbl.hash
-    ContainersLabels.Hashtbl.hash
-  'a * int -> int:
-    Containers.Hashtbl.seeded_hash
-    ContainersLabels.Hashtbl.seeded_hash
-  'a * 'b -> 'a:
-    CCFun.const
-    CCShimsFun_.const
+  Containers.max : int -> int -> int
+  Containers.min : int -> int -> int
+  CCShimsInt_.add : int -> int -> int
+  CCShimsInt_.div : int -> int -> int
+  CCShimsInt_.mul : int -> int -> int
+  CCShimsInt_.rem : int -> int -> int
+  CCShimsInt_.sub : int -> int -> int
+  CCMonomorphic.max : int -> int -> int
+  CCMonomorphic.min : int -> int -> int
+  CCShimsInt_.logor : int -> int -> int
+  CCShimsInt_.logand : int -> int -> int
+  CCShimsInt_.logxor : int -> int -> int
+  Containers.compare : int -> int -> int
+  CCShimsInt_.compare : int -> int -> int
+  ContainersLabels.max : int -> int -> int
+  ContainersLabels.min : int -> int -> int
+  CCMonomorphic.compare : int -> int -> int
+  CCShimsInt_.shift_left : int -> int -> int
+  CCShimsInt_.shift_right : int -> int -> int
+  ContainersLabels.compare : int -> int -> int
+  CCShimsInt_.shift_right_logical : int -> int -> int
+  Containers.Hashtbl.hash : 'a -> int
+  ContainersLabels.Hashtbl.hash : 'a -> int
+  Containers.Hashtbl.seeded_hash : int -> 'a -> int
+  ContainersLabels.Hashtbl.seeded_hash : int -> 'a -> int
+  CCFun.const : 'a -> 'b -> 'a
+  CCShimsFun_.const : 'a -> 'b -> 'a
 
   $ dowsindex search index.db "int -> int -> int -> int"
-  'a -> int:
-    Containers.Hashtbl.hash
-    ContainersLabels.Hashtbl.hash
-  'a * int -> int:
-    Containers.Hashtbl.seeded_hash
-    ContainersLabels.Hashtbl.seeded_hash
-  'a * int * int -> int:
-    Containers.Hashtbl.hash_param
-    ContainersLabels.Hashtbl.hash_param
-  'a * 'b -> 'a:
-    CCFun.const
-    CCShimsFun_.const
+  Containers.Hashtbl.hash : 'a -> int
+  ContainersLabels.Hashtbl.hash : 'a -> int
+  Containers.Hashtbl.seeded_hash : int -> 'a -> int
+  ContainersLabels.Hashtbl.seeded_hash : int -> 'a -> int
+  Containers.Hashtbl.hash_param : int -> int -> 'a -> int
+  ContainersLabels.Hashtbl.hash_param : int -> int -> 'a -> int
+  CCFun.const : 'a -> 'b -> 'a
+  CCShimsFun_.const : 'a -> 'b -> 'a
 
   $ dowsindex search index.db "int -> int -> 'a"
-  int * int -> bool:
-    CCOrd.equiv
-    Containers.(<)
-    Containers.(=)
-    Containers.(>)
-    Containers.(<=)
-    Containers.(<>)
-    Containers.(>=)
-    CCMonomorphic.(<)
-    CCMonomorphic.(=)
-    CCMonomorphic.(>)
-    CCShimsInt_.equal
-    CCMonomorphic.(<=)
-    CCMonomorphic.(<>)
-    CCMonomorphic.(>=)
-    ContainersLabels.(<)
-    ContainersLabels.(=)
-    ContainersLabels.(>)
-    ContainersLabels.(<=)
-    ContainersLabels.(<>)
-    ContainersLabels.(>=)
-  int * int -> int:
-    Containers.max
-    Containers.min
-    CCShimsInt_.add
-    CCShimsInt_.div
-    CCShimsInt_.mul
-    CCShimsInt_.rem
-    CCShimsInt_.sub
-    CCMonomorphic.max
-    CCMonomorphic.min
-    CCShimsInt_.logor
-    CCShimsInt_.logand
-    CCShimsInt_.logxor
-    Containers.compare
-    CCShimsInt_.compare
-    ContainersLabels.max
-    ContainersLabels.min
-    CCMonomorphic.compare
-    CCShimsInt_.shift_left
-    CCShimsInt_.shift_right
-    ContainersLabels.compare
-    CCShimsInt_.shift_right_logical
-  int * int -> t random_gen:
-    CCInt.random_range
-  int * int -> int t:
-    CCSeq.(--)
-    CCList.(--)
-    CCSeq.(--^)
-    CCSeq.range
-    CCArray.(--)
-    CCList.(--^)
-    CCList.range
-    CCArray.(--^)
-    CCList.range'
-    CCSeq.Infix.(--)
-    CCList.Infix.(--)
-    CCListLabels.(--)
-    CCSeq.Infix.(--^)
-    CCArray.Infix.(--)
-    CCArrayLabels.(--)
-    CCList.Infix.(--^)
-    CCListLabels.(--^)
-    CCListLabels.range
-    CCRandom.int_range
-    CCArray.Infix.(--^)
-    CCArrayLabels.(--^)
-    CCListLabels.range'
-    CCListLabels.Infix.(--)
-    CCArrayLabels.Infix.(--)
-    CCListLabels.Infix.(--^)
-    CCArrayLabels.Infix.(--^)
-  int * int -> (int, 'a) t:
-    CCVector.(--)
-    CCVector.(--^)
-  int * int -> int list option t:
-    CCRandom.split_list
-  int * int -> ():
-    CCFormat.print_break
-    CCFormat.print_tbreak
-    CCFormat.set_geometry
-    CCFormat.safe_set_geometry
-  'a -> 'a:
-    CCFun.id
-    CCShimsFun_.id
-    CCFun.opaque_identity
-  'a * int -> 'a array:
-    CCArray.make
-    CCArray.create
-    CCArrayLabels.make
-    CCShimsArray_.make
-    CCArrayLabels.create
-    CCShimsArray_.create
-    CCShimsArrayLabels_.make
-    CCShimsArrayLabels_.create
-  'a -> int:
-    Containers.Hashtbl.hash
-    ContainersLabels.Hashtbl.hash
-  'a * int -> int:
-    Containers.Hashtbl.seeded_hash
-    ContainersLabels.Hashtbl.seeded_hash
-  'a -> 'a t:
-    CCOpt.pure
-    CCSeq.pure
-    CCList.pure
-    CCOpt.return
-    CCParse.pure
-    CCRef.create
-    CCSeq.return
-    CCList.return
-    CCRandom.pure
-    CCParse.return
-    CCRandom.return
-    CCSeq.singleton
-    CCListLabels.pure
-    CCFun.Monad.return
-    CCSeq.MONAD.return
-    CCList.MONAD.return
-    CCListLabels.return
-    CCResult.MONAD.return
-    CCListLabels.MONAD.return
-  'a * int -> 'a t:
-    CCSeq.repeat
-    CCList.replicate
-    CCListLabels.replicate
-  'a -> ('a, 'b) t:
-    CCEither.left
-    CCResult.pure
-    CCResult.return
-    CCVector.return
-  'a * int -> ('a, 'b) t:
-    CCVector.make
-  'b -> ('a, 'b) t:
-    CCResult.fail
-    CCEither.right
-  'a * int -> ('a, rw) t:
-    CCVector.create_with
-  'a -> ('a * 'a):
-    CCPair.dup
-  'a * 'b -> 'a:
-    CCFun.const
-    CCShimsFun_.const
-  'a * 'b -> ('a, 'b) t:
-    CCPair.make
-  'a * 'b -> ('a * 'b):
-    CCPair.swap
+  CCOrd.equiv : int -> int -> bool
+  Containers.(<) : int -> int -> bool
+  Containers.(=) : int -> int -> bool
+  Containers.(>) : int -> int -> bool
+  Containers.(<=) : int -> int -> bool
+  Containers.(<>) : int -> int -> bool
+  Containers.(>=) : int -> int -> bool
+  CCMonomorphic.(<) : int -> int -> bool
+  CCMonomorphic.(=) : int -> int -> bool
+  CCMonomorphic.(>) : int -> int -> bool
+  CCShimsInt_.equal : int -> int -> bool
+  CCMonomorphic.(<=) : int -> int -> bool
+  CCMonomorphic.(<>) : int -> int -> bool
+  CCMonomorphic.(>=) : int -> int -> bool
+  ContainersLabels.(<) : int -> int -> bool
+  ContainersLabels.(=) : int -> int -> bool
+  ContainersLabels.(>) : int -> int -> bool
+  ContainersLabels.(<=) : int -> int -> bool
+  ContainersLabels.(<>) : int -> int -> bool
+  ContainersLabels.(>=) : int -> int -> bool
+  Containers.max : int -> int -> int
+  Containers.min : int -> int -> int
+  CCShimsInt_.add : int -> int -> int
+  CCShimsInt_.div : int -> int -> int
+  CCShimsInt_.mul : int -> int -> int
+  CCShimsInt_.rem : int -> int -> int
+  CCShimsInt_.sub : int -> int -> int
+  CCMonomorphic.max : int -> int -> int
+  CCMonomorphic.min : int -> int -> int
+  CCShimsInt_.logor : int -> int -> int
+  CCShimsInt_.logand : int -> int -> int
+  CCShimsInt_.logxor : int -> int -> int
+  Containers.compare : int -> int -> int
+  CCShimsInt_.compare : int -> int -> int
+  ContainersLabels.max : int -> int -> int
+  ContainersLabels.min : int -> int -> int
+  CCMonomorphic.compare : int -> int -> int
+  CCShimsInt_.shift_left : int -> int -> int
+  CCShimsInt_.shift_right : int -> int -> int
+  ContainersLabels.compare : int -> int -> int
+  CCShimsInt_.shift_right_logical : int -> int -> int
+  CCInt.random_range : int -> int -> t random_gen
+  CCSeq.(--) : int -> int -> int t
+  CCList.(--) : int -> int -> int t
+  CCSeq.(--^) : int -> int -> int t
+  CCSeq.range : int -> int -> int t
+  CCArray.(--) : int -> int -> int t
+  CCList.(--^) : int -> int -> int t
+  CCList.range : int -> int -> int t
+  CCArray.(--^) : int -> int -> int t
+  CCList.range' : int -> int -> int t
+  CCSeq.Infix.(--) : int -> int -> int t
+  CCList.Infix.(--) : int -> int -> int t
+  CCListLabels.(--) : int -> int -> int t
+  CCSeq.Infix.(--^) : int -> int -> int t
+  CCArray.Infix.(--) : int -> int -> int t
+  CCArrayLabels.(--) : int -> int -> int t
+  CCList.Infix.(--^) : int -> int -> int t
+  CCListLabels.(--^) : int -> int -> int t
+  CCListLabels.range : int -> int -> int t
+  CCRandom.int_range : int -> int -> int t
+  CCArray.Infix.(--^) : int -> int -> int t
+  CCArrayLabels.(--^) : int -> int -> int t
+  CCListLabels.range' : int -> int -> int t
+  CCListLabels.Infix.(--) : int -> int -> int t
+  CCArrayLabels.Infix.(--) : int -> int -> int t
+  CCListLabels.Infix.(--^) : int -> int -> int t
+  CCArrayLabels.Infix.(--^) : int -> int -> int t
+  CCVector.(--) : int -> int -> (int, 'mut) t
+  CCVector.(--^) : int -> int -> (int, 'mut) t
+  CCRandom.split_list : int -> len:int -> int list option t
+  CCFormat.print_break : int -> int -> unit
+  CCFormat.print_tbreak : int -> int -> unit
+  CCFormat.set_geometry : max_indent:int -> margin:int -> unit
+  CCFormat.safe_set_geometry : max_indent:int -> margin:int -> unit
+  CCFun.id : 'a -> 'a
+  CCShimsFun_.id : 'a -> 'a
+  CCFun.opaque_identity : 'a -> 'a
+  CCArray.make : int -> 'a -> 'a array
+  CCArray.create : int -> 'a -> 'a array
+  CCArrayLabels.make : int -> 'a -> 'a array
+  CCShimsArray_.make : int -> 'a -> 'a array
+  CCArrayLabels.create : int -> 'a -> 'a array
+  CCShimsArray_.create : int -> 'a -> 'a array
+  CCShimsArrayLabels_.make : int -> 'a -> 'a array
+  CCShimsArrayLabels_.create : int -> 'a -> 'a array
+  Containers.Hashtbl.hash : 'a -> int
+  ContainersLabels.Hashtbl.hash : 'a -> int
+  Containers.Hashtbl.seeded_hash : int -> 'a -> int
+  ContainersLabels.Hashtbl.seeded_hash : int -> 'a -> int
+  CCOpt.pure : 'a -> 'a t
+  CCSeq.pure : 'a -> 'a t
+  CCList.pure : 'a -> 'a t
+  CCOpt.return : 'a -> 'a t
+  CCParse.pure : 'a -> 'a t
+  CCRef.create : 'a -> 'a t
+  CCSeq.return : 'a -> 'a t
+  CCList.return : 'a -> 'a t
+  CCRandom.pure : 'a -> 'a t
+  CCParse.return : 'a -> 'a t
+  CCRandom.return : 'a -> 'a t
+  CCSeq.singleton : 'a -> 'a t
+  CCListLabels.pure : 'a -> 'a t
+  CCFun.Monad.return : 'a -> 'a t
+  CCSeq.MONAD.return : 'a -> 'a t
+  CCList.MONAD.return : 'a -> 'a t
+  CCListLabels.return : 'a -> 'a t
+  CCResult.MONAD.return : 'a -> 'a t
+  CCListLabels.MONAD.return : 'a -> 'a t
+  CCSeq.repeat : ?n:int -> 'a -> 'a t
+  CCList.replicate : int -> 'a -> 'a t
+  CCListLabels.replicate : int -> 'a -> 'a t
+  CCEither.left : 'a -> ('a, 'b) t
+  CCResult.pure : 'a -> ('a, 'err) t
+  CCResult.return : 'a -> ('a, 'err) t
+  CCVector.return : 'a -> ('a, 'mut) t
+  CCVector.make : int -> 'a -> ('a, 'mut) t
+  CCResult.fail : 'err -> ('a, 'err) t
+  CCEither.right : 'b -> ('a, 'b) t
+  CCVector.create_with : ?capacity:int -> 'a -> ('a, rw) t
+  CCPair.dup : 'a -> 'a * 'a
+  CCFun.const : 'a -> 'b -> 'a
+  CCShimsFun_.const : 'a -> 'b -> 'a
+  CCPair.make : 'a -> 'b -> ('a, 'b) t
+  CCPair.swap : 'a * 'b -> 'b * 'a
