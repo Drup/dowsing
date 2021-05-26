@@ -159,11 +159,11 @@ Such an unification algorithm has already been proposed~\cite {boudet}, stil the
 
 We propose a two steps approach:
 \begin{compactitem}
-\item We once preprocess the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz}.
+\item We once preprocess the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz} that encode structural information on their types.
 \item The query phase itself uses these \emph{feature vectors} to reduce the number of actual unification calls.
 \end{compactitem}
 
-A simple feature is ...
+As an exemple, we give an example of a feature.
 
 % The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
