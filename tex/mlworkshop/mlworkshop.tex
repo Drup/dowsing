@@ -4,7 +4,7 @@
 \usepackage [english]{babel}
 \usepackage [dvipsnames]{xcolor}
 \usepackage{xspace}
-\usepackage{fullpage}
+\usepackage{fullpage,paralist}
 
 \usepackage{listings,multicol}
 \lstset{basicstyle=\ttfamily}
@@ -152,13 +152,20 @@ Such an unification algorithm has already been proposed~\cite {boudet}, still
 
 %=================================================================
 
-\section{Smart indexing}
+\section{Smart indexing and smart queries}
 
-One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit{opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
+% One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit{opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
+
+We propose a two steps approach:
+\begin{compactitem}
+  \item We once preprocess the ecosystem into a database indexed by a set of \emph{features} 
+\end{compactitem}
 
 The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
-Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}, in the same fashion as \cite{schulz}. This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit{trie}.
+Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz}.
+
+%This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit{trie}.
 
 %=================================================================
 
