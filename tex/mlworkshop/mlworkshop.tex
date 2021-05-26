@@ -1,74 +1,73 @@
-\documentclass [a4paper,11pt] {scrartcl}
-\usepackage {minted}
-\usepackage [utf8] {inputenc}
-\usepackage [english] {babel}
-\usepackage [dvipsnames] {xcolor}
-\usepackage {xspace}
-\usepackage {fullpage}
+\documentclass [a4paper,11pt]{scrartcl}
+\usepackage{minted}
+\usepackage [utf8]{inputenc}
+\usepackage [english]{babel}
+\usepackage [dvipsnames]{xcolor}
+\usepackage{xspace}
+\usepackage{fullpage}
 
 \usepackage{listings,multicol}
 \lstset{basicstyle=\ttfamily}
-\usepackage [scaled=0.8] {DejaVuSansMono} % decent mono font
-\usepackage {enumitem}
-\setitemize {noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
-\setenumerate {noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+\usepackage [scaled=0.8]{DejaVuSansMono} % decent mono font
+\usepackage{enumitem}
+\setitemize{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
+\setenumerate{noitemsep,topsep=3pt,parsep=3pt,partopsep=3pt}
 
-\usepackage [style=numeric,sorting=ynt,natbib=true] {biblatex}
-\addbibresource {mlworkshop.bib}
+\usepackage [style=numeric,sorting=ynt,natbib=true]{biblatex}
+\addbibresource{mlworkshop.bib}
 
 
-\usepackage [bookmarks,colorlinks=true,citecolor=red] {hyperref}
-\usepackage {amsmath} % align*
-\usepackage [noabbrev,capitalize] {cleveref}
+\usepackage [bookmarks,colorlinks=true,citecolor=red]{hyperref}
+\usepackage{amsmath} % align*
+\usepackage [noabbrev,capitalize]{cleveref}
+
+\newcommand{\error}[1]{\textcolor{red}{#1}}
+\newcommand{\ok}[1]{\textcolor{OliveGreen}{#1}}
+
+
+\newcommand{\dowsing}{\textit{Dowsing}\xspace}
 
 %=================================================================
 
-\newcommand {\error} [1]  {\textcolor {red} {#1}}
-\newcommand {\ok} [1]     {\textcolor {OliveGreen} {#1}}
+\title{Isomorphisms are back!}
 
-\newcommand {\dowsing} {\textit {Dowsing}\xspace}
+\subtitle{Smart indexing for function retrieval by unification modulo type isomorphisms}
 
-%=================================================================
-
-\title {The isomorphisms are back!}
-
-\subtitle {Smart indexing for function retrieval by unification modulo type isomorphisms}
-
-\author {
-    Clément \textsc {Allain} \\
+\author{
+    Clément \textsc{Allain} \\
     EnsL, UCBL, CNRS, LIP \\
-    \href {mailto:clement.allain@inria.fr}
-    {\nolinkurl {clement.allain@inria.fr}}
+    \href{mailto:clement.allain@inria.fr}
+   {\nolinkurl{clement.allain@inria.fr}}
   \and
   \and
-    Gabriel \textsc {Radanne} \\
+    Gabriel \textsc{Radanne} \\
     Inria, EnsL, UCBL, CNRS, LIP \\
-    \href {mailto:gabriel.radanne@inria.fr}
-    {\nolinkurl {gabriel.radanne@inria.fr}}
+    \href{mailto:gabriel.radanne@inria.fr}
+   {\nolinkurl{gabriel.radanne@inria.fr}}
   \and
-    Laure \textsc {Gonnord} \\
+    Laure \textsc{Gonnord} \\
     Univ Lyon, EnsL, UCBL, CNRS, Inria, LIP \\
-    \href {mailto:laure.gonnord@ens-lyon.fr}
-    {\nolinkurl {laure.gonnord@ens-lyon.fr}}
+    \href{mailto:laure.gonnord@ens-lyon.fr}
+   {\nolinkurl{laure.gonnord@ens-lyon.fr}}
 }
 
-\date {}
+\date{}
 
 %=================================================================
 
-\begin {document}
+\begin{document}
 
 \maketitle
 
 %=================================================================
 
-\begin {abstract}
-  Isomorphisms of types capture an intuitive notion of equivalence used in function retrieval systems with semantic unification. The tool we present implements this method for OCaml. Smart indexing based on necessary conditions for unifiability makes it practical and scalable.
-\end {abstract}
+% \begin{abstract}
+%   Isomorphisms of types capture an intuitive notion of equivalence used in function retrieval systems with semantic unification. The tool we present implements this method for OCaml. Smart indexing based on necessary conditions for unifiability makes it practical and scalable.
+% \end{abstract}
 
 %=================================================================
 
-\section {Introduction}
+\section{Introduction}
 
 Sometimes, we need a function so deeply that we have to go out and search for it.
 How do we find it? Sometimes, we have clues: a function which manipulates \texttt{list} is probably
@@ -123,37 +122,37 @@ details or our indexing techniques. The talk will present both practical
 and formal aspect of this work in greater details, along with
 future plans.
 
-% For instance, given the \textit{fold}-like key \texttt {('a * int -> 'a) -> int list -> 'a -> 'a}, our tool retrieves the standard function \texttt {List.fold\_left} of type \texttt {('a -> 'b -> 'a) -> 'a -> 'b list -> 'a}.
+% For instance, given the \textit{fold}-like key \texttt{('a * int -> 'a) -> int list -> 'a -> 'a}, our tool retrieves the standard function \texttt{List.fold\_left} of type \texttt{('a -> 'b -> 'a) -> 'a -> 'b list -> 'a}.
 
 %=================================================================
 
-\section {Unification modulo type isomorphism}
+\section{Unification modulo type isomorphism}
 
-Isomorphisms of types have been widely studied in the 90's \cite {dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
+Isomorphisms of types have been widely studied in the 90's \cite{dicosmo}. Intuitively, what they give us is an equivalence between types that allows rearrangements. This notion of \textit{equivalence modulo isomorphism} is much more flexible than syntactic equality and still sounds familiar.
 
-Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
-\begin {align*}
-  \texttt {('a * 'b) * 'c} &\ \sim\ \texttt {'a * ('b * 'c)} \\
-  \texttt {'a * 'b} &\ \sim\ \texttt {'b * 'a} \\
-  \texttt {unit * 'a} &\ \sim\ \texttt {'a} \\
-  \texttt {('a * 'b) -> 'c} &\ \sim\ \texttt {'a -> ('b -> 'c)}
-\end {align*}
+Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite{rittri} and Coq \cite{delahaye}. Following \cite{rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt{*}, neutrality of \texttt{unit} and curryfication:
+\begin{align*}
+  \texttt{('a * 'b) * 'c} &\ \sim\ \texttt{'a * ('b * 'c)} \\
+  \texttt{'a * 'b} &\ \sim\ \texttt{'b * 'a} \\
+  \texttt{unit * 'a} &\ \sim\ \texttt{'a} \\
+  \texttt{('a * 'b) -> 'c} &\ \sim\ \texttt{'a -> ('b -> 'c)}
+\end{align*}
 
-What we also want is the ability to retrieve more general types that admit an instance equivalent to the query. This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
+What we also want is the ability to retrieve more general types that admit an instance equivalent to the query. This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite{boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
 
 %=================================================================
 
-\section {Smart indexing}
+\section{Smart indexing}
 
-One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit {opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
+One may wonder: "Does it scale up?". Ideally, the retrieval system would sift the entire \textit{opam} database—hundreds of thousands of function identifiers, if not more—in less than a second. Actually, it does not. To achieve this, we need to find a way to speed up the search.
 
 The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
 
-Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. The function identifiers are stored in a \textit {trie} according to their \textit {feature vectors}, in the same fashion as \cite {schulz}. This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit {trie}.
+Furthermore, we precompute these features into an index. It is built once—it can also be optimized—and can be made incremental. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}, in the same fashion as \cite{schulz}. This technique yields very good results for usual queries and can be easily improved by adding new features to the \textit{trie}.
 
 %=================================================================
 
-\section {Conclusion}
+\section{Conclusion}
 
 We have presented a function retrieval system for OCaml. By combining unification modulo isomorphism and smart indexing techniques, it can efficiently manage a large database. We believe this tool to be useful and practical for programmers. Integration into common editors would ease their move.
 
@@ -161,7 +160,7 @@ We have presented a function retrieval system for OCaml. By combining unificatio
 
 \printbibliography
 
-\end {document}
+\end{document}
 
 %%% Local Variables:
 %%% mode: latex
