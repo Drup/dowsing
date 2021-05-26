@@ -137,16 +137,16 @@ future plans.
 Type isomorphisms and their use in function search have been widely studied in the 90's \cite {rittri,dicosmo,DBLP:journals/jsyml/NarendranPS97}. The first requirement is that the order of function parameters do not matter.
 This notion of \textit {equivalence modulo isomorphism} is much more flexible than syntactic equality. 
 
-Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite {rittri} and Coq \cite {delahaye}. Following \cite {rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt {*}, neutrality of \texttt {unit} and curryfication:
-\begin {align*}
-  \texttt {('a * 'b) * 'c} &\ \sim\ \texttt {'a * ('b * 'c)} \\
-  \texttt {'a * 'b} &\ \sim\ \texttt {'b * 'a} \\
-  \texttt {unit * 'a} &\ \sim\ \texttt {'a} \\
-  \texttt {('a * 'b) -> 'c} &\ \sim\ \texttt {'a -> ('b -> 'c)}
-\end {align*}
-An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \texttt {'a list -> 'a} is such an instance. 
+Function retrieval systems using type isomorphisms have been implemented in Lazy ML \cite{rittri} and Coq \cite{delahaye}. Following \cite{rittri}, we consider linear isomorphisms expressing associativity and commutativity of \texttt{*}, neutrality of \texttt{unit} and curryfication:
+\begin{align*}
+  \texttt{('a * 'b) * 'c} &\ \sim\ \texttt{'a * ('b * 'c)} \\
+  \texttt{'a * 'b} &\ \sim\ \texttt{'b * 'a} \\
+  \texttt{unit * 'a} &\ \sim\ \texttt{'a} \\
+  \texttt{('a * 'b) -> 'c} &\ \sim\ \texttt{'a -> ('b -> 'c)}
+\end{align*}
+An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \mintinline{ocaml}{'a list -> 'a} is such an instance. 
 
-Such an optimized unification algorithm has already been proposed~\cite {boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions coming from Batteries and Core.
+Such an optimized unification algorithm has already been proposed~\cite{boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions from Batteries and Core.
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
 
@@ -166,7 +166,7 @@ to speed up such search procedures in numerous context and varied theories.
 
 We propose a two steps approach:
 \begin{compactitem}
-\item We once preprocess the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz} that encode structural information on their types.
+\item We once pre-process the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz} that encode structural information on their types.
 \item The query phase itself uses these \emph{feature vectors} to reduce the number of actual unification calls.
 \end{compactitem}
 Features are designed such that if the type request feature are not compatible
