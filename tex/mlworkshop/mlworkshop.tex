@@ -4,6 +4,7 @@
 \usepackage [english]{babel}
 \usepackage [dvipsnames]{xcolor}
 \usepackage{xspace}
+\usepackage{graphicx}
 \usepackage{fullpage,paralist}
 
 \usepackage{listings,multicol}
@@ -15,7 +16,6 @@
 
 \usepackage [style=numeric,sorting=ynt,natbib=true]{biblatex}
 \addbibresource{mlworkshop.bib}
-
 
 \usepackage [bookmarks,colorlinks=true,citecolor=red]{hyperref}
 \usepackage{amsmath} % align*
@@ -146,7 +146,7 @@ Function retrieval systems using type isomorphisms have been implemented in Lazy
 \end {align*}
 An additional requirement is the ability to retrieve more general types that admit an instance equivalent to the query~: in our example \texttt {'a list -> 'a} is such an instance. 
 
-Such an unification algorithm has already been proposed~\cite {boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions coming from Batteries and Core.
+Such an optimized unification algorithm has already been proposed~\cite {boudet}. Still, we can easily trigger its exponential behavior on highly polymorphic functions coming from Batteries and Core.
 
 % This suggests a matching algorithm. In fact, what we use is an unification algorithm \cite {boudet} allowing both the query and library types to be instantiated. Yet, matching can be reduced to unification and it may become the default behavior.
 
@@ -172,8 +172,20 @@ We propose a two steps approach:
 Features are designed such that if the type request feature is different from a given candidate feature in the database, then we know for sure that they cannot be unified.  The challenge is then to design features that are both discriminating and compatible with  our notion of unification. 
 
 \medskip
-We have so far identified three such features, for instance:
+We have so far identified three such features. One example is the feature
+\emph{by head}, which classify the head of a function into categories.
+For instance, the head of \mintinline{ocaml}{'a list -> 'a} is ``variable'',
+while the head of \mintinline{ocaml}{'a array -> 'a array} is the ``constructor''
+\mintinline{ocaml}{array}.
+based on this classification, which is schematized below, we can quickly
+decide if two types might unify.
 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.6\textwidth]{by_head.png}
+  \caption{Feature "by head"}
+  \label{fig:byhead}
+\end{figure}
 
 
 % The unification algorithm being already quite optimized, we focused on reducing the number of calls to it. Our approach relies on necessary conditions for unifiability: fast and simple tests before unification. We found discriminating features by observing the statistics of searched libraries. The number and positions of type variables proved particularly instructive.
