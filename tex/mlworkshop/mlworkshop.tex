@@ -169,7 +169,8 @@ We propose a two steps approach:
 \item We once preprocess the ecosystem into a database indexed by a set of \emph{features}. The function identifiers are stored in a \textit{trie} according to their \textit{feature vectors}~\cite{schulz} that encode structural information on their types.
 \item The query phase itself uses these \emph{feature vectors} to reduce the number of actual unification calls.
 \end{compactitem}
-Features are designed such that if the type request feature is different from a given candidate feature in the database, then we know for sure that they cannot be unified.  The challenge is then to design features that are both discriminating and compatible with  our notion of unification. 
+Features are designed such that if the type request feature are not compatible
+from a given candidate feature in the database, then we know for sure that they cannot be unified.  The challenge is then to design features that are both discriminating and compatible with  our notion of unification. 
 
 \medskip
 We have so far identified three such features. One example is the feature
