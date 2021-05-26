@@ -72,17 +72,17 @@
 
 Sometimes, we need a function so deeply that we have to go out and search for it.
 How do we find it? Sometimes, we have clues: a function which manipulates \texttt{list} is probably
-in the \texttt{List} module \dots but not always!
+in the \texttt{List} modulo \dots but not always!
 Sometime, all we have is its functionality: doing the sum of a list of integers.
 Unfortunately, search by functionality is difficult.
 
 Rittri~\cite{rittri} proposed an approximation: use the \emph{type} of the function as a key
 to search through libraries: in our case, \mintinline{ocaml}/int list -> int/.
 To avoid stumbling over details such
-as the order of arguments, he proposed to use matching \emph{module type isomorphism} --
+as the order of arguments, he proposed to use matching \emph{modulo type isomorphism} --
 a notion broader than syntactic equality.
 
-Unfortunately, algorithms for unification module type isomorphisms are extremely
+Unfortunately, algorithms for unification modulo type isomorphisms are extremely
 costly. Doing an exhaustive search over the whole ML ecosystem
 was possible at the time (with a standard library of 294 functions),
 but is certainly not possible anymore for the OCaml ecosystem,
