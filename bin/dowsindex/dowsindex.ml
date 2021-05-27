@@ -56,10 +56,10 @@ module Args = struct
 
 end
 
-let () = Args.add_cmd (module CmdUnify)
-let () = Args.add_cmd (module CmdSave)
-let () = Args.add_cmd (module CmdStats)
-let () = Args.add_cmd (module CmdSearch)
+let () = Args.add_cmd (module Unify)
+let () = Args.add_cmd (module Save)
+let () = Args.add_cmd (module Stats)
+let () = Args.add_cmd (module Search)
 
 let () =
   let main = Args.parse () in
