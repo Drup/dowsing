@@ -1,4 +1,4 @@
-let timer = Timer.make ()
+open Common
 
 let pp_table ?(sep = 4) col_names rows =
   let col_cnt = CCArray.length col_names in
@@ -37,42 +37,13 @@ let pp_table ?(sep = 4) col_names rows =
   print_hline () ;
   CCFormat.close_tbox ()
 
-let name = "stats"
-let usage = "<file> <type>"
-
-let filter = ref false
-
-let meas_kind =
-  ref Measure.Kind.VarCount
-let set_meas_kind str =
-  meas_kind := Measure.Kind.of_string str
-let meas_kinds_strs =
-  Measure.Kind.(CCList.map to_string all)
-
-let options = [
-  "--filter", Arg.Set filter, "\tEnable feature filtering" ;
-  "--measure", Arg.Symbol (meas_kinds_strs, set_meas_kind), "\tSet type size kind" ;
-]
-
-let file = ref None
-let ty = ref None
-
-let anon_fun arg =
-  if CCOpt.is_none ! file then
-    file := Some arg
-  else if CCOpt.is_none ! ty then
-    ty := Some arg
-  else
-    raise @@ Arg.Bad "too many arguments"
-
-let main meas_kind filter file str =
+let main _ meas_kind filt idx_file ty =
   let idx =
-    try Index.load file
+    try Index.load idx_file
     with Sys_error _ ->
-      Common.error () ~msg:(Fmt.str "cannot open file '%s'." file)
+      error @@ Fmt.str "cannot open index file '%s'" idx_file
   in
-  let env = Type.Env.make Query in
-  let ty = Common.type_of_string env str in
+  let timer = Timer.make () in
   let aux ?stats0 iter_idx =
     let tbl = ref Measure.Map.empty in
     iter_idx (fun (ty', _) ->
@@ -117,13 +88,39 @@ let main meas_kind filter file str =
   in
   Fmt.pr "@[<v>" ;
   let stats0 = aux @@ Index.iter idx in
-  if filter then begin
+  if filt then begin
     Fmt.pr "@," ;
     ignore @@ aux ~stats0 @@ Index.iter_with idx ty
   end ;
   Fmt.pr "@]@."
 
-let main () =
-  if CCOpt.(is_none ! file || is_none ! ty) then
-    raise @@ Arg.Bad "too few arguments" ;
-  main ! meas_kind ! filter (Option.get ! file) (Option.get ! ty)
+let main copts meas_kind filt idx_file ty =
+  try Ok (main copts meas_kind filt idx_file ty)
+  with Error msg -> Error (`Msg msg)
+
+open Cmdliner
+
+let meas_kind =
+  let docv = "measure" in
+  let doc =
+    Fmt.str "Set type measure: $(docv) must be %s."
+      (Arg.doc_alts Measure.Kind.(CCList.map to_string all))
+  in
+  Arg.(value & opt conv_meas_kind Measure.Kind.VarCount & info [ "measure" ] ~docv ~doc)
+
+let filt =
+  let doc = "Test feature filtering." in
+  Arg.(value & flag & info [ "filter" ] ~doc)
+
+let idx_file =
+  let docv = "index" in
+  Arg.(required & pos 0 (some non_dir_file) None & info [] ~docv)
+
+let ty =
+  let docv = "type" in
+  Arg.(required & pos 1 (some conv_type) None & info [] ~docv)
+
+let cmd =
+  let doc = "compute index statistics" in
+  Term.(term_result (const main $ copts $ meas_kind $ filt $ idx_file $ ty)),
+  Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

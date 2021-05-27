@@ -24,5 +24,6 @@ depends: [
   "ocp-index"
   "ocamlfind"
   "logs"
+  "cmdliner"
   "alcotest" {with-test}
 ]

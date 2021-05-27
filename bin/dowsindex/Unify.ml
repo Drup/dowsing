@@ -1,27 +1,6 @@
-let name = "unify"
-let usage = "<type1> <type2>"
+open Common
 
-let all_unifs = ref false
-
-let options = [
-  "-a", Arg.Set all_unifs, "\tReport all unifiers" ;
-]
-
-let ty1 = ref None
-let ty2 = ref None
-
-let anon_fun arg =
-  if CCOpt.is_none ! ty1 then
-    ty1 := Some arg
-  else if CCOpt.is_none ! ty2 then
-    ty2 := Some arg
-  else
-    raise @@ Arg.Bad "too many arguments"
-
-let main all_unifs str1 str2 =
-  let env = Type.Env.make Query in
-  let ty1 = Common.type_of_string env str1 in
-  let ty2 = Common.type_of_string env str2 in
+let main _ all_unifs ty1 ty2 =
   Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp ty1) ;
   Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp ty2) ;
   let unifs =
@@ -39,7 +18,21 @@ let main all_unifs str1 str2 =
     Fmt.pr "@[<v2>unifiers:@ %a@]@."
       Fmt.(list ~sep:sp Unification.Subst.pp) unifs
 
-let main () =
-  if CCOpt.(is_none ! ty1 || is_none ! ty2) then
-    raise @@ Arg.Bad "too few arguments" ;
-  main ! all_unifs (Option.get ! ty1) (Option.get ! ty2)
+open Cmdliner
+
+let all_unifs =
+  let doc = "Report all unifiers." in
+  Arg.(value & flag & info [ "a" ] ~doc)
+
+let ty1 =
+  let docv = "type1" in
+  Arg.(required & pos 0 (some conv_type) None & info [] ~docv)
+
+let ty2 =
+  let docv = "type2" in
+  Arg.(required & pos 1 (some conv_type) None & info [] ~docv)
+
+let cmd =
+  let doc = "unify two types" in
+  Term.(const main $ copts $ all_unifs $ ty1 $ ty2),
+  Term.(info "unify" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

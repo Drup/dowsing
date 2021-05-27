@@ -1,35 +1,11 @@
-let name = "search"
-let usage = "<file> <type>"
+open Common
 
-let exhaustive = ref false
-
-let cnt = ref None
-let set_cnt i = cnt := Some i
-
-let options = [
-  "--exhaustive", Arg.Set exhaustive, "\tUse exhaustive search (slow)" ;
-  "--take", Arg.Int set_cnt, "\tReport only the first results" ;
-]
-
-let file = ref None
-let ty = ref None
-
-let anon_fun arg =
-  if CCOpt.is_none ! file then
-    file := Some arg
-  else if CCOpt.is_none ! ty then
-    ty := Some arg
-  else
-    raise @@ Arg.Bad "too many arguments"
-
-let main exhaustive cnt file str =
+let main _ exhaustive cnt idx_file ty =
   let idx =
-    try Index.load file
+    try Index.load idx_file
     with Sys_error _ ->
-      Common.error () ~msg:(Fmt.str "cannot open file '%s'." file)
+      error @@ Fmt.str "cannot open index file '%s'." idx_file
   in
-  let env = Type.Env.make Query in
-  let ty = Common.type_of_string env str in
   let res =
     let find = if exhaustive then Index.find else Index.find_with in
     find idx env ty
@@ -42,7 +18,30 @@ let main exhaustive cnt file str =
   Fmt.pr "@[<v>%a@]@."
     (Fmt.iter Iter.iter @@ fun fmt (_, info, _) -> Index.Info.pp fmt info) res
 
-let main () =
-  if CCOpt.(is_none ! file || is_none ! ty) then
-    raise @@ Arg.Bad "too few arguments" ;
-  main ! exhaustive ! cnt (Option.get ! file) (Option.get ! ty)
+let main copts exhaustive cnt idx_file ty =
+  try Ok (main copts exhaustive cnt idx_file ty)
+  with Error msg -> Error (`Msg msg)
+
+open Cmdliner
+
+let exhaustive =
+  let doc = "Use exhaustive search (slow)." in
+  Arg.(value & flag & info [ "exhaustive" ] ~doc)
+
+let cnt =
+  let docv = "n" in
+  let doc = "Report only the first $(docv) results." in
+  Arg.(value & opt (some int) None & info [ "n" ] ~docv ~doc)
+
+let idx_file =
+  let docv = "index" in
+  Arg.(required & pos 0 (some non_dir_file) None & info [] ~docv)
+
+let ty =
+  let docv = "type" in
+  Arg.(required & pos 1 (some conv_type) None & info [] ~docv)
+
+let cmd =
+  let doc = "search index" in
+  Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty)),
+  Term.(info "search" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

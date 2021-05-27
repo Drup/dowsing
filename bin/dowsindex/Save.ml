@@ -1,39 +1,40 @@
-let name = "save"
-let usage = "<file> <package>..."
+open Common
 
-let verbose = ref false
-
-let options = [
-  "--verbose", Arg.Set verbose, "\tEnable verbose output" ;
-]
-
-let file = ref None
-let pkgs = ref []
-
-let anon_fun arg =
-  if CCOpt.is_none ! file then
-    file := Some arg
-  else
-    pkgs := ! pkgs @ [ arg ]
-
-let main verbose file pkgs =
+let main _ verbose idx_file pkgs =
   let pkgs_dirs =
     try
-      if pkgs = [] then
-        FindPackage.find_all ()
-      else
-        FindPackage.find pkgs
+      if pkgs = []
+      then FindPackage.find_all ()
+      else FindPackage.find pkgs
     with
     | FindPackage.Error pkg ->
-        Common.error () ~msg:(Fmt.str "cannot find package '%s'." pkg)
+        error @@ Fmt.str "cannot find package '%s'" pkg
   in
   if verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@."
       (CCList.length pkgs_dirs)
       Fmt.(list ~sep:sp string) pkgs_dirs ;
-  Index.(save @@ make pkgs_dirs) file
+  Index.(save @@ make pkgs_dirs) idx_file
 
-let main () =
-  if CCOpt.is_none ! file then
-    raise @@ Arg.Bad "too few arguments" ;
-  main ! verbose (Option.get ! file) ! pkgs
+let main copts verbose idx_file pkgs =
+  try Ok (main copts verbose idx_file pkgs)
+  with Error msg -> Error (`Msg msg)
+
+open Cmdliner
+
+let verbose =
+  let doc = "Enable verbose output." in
+  Arg.(value & flag & info [ "verbose" ] ~doc)
+
+let idx_file =
+  let docv = "index" in
+  Arg.(required & pos 0 (some string) None & info [] ~docv)
+
+let pkgs =
+  let docv = "packages" in
+  Arg.(value & pos_right 0 string [] & info [] ~docv)
+
+let cmd =
+  let doc = "save index" in
+  Term.(term_result (const main $ copts $ verbose $ idx_file $ pkgs)),
+  Term.(info "save" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

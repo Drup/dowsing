@@ -1,5 +1,5 @@
 (executable
   (name dowsindex)
   (public_name dowsindex)
-  (libraries logs utils common unification index)
+  (libraries logs cmdliner utils common unification index)
   (flags (:standard -open Utils -open Common)))
