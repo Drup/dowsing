@@ -35,6 +35,8 @@ module Kind = struct
 
   let all = List.map fst all
 
+  let pp = Fmt.of_to_string to_string
+
 end
 
 type t = Int.t

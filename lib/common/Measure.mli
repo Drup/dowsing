@@ -15,6 +15,8 @@ module Kind : sig
   val of_string : String.t -> t
   val to_string : t -> String.t
 
+  val pp : t Fmt.t [@@ocaml.toplevel_printer]
+
 end
 
 type t = Int.t
