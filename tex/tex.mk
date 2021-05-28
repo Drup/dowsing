@@ -16,4 +16,4 @@ all : $(TARGET).pdf
 
 .PHONY : clean
 clean :
-	$(RM) -r *.{aux,log,nav,out,snm,synctex.gz,toc,vrb,bbl,bcf,blg,run.xml} _minted-*
+	$(RM) -r *.{aux,log,nav,out,snm,synctex.gz,toc,vrb,bbl,bcf,blg,run.xml,pdf} _minted-*
