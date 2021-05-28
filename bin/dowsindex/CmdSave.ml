@@ -23,7 +23,12 @@ let main _ verbose idx_file pkgs =
     Fmt.pr "@[<v2>found %i packages:@ %a@]@."
       (CCList.length pkgs_dirs)
       Fmt.(list ~sep:sp Fpath.pp) pkgs_dirs ;
-  Index.(save @@ make pkgs_dirs) idx_file
+  let idx = Index.make pkgs_dirs in
+  try
+    Index.save idx idx_file
+  with Sys_error _ ->
+    error @@ Fmt.str "cannot write index file `%a'"
+      Fpath.pp idx_file
 
 let main copts verbose idx_file pkgs =
   try Ok (main copts verbose idx_file pkgs)

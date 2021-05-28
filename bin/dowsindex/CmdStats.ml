@@ -41,7 +41,7 @@ let main _ meas_kind filt idx_file ty =
   let idx =
     try Index.load idx_file
     with Sys_error _ ->
-      error @@ Fmt.str "cannot open index file `%a'."
+      error @@ Fmt.str "cannot open index file `%a'"
         Fpath.pp idx_file
   in
   let timer = Timer.make () in
