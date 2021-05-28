@@ -1,6 +1,6 @@
 (rule
   (target index.db)
-  (action (run dowsindex save %{target} containers)))
+  (action (run dowsindex save --index %{target} containers)))
 
 (cram
   (deps %{bin:dowsindex} index.db))

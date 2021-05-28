@@ -1,6 +1,6 @@
 Some initial basic tests.
 
-  $ dowsindex search index.db "int -> int -> int"
+  $ dowsindex search --index index.db "int -> int -> int"
   Containers.max : int -> int -> int
   Containers.min : int -> int -> int
   CCShimsInt_.add : int -> int -> int
@@ -29,7 +29,7 @@ Some initial basic tests.
   CCFun.const : 'a -> 'b -> 'a
   CCShimsFun_.const : 'a -> 'b -> 'a
 
-  $ dowsindex search index.db "int -> int -> int -> int"
+  $ dowsindex search --index index.db "int -> int -> int -> int"
   Containers.Hashtbl.hash : 'a -> int
   ContainersLabels.Hashtbl.hash : 'a -> int
   Containers.Hashtbl.seeded_hash : int -> 'a -> int
@@ -39,7 +39,7 @@ Some initial basic tests.
   CCFun.const : 'a -> 'b -> 'a
   CCShimsFun_.const : 'a -> 'b -> 'a
 
-  $ dowsindex search index.db "int -> int -> 'a"
+  $ dowsindex search --index index.db "int -> int -> 'a"
   CCOrd.equiv : int -> int -> bool
   Containers.(<) : int -> int -> bool
   Containers.(=) : int -> int -> bool
