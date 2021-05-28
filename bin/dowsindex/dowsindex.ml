@@ -1,10 +1,10 @@
 open Cmdliner
 
 let cmds = [
-  Unify.cmd ;
-  Save.cmd ;
-  Stats.cmd ;
-  Search.cmd ;
+  CmdUnify.cmd ;
+  CmdSave.cmd ;
+  CmdStats.cmd ;
+  CmdSearch.cmd ;
 ]
 
 let main_cmd =
