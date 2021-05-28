@@ -25,5 +25,7 @@ depends: [
   "ocamlfind"
   "logs"
   "cmdliner"
+  "fpath"
+  "bos"
   "alcotest" {with-test}
 ]

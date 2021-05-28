@@ -41,7 +41,8 @@ let main _ meas_kind filt idx_file ty =
   let idx =
     try Index.load idx_file
     with Sys_error _ ->
-      error @@ Fmt.str "cannot open index file '%s'" idx_file
+      error @@ Fmt.str "cannot open index file `%a'."
+        Fpath.pp idx_file
   in
   let timer = Timer.make () in
   let aux ?stats0 iter_idx =
@@ -106,7 +107,7 @@ let meas_kind =
     Fmt.str "Set type measure: $(docv) must be %s."
       (Arg.doc_alts Measure.Kind.(CCList.map to_string all))
   in
-  Arg.(value & opt conv_meas_kind Measure.Kind.VarCount & info [ "measure" ] ~docv ~doc)
+  Arg.(value & opt Conv.meas_kind Measure.Kind.VarCount & info [ "measure" ] ~docv ~doc)
 
 let filt =
   let doc = "Test feature filtering." in
@@ -115,11 +116,11 @@ let filt =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt non_dir_file Paths.idx_file & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt Conv.file Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos 0 (some conv_type) None & info [] ~docv)
+  Arg.(required & pos 0 (some Conv.typ) None & info [] ~docv)
 
 let cmd =
   let doc = "compute index statistics" in

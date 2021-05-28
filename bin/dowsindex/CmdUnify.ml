@@ -26,11 +26,11 @@ let all_unifs =
 
 let ty1 =
   let docv = "type1" in
-  Arg.(required & pos 0 (some conv_type) None & info [] ~docv)
+  Arg.(required & pos 0 (some Conv.typ) None & info [] ~docv)
 
 let ty2 =
   let docv = "type2" in
-  Arg.(required & pos 1 (some conv_type) None & info [] ~docv)
+  Arg.(required & pos 1 (some Conv.typ) None & info [] ~docv)
 
 let cmd =
   let doc = "unify two types" in

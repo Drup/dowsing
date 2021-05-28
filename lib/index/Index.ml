@@ -17,6 +17,7 @@ let () = Printtyp.Naming_context.enable false
 
 let iter_libindex hcons pkgs_dirs k =
   pkgs_dirs
+  |> CCList.map Fpath.to_string
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
   |> LibIndex.all
@@ -61,10 +62,11 @@ module Archive = struct
   let to_index = CCFun.id
 
   let load file : t =
-    CCIO.with_in file Marshal.from_channel
+    CCIO.with_in (Fpath.to_string file) Marshal.from_channel
 
   let save (t : t) file =
-    CCIO.with_out file @@ fun out -> Marshal.to_channel out t []
+    CCIO.with_out (Fpath.to_string file) @@ fun out ->
+      Marshal.to_channel out t []
 
 end
 

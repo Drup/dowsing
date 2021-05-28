@@ -5,24 +5,6 @@ let env = Type.Env.make Query
 
 open Cmdliner
 
-let conv_type =
-  let parse_type str =
-    try
-      Ok (Type.of_string env str)
-    with Syntaxerr.Error _ ->
-      Error (`Msg "syntax error")
-  in
-  Arg.conv (parse_type, Type.pp)
-
-let conv_meas_kind =
-  let parse_meas_kind str =
-    try
-      Ok (Measure.Kind.of_string str)
-    with Invalid_argument _ ->
-      Error (`Msg "illegal measure")
-  in
-  Arg.conv (parse_meas_kind, Measure.Kind.pp)
-
 type copts = {
   debug : Bool.t ;
 }

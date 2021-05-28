@@ -3,20 +3,21 @@
     Unfortunately, compiling with dune gives "inconsistent assumptions over interface Common".
 *)
 
-let ( / ) = Filename.concat
+let ( / ) = Fpath.( / )
+
+let home_dir =
+  Bos.OS.Dir.user ()
+  |> CCResult.get_lazy @@ fun (`Msg msg) -> failwith msg
 
 module type S = sig
-  val home_dir : String.t
-  val data_dir : String.t
+  val data_dir : Fpath.t
 end
 
 module Linux : S = struct
-  let home_dir = Sys.getenv "HOME"
   let data_dir = home_dir / ".local" / "share"
 end
 
 module Macos : S = struct
-  let home_dir = Sys.getenv "HOME"
   let data_dir = home_dir / "Library" / "Application Support"
 end
 

@@ -5,12 +5,8 @@ let main _ verbose idx_file pkgs =
     match idx_file with
     | Some idx_file -> idx_file
     | None ->
-        if not @@ Sys.file_exists Paths.data_dir then begin
-          try
-            Sys.mkdir Paths.data_dir 0o755
-          with Sys_error _ ->
-            error @@ Fmt.str "cannot create directory %s" Paths.data_dir
-        end ;
+        Bos.OS.Dir.create Paths.data_dir ~path:true
+        |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
         Paths.idx_file
   in
   let pkgs_dirs =
@@ -20,12 +16,13 @@ let main _ verbose idx_file pkgs =
       else FindPackage.find pkgs
     with
     | FindPackage.Error pkg ->
-        error @@ Fmt.str "cannot find package '%s'" pkg
+        error @@ Fmt.str "cannot find package `%s'"
+          pkg
   in
   if verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@."
       (CCList.length pkgs_dirs)
-      Fmt.(list ~sep:sp string) pkgs_dirs ;
+      Fmt.(list ~sep:sp Fpath.pp) pkgs_dirs ;
   Index.(save @@ make pkgs_dirs) idx_file
 
 let main copts verbose idx_file pkgs =
@@ -41,7 +38,7 @@ let verbose =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt (some string) None & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt (some Conv.path) None & info [ "index" ] ~docv ~doc)
 
 let pkgs =
   let docv = "package" in
