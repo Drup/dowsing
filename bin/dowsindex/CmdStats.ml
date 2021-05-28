@@ -113,12 +113,13 @@ let filt =
   Arg.(value & flag & info [ "filter" ] ~doc)
 
 let idx_file =
-  let docv = "index" in
-  Arg.(required & pos 0 (some non_dir_file) None & info [] ~docv)
+  let docv = "file" in
+  let doc = "Set index file." in
+  Arg.(value & opt non_dir_file Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos 1 (some conv_type) None & info [] ~docv)
+  Arg.(required & pos 0 (some conv_type) None & info [] ~docv)
 
 let cmd =
   let doc = "compute index statistics" in

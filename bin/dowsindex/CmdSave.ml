@@ -1,6 +1,18 @@
 open Common
 
 let main _ verbose idx_file pkgs =
+  let idx_file =
+    match idx_file with
+    | Some idx_file -> idx_file
+    | None ->
+        if not @@ Sys.file_exists Paths.data_dir then begin
+          try
+            Sys.mkdir Paths.data_dir 0o755
+          with Sys_error _ ->
+            error @@ Fmt.str "cannot create directory %s" Paths.data_dir
+        end ;
+        Paths.idx_file
+  in
   let pkgs_dirs =
     try
       if pkgs = []
@@ -27,12 +39,13 @@ let verbose =
   Arg.(value & flag & info [ "verbose" ] ~doc)
 
 let idx_file =
-  let docv = "index" in
-  Arg.(required & pos 0 (some string) None & info [] ~docv)
+  let docv = "file" in
+  let doc = "Set index file." in
+  Arg.(value & opt (some string) None & info [ "index" ] ~docv ~doc)
 
 let pkgs =
-  let docv = "packages" in
-  Arg.(value & pos_right 0 string [] & info [] ~docv)
+  let docv = "package" in
+  Arg.(value & pos_all string [] & info [] ~docv)
 
 let cmd =
   let doc = "save index" in
