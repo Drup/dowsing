@@ -1,14 +1,8 @@
 open Common
 
 let main _ verbose idx_file pkgs =
-  let idx_file =
-    match idx_file with
-    | Some idx_file -> idx_file
-    | None ->
-        Bos.OS.Dir.create Paths.data_dir ~path:true
-        |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
-        Paths.idx_file
-  in
+  Bos.OS.Dir.create ~path:true @@ Fpath.parent idx_file
+  |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
   let pkgs =
     try
       if pkgs = []
@@ -47,7 +41,7 @@ let verbose =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt (some Conv.path) None & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt Conv.path Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let pkgs =
   let docv = "package" in
