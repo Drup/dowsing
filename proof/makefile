@@ -12,4 +12,4 @@ TypWithoutUnit.vo : Signature.vo Var.vo Vec.vo
 
 .PHONY : clean
 clean :
-	$(RM) *.glob *.vo{,k,s}
+	@ $(RM) *.glob *.vo{,k,s}
