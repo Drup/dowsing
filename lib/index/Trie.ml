@@ -1,26 +1,23 @@
 module type NODE = sig
 
-  type 'v t
+  type t
 
-  val empty : 'v t
-  val singleton : Type.t -> 'v -> 'v t
-  val update : Type.t -> ('v Option.t -> 'v) -> 'v t -> 'v t
-  val iter : 'v t -> (Type.t * 'v) Iter.t
-  val iter_with : Type.t -> 'v t -> (Type.t * 'v) Iter.t
+  val empty : t
+  val add : Type.t -> t -> t
+  val remove : Type.t -> t -> t
+  val iter : t -> Type.t Iter.t
+  val iter_with : Type.t -> t -> Type.t Iter.t
 
 end
 
 module Leaf : NODE = struct
 
-  type 'v t = 'v Type.Map.t
+  type t = Type.MSet.t
 
-  let empty = Type.Map.empty
-  let singleton = Type.Map.singleton
-
-  let update ty update =
-    Type.Map.update ty @@ fun v -> Some (update v)
-
-  let iter = Type.Map.to_iter
+  let empty = Type.MSet.empty
+  let add ty t = Type.MSet.add t ty
+  let remove ty t = Type.MSet.remove t ty
+  let iter t = Type.MSet.to_iter_mult t |> Iter.map fst
   let iter_with _ = iter
 
 end
@@ -29,21 +26,19 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
 
   module FeatMap = CCMap.Make (Feat)
 
-  type 'v t = 'v Sub.t FeatMap.t
+  type t = Sub.t FeatMap.t
 
   let empty = FeatMap.empty
 
-  let singleton ty v =
-    FeatMap.singleton (Feat.compute ty) (Sub.singleton ty v)
-
-  let update ty update t =
+  let add ty t =
     t |> FeatMap.update (Feat.compute ty) @@ fun sub ->
-      let sub =
-        match sub with
-        | None -> Sub.singleton ty @@ update None
-        | Some sub -> Sub.update ty update sub
-      in
-      Some sub
+      let sub = CCOpt.get_or ~default:Sub.empty sub in
+      Some (Sub.add ty sub)
+
+  let remove ty t =
+    t |> FeatMap.update (Feat.compute ty) @@ function
+      | None -> None
+      | Some sub -> Some (Sub.remove ty sub)
 
   let iter t =
     t

@@ -9,7 +9,7 @@ let main _ verbose idx_file pkgs =
         |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
         Paths.idx_file
   in
-  let pkgs_dirs =
+  let pkgs =
     try
       if pkgs = []
       then FindPackage.find_all ()
@@ -21,9 +21,13 @@ let main _ verbose idx_file pkgs =
   in
   if verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@."
-      (CCList.length pkgs_dirs)
-      Fmt.(list ~sep:sp Fpath.pp) pkgs_dirs ;
-  let idx = Index.make pkgs_dirs in
+      (CCList.length pkgs)
+      Fmt.(list ~sep:sp @@ using snd Fpath.pp) pkgs ;
+  let idx =
+    try Index.load idx_file
+    with Sys_error _ -> Index.make ()
+  in
+  pkgs |> CCList.iter @@ CCFun.uncurry @@ Index.add idx ;
   try
     Index.save idx idx_file
   with Sys_error _ ->

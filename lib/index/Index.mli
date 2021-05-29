@@ -1,17 +1,19 @@
-module Info = Info
+module Cell = Cell
 
 type t
 
-type iter = (Type.t * Info.t) Iter.t
-type iter_with_unifier = (Type.t * Info.t * Unification.Subst.t) Iter.t
+type iter = (Type.t * Cell.t) Iter.t
+type iter_with_unifier = (Type.t * Cell.t * Unification.Subst.t) Iter.t
 
-val make : Fpath.t List.t -> t
+val make : Unit.t -> t
+val remove : t -> String.t -> Unit.t
+val add : t -> String.t -> Fpath.t -> Unit.t
 
-val iter : t -> iter
-val iter_with : t -> Type.t -> iter
+val iter : ?pkgs:(String.t List.t) -> t -> iter
+val iter_with : ?pkgs:(String.t List.t) -> t -> Type.t -> iter
 
-val find : t -> Type.Env.t -> Type.t -> iter_with_unifier
-val find_with : t -> Type.Env.t -> Type.t -> iter_with_unifier
+val find : ?pkgs:(String.t List.t) -> t -> Type.Env.t -> Type.t -> iter_with_unifier
+val find_with : ?pkgs:(String.t List.t) -> t -> Type.Env.t -> Type.t -> iter_with_unifier
 
 val load : Fpath.t -> t
 val save : t -> Fpath.t -> Unit.t

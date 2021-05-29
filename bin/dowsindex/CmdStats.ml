@@ -37,15 +37,25 @@ let pp_table ?(sep = 4) col_names rows =
   print_hline () ;
   CCFormat.close_tbox ()
 
-let main _ meas_kind filt idx_file ty =
+let main _ meas_kind filt idx_file ty pkgs =
+  let pkgs =
+    if CCList.is_empty pkgs
+    then None
+    else Some pkgs
+  in
   let idx =
-    try Index.load idx_file
+    try
+      Index.load idx_file
     with Sys_error _ ->
       error @@ Fmt.str "cannot open index file `%a'"
         Fpath.pp idx_file
   in
   let timer = Timer.make () in
   let aux ?stats0 iter_idx =
+    let iter_idx =
+      try iter_idx ()
+      with Not_found -> error "unknown package"
+    in
     let tbl = ref Measure.Map.empty in
     iter_idx (fun (ty', _) ->
       Timer.start timer ;
@@ -88,15 +98,15 @@ let main _ meas_kind filt idx_file ty =
     total_time, total_cnt
   in
   Fmt.pr "@[<v>" ;
-  let stats0 = aux @@ Index.iter idx in
+  let stats0 = aux @@ fun () -> Index.iter idx ?pkgs in
   if filt then begin
     Fmt.pr "@," ;
-    ignore @@ aux ~stats0 @@ Index.iter_with idx ty
+    ignore @@ aux ~stats0 @@ fun () -> Index.iter_with idx ty ?pkgs
   end ;
   Fmt.pr "@]@."
 
-let main copts meas_kind filt idx_file ty =
-  try Ok (main copts meas_kind filt idx_file ty)
+let main copts meas_kind filt idx_file ty pkgs =
+  try Ok (main copts meas_kind filt idx_file ty pkgs)
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -122,7 +132,11 @@ let ty =
   let docv = "type" in
   Arg.(required & pos 0 (some Conv.typ) None & info [] ~docv)
 
+let pkgs =
+  let docv = "package" in
+  Arg.(value & pos_right 0 string [] & info [] ~docv)
+
 let cmd =
   let doc = "compute index statistics" in
-  Term.(term_result (const main $ copts $ meas_kind $ filt $ idx_file $ ty)),
+  Term.(term_result (const main $ copts $ meas_kind $ filt $ idx_file $ ty $ pkgs)),
   Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

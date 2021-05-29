@@ -6,15 +6,15 @@ let () = Findlib.init ()
 let wrap pkgs =
   try
     pkgs ()
-    |> Iter.of_list
-    |> Iter.map Findlib.package_directory
-    (* we need this because [Findlib.list_packages'] is faulty: it gives some unknown packages *)
-    |> Iter.filter Sys.file_exists
-    |> Iter.sort_uniq ~cmp:CCString.compare
-    |> Iter.map Fpath.v
-    |> Iter.to_list
+    |> CCList.filter_map (fun pkg ->
+      let pkg_dir = Findlib.package_directory pkg in
+      if Sys.file_exists pkg_dir
+      then Some (pkg, Fpath.v pkg_dir)
+      else None
+    )
   with
-  | Findlib.No_such_package (pkg, _) ->
+  | Findlib.No_such_package (pkg, _)
+  | Findlib.Package_loop pkg ->
       error pkg
 
 let find pkgs =

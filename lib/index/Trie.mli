@@ -1,12 +1,12 @@
 module type NODE = sig
 
-  type 'v t
+  type t
 
-  val empty : 'v t
-  val singleton : Type.t -> 'v -> 'v t
-  val update : Type.t -> ('v Option.t -> 'v) -> 'v t -> 'v t
-  val iter : 'v t -> (Type.t * 'v) Iter.t
-  val iter_with : Type.t -> 'v t -> (Type.t * 'v) Iter.t
+  val empty : t
+  val add : Type.t -> t -> t
+  val remove : Type.t -> t -> t
+  val iter : t -> Type.t Iter.t
+  val iter_with : Type.t -> t -> Type.t Iter.t
 
 end
 

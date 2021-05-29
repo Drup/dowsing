@@ -1,15 +1,25 @@
 open Common
 
-let main _ exhaustive cnt idx_file ty =
+let main _ exhaustive cnt idx_file ty pkgs =
+  let pkgs =
+    if CCList.is_empty pkgs
+    then None
+    else Some pkgs
+  in
   let idx =
-    try Index.load idx_file
+    try
+      Index.load idx_file
     with Sys_error _ ->
       error @@ Fmt.str "cannot open index file `%a'"
         Fpath.pp idx_file
   in
   let res =
     let find = if exhaustive then Index.find else Index.find_with in
-    find idx env ty
+    let iter_idx =
+      try find idx env ty ?pkgs
+      with Not_found -> error "unknown package"
+    in
+    iter_idx
     |> Iter.sort ~cmp:(fun (ty1, _, unif1) (ty2, _, unif2) ->
       CCOrd.(Unification.Subst.compare unif1 unif2
         <?> (Type.compare, ty1, ty2))
@@ -17,10 +27,10 @@ let main _ exhaustive cnt idx_file ty =
   in
   let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
   Fmt.pr "@[<v>%a@]@."
-    (Fmt.iter Iter.iter @@ fun fmt (_, info, _) -> Index.Info.pp fmt info) res
+    (Fmt.iter Iter.iter @@ fun fmt (_, cell, _) -> Index.Cell.pp fmt cell) res
 
-let main copts exhaustive cnt idx_file ty =
-  try Ok (main copts exhaustive cnt idx_file ty)
+let main copts exhaustive cnt idx_file ty pkgs =
+  try Ok (main copts exhaustive cnt idx_file ty pkgs)
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -43,7 +53,11 @@ let ty =
   let docv = "type" in
   Arg.(required & pos 0 (some Conv.typ) None & info [] ~docv)
 
+let pkgs =
+  let docv = "package" in
+  Arg.(value & pos_right 0 string [] & info [] ~docv)
+
 let cmd =
   let doc = "search index" in
-  Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty)),
+  Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty $ pkgs)),
   Term.(info "search" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
