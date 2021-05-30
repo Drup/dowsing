@@ -2,12 +2,12 @@ open Common
 
 let pp_table ?(sep = 4) col_names rows =
   let col_cnt = CCArray.length col_names in
-  let col_widths = CCArray.map CCString.length col_names in
+  let col_widths = CCArray.map String.length col_names in
   let rows = Iter.persistent rows in
   rows |> Iter.iter (fun row ->
     assert (CCArray.length row = col_cnt) ;
     for i = 0 to col_cnt - 1 do
-      col_widths.(i) <- max col_widths.(i) @@ CCString.length row.(i)
+      col_widths.(i) <- max col_widths.(i) @@ String.length row.(i)
     done
   ) ;
   for i = 0 to col_cnt - 2 do
@@ -15,7 +15,7 @@ let pp_table ?(sep = 4) col_names rows =
   done ;
   let print_hline =
     let width = CCArray.fold (+) 0 col_widths in
-    let hline = CCString.make width '-' in
+    let hline = String.make width '-' in
     fun () -> CCFormat.print_string hline
   in
   CCFormat.open_tbox () ;

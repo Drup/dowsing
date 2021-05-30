@@ -1,3 +1,4 @@
 (library
   (name common)
-  (libraries compiler-libs.common containers containers-data iter fmt logs))
+  (libraries compiler-libs.common containers containers-data iter fmt logs utils)
+  (flags (:standard -open Utils)))

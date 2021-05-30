@@ -7,14 +7,11 @@ module Trie =
     )
   )
 
-module StringHMap = CCHashtbl.Make (CCString)
-module StringSet = CCSet.Make (CCString)
-
 type t = {
   hcons : Type.Hashcons.t ;
   mutable trie : Trie.t ;
-  pkgs_dirs : String.t StringHMap.t ;
-  cells : (Int.t * Cell.t Type.Map.t) StringHMap.t ;
+  pkgs_dirs : String.t String.HMap.t ;
+  cells : (Int.t * Cell.t Type.Map.t) String.HMap.t ;
 }
 
 type iter = (Type.t * Cell.t) Iter.t
@@ -23,16 +20,16 @@ type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
 let make () = {
   hcons = Type.Hashcons.make () ;
   trie = Trie.empty ;
-  pkgs_dirs = StringHMap.create 17 ;
-  cells = StringHMap.create 17 ;
+  pkgs_dirs = String.HMap.create 17 ;
+  cells = String.HMap.create 17 ;
 }
 
 let remove t pkg =
-  let pkg_dir = StringHMap.find t.pkgs_dirs pkg in
-  snd @@ StringHMap.find t.cells pkg_dir
+  let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
+  snd @@ String.HMap.find t.cells pkg_dir
   |> Type.Map.iter (fun ty _ -> t.trie <- Trie.remove ty t.trie) ;
-  StringHMap.remove t.pkgs_dirs pkg ;
-  StringHMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
+  String.HMap.remove t.pkgs_dirs pkg ;
+  String.HMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
     | None -> assert false
     | Some (cnt, cells) ->
         if cnt = 1
@@ -66,15 +63,15 @@ let add =
     Type.Map.update ty (CCFun.compose (Cell.update lid info) CCOpt.return) cells
   in
   fun t pkg pkg_dir ->
-    if StringHMap.mem t.pkgs_dirs pkg then
+    if String.HMap.mem t.pkgs_dirs pkg then
       remove t pkg ;
     let pkg_dir = Fpath.to_string pkg_dir in
     let cells =
       iter_libindex t.hcons pkg_dir
       |> Iter.fold (aux t) Type.Map.empty
     in
-    StringHMap.add t.pkgs_dirs pkg pkg_dir ;
-    StringHMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
+    String.HMap.add t.pkgs_dirs pkg pkg_dir ;
+    String.HMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
       | None -> Some (1, cells)
       | Some (cnt, _) -> Some (cnt + 1, cells)
     )
@@ -96,7 +93,7 @@ let wrap ~to_type ~merge ?(filt = CCFun.const true) t iter =
   |> Iter.flat_map (fun elt ->
     let ty = to_type elt in
     t.cells
-    |> StringHMap.to_iter
+    |> String.HMap.to_iter
     |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
       if filt pkg_dir then
         Type.Map.get ty cells
@@ -106,12 +103,12 @@ let wrap ~to_type ~merge ?(filt = CCFun.const true) t iter =
   )
 
 let filt t pkgs =
-  let set = ref StringSet.empty in
+  let set = ref String.Set.empty in
   pkgs |> CCList.iter (fun pkg ->
-    let pkg_dir = StringHMap.find t.pkgs_dirs pkg in
-    set := StringSet.add pkg_dir ! set
+    let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
+    set := String.Set.add pkg_dir ! set
   ) ;
-  fun pkg -> StringSet.mem pkg ! set
+  fun pkg -> String.Set.mem pkg ! set
 
 let iter, iter_with =
   let aux ?pkgs t iter =

@@ -58,6 +58,6 @@ let to_string =
       | Data -> 'a'
       | Query -> 'A'
     in
-    "'" ^ CCString.of_list @@ base_26 start_chr @@ Namespace.count var
+    "'" ^ String.of_list @@ base_26 start_chr @@ Namespace.count var
 
 let pp = Fmt.of_to_string to_string

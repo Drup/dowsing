@@ -13,26 +13,20 @@ let of_list strs =
     let strs = CCList.tl strs in
     CCList.fold_left (fun t str -> Ldot (t, str)) root strs
 
-let rec of_outcometree =
-  let open Outcometree in
-  function
-    | Oide_apply (oid1, oid2) ->
-        Lapply (of_outcometree oid1, of_outcometree oid2)
-    | Oide_dot (oid, str) ->
-        Ldot (of_outcometree oid, str)
-    | Oide_ident { printed_name = str } ->
-        Lident str
+let rec of_outcometree (out_id : Outcometree.out_ident) =
+  match out_id with
+  | Oide_apply (out_id1, out_id2) ->
+      Lapply (of_outcometree out_id1, of_outcometree out_id2)
+  | Oide_dot (out_id, str) ->
+      Ldot (of_outcometree out_id, str)
+  | Oide_ident { printed_name = str } ->
+      Lident str
 
 let rec to_iter t k =
   match t with
-  | Lident str ->
-      k str
-  | Ldot (t, str) ->
-      to_iter t k ;
-      k str
-  | Lapply (t1, t2) ->
-      to_iter t1 k ;
-      to_iter t2 k
+  | Lident str -> k str
+  | Ldot (t, str) -> to_iter t k ; k str
+  | Lapply (t1, t2) -> to_iter t1 k ; to_iter t2 k
 
 let compare = compare
 let equal = (=)
@@ -40,7 +34,7 @@ let equal = (=)
 module Map = CCTrie.Make (struct
   type nonrec t = t
   type char_ = String.t
-  let compare = CCString.compare
+  let compare = String.compare
   let to_iter = to_iter
   let of_list = of_list
 end)
@@ -56,7 +50,7 @@ let pp = Fmt.hbox Pprintast.longident
 (* crude way of comparing, but useful for users *)
 let compare_humans =
   let compare_length_lexi str1 str2 =
-    CCOrd.(map CCString.length int str1 str2
+    CCOrd.(map String.length int str1 str2
       <?> (string, str1, str2))
   in
   CCOrd.map (Fmt.to_to_string pp) compare_length_lexi

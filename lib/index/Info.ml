@@ -9,7 +9,7 @@ let compare t1 t2 =
 let is_internal info =
   info.lid
   |> LongIdent.to_iter
-  |> Iter.exists (CCString.mem ~start:0 ~sub:"__")
+  |> Iter.exists (String.mem ~start:0 ~sub:"__")
 
 let pp fmt t =
   Fmt.pf fmt "@[%a :@ %a@]"

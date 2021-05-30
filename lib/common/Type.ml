@@ -1,5 +1,3 @@
-module StringHMap = CCHashtbl.Make (CCString)
-
 (* Kind *)
 
 module Kind = struct
@@ -403,17 +401,17 @@ let var' vars (env : Env.t) = function
   | None ->
       var @@ Variable.Gen.gen env.var_gen
   | Some name ->
-      match StringHMap.get vars name with
+      match String.HMap.get vars name with
       | Some t -> t
       | None ->
           let v = Variable.Gen.gen env.var_gen in
           let t = var v in
-          StringHMap.add vars name t ;
+          String.HMap.add vars name t ;
           t
 
 let of_outcometree, of_parsetree =
   let wrap fn (env : Env.t) x =
-    let vars = StringHMap.create 17 in
+    let vars = String.HMap.create 17 in
     let var = var' vars env in
     let rec fn' x =
       x

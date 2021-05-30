@@ -1,5 +1,3 @@
-module StringHMap = CCHashtbl.Make (CCString)
-
 module Kind = struct
 
   type t =
@@ -24,10 +22,10 @@ module Kind = struct
   ]
 
   let of_string =
-    let tbl = StringHMap.create @@ CCList.length all in
-    CCList.iter (fun (t, str) -> StringHMap.add tbl str t) all ;
+    let tbl = String.HMap.create @@ CCList.length all in
+    CCList.iter (fun (t, str) -> String.HMap.add tbl str t) all ;
     fun str ->
-      match StringHMap.get tbl str with
+      match String.HMap.get tbl str with
       | Some t -> t
       | None -> invalid_arg "Common.Measure.Kind.of_string"
 
