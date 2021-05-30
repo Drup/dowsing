@@ -80,7 +80,7 @@ let rec make (kind : Kind.t) ty =
 module Map = CCMap.Make (CCInt)
 module HMap = CCHashtbl.Make (CCInt)
 
-let pp (kind : Kind.t) fmt t =
+let pp (kind : Kind.t) ppf t =
   match kind with
-  | HeadKind -> Type.Kind.(pp fmt @@ of_int t)
-  | _ -> Fmt.int fmt t
+  | HeadKind -> Type.Kind.(pp ppf @@ of_int t)
+  | _ -> Fmt.int ppf t

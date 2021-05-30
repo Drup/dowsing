@@ -8,9 +8,9 @@ let dummy = Constant (Longident.Lident "dummy")
 let var x = Var x
 let constant p = Constant p
 
-let pp fmt = function
-  | Var i -> Variable.pp fmt i
-  | Constant p -> LongIdent.pp fmt p
+let pp ppf = function
+  | Var i -> Variable.pp ppf i
+  | Constant p -> LongIdent.pp ppf p
 
 let as_typexpr = function
   | Var v -> Type.var v

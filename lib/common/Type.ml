@@ -246,13 +246,13 @@ end = struct
   let map fn t =
     of_iter @@ Iter.map fn @@ to_iter t
 
-  let pp pp_ty fmt = function
+  let pp pp_ty ppf = function
     | [||] ->
-        Fmt.string fmt "()"
+        Fmt.string ppf "()"
     | [| elt |] ->
-        pp_ty fmt elt
+        pp_ty ppf elt
     | t ->
-        Fmt.pf fmt "@[<2>%a@]"
+        Fmt.pf ppf "@[<2>%a@]"
           Fmt.(array ~sep:(any " *@ ") pp_ty) t
 
 end
@@ -473,41 +473,41 @@ let rec iter_vars t k =
 
 (* pretty printing *)
 
-let rec pp fmt = function
+let rec pp ppf = function
   | Var var ->
-      Variable.pp fmt var
+      Variable.pp ppf var
   | Constr (lid, [||]) ->
-      LongIdent.pp fmt lid
+      LongIdent.pp ppf lid
   | Constr (lid, params) ->
-      Fmt.pf fmt "%a@ %a"
+      Fmt.pf ppf "%a@ %a"
         pp_array params
         LongIdent.pp lid
   | Arrow (params, ret) ->
-      Fmt.pf fmt "@[<2>%a@ ->@ %a@]"
+      Fmt.pf ppf "@[<2>%a@ ->@ %a@]"
         (NSet.pp pp_parens) params
         pp_parens ret
   | Tuple elts ->
-      Fmt.pf fmt "@[<2>%a@]"
+      Fmt.pf ppf "@[<2>%a@]"
         (NSet.pp pp_parens) elts
   | Other i ->
-      Fmt.pf fmt "other%i" i
+      Fmt.pf ppf "other%i" i
 
-and pp_parens fmt ty =
+and pp_parens ppf ty =
   match ty with
   | Var _ | Other _ | Constr _ ->
-      pp fmt ty
+      pp ppf ty
   | Arrow _ ->
-      Fmt.parens pp fmt ty
+      Fmt.parens pp ppf ty
   | Tuple elts ->
       if NSet.length elts <= 1
-      then pp fmt ty
-      else Fmt.parens pp fmt ty
+      then pp ppf ty
+      else Fmt.parens pp ppf ty
 
-and pp_array fmt = function
+and pp_array ppf = function
   | [||] ->
-      Fmt.string fmt "()"
+      Fmt.string ppf "()"
   | [| elt |] ->
-      pp fmt elt
+      pp ppf elt
   | arr ->
-      Fmt.pf fmt "@[<2>(%a)@]"
+      Fmt.pf ppf "@[<2>(%a)@]"
         Fmt.(array ~sep:(any ", ") pp) arr

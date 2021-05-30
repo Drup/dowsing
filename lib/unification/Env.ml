@@ -46,8 +46,8 @@ let rec representative_rec m x =
   | Some t -> E (x, t)
 let representative e x = representative_rec e.vars x
 
-let pp_binding fmt (x,t) =
-  Fmt.pf fmt "@[%a = %a@]"  Variable.pp x Type.pp t
+let pp_binding ppf (x,t) =
+  Fmt.pf ppf "@[%a = %a@]"  Variable.pp x Type.pp t
 
 let is_solved env =
   if CCList.is_empty env.tuples
@@ -57,8 +57,8 @@ let is_solved env =
   else
     None
 
-let pp fmt { vars ; tuples ; arrows; _ } =
-  Fmt.pf fmt "@[<v>@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]@]"
+let pp ppf { vars ; tuples ; arrows; _ } =
+  Fmt.pf ppf "@[<v>@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]@]"
     Fmt.(iter_bindings ~sep:cut Variable.HMap.iter pp_binding) vars
     Fmt.(list ~sep:cut ACTerm.pp_problem) tuples
     Fmt.(list ~sep:cut ArrowTerm.pp_problem) arrows

@@ -11,8 +11,8 @@ type problem = {
 let make args ret : t = {args; ret}
 let make_problem left right = {left; right}
 
-let pp_problem fmt self =
-  Fmt.pf fmt "%a -> %a = %a -> %a"
+let pp_problem ppf self =
+  Fmt.pf ppf "%a -> %a = %a -> %a"
     Fmt.(array ~sep:(unit " * ") Pure.pp) self.left.args
     Type.pp self.left.ret
     Fmt.(array ~sep:(unit " * ") Pure.pp) self.right.args

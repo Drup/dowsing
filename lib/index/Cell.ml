@@ -28,8 +28,8 @@ let update lid info = function
   | None -> singleton lid info
   | Some t -> add lid info t
 
-let pp fmt t =
+let pp ppf t =
   LongIdent.Map.to_iter_values t
   |> Iter.map Slot.prune
   |> Iter.sort ~cmp:Slot.compare
-  |> Fmt.(vbox @@ iter Iter.iter Slot.pp) fmt
+  |> Fmt.(vbox @@ iter Iter.iter Slot.pp) ppf

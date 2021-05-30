@@ -11,7 +11,7 @@ let is_internal info =
   |> LongIdent.to_iter
   |> Iter.exists (String.mem ~start:0 ~sub:"__")
 
-let pp fmt t =
-  Fmt.pf fmt "@[%a :@ %a@]"
+let pp ppf t =
+  Fmt.pf ppf "@[%a :@ %a@]"
     LongIdent.pp t.lid
     ! Oprint.out_type t.out_ty

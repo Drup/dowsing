@@ -174,9 +174,9 @@ module Explorer = struct
       error () ;
     ignore @@ Stack.pop t.its
 
-  let pp fmt t =
+  let pp ppf t =
     let sz = Iter.length @@ iter t in
-    Fmt.pf fmt "{ explored subset: %i (%g %%) }"
+    Fmt.pf ppf "{ explored subset: %i (%g %%) }"
       sz
       (CCFloat.of_int sz /. CCFloat.of_int t.idx_sz *. 100.)
 

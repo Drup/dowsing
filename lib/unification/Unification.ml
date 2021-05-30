@@ -48,9 +48,9 @@ end = struct
   let push_array2 a1 a2 stack =
     CCArray.fold2 push stack a1 a2
 
-  let pp_elt fmt = function
-    | Var (v, t) -> Fmt.pf fmt "%a = %a" Variable.pp v Type.pp t
-    | Expr (t1, t2) -> Fmt.pf fmt "%a = %a" Type.pp t1 Type.pp t2
+  let pp_elt ppf = function
+    | Var (v, t) -> Fmt.pf ppf "%a = %a" Variable.pp v Type.pp t
+    | Expr (t1, t2) -> Fmt.pf ppf "%a = %a" Type.pp t1 Type.pp t2
 
   let pp = Fmt.(vbox (list ~sep:cut pp_elt))
 

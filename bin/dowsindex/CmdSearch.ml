@@ -27,7 +27,7 @@ let main _ exhaustive cnt idx_file ty pkgs =
   in
   let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
   Fmt.pr "@[<v>%a@]@."
-    (Fmt.iter Iter.iter @@ fun fmt (_, cell, _) -> Index.Cell.pp fmt cell) res
+    (Fmt.iter Iter.iter @@ fun ppf (_, cell, _) -> Index.Cell.pp ppf cell) res
 
 let main copts exhaustive cnt idx_file ty pkgs =
   try Ok (main copts exhaustive cnt idx_file ty pkgs)
