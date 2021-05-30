@@ -475,7 +475,7 @@ let rec iter_vars t k =
 
 let rec pp ppf = function
   | Var var ->
-      Variable.pp ppf var
+      Variable.pp' ppf var
   | Constr (lid, [||]) ->
       LongIdent.pp ppf lid
   | Constr (lid, params) ->

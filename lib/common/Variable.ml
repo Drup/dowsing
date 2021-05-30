@@ -52,12 +52,18 @@ let to_string =
     in
     aux
   in
-  fun var ->
+  fun ?(pref = true) var ->
     let start_chr =
       match Namespace.get var with
       | Data -> 'a'
       | Query -> 'A'
     in
-    "'" ^ String.of_list @@ base_26 start_chr @@ Namespace.count var
+    let str =
+      Namespace.count var
+      |> base_26 start_chr
+      |> String.of_list
+    in
+    if pref then "'" ^ str else str
 
-let pp = Fmt.of_to_string to_string
+let pp  = Fmt.of_to_string @@ to_string ~pref:false
+let pp' = Fmt.of_to_string @@ to_string ~pref:true

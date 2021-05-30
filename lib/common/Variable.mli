@@ -29,3 +29,4 @@ module Gen : sig
 end
 
 val pp : t Fmt.t [@@ocaml.toplevel_printer]
+val pp' : t Fmt.t

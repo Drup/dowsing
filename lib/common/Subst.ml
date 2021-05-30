@@ -24,4 +24,4 @@ let lt t1 t2 = compare t1 t2 < 0
 let pp =
   Fmt.vbox @@
     Variable.HMap.pp ~pp_sep:Fmt.cut ~pp_arrow:(Fmt.any " -> ")
-      Variable.pp Type.pp_parens
+      Variable.pp' Type.pp_parens
