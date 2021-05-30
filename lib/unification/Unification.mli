@@ -9,17 +9,6 @@ module Env : sig
 
 end
 
-module Subst : sig
-
-  type t
-
-  val size : t -> Int.t
-  val compare : t CCOrd.t
-
-  val pp : t Fmt.t [@@ocaml.toplevel_printer]
-
-end
-
 (** [unifiers tyenv t1 t2] computes the unification for all equations in [l]
     and returns a lazy sequence of all potential unifiers.
 *)

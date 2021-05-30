@@ -1,13 +1,13 @@
 type t = {
   tyenv : Type.Env.t ;
-  mutable vars : Type.t Variable.Map.t ;
+  vars : Type.t Variable.HMap.t ;
   mutable tuples : ACTerm.problem list ;
   mutable arrows : ArrowTerm.problem list ;
 }
 
 let make (tyenv : Type.Env.t) = {
   tyenv ;
-  vars = Variable.Map.empty ;
+  vars = Variable.HMap.create 17 ;
   tuples = [] ;
   arrows = [] ;
 }
@@ -17,8 +17,7 @@ let copy { tyenv ; vars ; tuples ; arrows } =
 
 let vars e = e.vars
 let gen e = Variable.Gen.gen e.tyenv.var_gen
-let add e v t =
-  e.vars <- Variable.Map.add v t e.vars
+let add e = Variable.HMap.add e.vars
 
 let push_tuple e left right =
   e.tuples <- ACTerm.make_problem left right :: e.tuples
@@ -41,7 +40,7 @@ type representative =
   | E of Variable.t * Type.t
 
 let rec representative_rec m x =
-  match Variable.Map.get x m with
+  match Variable.HMap.get m x with
   | None -> V x
   | Some (Type.Var x') -> representative_rec m x'
   | Some t -> E (x, t)
@@ -60,6 +59,6 @@ let is_solved env =
 
 let pp fmt { vars ; tuples ; arrows; _ } =
   Fmt.pf fmt "@[<v>@[<v2>Quasi:@ %a@]@,@[<v2>Tuple:@ %a@]@,@[<v2>Arrows:@ %a@]@]"
-    Fmt.(iter_bindings ~sep:cut Variable.Map.iter pp_binding) vars
+    Fmt.(iter_bindings ~sep:cut Variable.HMap.iter pp_binding) vars
     Fmt.(list ~sep:cut ACTerm.pp_problem) tuples
     Fmt.(list ~sep:cut ArrowTerm.pp_problem) arrows

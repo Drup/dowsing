@@ -135,8 +135,6 @@ val of_string : Env.t -> String.t -> t
 val head : t -> t
 val tail : t -> NSet.t
 
-val substitute : t Variable.Map.t -> t -> t
-
 val iter : t -> t Iter.t
 val iter_vars : t -> Variable.t Iter.t
 

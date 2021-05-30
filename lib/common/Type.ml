@@ -445,26 +445,6 @@ let tail = function
   | Arrow (params, _) -> params
   | _ -> NSet.empty
 
-let rec substitute subst =
-  let substitute t = substitute subst t in
-  let substitute_set = NSet.map substitute in
-  let substitute_array = CCArray.map substitute in
-  fun t ->
-    match t with
-    | Var var ->
-        begin match Variable.Map.find_opt var subst with
-        | None -> t
-        | Some t -> t
-        end
-    | Constr (lid, params) ->
-        constr lid @@ substitute_array params
-    | Arrow (params, ret) ->
-        arrow (tuple @@ substitute_set params) (substitute ret)
-    | Tuple elts ->
-        tuple @@ substitute_set elts
-    | Other _ ->
-        t
-
 let iter =
   let iter_subs = function
     | Constr (_, params) -> Iter.of_array params
@@ -521,10 +501,9 @@ and pp_parens fmt ty =
   | Arrow _ ->
       Fmt.parens pp fmt ty
   | Tuple elts ->
-      if NSet.length elts <= 1 then
-        pp fmt ty
-      else
-        Fmt.parens pp fmt ty
+      if NSet.length elts <= 1
+      then pp fmt ty
+      else Fmt.parens pp fmt ty
 
 and pp_array fmt = function
   | [||] ->

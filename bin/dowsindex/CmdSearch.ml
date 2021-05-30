@@ -21,7 +21,7 @@ let main _ exhaustive cnt idx_file ty pkgs =
     in
     iter_idx
     |> Iter.sort ~cmp:(fun (ty1, _, unif1) (ty2, _, unif2) ->
-      CCOrd.(Unification.Subst.compare unif1 unif2
+      CCOrd.(Subst.compare unif1 unif2
         <?> (Type.compare, ty1, ty2))
     )
   in

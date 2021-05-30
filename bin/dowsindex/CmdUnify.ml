@@ -5,7 +5,7 @@ let main _ all_unifs ty1 ty2 =
   Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp ty2) ;
   let unifs =
     Unification.unifiers env ty1 ty2
-    |> Iter.sort ~cmp:Unification.Subst.compare
+    |> Iter.sort ~cmp:Subst.compare
     |> Iter.to_list
   in
   let unifs =
@@ -16,7 +16,7 @@ let main _ all_unifs ty1 ty2 =
     Fmt.pr "no unifier@."
   else
     Fmt.pr "@[<v2>unifiers:@ %a@]@."
-      Fmt.(list ~sep:sp Unification.Subst.pp) unifs
+      Fmt.(list ~sep:sp Subst.pp) unifs
 
 open Cmdliner
 

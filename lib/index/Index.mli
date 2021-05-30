@@ -3,7 +3,7 @@ module Cell = Cell
 type t
 
 type iter = (Type.t * Cell.t) Iter.t
-type iter_with_unifier = (Type.t * Cell.t * Unification.Subst.t) Iter.t
+type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
 
 val make : Unit.t -> t
 val remove : t -> String.t -> Unit.t

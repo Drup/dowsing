@@ -9,7 +9,6 @@ let _info = Logs.info
 let debug = Logs.debug
 
 module Env = Env
-module Subst = Subst
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
@@ -87,7 +86,7 @@ let occur_check env : return =
     end;
     Type.iter_vars ty |> Iter.iter aux
   in
-  Variable.Map.iter fill_nb_predecessors (Env.vars env);
+  Variable.HMap.iter fill_nb_predecessors (Env.vars env);
 
   let nb_representatives = Variable.HMap.length nb_predecessors in
   let vars_without_predecessors =
