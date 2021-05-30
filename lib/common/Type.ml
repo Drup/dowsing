@@ -397,41 +397,54 @@ let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
   | Ptyp_extension _ ->
       other parse_ty
 
-let var' vars (env : Env.t) = function
+let var' bdgs (env : Env.t) = function
   | None ->
       var @@ Variable.Gen.gen env.var_gen
   | Some name ->
-      match String.HMap.get vars name with
-      | Some t -> t
+      match String.HMap.get bdgs name with
+      | Some v ->
+          var v
       | None ->
           let v = Variable.Gen.gen env.var_gen in
-          let t = var v in
-          String.HMap.add vars name t ;
-          t
+          String.HMap.add bdgs name v ;
+          var v
 
-let of_outcometree, of_parsetree =
+let of_outcometree', of_parsetree' =
   let wrap fn (env : Env.t) x =
-    let vars = String.HMap.create 17 in
-    let var = var' vars env in
+    let bdgs = String.HMap.create 17 in
+    let var = var' bdgs env in
     let rec fn' x =
       x
       |> fn fn' var
       |> Hashcons.hashcons env.hcons
     in
-    fn' x
+    bdgs, fn' x
   in
   wrap of_outcometree,
   wrap of_parsetree
 
-let of_lexing env lexbuf =
-  lexbuf
-  |> Parse.core_type
-  |> of_parsetree env
+let of_outcometree, of_parsetree =
+  let wrap fn env x = snd @@ fn env x in
+  wrap of_outcometree',
+  wrap of_parsetree'
 
-let of_string env str =
-  str
-  |> Lexing.from_string
-  |> of_lexing env
+let of_lexing, of_lexing' =
+  let wrap of_parsetree env lexbuf =
+    lexbuf
+    |> Parse.core_type
+    |> of_parsetree env
+  in
+  wrap of_parsetree,
+  wrap of_parsetree'
+
+let of_string, of_string' =
+  let wrap of_lexing env str =
+    str
+    |> Lexing.from_string
+    |> of_lexing env
+  in
+  wrap of_lexing,
+  wrap of_lexing'
 
 (* utility functions *)
 

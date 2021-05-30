@@ -130,6 +130,11 @@ val of_parsetree : Env.t -> Parsetree.core_type -> t
 val of_lexing : Env.t -> Lexing.lexbuf -> t
 val of_string : Env.t -> String.t -> t
 
+val of_outcometree' : Env.t -> Outcometree.out_type -> Variable.t String.HMap.t * t
+val of_parsetree' : Env.t -> Parsetree.core_type -> Variable.t String.HMap.t * t
+val of_lexing' : Env.t -> Lexing.lexbuf -> Variable.t String.HMap.t * t
+val of_string' : Env.t -> String.t -> Variable.t String.HMap.t * t
+
 (* utility functions *)
 
 val head : t -> t
