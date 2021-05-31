@@ -3,7 +3,14 @@ open Cmdliner
 let typ =
   let parse str =
     try Ok (Type.of_string Common.env str)
-    with Syntaxerr.Error _ -> Error (`Msg "syntax error")
+    with Invalid_argument _ -> Error (`Msg "type syntax error")
+  in
+  Arg.conv (parse, Type.pp)
+
+let schema =
+  let parse str =
+    try Ok Schema.(to_type @@ of_string Common.env str)
+    with Invalid_argument _ -> Error (`Msg "ill-formed type")
   in
   Arg.conv (parse, Type.pp)
 

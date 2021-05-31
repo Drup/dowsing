@@ -39,7 +39,7 @@ Some initial basic tests.
   CCFun.const : 'a -> 'b -> 'a
   CCShimsFun_.const : 'a -> 'b -> 'a
 
-  $ dowsindex search --index index.db "int -> int -> 'a" containers
+  $ dowsindex search --index index.db ". int -> int -> 'a" containers
   CCOrd.equiv : int -> int -> bool
   Containers.(<) : int -> int -> bool
   Containers.(=) : int -> int -> bool

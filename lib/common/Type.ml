@@ -430,9 +430,11 @@ let of_outcometree, of_parsetree =
 
 let of_lexing, of_lexing' =
   let wrap of_parsetree env lexbuf =
-    lexbuf
-    |> Parse.core_type
-    |> of_parsetree env
+    let parse_ty =
+      try Parse.core_type lexbuf
+      with Syntaxerr.Error _ -> invalid_arg "Type.of_lexing"
+    in
+    of_parsetree env parse_ty
   in
   wrap of_parsetree,
   wrap of_parsetree'

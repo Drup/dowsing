@@ -130,7 +130,7 @@ let idx_file =
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos 0 (some Conv.typ) None & info [] ~docv)
+  Arg.(required & pos 0 (some Conv.schema) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in
