@@ -130,11 +130,11 @@ let idx_file =
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos 0 (some Conv.schema) None & info [] ~docv)
+  Arg.(required & pos ~rev:true 0 (some Conv.schema) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in
-  Arg.(value & pos_right 0 string [] & info [] ~docv)
+  Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv)
 
 let cmd =
   let doc = "compute index statistics" in
