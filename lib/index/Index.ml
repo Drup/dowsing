@@ -88,21 +88,21 @@ let find, find_with =
   in
   aux (fun t _ -> iter t), aux iter_with
 
-let wrap ~to_type ~merge ?(filt = CCFun.const true) t iter =
+let wrap ~to_type ~merge ?(pkg_filt = CCFun.const true) t iter =
   iter
   |> Iter.flat_map (fun elt ->
     let ty = to_type elt in
     t.cells
     |> String.HMap.to_iter
     |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
-      if filt pkg_dir then
+      if pkg_filt pkg_dir then
         Type.Map.get ty cells
         |> CCOpt.map @@ merge elt
       else None
     )
   )
 
-let filt t pkgs =
+let pkg_filt t pkgs =
   let set = ref String.Set.empty in
   pkgs |> CCList.iter (fun pkg ->
     let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
@@ -112,17 +112,17 @@ let filt t pkgs =
 
 let iter, iter_with =
   let aux ?pkgs t iter =
-    let filt = CCOpt.map (filt t) pkgs in
-    wrap t iter ~to_type:CCFun.id ~merge:CCPair.make ?filt
+    let pkg_filt = CCOpt.map (pkg_filt t) pkgs in
+    wrap t iter ~to_type:CCFun.id ~merge:CCPair.make ?pkg_filt
   in
   (fun ?pkgs t -> aux ?pkgs t @@ iter t),
   (fun ?pkgs t ty -> aux ?pkgs t @@ iter_with t ty)
 
 let find, find_with =
   let aux find ?pkgs t env ty =
-    let filt = CCOpt.map (filt t) pkgs in
+    let pkg_filt = CCOpt.map (pkg_filt t) pkgs in
     find t env ty
-    |> wrap t ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif) ?filt
+    |> wrap t ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif) ?pkg_filt
   in
   aux find, aux find_with
 
