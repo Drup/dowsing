@@ -1,0 +1,269 @@
+\documentclass [a4paper] {report}
+\usepackage [utf8] {inputenc}
+\usepackage [T1] {fontenc}
+\usepackage [french] {babel}
+
+%============================================================
+
+\usepackage {minted}
+
+%============================================================
+
+\usepackage [style=numeric, sorting=ynt, natbib=true] {biblatex}
+\addbibresource {rapport.bib}
+
+%============================================================
+
+\usepackage {array}
+\usepackage {xspace}
+
+%============================================================
+
+\usepackage {amsmath}	% align*
+\usepackage {amssymb}	% mathbb
+\usepackage {mathrsfs}	% mathscr
+
+%============================================================
+
+\usepackage {mathpartir}
+\def \RightTirNameStyle {\textnormal}
+
+%============================================================
+
+\usepackage {amsthm}
+
+\newtheoremstyle {definition}
+	{}		% space above
+	{}		% space below
+	{}		% body font
+	{}		% indent
+	{\bf}	% head font
+	{\\}	% head punctuation
+	{ }		% head space
+	{}		% head spec
+
+\newenvironment {preuve} 
+	{\begin {proof} ~\\} 
+	{\end {proof}}
+
+\theoremstyle {definition}
+
+\newtheorem {definition} {Définition} [subsection]
+\newtheorem {lemme} {Lemme} [subsection]
+\newtheorem {theoreme} {Théorème} [subsection]
+
+%============================================================
+
+\newcommand {\trie} {\textit {trie}}
+\newcommand {\dowsindex} {\textit {dowsindex}\xspace}
+
+%============================================================
+
+\title {Recherche de fonctions \\ par \\ unification modulo isomorphismes de types}
+\author {Clément ALLAIN}
+\date {Juin 2021}
+
+%============================================================
+
+\begin {document}
+
+\maketitle
+
+\tableofcontents
+
+\newpage
+
+%============================================================
+%============================================================
+
+\chapter {Introduction}
+
+S'il est une chose dont on a besoin en programmation fonctionnelle, c'est bien de fonctions. Seulement voilà, ce n'est pas si simple. Mettre la main sur l'une d'entre elles en présence d'un environnement de grande taille s'avère parfois difficile, à tout le moins fastidieux. Aussi, remédions.
+
+Il s'agit de mettre sur pied un système de recherche de fonctions pour le langage OCaml. L'écosystème en est principalement composé des paquets OPAM --- des centaines de milliers d'identificateurs. Un tel outil épargnerait à l'utilisateur la peine de fouiller telle ou telle bibliothèque dans l'espoir d'y trouver une fonction s'accordant à son usage.
+
+Mais que chercher et comment ? Des travaux similaires ont été menés notamment par Rittri pour Lazy ML \cite {rittri91, rittri93} et Delahaye pour Coq \cite {delahaye}. Nous empruntons à notre tour à Rittri \cite {rittri91} le tableau \ref {tab_fold}.
+
+\begin {table} [h]
+	\centering
+	\begin {tabular} {|l|l|l|}
+		\hline
+			Langage &
+			Nom &
+			Type
+		\\
+		\hline
+			ML of Edinburgh LCF &
+			\texttt {itlist} &
+			$(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+		\\
+			CAML &
+			\texttt {list\_it} &
+			$(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+		\\
+			Haskell &
+			\texttt {foldr} &
+			$(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$
+		\\
+			SML of New Jersey &
+			\texttt {fold} &
+			$(\alpha \times \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+		\\
+			The Edinburgh SML Library &
+			\texttt {fold\_right} &
+			$(\alpha \times \beta \rightarrow \beta) \rightarrow \beta \rightarrow list (\alpha) \rightarrow \beta$ \\
+		\hline
+	\end {tabular}
+	\caption {\label {tab_fold} Variations sur \texttt {list\_it} de CAML dans plusieurs langages fonctionnels}
+\end {table}
+
+\begin {itemize}
+	\item recherche par nom
+	\item recherche par spécification
+	\item recherche syntaxique
+	\item recherche par isomorphismes de types
+	\item matching et unification
+\end {itemize}
+
+%============================================================
+%============================================================
+
+\chapter {Isomorphismes de types}
+
+\section {Isomorphismes de types en ML}
+
+avec \cite {dicosmo92} :
+\begin {itemize}
+	\item termes ML
+	\item $=_{ML}$
+	\item inférence ML
+	\item isomorphisme de types ML
+	\item axiomatisation
+\end {itemize}
+
+\section {Isomorphismes de types linéaires}
+
+\begin {itemize}
+	\item choix de \cite {rittri93}
+	\item justification de l'abandon d'une partie des axiomes
+	\item cadre théorique
+	\item exemples
+\end {itemize}
+
+%============================================================
+%============================================================
+
+\chapter {Unification sémantique}
+
+\section {Présentation}
+
+\begin {itemize}
+	\item motivation matching et unification
+	\item cadre théorique
+	\item exemples
+\end {itemize}
+
+\section {Implémentation}
+
+\begin {itemize}
+	\item présenter \cite {boudet}
+	\item exemples (dowsindex unify)
+\end {itemize}
+
+%============================================================
+%============================================================
+
+\chapter {Indexation}
+
+\section {Métriques de types}
+
+\begin {itemize}
+	\item motivation
+	\item nombre de variables
+	\item type tête
+	\item types queue	
+\end {itemize}
+
+\section {Conditions nécessaires d'unifiabilité}
+
+\begin {itemize}
+	\item présentation
+	\item critère tête : présentation, cadre théorique
+	\item critère queue : présentation, cadre théorique
+\end {itemize}
+
+\section {Structure de \trie}
+
+\begin {itemize}
+	\item motivation avec \cite {schulz}
+	\item exemples
+\end {itemize}
+
+%============================================================
+%============================================================
+
+\chapter {\dowsindex}
+
+\section {\dowsindex \textit {save}}
+
+\begin {itemize}
+	\item présentation
+	\item exemples : varier nombre de paquets, mise à jour
+\end {itemize}
+
+\section {\dowsindex \textit {stats}}
+
+\begin {itemize}
+	\item présentation
+	\item exemples
+\end {itemize}
+
+\section {\dowsindex \textit {search}}
+
+\begin {itemize}
+	\item présentation
+	\item exemples : varier nombre de paquets, types plus ou moins complexes
+\end {itemize}
+
+\section {Extensions}
+
+\begin {itemize}
+	\item plugin vim	
+\end {itemize}
+
+%============================================================
+%============================================================
+
+\chapter {Conclusion}
+
+%============================================================
+%============================================================
+
+\printbibliography
+
+\end {document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
