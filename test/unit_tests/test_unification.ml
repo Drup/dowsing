@@ -49,7 +49,6 @@ let pos_tests = [
   "'a -> 'a -> a", "'x * a -> 'x" ;
 ]
 
-(* TODO: correct unification to pass commented tests *)
 let neg_tests = [
   (* cur-0 *)
   "unit -> a", "a" ;
