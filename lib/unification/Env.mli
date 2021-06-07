@@ -5,7 +5,7 @@ type t
 val make : Type.Env.t -> t
 val copy : t -> t
 val gen : t -> Variable.t
-val vars : t -> Type.t Variable.HMap.t
+val vars : t -> Subst.t
 
 type representative =
   | V of Variable.t

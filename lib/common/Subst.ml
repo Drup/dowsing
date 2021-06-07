@@ -1,11 +1,14 @@
-type t = Type.t Variable.HMap.t
+type t = Type.t Variable.Map.t
+
+let empty = Variable.Map.empty
+let add = Variable.Map.add
 
 let rec apply t =
   let substitute ty = apply t ty in
   fun (ty : Type.t) ->
     match ty with
     | Var var ->
-        CCOpt.get_or ~default:ty @@ Variable.HMap.get t var
+        CCOpt.get_or ~default:ty @@ Variable.Map.get var t
     | Constr (lid, params) ->
         Type.constr lid @@ CCArray.map substitute params
     | Arrow (params, ret) ->
@@ -17,11 +20,11 @@ let rec apply t =
 
 let simplify _vars t = t
 
-let size = Variable.HMap.length
+let size = Variable.Map.cardinal
 let compare t1 t2 = compare (size t1) (size t2)
 let lt t1 t2 = compare t1 t2 < 0
 
 let pp =
   Fmt.vbox @@
-    Variable.HMap.pp ~pp_sep:Fmt.cut ~pp_arrow:(Fmt.any " -> ")
+    Variable.Map.pp ~pp_sep:Fmt.cut ~pp_arrow:(Fmt.any " -> ")
       Variable.pp' Type.pp_parens

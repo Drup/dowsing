@@ -1,4 +1,7 @@
-type t = Type.t Variable.HMap.t
+type t = Type.t Variable.Map.t
+
+val empty : t
+val add : Variable.t -> Type.t -> t -> t
 
 val apply : t -> Type.t -> Type.t
 val simplify : Variable.Set.t -> t -> t

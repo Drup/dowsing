@@ -29,11 +29,13 @@ let of_string env str =
   { vars ; ty }
 
 let to_type t =
-  let subst = Variable.HMap.create @@ CCList.length t.vars in
-  t.vars |> CCList.iter (fun var ->
-    Variable.HMap.add subst var @@
-      Type.constr (LongIdent.of_list [ Fmt.to_to_string Variable.pp' var ]) [||]
-  ) ;
+  let subst = 
+    t.vars
+    |> List.map (fun var ->
+        var,
+        Type.constr (LongIdent.of_list [ Fmt.to_to_string Variable.pp' var ]) [||])
+    |> Variable.Map.of_list
+  in
   Subst.apply subst t.ty
 
 let pp ppf t =

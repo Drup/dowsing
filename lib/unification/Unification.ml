@@ -86,7 +86,7 @@ let occur_check env : return =
     end;
     Type.iter_vars ty |> Iter.iter aux
   in
-  Variable.HMap.iter fill_nb_predecessors (Env.vars env);
+  Variable.Map.iter fill_nb_predecessors (Env.vars env);
 
   let nb_representatives = Variable.HMap.length nb_predecessors in
   let vars_without_predecessors =
