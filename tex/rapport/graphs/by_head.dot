@@ -1,0 +1,25 @@
+digraph {
+	node [ label = "" ] ;
+
+	n_0 [ label = "head" ] ;
+
+	n_1_1 [ shape = triangle ] ;
+	n_1_2 [ shape = triangle ] ;
+	n_1_3 [ shape = triangle ] ;
+	n_1_4 [ label = "constr" ] ;
+
+	n_2_1 [ shape = triangle ] ;
+	n_2_2 [ shape = triangle ] ;
+	n_2_3 [ shape = triangle ] ;
+	n_2_4 [ style = invisible ] ;
+
+	n_0 -> n_1_1 [ label = "var" ] ;
+	n_0 -> n_1_2 [ label = "prod" ] ;
+	n_0 -> n_1_3 [ label = "arrow" ] ;
+	n_0 -> n_1_4 [ label = "constr" ] ;
+
+	n_1_4 -> n_2_1 [ label = "array" ] ;
+	n_1_4 -> n_2_2 [ label = "int" ] ;
+	n_1_4 -> n_2_3 [ label = "list" ] ;
+	n_1_4 -> n_2_4 [ color = white, arrowhead = none, label = "…"] ;
+}
