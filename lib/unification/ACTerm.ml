@@ -2,7 +2,9 @@
 
 type t = Pure.t array
 
-let make p = p
+let add (t: t) p = Array.append [|p|] t
+
+let make (p : t) = p
 
 type problem = {left : t ; right : t }
 

@@ -287,13 +287,48 @@ let rec solve_tuple_problems env0 =
   |> Iter.flat_map (try_with_solution env0 insert_tuple_solution)
 
 (* Elementary Arrow theory *)
-(* TODO : Solve this properly *)
-and solve_arrow_problem env0 {ArrowTerm. left; right } k =
-  let f env () =
-    Env.push_tuple env left.args right.args;
-    insert env left.ret right.ret;
+and solve_arrow_problem env0 {ArrowTerm. left; right } =
+  let potentials = [
+    (fun env () -> 
+       Env.push_tuple env left.args right.args;
+       insert env left.ret right.ret);
+    (fun env () ->
+       let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
+       Env.push_tuple env
+         (ACTerm.add left.args (Pure.var var_arg_left)) right.args;
+       let* () =
+         insert env left.ret
+           (Type.arrow (Type.var var_arg_left) (Type.var var_ret_left))
+       in
+       insert_var env var_ret_left right.ret);
+    (fun env () -> 
+       let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+       Env.push_tuple env
+          left.args (ACTerm.add right.args (Pure.var var_arg_right));
+       let* () =
+         insert env right.ret
+           (Type.arrow (Type.var var_arg_right) (Type.var var_ret_right))
+       in
+       insert_var env var_ret_right left.ret);
+    (fun env () -> 
+       let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
+       let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+       Env.push_tuple env
+         (ACTerm.add left.args (Pure.var var_arg_left)) right.args;
+       Env.push_tuple env
+         left.args (ACTerm.add left.args (Pure.var var_arg_right));
+       let* () =
+         insert env left.ret Type.(arrow (var var_arg_left) (var var_ret_left))
+       in
+       let* () =
+         insert env right.ret Type.(arrow (var var_arg_right) (var var_ret_right))
+       in
+       insert env (Type.var var_ret_left) (Type.var var_ret_right));
+  ]
   in
-  try_with_solution env0 f () k
+  potentials
+  |> Iter.of_list
+  |> Iter.flat_map (fun f -> try_with_solution env0 f ())
 
 and try_with_solution
   : type a. _ -> (Env.t -> a -> return) -> a -> _
