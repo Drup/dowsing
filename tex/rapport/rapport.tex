@@ -7,6 +7,7 @@
 
 \usepackage {minted}
 \usepackage {graphicx}
+\usepackage {tikz}
 
 %============================================================
 
@@ -128,7 +129,7 @@ Mais que chercher et comment ? Des travaux similaires ont été menés notamment
 			$(\alpha \times \beta \rightarrow \beta) \rightarrow \beta \rightarrow list (\alpha) \rightarrow \beta$ \\
 		\hline
 	\end {tabular}
-	\caption {\label {tab_fold} Variations sur \texttt {list\_it} de Caml dans plusieurs langages fonctionnels}
+	\caption {\label {tab_fold} Variations sur \texttt {list\_it} de Caml dans plusieurs dialectes de ML}
 \end {table}
 
 Plusieurs observations en émanent. Une recherche par identificateur en l'espèce — une fonction se comportant comme \texttt {List.fold\_left} en OCaml — se heurterait à la diversité des noms potentiels. De même, une recherche syntaxique sur les types s'accommoderait mal des variations en un sens équivalentes de la forme du type. Pourtant, toutes ces fonctions font essentiellement le même travail ; cette diversité est due à l'arbitraire de l'auteur de la fonction.
@@ -228,6 +229,12 @@ TODO
 
 \chapter {Indexation}
 
+Dans le chapitre précédent, nous avons présenté une notion d'équivalence sur les types pour en tirer un algorithme d'unification. On obtient ainsi un système de recherche testant l'unifiabilité entre le type demandé et les types de l'environnement. Une question se pose alors : ce système passe-t-il à l'échelle ? Un écosystème OCaml, composé principalement des paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. TODO
+
+Il est deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification ; néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à pré-traiter les types de l'environnement. Plus précisément, il s'agit de construire un \emph {index} contenant des données arbitraires sur les types. TODO
+
+TODO: introduire critères
+
 \section {Métriques de types}
 
 \subsection {Nombre de variables}
@@ -266,6 +273,11 @@ TODO
 \section {Conditions nécessaires d'unifiabilité}
 
 \subsection {Premier critère (tête)}
+
+\begin {tikzpicture}
+	\node {A}
+		\child {\node {B}} ;
+\end {tikzpicture}
 
 \begin {figure} [h]
 \begin {center}
