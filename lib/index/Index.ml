@@ -10,8 +10,8 @@ module Trie =
 type t = {
   hcons : Type.Hashcons.t ;
   mutable trie : Trie.t ;
-  pkgs_dirs : String.t String.HMap.t ;
-  cells : (Int.t * Cell.t Type.Map.t) String.HMap.t ;
+  pkgs_dirs : Fpath.t String.HMap.t ;
+  mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t ;
 }
 
 type iter = (Type.t * Cell.t) Iter.t
@@ -21,21 +21,23 @@ let make () = {
   hcons = Type.Hashcons.make () ;
   trie = Trie.empty ;
   pkgs_dirs = String.HMap.create 17 ;
-  cells = String.HMap.create 17 ;
+  cells = Fpath.Map.empty ;
 }
 
 let remove t pkg =
   let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
-  snd @@ String.HMap.find t.cells pkg_dir
+  t.cells
+  |> Fpath.Map.get pkg_dir
+  |> snd
   |> Type.Map.iter (fun ty _ -> t.trie <- Trie.remove ty t.trie) ;
   String.HMap.remove t.pkgs_dirs pkg ;
-  String.HMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
-    | None -> assert false
-    | Some (cnt, cells) ->
-        if cnt = 1
-        then None
-        else Some (cnt - 1, cells)
-  )
+  t.cells <-
+    t.cells |> Fpath.Map.update pkg_dir @@ function
+      | None -> assert false
+      | Some (cnt, cells) ->
+          if cnt = 1
+          then None
+          else Some (cnt - 1, cells)
 
 let add =
   let aux t cells Package.{ orig_lid ; lid ; out_ty } =
@@ -52,12 +54,11 @@ let add =
       Package.iter pkg_dir
       |> Iter.fold (aux t) Type.Map.empty
     in
-    let pkg_dir = Fpath.to_string pkg_dir in
     String.HMap.add t.pkgs_dirs pkg pkg_dir ;
-    String.HMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
-      | None -> Some (1, cells)
-      | Some (cnt, _) -> Some (cnt + 1, cells)
-    )
+    t.cells <-
+      t.cells |> Fpath.Map.update pkg_dir @@ function
+        | None -> Some (1, cells)
+        | Some (cnt, _) -> Some (cnt + 1, cells)
 
 let iter t = Trie.iter t.trie
 let iter_with t ty = Trie.iter_with ty t.trie
@@ -75,8 +76,7 @@ let wrap ~to_type ~merge ?(pkg_filt = CCFun.const true) t iter =
   iter
   |> Iter.flat_map (fun elt ->
     let ty = to_type elt in
-    t.cells
-    |> String.HMap.to_iter
+    (fun fn -> Fpath.Map.iter (CCFun.curry fn) t.cells)
     |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
       if pkg_filt pkg_dir then
         Type.Map.get ty cells
@@ -86,12 +86,12 @@ let wrap ~to_type ~merge ?(pkg_filt = CCFun.const true) t iter =
   )
 
 let pkg_filt t pkgs =
-  let set = ref String.Set.empty in
+  let set = ref Fpath.Set.empty in
   pkgs |> CCList.iter (fun pkg ->
     let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
-    set := String.Set.add pkg_dir ! set
+    set := Fpath.Set.add pkg_dir ! set
   ) ;
-  fun pkg -> String.Set.mem pkg ! set
+  fun pkg -> Fpath.Set.mem pkg ! set
 
 let iter, iter_with =
   let aux ?pkgs t iter =
