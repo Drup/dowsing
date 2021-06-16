@@ -63,18 +63,18 @@ let main _ meas_kind filt idx_file ty pkgs =
       Timer.stop timer ;
       let time = Timer.get timer in
       let meas = Measure.make meas_kind ty' in
-      tbl := ! tbl |> Measure.Map.update meas @@ function
+      tbl := !tbl |> Measure.Map.update meas @@ function
         | None -> Some (time, 1)
         | Some (time', cnt) -> Some (time +. time', cnt + 1)
     ) ;
     let total_time = ref 0. in
     let total_cnt = ref 0 in
     let rows =
-      ! tbl
+      !tbl
       |> Measure.Map.to_iter
       |> Iter.map (fun (meas, (time, cnt)) ->
-        total_time := ! total_time +. time ;
-        total_cnt := ! total_cnt + cnt ;
+        total_time := !total_time +. time ;
+        total_cnt := !total_cnt + cnt ;
         [|
           Fmt.to_to_string (Measure.pp meas_kind) meas ;
           Fmt.(to_to_string float) @@ time *. 1e3 ;
@@ -84,8 +84,8 @@ let main _ meas_kind filt idx_file ty pkgs =
       )
     in
     pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
-    let total_time = ! total_time in
-    let total_cnt = ! total_cnt in
+    let total_time = !total_time in
+    let total_cnt = !total_cnt in
     Fmt.pr "@,total time: %g" total_time ;
     stats0 |> CCOpt.iter (fun (total_time', _) ->
       Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.

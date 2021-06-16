@@ -104,7 +104,7 @@ module Tail' = struct
           kinds
       ) (Type.tail ty) Type.Kind'.MSet.empty
     in
-    { has_var ; cnt = ! cnt ; tl }
+    { has_var ; cnt = !cnt ; tl }
 
   let compare t1 t2 =
     CCOrd.(bool t1.has_var t2.has_var

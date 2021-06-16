@@ -89,9 +89,9 @@ let pkg_filt t pkgs =
   let set = ref Fpath.Set.empty in
   pkgs |> CCList.iter (fun pkg ->
     let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
-    set := Fpath.Set.add pkg_dir ! set
+    set := Fpath.Set.add pkg_dir !set
   ) ;
-  fun pkg -> Fpath.Set.mem pkg ! set
+  fun pkg -> Fpath.Set.mem pkg !set
 
 let iter, iter_with =
   let aux ?pkgs t iter =

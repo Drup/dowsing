@@ -14,4 +14,4 @@ let is_internal info =
 let pp ppf t =
   Fmt.pf ppf "@[%a :@ %a@]"
     LongIdent.pp t.lid
-    ! Oprint.out_type t.out_ty
+    !Oprint.out_type t.out_ty

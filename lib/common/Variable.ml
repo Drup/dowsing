@@ -34,7 +34,7 @@ module Gen = struct
     ref @@ Namespace.seed namespace
 
   let gen t =
-    let var = ! t in
+    let var = !t in
     t := Namespace.next var ;
     var
 
