@@ -32,8 +32,9 @@ type info = {
 (* temporary fix to avoid issues with LibIndex and name mangling *)
 let () = Printtyp.Naming_context.enable false
 
-let iter pkg_dir k =
-  [ Fpath.to_string pkg_dir ]
+let iter pkgs_dirs k =
+  pkgs_dirs
+  |> CCList.map Fpath.to_string
   |> LibIndex.Misc.unique_subdirs
   |> LibIndex.load
   |> LibIndex.all

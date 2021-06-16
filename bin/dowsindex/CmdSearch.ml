@@ -1,22 +1,35 @@
 open Common
 
-let main _ exhaustive cnt idx_file ty pkgs =
+type opts = {
+  copts : copts ;
+  exhaustive : Bool.t ;
+  cnt : Int.t Option.t ;
+  idx_file : Fpath.t ;
+  ty : Type.t ;
+  pkgs : String.t List.t ;
+}
+
+let main opts =
   let pkgs =
-    if CCList.is_empty pkgs
+    if CCList.is_empty opts.pkgs
     then None
-    else Some pkgs
+    else Some opts.pkgs
   in
   let idx =
     try
-      Index.load idx_file
+      Index.load opts.idx_file
     with Sys_error _ ->
       error @@ Fmt.str "cannot open index file `%a'"
-        Fpath.pp idx_file
+        Fpath.pp opts.idx_file
   in
   let res =
-    let find = if exhaustive then Index.find else Index.find_with in
+    let find =
+      if opts.exhaustive
+      then Index.find
+      else Index.find_with
+    in
     let iter_idx =
-      try find idx env ty ?pkgs
+      try find idx env opts.ty ?pkgs
       with Not_found -> error "unknown package"
     in
     iter_idx
@@ -25,12 +38,12 @@ let main _ exhaustive cnt idx_file ty pkgs =
         <?> (Type.compare, ty1, ty2))
     )
   in
-  let res = CCOpt.fold (CCFun.flip Iter.take) res cnt in
+  let res = CCOpt.fold (CCFun.flip Iter.take) res opts.cnt in
   Fmt.pr "@[<v>%a@]@."
     (Fmt.iter Iter.iter @@ fun ppf (_, cell, _) -> Index.Cell.pp ppf cell) res
 
 let main copts exhaustive cnt idx_file ty pkgs =
-  try Ok (main copts exhaustive cnt idx_file ty pkgs)
+  try Ok (main { copts ; exhaustive ; cnt ; idx_file ; ty ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner

@@ -1,35 +1,42 @@
 open Common
 
-let main _ verbose idx_file pkgs =
-  Bos.OS.Dir.create ~path:true @@ Fpath.parent idx_file
+type opts = {
+  copts : copts ;
+  verbose : Bool.t ;
+  idx_file : Fpath.t ;
+  pkgs : String.t List.t ;
+}
+
+let main opts =
+  Bos.OS.Dir.create ~path:true @@ Fpath.parent opts.idx_file
   |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
   let pkgs =
     try
-      if pkgs = []
+      if opts.pkgs = []
       then Package.find_all ()
-      else Package.find pkgs
+      else Package.find opts.pkgs
     with
     | Package.Error pkg ->
         error @@ Fmt.str "cannot find package `%s'"
           pkg
   in
-  if verbose then
+  if opts.verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@."
       (CCList.length pkgs)
       Fmt.(list ~sep:sp @@ using snd Fpath.pp) pkgs ;
   let idx =
-    try Index.load idx_file
+    try Index.load opts.idx_file
     with Sys_error _ -> Index.make ()
   in
   pkgs |> CCList.iter @@ CCFun.uncurry @@ Index.add idx ;
   try
-    Index.save idx idx_file
+    Index.save idx opts.idx_file
   with Sys_error _ ->
     error @@ Fmt.str "cannot write index file `%a'"
-      Fpath.pp idx_file
+      Fpath.pp opts.idx_file
 
 let main copts verbose idx_file pkgs =
-  try Ok (main copts verbose idx_file pkgs)
+  try Ok (main { copts ; verbose ; idx_file ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner

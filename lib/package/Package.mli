@@ -9,4 +9,4 @@ type info = {
   out_ty : Outcometree.out_type ;
 }
 
-val iter : Fpath.t -> info Iter.t
+val iter : Fpath.t List.t -> info Iter.t

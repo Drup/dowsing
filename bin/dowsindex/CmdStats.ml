@@ -1,6 +1,16 @@
 open Common
 
-let pp_table ?(sep = 4) col_names rows =
+type opts = {
+  copts : copts ;
+  meas_kind : Measure.Kind.t ;
+  filt : Bool.t ;
+  no_idx : Bool.t ;
+  idx_file : Fpath.t ;
+  ty : Type.t ;
+  pkgs : String.t List.t ;
+}
+
+let print_table ?(sep = 4) col_names rows =
   let col_cnt = CCArray.length col_names in
   let col_widths = CCArray.map String.length col_names in
   let rows = Iter.persistent rows in
@@ -37,76 +47,108 @@ let pp_table ?(sep = 4) col_names rows =
   print_hline () ;
   CCFormat.close_tbox ()
 
-let main _ meas_kind filt idx_file ty pkgs =
-  let pkgs =
-    if CCList.is_empty pkgs
-    then None
-    else Some pkgs
-  in
-  let idx =
-    try
-      Index.load idx_file
-    with Sys_error _ ->
-      error @@ Fmt.str "cannot open index file `%a'"
-        Fpath.pp idx_file
+let aux opts ?stats0 iter_idx =
+  let iter_idx =
+    try iter_idx ()
+    with Not_found | Package.Error _ ->
+      error "unknown package"
   in
   let timer = Timer.make () in
-  let aux ?stats0 iter_idx =
-    let iter_idx =
-      try iter_idx ()
-      with Not_found -> error "unknown package"
-    in
-    let tbl = ref Measure.Map.empty in
-    iter_idx (fun (ty', _) ->
-      Timer.start timer ;
-      ignore @@ Unification.unifiable env ty ty' ;
-      Timer.stop timer ;
-      let time = Timer.get timer in
-      let meas = Measure.make meas_kind ty' in
-      tbl := !tbl |> Measure.Map.update meas @@ function
-        | None -> Some (time, 1)
-        | Some (time', cnt) -> Some (time +. time', cnt + 1)
-    ) ;
-    let total_time = ref 0. in
-    let total_cnt = ref 0 in
-    let rows =
-      !tbl
-      |> Measure.Map.to_iter
-      |> Iter.map (fun (meas, (time, cnt)) ->
-        total_time := !total_time +. time ;
-        total_cnt := !total_cnt + cnt ;
-        [|
-          Fmt.to_to_string (Measure.pp meas_kind) meas ;
-          Fmt.(to_to_string float) @@ time *. 1e3 ;
-          Fmt.(to_to_string float) @@ time /. CCFloat.of_int cnt *. 1e6 ;
-          CCInt.to_string cnt ;
-        |]
-      )
-    in
-    pp_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
-    let total_time = !total_time in
-    let total_cnt = !total_cnt in
-    Fmt.pr "@,total time: %g" total_time ;
-    stats0 |> CCOpt.iter (fun (total_time', _) ->
-      Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.
-    ) ;
-    Fmt.pr "@,total # unif.: %i" total_cnt ;
-    let total_cnt = CCFloat.of_int total_cnt in
-    stats0 |> CCOpt.iter (fun (_, total_cnt') ->
-      Fmt.pr " (%g %%)" @@ total_cnt /. total_cnt' *. 100.
-    ) ;
-    total_time, total_cnt
+  let tbl = ref Measure.Map.empty in
+  iter_idx (fun ty ->
+    Timer.start timer ;
+    ignore @@ Unification.unifiable env opts.ty ty ;
+    Timer.stop timer ;
+    let time = Timer.get timer in
+    let meas = Measure.make opts.meas_kind ty in
+    tbl := !tbl |> Measure.Map.update meas @@ function
+      | None -> Some (time, 1)
+      | Some (time', cnt) -> Some (time +. time', cnt + 1)
+  ) ;
+  let total_time = ref 0. in
+  let total_cnt = ref 0 in
+  let rows =
+    !tbl
+    |> Measure.Map.to_iter
+    |> Iter.map (fun (meas, (time, cnt)) ->
+      total_time := !total_time +. time ;
+      total_cnt := !total_cnt + cnt ;
+      [|
+        Fmt.to_to_string (Measure.pp opts.meas_kind) meas ;
+        Fmt.(to_to_string float) @@ time *. 1e3 ;
+        Fmt.(to_to_string float) @@ time /. CCFloat.of_int cnt *. 1e6 ;
+        CCInt.to_string cnt ;
+      |]
+    )
   in
+  print_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
+  let total_time = !total_time in
+  let total_cnt = !total_cnt in
+  Fmt.pr "@,total time: %g" total_time ;
+  stats0 |> CCOpt.iter (fun (total_time', _) ->
+    Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.
+  ) ;
+  Fmt.pr "@,total # unif.: %i" total_cnt ;
+  let total_cnt = CCFloat.of_int total_cnt in
+  stats0 |> CCOpt.iter (fun (_, total_cnt') ->
+    Fmt.pr " (%g %%)" @@ total_cnt /. total_cnt' *. 100.
+  ) ;
+  total_time, total_cnt
+
+let aux opts iter_idx iter_idx_filt =
+  let aux = aux opts in
   Fmt.pr "@[<v>" ;
-  let stats0 = aux @@ fun () -> Index.iter idx ?pkgs in
-  if filt then begin
+  let stats0 = aux iter_idx in
+  if opts.filt then begin
     Fmt.pr "@," ;
-    ignore @@ aux ~stats0 @@ fun () -> Index.iter_with idx ty ?pkgs
+    ignore @@ aux ~stats0 iter_idx_filt
   end ;
   Fmt.pr "@]@."
 
-let main copts meas_kind filt idx_file ty pkgs =
-  try Ok (main copts meas_kind filt idx_file ty pkgs)
+let main opts =
+  let pkgs =
+    if CCList.is_empty opts.pkgs
+    then None
+    else Some opts.pkgs
+  in
+  let iter_idx, iter_idx_filt =
+    if opts.no_idx then
+      let hcons = Type.Hashcons.make () in
+      let iter_idx () =
+        pkgs
+        |> CCOpt.map_lazy Package.find_all Package.find
+        |> CCList.map snd
+        |> Package.iter
+        |> Iter.map @@ fun Package.{ out_ty ; _ } ->
+          let env = Type.Env.make Data ~hcons in
+          Type.of_outcometree env out_ty
+      in
+      let iter_idx_filt () =
+        iter_idx ()
+        |> Iter.filter @@ Unification.unifiable env opts.ty
+      in
+      iter_idx, iter_idx_filt
+    else
+      let idx =
+        try
+          Index.load opts.idx_file
+        with Sys_error _ ->
+          error @@ Fmt.str "cannot open index file `%a'"
+            Fpath.pp opts.idx_file
+      in
+      (fun () ->
+        Index.iter idx ?pkgs
+        |> Iter.map fst
+      ),
+      (fun () ->
+        Index.iter_with idx opts.ty ?pkgs
+        |> Iter.map fst
+      )
+  in
+  aux opts iter_idx iter_idx_filt
+
+let main copts meas_kind filt no_idx idx_file ty pkgs =
+  try Ok (main { copts ; meas_kind ; filt ; no_idx ; idx_file ; ty ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -123,6 +165,10 @@ let filt =
   let doc = "Test feature filtering." in
   Arg.(value & flag & info [ "filter" ] ~doc)
 
+let no_idx =
+  let doc = "Do not use or compute index: retrieve functions directly from OPAM." in
+  Arg.(value & flag & info [ "no-index" ] ~doc)
+
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
@@ -138,5 +184,5 @@ let pkgs =
 
 let cmd =
   let doc = "compute index statistics" in
-  Term.(term_result (const main $ copts $ meas_kind $ filt $ idx_file $ ty $ pkgs)),
+  Term.(term_result (const main $ copts $ meas_kind $ filt $ no_idx $ idx_file $ ty $ pkgs)),
   Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

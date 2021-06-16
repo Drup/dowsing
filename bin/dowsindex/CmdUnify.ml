@@ -1,15 +1,22 @@
 open Common
 
-let main _ all_unifs ty1 ty2 =
-  Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp ty1) ;
-  Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp ty2) ;
+type opts = {
+  copts : copts ;
+  all_unifs : Bool.t ;
+  ty1 : Type.t ;
+  ty2 : Type.t ;
+}
+
+let main opts =
+  Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp opts.ty1) ;
+  Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp opts.ty2) ;
   let unifs =
-    Unification.unifiers env ty1 ty2
+    Unification.unifiers env opts.ty1 opts.ty2
     |> Iter.sort ~cmp:Subst.compare
     |> Iter.to_list
   in
   let unifs =
-    if all_unifs then unifs
+    if opts.all_unifs then unifs
     else CCList.take 1 unifs
   in
   if unifs = [] then
@@ -17,6 +24,9 @@ let main _ all_unifs ty1 ty2 =
   else
     Fmt.pr "@[<v2>unifiers:@ %a@]@."
       Fmt.(list ~sep:sp Subst.pp) unifs
+
+let main copts all_unifs ty1 ty2 =
+  main { copts ; all_unifs ; ty1 ; ty2 }
 
 open Cmdliner
 

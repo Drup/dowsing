@@ -51,7 +51,7 @@ let add =
     if String.HMap.mem t.pkgs_dirs pkg then
       remove t pkg ;
     let cells =
-      Package.iter pkg_dir
+      Package.iter [ pkg_dir ]
       |> Iter.fold (aux t) Type.Map.empty
     in
     String.HMap.add t.pkgs_dirs pkg pkg_dir ;
@@ -67,8 +67,8 @@ let find, find_with =
   let aux iter t env ty =
     iter t ty
     |> Iter.filter_map @@ fun ty' ->
-       Unification.unify env ty ty'
-       |> CCOpt.map @@ CCPair.make ty'
+      Unification.unify env ty ty'
+      |> CCOpt.map @@ CCPair.make ty'
   in
   aux (fun t _ -> iter t), aux iter_with
 
