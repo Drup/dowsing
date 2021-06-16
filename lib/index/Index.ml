@@ -37,39 +37,22 @@ let remove t pkg =
         else Some (cnt - 1, cells)
   )
 
-(* temporary fix to avoid issues with LibIndex and name mangling *)
-let () = Printtyp.Naming_context.enable false
-
-let iter_libindex hcons pkg_dir k =
-  [ pkg_dir ]
-  |> LibIndex.Misc.unique_subdirs
-  |> LibIndex.load
-  |> LibIndex.all
-  |> CCList.iter @@ fun info ->
-    match info.LibIndex.kind with
-    | LibIndex.Value ->
-        let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
-        let out_ty = out_ty.oval_type in
-        let env = Type.Env.make Data ~hcons in
-        let ty = Type.of_outcometree env out_ty in
-        let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
-        let orig_lid = LongIdent.of_list @@ info.orig_path @ [ info.name ] in
-        k (ty, orig_lid, Info.{ lid ; out_ty })
-    | _ -> ()
-
 let add =
-  let aux t cells (ty, lid, info) =
+  let aux t cells Package.{ orig_lid ; lid ; out_ty } =
+    let env = Type.Env.make Data ~hcons:t.hcons in
+    let ty = Type.of_outcometree env out_ty in
+    let info = Info.{ lid ; out_ty } in
     t.trie <- Trie.add ty t.trie ;
-    Type.Map.update ty (CCFun.compose (Cell.update lid info) CCOpt.return) cells
+    Type.Map.update ty (CCFun.compose (Cell.update orig_lid info) CCOpt.return) cells
   in
   fun t pkg pkg_dir ->
     if String.HMap.mem t.pkgs_dirs pkg then
       remove t pkg ;
-    let pkg_dir = Fpath.to_string pkg_dir in
     let cells =
-      iter_libindex t.hcons pkg_dir
+      Package.iter pkg_dir
       |> Iter.fold (aux t) Type.Map.empty
     in
+    let pkg_dir = Fpath.to_string pkg_dir in
     String.HMap.add t.pkgs_dirs pkg pkg_dir ;
     String.HMap.update t.cells ~k:pkg_dir ~f:(fun _ -> function
       | None -> Some (1, cells)

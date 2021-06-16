@@ -6,10 +6,10 @@ let main _ verbose idx_file pkgs =
   let pkgs =
     try
       if pkgs = []
-      then FindPackage.find_all ()
-      else FindPackage.find pkgs
+      then Package.find_all ()
+      else Package.find pkgs
     with
-    | FindPackage.Error pkg ->
+    | Package.Error pkg ->
         error @@ Fmt.str "cannot find package `%s'"
           pkg
   in

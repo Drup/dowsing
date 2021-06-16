@@ -1,4 +1,4 @@
 (library
   (name index)
-  (libraries ocp-index.lib fpath utils common unification)
+  (libraries utils common package unification)
   (flags (:standard -open Utils -open Common)))
