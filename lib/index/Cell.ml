@@ -1,35 +1,32 @@
-module Slot = struct
+module Class = struct
 
   include CCSet.Make (Info)
 
-  let prune t =
-      let t' = filter (CCFun.negate Info.is_internal) t in
-      if not @@ is_empty t' then t' else t
-
-  let representative = min_elt
-
-  let pp = Fmt.using representative Info.pp
+  let representative t =
+    t
+    |> find_first_opt @@ CCFun.negate Info.is_internal
+    |> CCOpt.get_lazy @@ fun () -> min_elt t
 
 end
 
-type t = Slot.t LongIdent.Map.t
+type t = Class.t LongIdent.Map.t
 
 let empty = LongIdent.Map.empty
 
 let singleton lid info =
-  LongIdent.Map.add lid (Slot.singleton info) empty
+  LongIdent.Map.add lid (Class.singleton info) empty
 
 let add lid info t =
   t |> LongIdent.Map.update lid @@ function
-    | None -> Some (Slot.singleton info)
-    | Some slot -> Some (Slot.add info slot)
+    | None -> Some (Class.singleton info)
+    | Some slot -> Some (Class.add info slot)
 
 let update lid info = function
   | None -> singleton lid info
   | Some t -> add lid info t
 
-let pp ppf t =
-  LongIdent.Map.to_iter_values t
-  |> Iter.map Slot.prune
-  |> Iter.sort ~cmp:Slot.compare
-  |> Fmt.(vbox @@ iter Iter.iter Slot.pp) ppf
+let iter t =
+  t
+  |> LongIdent.Map.to_iter_values
+  |> Iter.map Class.representative
+  |> Iter.sort ~cmp:Info.compare

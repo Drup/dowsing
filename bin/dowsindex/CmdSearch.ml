@@ -37,10 +37,13 @@ let main opts =
       CCOrd.(Subst.compare unif1 unif2
         <?> (Type.compare, ty1, ty2))
     )
+    |> Iter.flat_map (fun (_, cell, _) ->
+      Index.Cell.iter cell
+    )
   in
   let res = CCOpt.fold (CCFun.flip Iter.take) res opts.cnt in
   Fmt.pr "@[<v>%a@]@."
-    (Fmt.iter Iter.iter @@ fun ppf (_, cell, _) -> Index.Cell.pp ppf cell) res
+    (Fmt.iter Iter.iter Index.Info.pp) res
 
 let main copts exhaustive cnt idx_file ty pkgs =
   try Ok (main { copts ; exhaustive ; cnt ; idx_file ; ty ; pkgs })

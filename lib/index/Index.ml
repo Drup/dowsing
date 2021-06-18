@@ -1,3 +1,4 @@
+module Info = Info
 module Cell = Cell
 
 module Trie =
