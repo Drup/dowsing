@@ -1,3 +1,3 @@
 (library
   (name utils)
-  (libraries compiler-libs.common unix findlib containers fpath bos))
+  (libraries compiler-libs.common unix containers fpath bos))

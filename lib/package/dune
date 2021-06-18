@@ -1,4 +1,4 @@
 (library
   (name package)
-  (libraries fpath ocp-index.lib common)
+  (libraries findlib fpath ocp-index.lib common)
   (flags (:standard -open Common)))
