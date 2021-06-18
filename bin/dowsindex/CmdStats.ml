@@ -84,7 +84,7 @@ let aux opts ?stats0 iter_idx =
   print_table [| "size" ; "total time (ms)" ; "avg. time (μs)" ; "# unif." |] rows ;
   let total_time = !total_time in
   let total_cnt = !total_cnt in
-  Fmt.pr "@,total time: %g" total_time ;
+  Fmt.pr "@,total time (s): %g" total_time ;
   stats0 |> CCOpt.iter (fun (total_time', _) ->
     Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.
   ) ;
