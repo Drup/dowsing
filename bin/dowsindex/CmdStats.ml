@@ -159,7 +159,7 @@ let meas_kind =
     Fmt.str "Set type measure: $(docv) must be %s."
       (Arg.doc_alts Measure.Kind.(CCList.map to_string all))
   in
-  Arg.(value & opt Conv.meas_kind Measure.Kind.VarCount & info [ "measure" ] ~docv ~doc)
+  Arg.(value & opt Conv.meas_kind Measure.Kind.HeadKind & info [ "measure" ] ~docv ~doc)
 
 let filt =
   let doc = "Test feature filtering." in
