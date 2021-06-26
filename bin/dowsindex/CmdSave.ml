@@ -48,7 +48,7 @@ let verbose =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt Conv.path Paths.idx_file & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt Convs.path Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let pkgs =
   let docv = "package" in

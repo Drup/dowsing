@@ -63,11 +63,11 @@ let cnt =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt Conv.file Paths.idx_file & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt Convs.file Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos ~rev:true 0 (some Conv.scheme) None & info [] ~docv)
+  Arg.(required & pos ~rev:true 0 (some Convs.scheme) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in

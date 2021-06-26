@@ -159,7 +159,7 @@ let meas_kind =
     Fmt.str "Set type measure: $(docv) must be %s."
       (Arg.doc_alts Measure.Kind.(CCList.map to_string all))
   in
-  Arg.(value & opt Conv.meas_kind Measure.Kind.HeadKind & info [ "measure" ] ~docv ~doc)
+  Arg.(value & opt Convs.meas_kind Measure.Kind.HeadKind & info [ "measure" ] ~docv ~doc)
 
 let filt =
   let doc = "Test feature filtering." in
@@ -172,11 +172,11 @@ let no_idx =
 let idx_file =
   let docv = "file" in
   let doc = "Set index file." in
-  Arg.(value & opt Conv.file Paths.idx_file & info [ "index" ] ~docv ~doc)
+  Arg.(value & opt Convs.file Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos ~rev:true 0 (some Conv.scheme) None & info [] ~docv)
+  Arg.(required & pos ~rev:true 0 (some Convs.scheme) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in
