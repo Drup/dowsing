@@ -2,8 +2,8 @@ module Info = Info
 module Cell = Cell
 
 module Trie =
-  Trie.Node (Feature.Head') (
-    Trie.Node (Feature.Tail') (
+  Trie.Node (Feature.Head) (
+    Trie.Node (Feature.Tail) (
       Trie.Leaf
     )
   )

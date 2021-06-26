@@ -9,7 +9,4 @@ module type S = sig
 end
 
 module Head : S
-module Head' : S
 module Tail : S
-module Tail' : S
-module Constructors : S

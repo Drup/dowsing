@@ -8,37 +8,7 @@ module type S = sig
 
 end
 
-(*
-   Strict type equality.
-   Mostly used to obtain equivalence classes modulo AC.
-   Obviously, we can't say anything about compatibility
-*)
-module TypeEq : S = struct
-
-  type t = Type.t
-
-  let compute x = x
-  let compare = Type.compare
-  let compatible ~query:_ ~data:_ = true
-
-end
-
 module Head : S = struct
-
-  type t = Type.Kind.t
-
-  let compute ty = Type.(kind @@ head ty)
-
-  let compare = Type.Kind.compare
-
-  let compatible ~query:(t1 : Type.Kind.t) ~data:(t2 : Type.Kind.t) =
-    match t1, t2 with
-    | Var, _ | _, Var -> true
-    | _ -> Type.Kind.equal t1 t2
-
-end
-
-module Head' : S = struct
 
   type t = Type.Kind'.t
 
@@ -53,34 +23,7 @@ module Head' : S = struct
 
 end
 
-module Tail : S = struct
-
-  type t = {
-    (* type has at least one spine variable? *)
-    has_var : Bool.t ;
-    (* number of tail spine non-variables *)
-    cnt : Int.t ;
-  }
-
-  let compute ty =
-    let has_var = Measure.make SpineVarCount ty > 0 in
-    let cnt = Measure.make TailSpineNonVarCount ty in
-    { has_var ; cnt }
-
-  let compare t1 t2 =
-    CCOrd.(bool t1.has_var t2.has_var
-      <?> (int, t1.cnt, t2.cnt))
-
-  let compatible ~query:t1 ~data:t2 =
-    match t1.has_var, t2.has_var with
-    | false,  false -> t1.cnt  = t2.cnt
-    | false,  true  -> t1.cnt <= t2.cnt
-    | true,   false -> t1.cnt >= t2.cnt
-    | true,   true  -> true
-
-end
-
-module Tail' = struct
+module Tail = struct
 
   type t = {
     (* type has at least one spine variable? *)
