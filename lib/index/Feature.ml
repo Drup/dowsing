@@ -2,6 +2,7 @@ module type S = sig
 
   type t
 
+  val name : String.t
   val compute : Type.t -> t
   val compare : t CCOrd.t
   val compatible : query:t -> data:t -> Bool.t
@@ -9,6 +10,8 @@ module type S = sig
 end
 
 module Head : S = struct
+
+  let name = "head"
 
   type t = Type.Kind'.t
 
@@ -24,6 +27,8 @@ module Head : S = struct
 end
 
 module Tail = struct
+
+  let name = "tail"
 
   type t = {
     (* type has at least one spine variable? *)
@@ -64,6 +69,8 @@ module Tail = struct
 end
 
 module Constructors : S = struct
+
+  let name = "constrs"
 
   type t = {
     mutable has_var : Bool.t ;
@@ -109,3 +116,19 @@ module Constructors : S = struct
       | true,  true  -> true
 
 end
+
+let all = [
+  (module Head : S) ;
+  (module Tail : S)
+]
+let all_with_names =
+  CCList.map (fun ((module Feat : S) as feat) -> Feat.name, feat) all
+let all_names =
+  CCList.map fst all_with_names
+
+let to_string (module Feat : S) =
+  Feat.name
+let of_string =
+  CCFun.flip List.assoc @@ all_with_names
+
+let pp = Fmt.of_to_string to_string

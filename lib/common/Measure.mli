@@ -10,10 +10,11 @@ module Kind : sig
     | SpineVarCount
     | TailLength
 
-  val all : t List.t
-
   val of_string : String.t -> t
   val to_string : t -> String.t
+
+  val all : t List.t
+  val all_names : String.t List.t
 
   val pp : t Fmt.t [@@ocaml.toplevel_printer]
 

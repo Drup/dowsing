@@ -3,7 +3,8 @@ open Common
 type opts = {
   copts : copts ;
   meas_kind : Measure.Kind.t ;
-  filt : Bool.t ;
+  with_feats : Bool.t ;
+  feats : (module Index.Feature.S) List.t ;
   no_idx : Bool.t ;
   idx_file : Fpath.t ;
   ty : Type.t ;
@@ -99,7 +100,7 @@ let aux opts iter_idx iter_idx_filt =
   let aux = aux opts in
   Fmt.pr "@[<v>" ;
   let stats0 = aux iter_idx in
-  if opts.filt then begin
+  if opts.with_feats then begin
     Fmt.pr "@," ;
     ignore @@ aux ~stats0 iter_idx_filt
   end ;
@@ -129,6 +130,7 @@ let main opts =
       in
       iter_idx, iter_idx_filt
     else
+      let module Index = (val Index.make_ opts.feats) in
       let idx =
         try
           Index.load opts.idx_file
@@ -147,8 +149,8 @@ let main opts =
   in
   aux opts iter_idx iter_idx_filt
 
-let main copts meas_kind filt no_idx idx_file ty pkgs =
-  try Ok (main { copts ; meas_kind ; filt ; no_idx ; idx_file ; ty ; pkgs })
+let main copts meas_kind with_feats feats no_idx idx_file ty pkgs =
+  try Ok (main { copts ; meas_kind ; with_feats ; feats ; no_idx ; idx_file ; ty ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -156,14 +158,22 @@ open Cmdliner
 let meas_kind =
   let docv = "measure" in
   let doc =
-    Fmt.str "Set type measure: $(docv) must be %s."
-      (Arg.doc_alts Measure.Kind.(CCList.map to_string all))
+    Fmt.str "Set type measure: %s."
+      (Arg.doc_alts Measure.Kind.all_names)
   in
   Arg.(value & opt Convs.meas_kind Measure.Kind.HeadKind & info [ "measure" ] ~docv ~doc)
 
-let filt =
-  let doc = "Test feature filtering." in
-  Arg.(value & flag & info [ "filter" ] ~doc)
+let with_feats =
+  let doc = "Test features." in
+  Arg.(value & flag & info [ "with-features" ] ~doc)
+
+let feats =
+  let docv = "features" in
+  let doc =
+    Fmt.str "Set used features: %s."
+      (Arg.doc_alts Index.Feature.all_names)
+  in
+  Arg.(value & opt Convs.feats Index.Feature.all & info [ "features" ] ~docv ~doc)
 
 let no_idx =
   let doc = "Do not use or compute index: retrieve functions directly from OPAM." in
@@ -184,5 +194,5 @@ let pkgs =
 
 let cmd =
   let doc = "compute index statistics" in
-  Term.(term_result (const main $ copts $ meas_kind $ filt $ no_idx $ idx_file $ ty $ pkgs)),
+  Term.(term_result (const main $ copts $ meas_kind $ with_feats $ feats $ no_idx $ idx_file $ ty $ pkgs)),
   Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

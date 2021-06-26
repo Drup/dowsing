@@ -167,7 +167,4 @@ end
 
 let make_ feats = (module Make (val Trie.make feats) : IndexIntf.S)
 
-include (val make_ [
-  (module Feature.Head) ;
-  (module Feature.Tail)
-])
+include (val make_ Feature.all)

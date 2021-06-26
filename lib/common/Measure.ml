@@ -29,9 +29,9 @@ module Kind = struct
       | Some t -> t
       | None -> invalid_arg "Common.Measure.Kind.of_string"
 
-  let to_string t = CCList.assoc ~eq:(=) t all
+  let to_string t = List.assoc t all
 
-  let all = List.map fst all
+  let all, all_names = CCList.split all
 
   let pp = Fmt.of_to_string to_string
 
