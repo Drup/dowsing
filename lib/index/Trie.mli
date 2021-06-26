@@ -12,3 +12,5 @@ end
 
 module Leaf : NODE
 module Node (Feat : Feature.S) (Sub : NODE) : NODE
+
+val make : (module Feature.S) List.t -> (module NODE)

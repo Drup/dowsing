@@ -63,3 +63,10 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
     )
 
 end
+
+let rec make feats =
+  match feats with
+  | [] ->
+      (module Leaf : NODE)
+  | feat :: feats ->
+      (module Node (val feat : Feature.S) (val make feats))
