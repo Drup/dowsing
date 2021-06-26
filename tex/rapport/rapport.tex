@@ -18,15 +18,22 @@
 
 \usepackage{array}
 \usepackage{xspace}
+\usepackage{tabularx}
 
 \usepackage{enumitem}
 \setlist[itemize]{leftmargin=*}
+
+\usepackage{caption}
+\DeclareCaptionFormat{empty}{#1}
+\renewcommand*\figurename{}
 
 %============================================================
 
 \usepackage{amsmath}	% align*
 \usepackage{amssymb}	% mathbb
 \usepackage{mathrsfs}	% mathscr
+\usepackage{scalerel}	% scalerel
+\usepackage{mathtools}	% mathclap
 
 %============================================================
 
@@ -73,24 +80,26 @@
 
 \newcommand{\dowsindex}{\texttt{dowsindex}\xspace}
 
-\newcommand{\ssi}{\textit{ssi}\xspace}
-\newcommand{\trie}{\textit{trie}\xspace}
-\newcommand{\unit}{\bold{unit}}
-
 \newcommand{\interval}[2]{[\![#1\,;#2]\!]}
-\newcommand{\fmsets}[1]{{#1}_{\mathrm {fin}}^\#}
-\newcommand{\fmset}[1]{\{\!\!\{#1\}\!\!\}}
+\newcommand{\mset}[1]{\{\![#1]\!\}}
 
-\newcommand{\V}{\mathscr V}
-\newcommand{\F}{\mathscr F}
-\newcommand{\E}{\mathscr E}
-
-\newcommand{\Tleq}{\leqslant_T}
-\newcommand{\Tiso}{\cong_T}
-\newcommand{\Tequiv}{\simeq_T}
-\newcommand{\Nequiv}{\simeq_N}
-\newcommand{\TEequiv}{\Tequiv^\E}
 \newcommand{\qeq}{\stackrel {\scriptscriptstyle ?} =}
+
+\newcommand{\ssi}{\textit{ssi}\xspace}
+\newcommand{\unit}{\bold{unit}}
+\newcommand{\norm}{\mathrm{norm}}
+
+\newcommand{\V}{\mathscr{V}}
+\newcommand{\F}{\mathscr{F}}
+\newcommand{\E}{\mathscr{E}}
+\newcommand{\G}{\mathscr{G}}
+\newcommand{\T}{\mathrm{T}}
+\newcommand{\N}{\mathrm{N}}
+
+\newcommand{\mathhyphen}{{\hbox{-}}}
+
+\DeclareMathOperator*{\msetN_bigplus}{\scalerel*{+}{\sum}^\#_\N}
+\DeclareMathOperator*{\msetG_bigplus}{\scalerel*{+}{\sum}^\#_\G}
 
 %============================================================
 
@@ -113,6 +122,8 @@
 %============================================================
 
 \chapter{Introduction}
+
+TODO: réécrire cette introduction
 
 S'il est une chose dont on a besoin en programmation fonctionnelle, c'est bien de fonctions. Seulement voilà, ce n'est pas si simple. Mettre la main sur l'une d'entre elles en présence d'un environnement de grande taille s'avère parfois difficile, à tout le moins fastidieux. Aussi, remédions.
 
@@ -158,11 +169,11 @@ Plusieurs observations en émanent. Une recherche par identificateur en l'espèc
 
 Que faire, alors ? Une recherche par spécification s'avérerait bien plus satisfaisante, mais pas forcément décidable. On peut retenir comme spécification grossière le type d'une fonction — « \textit{type as search key} » — tout en l'enrichissant par une approche sémantique et non plus purement syntaxique. La \textit{recherche modulo isomorphisme de type} s'est imposée dans la littérature. Elle consiste intuitivement à autoriser des réarrangements triviaux dans les types : permutations des paramètres et curryfication. Cette notion reste néanmoins à définir formellement, et surtout à décider algorithmiquement. Nous y consacrerons le chapitre 2.
 
-Comme souligné par Rittri \cite{Rittri93}, il est bienvenu d'autoriser l'instantiation des types dans la recherche. Si la chose est seulement permise aux types issus de l'écosystème, il s'agit de \emph{matching} ; si le type demandé peut aussi être instancié, on parlera d'\emph{unification}. Nous avons implémenté un algorithme d'unification préexistant \cite{Boudet} présenté dans le chapitre 3.
+Comme souligné par Rittri \cite{Rittri93}, il est bienvenu d'autoriser l'instantiation des types dans la recherche. Si la chose est seulement permise aux types issus de l'écosystème, il s'agit de \emph{matching} ; si le type demandé peut aussi être instancié, on parlera d'\emph{unification}. Gabriel Radanne a implémenté un algorithme d'unification présenté dans la dernière partie du chapitre 2.
 
-Le système résultant ne saurait passer à l'échelle sans un travail sur les fonctions de l'écosystème préalable à la recherche. Nous discuterons de ces limites dans le chapitre 4. Nous y proposerons une technique d'indexation reposant sur des conditions nécessaires d'unifiabilité. L'apport de cette technique se révélera substantiel.
+Le système résultant ne saurait passer à l'échelle sans un travail sur les fonctions de l'écosystème préalable à la recherche. Nous discuterons de ces limites dans le chapitre 3. Nous y proposerons une technique d'indexation reposant sur des conditions nécessaires d'unifiabilité. L'apport de cette technique se révélera substantiel.
 
-Enfin, nous décrirons dans le chapitre 5 le fruit de notre travail : l'outil  \dowsindex.
+Enfin, nous décrirons dans le chapitre 4 le fruit de notre travail : le programme \dowsindex.
 
 %============================================================
 %============================================================
@@ -170,7 +181,7 @@ Enfin, nous décrirons dans le chapitre 5 le fruit de notre travail : l'outil  \
 
 \chapter{Unification modulo isomorphismes de types}
 
-Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types}. L'\emph{unifiabilité modulo isomorphismes}, dont nous présentons l'implémentation, ajoute à cela la capacité d'instancier les types.
+Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types}. L'\emph{unifiabilité modulo isomorphismes}, ajoute à cela la capacité d'instancier les types. Nous présentons l'implémentation de Gabriel Radanne qui a servi de point de départ à ce stage. Nous insistons sur la formalisation des objets en cause afin de les invoquer proprement au chapitre suivant.
 
 %============================================================
 %============================================================
@@ -182,7 +193,7 @@ Commençons par poser quelques définitions : \emph{types}, \emph{axiome équati
 Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistrements\dots A terme, nous aurons donc besoin de \emph{constructeurs de types}. Nous les formalisons par la notion de \emph{signature}.
 
 \begin{definition}[signature]
-	Une signature est un ensemble $\F$ de symboles de constructeurs muni d'une fonction d'arité $| \cdot |_\F$ de $\F$ dans $\mathbb N$ et tel que $\V \cap \F = \emptyset$. Les constructeurs d'arité nulle sont appelés constantes.
+	Une signature est un ensemble fini $\F$ de symboles de constructeurs muni d'une fonction d'arité $| \cdot |_\F$ de $\F$ dans $\mathbb{N}$ et tel que $\V \cap \F = \emptyset$. Les constructeurs d'arité nulle sont appelés constantes.
 \end{definition}
 
 \begin{exemple}
@@ -197,43 +208,43 @@ Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistre
 	\end{itemize}
 \end{exemple}
 
-Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, g, \dots \}$.
+Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
 
 %============================================================
 
 \subsection{Types}
 
 Définissons alors les \emph{types}. Un \emph{type} est soit :
-\begin{itemize}
+\begin{itemize}[nosep]
 	\item une variable ;
 	\item le type $\unit$ ;
 	\item un type-produit ;
 	\item une type-flèche ;
-	\item un type construit avec un symbole de la signature.
+	\item construit avec un symbole de la signature.
 \end{itemize}
 
 \begin{definition}[type]
-	L'ensemble des types, noté $T$, est défini inductivement par :
+	L'ensemble des types, noté $\T$, est défini inductivement par :
 	\begin{mathpar}
 	    \inferrule* 
 	    	{ }
-	    	{\V \subseteq T}
+	    	{\V \subseteq \T}
 	    \and
 	    \inferrule*
 	    	{ }
-	    	{\unit \in T}
+	    	{\unit \in \T}
 	    \\
 	    \inferrule*
-	    	{\tau_1 \in T \\ \tau_2 \in T}
-	    	{\tau_1 \times \tau_2 \in T}
+	    	{\tau_1 \in \T \\ \tau_2 \in \T}
+	    	{\tau_1 \times \tau_2 \in \T}
 	    \and
 	   	\inferrule*
-	   		{\tau_1 \in T \\ \tau_2 \in T}
-	   		{\tau_1 \rightarrow \tau_2 \in T}
-	  	\\
+	   		{\tau_1 \in \T \\ \tau_2 \in \T}
+	   		{\tau_1 \rightarrow \tau_2 \in \T}
+	   	\and
 	    \inferrule*
-	    	{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \tau_i \in T}
-	    	{f (\tau_1, \dots, \tau_{|f|_\F}) \in T}
+	    	{f \in \F \\ \overline\tau \in \T^{|f|_\F}}
+	    	{f (\overline\tau) \in \T}
 	\end{mathpar}
 \end{definition}
 
@@ -249,58 +260,57 @@ On s'autorisera à omettre les parenthèses pour les constantes de $\F$. De faç
 \end{exemple}
 
 \begin{definition}[variables d'un type]
-	L'ensemble des variables d'un type $\tau$, noté $vars (\tau)$, est défini inductivement par :
+	L'ensemble des variables d'un type $\tau$, noté $\mathrm{vars} (\tau)$, est défini inductivement par :
 	\begin{align*}
-			vars (\alpha) &=
+			\mathrm{vars} (\alpha) &=
 			\{ \alpha \}
 		\\
-			vars (\unit) &=
+			\mathrm{vars} (\unit) &=
 			\{ \}
 		\\
-			vars (\tau_1 \times \tau_2) &=
-			vars (\tau_1) \cup vars (\tau_2)
+			\mathrm{vars} (\tau_1 \times \tau_2) &=
+			\mathrm{vars} (\tau_1) \cup \mathrm{vars} (\tau_2)
 		\\
-			vars (\tau_1 \rightarrow \tau_2) &=
-			vars (\tau_1) \cup vars (\tau_2)
+			\mathrm{vars} (\tau_1 \rightarrow \tau_2) &=
+			\mathrm{vars} (\tau_1) \cup \mathrm{vars} (\tau_2)
 		\\
-			vars (f (\tau_1, \dots, \tau_{|f|_\F})) &=
-			\bigcup_{i \in \interval 1 {|f|_\F}} vars (\tau_i)
+			\mathrm{vars} (f (\overline\tau)) &=
+			\bigcup_{i \in \interval 1 {|f|_\F}} \mathrm{vars} (\overline\tau_i)
 	\end{align*}
 \end{definition}
 
 Dans la suite, il nous faudra \emph{instancier} un type : il s'agit de substituer une ou plusieurs variables par des types correspondants. Un type sera vu comme \emph{moins général} qu'un autre s'il est obtenu en substituant dans ce dernier.
 
 \begin{definition}[substitution de types]
-	Une substitution de types est une fonction de $\V$ dans $T$. \\
+	Une substitution de types est une fonction de $\V$ dans $\T$. \\
 	On note $\Sigma$ l'ensemble des substitution de types.
 \end{definition}
 
 \begin{definition}[domaine d'une substitution de types]
-	Le domaine d'une substitution de types $\sigma$, noté $dom (\sigma)$, est l'ensemble :
-	\[ \{ \alpha \in \V \mid \hat \sigma (\alpha) \neq \alpha \} \]
+	Le domaine d'une substitution de types $\sigma$, noté $\mathrm{dom} (\sigma)$, est l'ensemble :
+	\[ \{ \alpha \in \V \mid \hat\sigma (\alpha) \neq \alpha \} \]
 \end{definition}
 
-Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — disons $dom (\sigma) = \{ \alpha_1, \dots, \alpha_n \}$ —, on s'autorisera à la noter $\{ \alpha_1 \mapsto \sigma (\alpha_1), \dots, \alpha_n \mapsto \sigma (\alpha_n) \}$.
+Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — disons $\mathrm{dom} (\sigma) = \{ \alpha_1, \dots, \alpha_n \}$ —, on s'autorisera à la noter $\{ \alpha_1 \mapsto \sigma (\alpha_1), \dots, \alpha_n \mapsto \sigma (\alpha_n) \}$.
 
 \begin{definition}[extension d'une substitution de types]
-	Soit $\sigma$ une substitution de types. \\
-	L'extension de $\sigma$, notée $\hat \sigma$, est l'unique endomorphisme de $T$ dont la restriction à $\V$ est $\sigma$. \\
-	Autrement dit, $\hat \sigma$ est définie inductivement par :
+	L'extension d'une substitution de types $\sigma$, notée $\hat\sigma$, est l'unique endomorphisme de $\T$ dont la restriction à $\V$ est $\sigma$. \\
+	Autrement dit, $\hat\sigma$ est définie inductivement par :
 	\begin{align*}
-			\hat \sigma (\alpha) &=
+			\hat\sigma (\alpha) &=
 			\sigma (\alpha)
 		\\
-			\hat \sigma (\unit) &=
+			\hat\sigma (\unit) &=
 			\unit
 		\\
-			\hat \sigma (\tau_1 \times \tau_2) &=
-			\hat \sigma (\tau_1) \times \hat \sigma (\tau_2)
+			\hat\sigma (\tau_1 \times \tau_2) &=
+			\hat\sigma (\tau_1) \times \hat\sigma (\tau_2)
 		\\
-			\hat \sigma (\tau_1 \rightarrow \tau_2) &=
-			\hat \sigma (\tau_1) \rightarrow \hat \sigma (\tau_2)
+			\hat\sigma (\tau_1 \rightarrow \tau_2) &=
+			\hat\sigma (\tau_1) \rightarrow \hat\sigma (\tau_2)
 		\\
-			\hat \sigma (f (\tau_1, \dots, \tau_{|f|_\F})) &=
-			f (\hat \sigma (\tau_1), \dots, \hat \sigma (\tau_{|f|_\F}))
+			\hat\sigma (f (\tau_1, \dots, \tau_{|f|_\F})) &=
+			f (\hat\sigma (\tau_1), \dots, \hat\sigma (\tau_{|f|_\F}))
 	\end{align*}
 \end{definition}
 
@@ -309,15 +319,15 @@ Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — diso
 \end{definition}
 
 \begin{definition}[instance de type]
-	Un type $\tau_1$ est une instance d'un type $\tau_2$, noté $\tau_2 \Tleq \tau_1$, \ssi il existe une substitution $\sigma$ telle que $\tau_1 = \hat \sigma (\tau_2)$.
+	Un type $\tau_1$ est une instance d'un type $\tau_2$, noté $\tau_2 \leqslant_\T \tau_1$, \ssi il existe une substitution $\sigma$ telle que $\tau_1 = \hat\sigma (\tau_2)$.
 \end{definition}
 
 \begin{exemple}
 	Toujours avec la signature OCaml, on a les instances :
 	\begin{itemize}
-		\item $int \times int \leqslant_T int \times int$ ;
-		\item $\alpha \rightarrow \beta \leqslant_T \beta \rightarrow \alpha \leqslant_T \alpha \rightarrow \beta$ ;
-		\item $\alpha \rightarrow list (alpha) \rightarrow \unit \leqslant_T int \rightarrow list (int) \rightarrow \unit$.
+		\item $int \times int \leqslant_\T int \times int$ ;
+		\item $\alpha \rightarrow \beta \leqslant_T \beta \rightarrow \alpha \leqslant_\T \alpha \rightarrow \beta$ ;
+		\item $\alpha \rightarrow list (alpha) \rightarrow \unit \leqslant_\T int \rightarrow list (int) \rightarrow \unit$.
 	\end{itemize}
 \end{exemple}
 
@@ -328,7 +338,7 @@ Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — diso
 Passées ces premières définitions, nous savons de qui nous parlons. Il reste à aborder la notion capitale de \emph{théorie équationnelle}. Le plus important est en fait la donnée des \emph{axiomes équationnels}, qui exprimeront les \emph{isomorphismes de types} qui nous intéressent et feront toute la force et la difficulté de l'\emph{unification modulo isomorphismes}. En découle naturellement une \emph{théorie équationnelle} : la plus petite congruence contenant les instances des axiomes.
 
 \begin{definition}[axiome équationnel]
-	Un axiome équationnel est un couple de types de la forme $\tau_1 \Tiso \tau_2$.
+	Un axiome équationnel est un couple de types de la forme $\tau_1 \cong_\T \tau_2$.
 \end{definition}
 
 \begin{definition}[système équationnel]
@@ -336,98 +346,94 @@ Passées ces premières définitions, nous savons de qui nous parlons. Il reste 
 \end{definition}
 
 \begin{definition}[instance d'axiome équationnel]
-	Une instance d'un axiome équationnel $\tau_1 \Tiso \tau_2$ est un couple de types $(\tau_1', \tau_2')$ tel que $\tau_1 \leqslant_T \tau_1'$ et $\tau_2 \leqslant_T \tau_2'$.
+	Une instance d'un axiome équationnel $\tau_1 \cong_\T \tau_2$ est un couple de types $(\tau_1', \tau_2')$ tel que $\tau_1 \leqslant_\T \tau_1'$ et $\tau_2 \leqslant_\T \tau_2'$.
 \end{definition}
 
-\begin{definition}[théorie équationnelle]
+\begin{definition}[théorie équationnelle, $\E$-équivalence]
 	Soit un système équationnel $\E$. \\
-	La théorie équationnelle induite par $\E$, notée $\cdot \TEequiv \cdot$, est la plus petite congruence sur $\F$ contenant toutes les instances des axiomes équationnels de $\E$. \\
+	La théorie équationnelle induite par $\E$, notée $\cdot \equiv_\T^\E \cdot$, est la plus petite congruence par rapport à $\F$ sur les types contenant toutes les instances des axiomes équationnels de $\E$. \\
 	Autrement dit, c'est la plus petite relation binaire satisfaisant les règles d'inférence :
 	\begin{mathpar}
 		\inferrule*
-			[right = ($\TEequiv$-ax)]
-			{\tau_1 \Tiso \tau_2 \in \E}
-			{\hat \sigma (\tau_1) \TEequiv \hat \sigma (\tau_2)}
+			[right = ($\equiv_\T^\E$-ax)]
+			{\tau_1 \cong_\T \tau_2 \in \E}
+			{\hat\sigma (\tau_1) \equiv_\T^\E \hat\sigma (\tau_2)}
 		\and
 		\inferrule*
-			[right = ($\TEequiv$-refl)]
+			[right = ($\equiv_\T^\E$-refl)]
 			{ }
-			{\tau \TEequiv \tau}
+			{\tau \equiv_\T^\E \tau}
 		\\
 		\inferrule*
-			[right = ($\TEequiv$-trans)]
-			{\tau_1 \TEequiv \tau_2 \\ \tau_2 \TEequiv \tau_3}
-			{\tau_1 \TEequiv \tau_3}
+			[right = ($\equiv_\T^\E$-trans)]
+			{\tau_1 \equiv_\T^\E \tau_2 \\ \tau_2 \equiv_\T^\E \tau_3}
+			{\tau_1 \equiv_\T^\E \tau_3}
 		\and
 		\inferrule*
-			[right = ($\TEequiv$-sym)]
-			{\tau_1 \TEequiv \tau_2}
-			{\tau_2 \TEequiv \tau_1}
+			[right = ($\equiv_\T^\E$-sym)]
+			{\tau_1 \equiv_\T^\E \tau_2}
+			{\tau_2 \equiv_\T^\E \tau_1}
 		\\
 		\inferrule*
-			[right = ($\TEequiv$-$\times_1$)]
-			{\tau_1 \TEequiv \tau_1'}
-			{\tau_1 \times \tau_2 \TEequiv \tau_1' \times \tau_2}
+			[right = ($\equiv_\T^\E$-$\times_1$)]
+			{\tau_1 \equiv_\T^\E \tau_1'}
+			{\tau_1 \times \tau_2 \equiv_\T^\E \tau_1' \times \tau_2}
 		\and
 		\inferrule*
-			[right = ($\TEequiv$-$\times_2$)]
-			{\tau_2 \TEequiv \tau_2'}
-			{\tau_1 \times \tau_2 \TEequiv \tau_1 \times \tau_2'}
+			[right = ($\equiv_\T^\E$-$\times_2$)]
+			{\tau_2 \equiv_\T^\E \tau_2'}
+			{\tau_1 \times \tau_2 \equiv_\T^\E \tau_1 \times \tau_2'}
 		\\
 		\inferrule*
-			[right = ($\TEequiv$-$\rightarrow_1$)]
-			{\tau_1 \TEequiv \tau_1'}
-			{\tau_1 \rightarrow \tau_2 \TEequiv \tau_1' \rightarrow \tau_2}
+			[right = ($\equiv_\T^\E$-$\rightarrow_1$)]
+			{\tau_1 \equiv_\T^\E \tau_1'}
+			{\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1' \rightarrow \tau_2}
 		\and
 		\inferrule*
-			[right = ($\TEequiv$-$\rightarrow_2$)]
-			{\tau_2 \TEequiv \tau_2'}
-			{\tau_1 \rightarrow \tau_2 \TEequiv \tau_1 \rightarrow \tau_2'}
+			[right = ($\equiv_\T^\E$-$\rightarrow_2$)]
+			{\tau_2 \equiv_\T^\E \tau_2'}
+			{\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1 \rightarrow \tau_2'}
 		\\
 		\inferrule*
-			[right = ($\TEequiv$-$\F$)]
-			{f \in \F \\ i \in \interval 1 {|f|_\F} \\ \tau_i \TEequiv \tau_i'}
-			{f (\tau_1, \dots, \tau_i, \dots, \tau_{|f|_\F}) \TEequiv f (\tau_1, \dots, \tau_i', \dots, \tau_{|f|_\F})}
+			[right = ($\equiv_\T^\E$-$\F$)]
+			{f \in \F \\ i \in \interval 1 {|f|_\F} \\ \tau_i \equiv_\T^\E \tau_i'}
+			{f (\tau_1, \dots, \tau_i, \dots, \tau_{|f|_\F}) \equiv_\T^\E f (\tau_1, \dots, \tau_i', \dots, \tau_{|f|_\F})}
 	\end{mathpar}
-\end{definition}
-
-\begin{definition}[$\E$-équivalence]
-	Soit un système équationnel $\E$. \\
-	Deux types $\tau_1$ et $\tau_2$ sont $\E$-équivalents \ssi $\tau_1 \TEequiv \tau_2$.
+	Si $\tau_1 \equiv_\T^\E \tau_2$, on dit que $\tau_1$ et $\tau_2$ sont $\E$-équivalents.
 \end{definition}
 
 \begin{exemple}
 	Prenons comme axiomes $\E$ la commutativité et l'associativité du produit :
 	\begin{align}
-			\alpha \times \beta &\Tiso
+			\alpha \times \beta &\cong_\T
 			\beta \times \alpha
 			\tag{$\times$-comm}
 		\\
-			\alpha \times (\beta \times \gamma) &\Tiso
+			\alpha \times (\beta \times \gamma) &\cong_\T
 			(\alpha \times \beta) \times \gamma
 			\tag{$\times$-assoc}
 	\end{align}
 	En OCaml, les équivalences suivantes sont alors correctes :
 	\begin{itemize}
-		\item $\alpha \times int \rightarrow \beta \TEequiv int \times \alpha \rightarrow \beta$ ;
-		\item $int \times float \times bool \times \unit \TEequiv float \times \unit \times int \times bool$.
+		\item $\alpha \times int \rightarrow \beta \equiv_\T^\E int \times \alpha \rightarrow \beta$ ;
+		\item $int \times float \times bool \times \unit \equiv_\T^\E float \times \unit \times int \times bool$.
 	\end{itemize}
 	En revanche, celles-ci ne le sont pas :
 	\begin{itemize}
-		\item $\alpha \times \beta \rightarrow \gamma \TEequiv \alpha \rightarrow \beta \rightarrow \gamma$ ;
-		\item $\alpha \rightarrow (\beta \times \gamma) \TEequiv (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)$.
+		\item $\alpha \times \beta \rightarrow \gamma \equiv_\T^\E \alpha \rightarrow \beta \rightarrow \gamma$ ;
+		\item $\alpha \rightarrow (\beta \times \gamma) \equiv_\T^\E (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)$.
 	\end{itemize}
 \end{exemple}
 
 Bien que la définition d'une théorie équationnelle ne mentionne pas la stabilité par substitution, c'en est un corollaire :
 
 \begin{lemme}
-	Si deux types $\tau_1$ et $\tau_2$ sont $\E$-équivalents, alors pour toute substitution $\sigma$, $\hat \sigma (\tau_1)$ et $\hat \sigma (\tau_2)$ sont $\E$-équivalents.
+	Si deux types $\tau_1$ et $\tau_2$ sont $\E$-équivalents, alors pour toute substitution $\sigma$, $\hat\sigma (\tau_1)$ et $\hat\sigma (\tau_2)$ sont $\E$-équivalents.
 \end{lemme}
 
 \begin{preuve}
-	Par induction structurelle sur la dérivation de $\tau_1 \TEequiv \tau_2$ et par cas sur la dernière règle utilisée. \\
-	Dans le cas ($\TEequiv$-ax), il s'agit de montrer que $\hat \sigma (\hat \sigma' (\tau_1))$ et $\hat \sigma (\hat \sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \Tiso \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat \sigma \circ \hat \sigma'$ est l'extension de la substitution $\hat \sigma \circ \sigma'$.	Les autres cas sont triviaux.
+	Par induction structurelle sur la dérivation de $\tau_1 \equiv_\T^\E \tau_2$ et par cas sur la dernière règle utilisée. \\
+	Dans le cas ($\equiv_\T^\E$-ax), il s'agit de montrer que $\hat\sigma (\hat\sigma' (\tau_1))$ et $\hat\sigma (\hat\sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \cong_\T \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat\sigma \circ \hat\sigma'$ est l'extension de la substitution $\hat\sigma \circ \sigma'$.	Les autres cas sont triviaux.
 \end{preuve}
 
 %============================================================
@@ -439,22 +445,21 @@ Nous en arrivons enfin aux notions fondamentales de \emph{matching} et \emph{uni
 Soit un système équationnel $\E$.
 
 \begin{definition}[$\E$-matcheur]
-	Soit deux types $\tau_1$ et $\tau_2$.
-	Une substitution $\sigma$ est un $\E$-matcheur, ou encore matcheur modulo $\E$, de $\tau_1$ pour $\tau_2$ \ssi :
-	\[ \tau_1 \TEequiv \hat \sigma (\tau_2) \]
+	Une substitution $\sigma$ est un $\E$-matcheur — ou encore matcheur modulo $\E$ — d'un type $\tau_1$ pour un type $\tau_2$ \ssi :
+	\[ \tau_1 \equiv_\T^\E \hat\sigma (\tau_2) \]
 \end{definition}
 
 \begin{definition}[$\E$-matchabilité]
-	Un type $\tau_1$ est $\E$-matchable, ou encore matchable modulo $\E$, avec un type $\tau_2$ \ssi $\tau_1$ admet un $\E$-matcheur pour $\tau_2$.
+	Un type $\tau_1$ est $\E$-matchable — ou encore matchable modulo $\E$ — avec un type $\tau_2$ \ssi $\tau_1$ admet un $\E$-matcheur pour $\tau_2$.
 \end{definition}
 
 \begin{definition}[problème d'$\E$-matchabilité]
-	Le problème d'$\E$-matchabilité, ou encore problème de matchabilité modulo $\E$, consiste à déterminer si un type est matchable avec un autre.
+	Le problème d'$\E$-matchabilité — ou encore problème de matchabilité modulo $\E$ — consiste à déterminer si un type est matchable avec un autre.
 \end{definition}
 
 \begin{definition}[problème d'$\E$-matching]
 	Soient $\tau_1$ et $\tau_2$ deux types. \\
-	Le problème d'$\E$-matching, ou encore problème de matching modulo $\E$, consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$.
+	Le problème d'$\E$-matching — ou encore problème de matching modulo $\E$ — consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$.
 \end{definition}
 
 \begin{exemple}
@@ -466,22 +471,21 @@ Soit un système équationnel $\E$.
 \end{exemple}
 
 \begin{definition}[$\E$-unificateur]
-	Soit deux types $\tau_1$ et $\tau_2$.
-	Une substitution $\sigma$ est un $\E$-unificateur de $\tau_1$ et $\tau_2$ \ssi :
-	\[ \hat \sigma (\tau_1) \TEequiv \hat \sigma (\tau_2) \]
+	Une substitution $\sigma$ est un $\E$-unificateur des types $\tau_1$ et $\tau_2$ \ssi :
+	\[ \hat\sigma (\tau_1) \equiv_\T^\E \hat\sigma (\tau_2) \]
 \end{definition}
 
 \begin{definition}[$\E$-unifiabilité]
-	Deux types sont $\E$-unifiables, ou encore unifiables modulo $\E$, \ssi ils admettent un $\E$-unificateur.
+	Deux types $\tau_1$ et $\tau_2$ sont $\E$-unifiables — ou encore unifiables modulo $\E$ —, noté $\tau_1 \sim_\T^\E \tau_2$, \ssi ils admettent un $\E$-unificateur.
 \end{definition}
 
 \begin{definition}[problème d'$\E$-unifiabilité]
-	Le problème d'$\E$-unifiabilité, ou encore problème d'unifiabilité modulo $\E$, consiste à déterminer si deux types sont $\E$-unifiables.
+	Le problème d'$\E$-unifiabilité — ou encore problème d'unifiabilité modulo $\E$ — consiste à déterminer si deux types sont $\E$-unifiables.
 \end{definition}
 
 \begin{definition}[problème d'$\E$-unification]
 	Soient $\tau_1$ et $\tau_2$ deux types. \\
-	Le problème d'$\E$-unification, ou encore problème d'unification modulo $\E$, consiste à trouver un $\E$-unificateur de $\tau_1$ et $\tau_2$.
+	Le problème d'$\E$-unification — ou encore problème d'unification modulo $\E$ — consiste à trouver un $\E$-unificateur de $\tau_1$ et $\tau_2$.
 \end{definition}
 
 Lorsque $\E$ est vide, nous parlerons d'unification syntaxique ; dans le cas contraire, d'unification sémantique.
@@ -512,42 +516,42 @@ Dans cette section, on ignore les constructeurs de types : $\F$ est l'ensemble v
 Les travaux cités auparavant décrivent les \emph{isomorphismes de types} dans plusieurs versions du $\lambda$-calcul simplement typé. Notons $\Lambda^1$ le $\lambda$-calcul simplement typé avec paires et élément terminal et $=_{\Lambda^1}$ l'égalité associée (pour plus de détails, voir par exemple \cite{DiCosmo95}). La notion d'\emph{isomorphisme de types} dans $\Lambda^1$ se définit ainsi :
 
 \begin{definition}[isomorphisme de types dans $\Lambda^1$]
-	Deux types $\tau_1$ et $\tau_2$ sont isomorphes dans $\Lambda^1$ \ssi il existe deux $\lambda$-termes $f : \tau_1 \rightarrow \tau_2$ et $g : \tau_2 \rightarrow \tau_1$ tels que $f \circ g =_{\Lambda^1} \mathrm {id} _{\tau_2}$ et $g \circ f =_{\Lambda^1} \mathrm {id} _{\tau_1}$.
+	Deux types $\tau_1$ et $\tau_2$ sont isomorphes dans $\Lambda^1$ \ssi il existe deux $\lambda$-termes $f : \tau_1 \rightarrow \tau_2$ et $g : \tau_2 \rightarrow \tau_1$ tels que $f \circ g =_{\Lambda^1} \mathrm{id}_{\tau_2}$ et $g \circ f =_{\Lambda^1} \mathrm{id}_{\tau_1}$.
 \end{definition}
 
 On peut donner une caractérisation équationnelle des isomorphismes de $\Lambda^1$. Ils correspondent aux isomorphismes valides dans les \emph{catégories cartésiennes fermées}. Giusseppe Longo, Kim Bruce, Roberto Di Cosmo \cite{Bruce_DiCosmo_Longo} et Soloviev \cite{Soloviev83} ont démontré par deux méthodes différentes que les axiomes équationnels ci-dessous sont corrects et complets. On notera $\E^1$ la théorie équationnelle induite.
 \begin{align}
-		\alpha \times \beta &\Tiso
+		\alpha \times \beta &\cong_\T
 		\beta \times \alpha
 		\label{prod_comm}
 		\tag{$\times$-comm}
 	\\
-		\alpha \times (\beta \times \gamma) &\Tiso
+		\alpha \times (\beta \times \gamma) &\cong_\T
 		(\alpha \times \beta) \times \gamma
 		\label{prod_assoc}
 		\tag{$\times$-assoc}
 	\\
-		\unit \times \alpha &\Tiso
+		\unit \times \alpha &\cong_\T
 		\alpha
 		\label{prod_unit}
 		\tag{$\times$-$\unit$}
 	\\
-		(\alpha \times \beta) \rightarrow \gamma &\Tiso
+		(\alpha \times \beta) \rightarrow \gamma &\cong_\T
 		\alpha \rightarrow (\beta \rightarrow \gamma)
 		\label{curry}
 		\tag{curry}
 	\\
-		\unit \rightarrow \alpha &\Tiso
+		\unit \rightarrow \alpha &\cong_\T
 		\alpha
 		\label{curry_unit}
 		\tag{curry-$\unit$}
 	\\
-		\alpha \rightarrow (\beta \times \gamma) &\Tiso
+		\alpha \rightarrow (\beta \times \gamma) &\cong_\T
 		(\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)
 		\label{dist}
 		\tag{dist}
 	\\
-		\alpha \rightarrow \unit &\Tiso
+		\alpha \rightarrow \unit &\cong_\T
 		\unit
 		\label{dist_unit}
 		\tag{dist-$\unit$}
@@ -561,26 +565,30 @@ Néanmoins, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran
 
 En outre, Di Cosmo \cite{DiCosmo92} a étudié les isomorphismes de types en Core-ML. De même, il en a tiré une axiomatisation équationnelle complète comportant de nouveaux isomorphismes. L'équivalence est alors décidable par un algorithme qu'il introduit dans \cite{DiCosmo95}. Malheureusement, cet algorithme ne s'adapte a priori pas directement au matching ou l'unification.
 
-Nous avons donc suivi les préconisations de Rittri en renonçant pour le moment à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, nous avons préféré ne pas complexifier l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
+L'implémentation suit les préconisations de Rittri en renonçant à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, il complexifie l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
 
 Reste donc les quatre premiers isomorphismes : \eqref{prod_comm}, \eqref{prod_assoc}, \eqref{prod_unit}, \eqref{curry}. Ils capturent exactement les réarrangements qui nous intéressent, en particulier la permutation des paramètres. Relevons toutefois que, si ces isomorphismes sont corrects pour Core-ML \cite{DiCosmo93}, leur correction pour OCaml n'est pas démontrée. Nous admettons ici qu'ils se « propagent » aux constructeurs de types, c'est-à-dire la congruence sur la signature OCaml.
 
-Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs. Nous dénoterons par $\E$ le système équationnel formé par les quatre axiomes et $\cdot \Tequiv \cdot$ la théorie équationnelle induite par $\E$. Nous parlerons d'équivalence pour l'$\E$-équivalence, de matching pour l'$\E$-matching, et d'unification pour l'$\E$-unification.
+Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs. Nous dénoterons par $\E$ le système équationnel formé par les quatre axiomes, $\cdot \equiv_\T \cdot$ la théorie équationnelle induite par $\E$ et $\cdot \sim_\T \cdot$ l'$\E$-unifiabilité. Nous parlerons d'équivalence pour l'$\E$-équivalence, de matching pour l'$\E$-matching, d'unifiabilité pour l'$\E$-unifiabilité et d'unification pour l'$\E$-unification.
 
 \begin{exemple}
 	Les types suivants sont unifiables :
 	\begin{itemize}
-		\item $int \rightarrow float \rightarrow int$ et $float \rightarrow \alpha$ avec $\{ \alpha \mapsto int \rightarrow int \}$ ;
-		\item $int \rightarrow \alpha \rightarrow \unit$ et $int \rightarrow \unit$ avec $\{ \alpha \mapsto \unit \}$ ;
-		\item $int \rightarrow \alpha \rightarrow \unit$ et $int \rightarrow int \rightarrow int \rightarrow \unit$ avec $\{ \alpha \mapsto int \times int \}$ ;
-		\item $(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$ et $list (\gamma) \times \delta \rightarrow (\gamma \times \delta \rightarrow \delta) \rightarrow \delta$ \\ avec $\{ \gamma \mapsto \beta, \delta \mapsto \alpha \}$.
+		\item $int \rightarrow float \rightarrow int \sim_\T float \rightarrow \alpha$ avec $\{ \alpha \mapsto int \rightarrow int \}$ ;
+		\item $int \rightarrow \alpha \rightarrow \unit \sim_\T int \rightarrow \unit$ avec $\{ \alpha \mapsto \unit \}$ ;
+		\item $int \rightarrow \alpha \rightarrow \unit \sim_\T int \rightarrow int \rightarrow int \rightarrow \unit$ avec $\{ \alpha \mapsto int \times int \}$ ;
+		\item $(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha \sim_\T list (\gamma) \times \delta \rightarrow (\gamma \times \delta \rightarrow \delta) \rightarrow \delta$ \\ avec $\{ \gamma \mapsto \beta, \delta \mapsto \alpha \}$.
 	\end{itemize}
 \end{exemple}
 
 %============================================================
 %============================================================
 
-\section{Algorithme d'unification syntaxique}
+\section{Implémentation de l'unification modulo isomorphismes}
+
+%============================================================
+
+\subsection{Algorithme d'unification syntaxique}
 
 Avant d'aborder l'implémentation, revenons sur l'ancêtre commun des algorithmes d'unification sémantique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}. Leur algorithme d'unification syntaxique consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
 
@@ -645,17 +653,17 @@ Ceci étant fait, voyons maintenant comment \emph{transformer} un problème équ
 		\\
 		\inferrule*
 			[right = (substituer)]
-			{\alpha \in vars (P) \\ \alpha \notin vars (\tau)}
+			{\alpha \in \mathrm{vars} (P) \\ \alpha \notin \mathrm{vars} (\tau)}
 			{P \cup \{ \alpha \qeq \tau \} \rightsquigarrow \{ \alpha \mapsto \tau \} (P) \cup \{ \alpha \qeq \tau \}}
 	\end{mathpar}
 \end{definition}
 
-Explicitons l'algorithme d'unification syntaxique résultant $\mathscr A$. Etant donné deux types $\tau_1$ et $\tau_2$ à unifier, $\mathscr A (\tau_1, \tau_2)$ applique ces transformations autant que possible en partant du problème $\{ \tau_1 \qeq \tau_2 \}$. Il échoue si le problème obtenu n'est pas en forme résolue et retourne la substitution induite sinon.
+Explicitons l'algorithme d'unification syntaxique résultant $\mathscr{A}$. Etant donné deux types $\tau_1$ et $\tau_2$ à unifier, $\mathscr{A} (\tau_1, \tau_2)$ applique ces transformations autant que possible en partant du problème $\{ \tau_1 \qeq \tau_2 \}$. Il échoue si le problème obtenu n'est pas en forme résolue et retourne la substitution induite sinon.
 
-Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_2$ admettent un unificateur $\sigma$ minimal pour $\leqslant_\Sigma$ \ssi $\mathscr A (\tau_1, \tau_2)$ retourne $\sigma$. Nous ne le redémontrons pas ici.
+Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_2$ admettent un unificateur $\sigma$ minimal pour $\leqslant_\Sigma$ \ssi $\mathscr{A} (\tau_1, \tau_2)$ retourne $\sigma$. Nous ne le redémontrons pas ici.
 
 \begin{exemple}
-	Appliquons $\mathscr A$ aux types $int \rightarrow list (\alpha) \rightarrow \beta$ et $\gamma \rightarrow \delta \rightarrow \gamma$.
+	Appliquons $\mathscr{A}$ aux types $int \rightarrow list (\alpha) \rightarrow \beta$ et $\gamma \rightarrow \delta \rightarrow \gamma$.
 	\begin{align}
 			\{ int \rightarrow list (\alpha) \rightarrow \beta \qeq \gamma \rightarrow \delta \rightarrow \gamma \} &\rightsquigarrow
 			\tag{decomposer-$\rightarrow$}
@@ -678,96 +686,506 @@ Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_
 \end{exemple}
 
 %============================================================
-%============================================================
 
-\section{Algorithme d'unification sémantique}
+\subsection{Algorithme d'unification modulo isomorphismes}
 
-Le matching et l'unification modulo $\E$ sont décidables \cite{Narendran_Pfenning_Statman}. Nous avons implémenté un algorithme d'unification. Néanmoins, comme nous l'avons vu auparavant, le matching s'y réduit. L'usage indique d'ailleurs qu'il n'est généralement pas souhaitable d'instancier le type demandé ; c'est pourquoi nous en avons fait le comportement par défaut, avec la possibilité d'expliciter les variables de types instanciables.
+Le matching et l'unification modulo $\E$ sont décidables \cite{Narendran_Pfenning_Statman}. Gabriel Radanne a implémenté un algorithme d'unification. Néanmoins, comme nous l'avons vu auparavant, le matching s'y réduit. L'usage indique d'ailleurs qu'il n'est généralement pas souhaitable d'instancier le type demandé ; c'est pourquoi nous en avons fait le comportement par défaut, avec la possibilité d'expliciter les variables de types instanciables.
 
 L'algorithme d'unification modulo $\E$ est conçu à partir d'un algorithme d'unification modulo associativité et commutativité (AC) développé par Boudet \cite{Boudet}. Ce dernier possède les mêmes traits que l'algorithme d'unification syntaxique présenté précédemment : il s'agit de transformer un problème à l'aide d'un jeu de règles. Dans un souci d'optimisation, les objets qu'il manipule s'avèrent toutefois plus élaborés. Le plus important est l'ajout d'une règle de transformation résolvant un \emph{problème AC élémentaire} n'impliquant que des termes simples (variables et constantes) et un unique opérateur AC.
 
 L'algorithme de Boudet a été adapté de la manière suivante :
-\begin{itemize}
+\begin{itemize}[nosep]
 	\item la représentation des termes à base de pointeurs se traduit par d'autres mécanismes d'indirection en OCaml ;
-	\item les types sont \emph{normalisés} : les produits sont « aplatis » pour former des n-uplets compatibles avec la procédure d'unification AC élémentaire ;
+	\item les types sont \emph{normalisés} : les produits sont « aplatis » pour former des uplets compatibles avec la procédure d'unification AC élémentaire ;
 	\item une règle supplémentaire permet de traiter l'unification des flèches que l'isomorphisme \eqref{curry} rend non triviale.
 \end{itemize}
 
-Attachons-nous à formaliser la \emph{normalisation} des types. Pour ce faire, on définit d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
+Mentionnons un dernier trait de l'implémentation de l'unification. La puissance des quatre isomorphismes réunis — en particulier \eqref{prod_unit} — permet de réduire le nombre de paramètres d'une fonction en instanciant une ou plusieurs variables de type en $\unit$. L'utilisateur pourrait ainsi positionner une variable « joker » potentiellement annulable en paramètre : $int \rightarrow \alpha \rightarrow list (int)$. Néanmoins, cela présente l'inconvénient de grossir les résultats de manière superflue lorsque ce n'est pas l'effet souhaité. Conformément à l'article de Rittri \cite{Rittri93}, l'instanciation d'une variable de type en $\unit$ est donc exclue. Cette objection n'est pas sans importance ; dans le chapitre qui suit, la correction du premier critère d'unifiabilité la nécessite. Formellement, il s'agit d'exiger de l'unificateur qu'il soit \emph{bien formé} :
 
-Etant donné un ensemble $A$, on note $\fmsets A$ l'ensemble des multi-ensembles sur $A$ et $\cdot \oplus_A \cdot$ la somme sur $\fmsets A$.
+\begin{definition}[substitution de types bien formée]
+	Une substitution de types $\sigma$ est bien formée, noté $\sigma\ \bold{bf}$, \ssi :
+	\[ \forall \alpha \in \V,\ \sigma (\alpha) \neq \unit \]
+	On note $\Sigma^{\bold{bf}}$ l'ensemble des substitutions de types bien formées.
+\end{definition}
+
+%============================================================
+
+\subsection{Normalisation des types}
+
+Attachons-nous à formaliser la \emph{normalisation des types}. Pour ce faire, on définit d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
+
+Etant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.
+
+Définissons donc les \emph{types normalisés}. Un \emph{type} normalisé est soit :
+\begin{itemize}[nosep]
+	\item une variable ;
+	\item un uplet de types normalisés représenté par un multi-ensemble ;
+	\item une flèche où les paramètres sont regroupés dans un uplet ;
+	\item construit avec un symbole de la signature.
+\end{itemize}
 
 \begin{definition}[type normalisé]
-	L'ensemble des types normalisés, noté $N$, est défini inductivement par :
+	L'ensemble des types normalisés, noté $\N$, est défini inductivement par :
 	\begin{mathpar}
 	    \inferrule* 
 	    	{ }
-	    	{\V \subseteq N}
+	    	{\V \subseteq \N}
 	    \and
 	    \inferrule*
 	    	{ }
-	    	{\fmsets N \subseteq N}
+	    	{\N^\# \subseteq \N}
 	    \\
 	    \inferrule*
-	    	{\nu^\# \in \fmsets N \\ \nu \in N}
-	    	{\nu^\# \rightarrow \nu \in N}
+	    	{\nu^\# \in \N^\# \\ \nu \in \N}
+	    	{\nu^\# \rightarrow \nu \in \N}
 	    \and
 	    \inferrule*
-	    	{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i \in N}
-	    	{f (\nu_1, \dots, \nu_{|f|_\F}) \in N}
+	    	{f \in \F \\ \overline\nu \in \N^{|f|_\F}}
+	    	{f (\overline\nu) \in \N}
 	\end{mathpar}
 \end{definition}
 
 \begin{exemple}
 	On a les types normalisés :
 	\begin{itemize}
-		\item $\fmset {int, \fmset {}, \alpha}$ ;
-		\item $\fmset {list (\fmset {\alpha, int})} \rightarrow \fmset {\alpha, \beta}$.
+		\item $\mset{int, \mset{}, \alpha}$ ;
+		\item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
+		\item $\mset{list (\mset{\alpha, int})} \rightarrow \mset{\alpha, \beta}$.
 	\end{itemize}
 \end{exemple}
 
-\begin{definition}[normalisation d'un type]
-	La fonction de normalisation d'un type $norm$ est définie inductivement par :
+Afin de désigner la forme d'un type normalisé de manière concise, introduisons par ailleurs la notion de \emph{genre}.
+
+\begin{definition}[genre de types normalisés]
+	L'ensemble des genres de types normalisés, noté $\G$, est défini par :
+	\begin{mathpar}
+		\inferrule*
+			{ }
+			{\bold{var} \in \G}
+		\and
+		\inferrule*
+			{ }
+			{\bold{uplet} \in \G}
+		\and
+		\inferrule*
+			{ }
+			{\bold{fleche} \in \G}
+		\and
+		\inferrule*
+			{f \in \F}
+			{\bold{cons}_f \in \G}
+	\end{mathpar}
+\end{definition}
+
+\begin{definition}[genre d'un type normalisé]
+	Le genre d'un type normalisé $\nu$, noté $[\nu]$, est défini par :
 	\begin{align*}
-			norm (\alpha) &=
+			[ \alpha ] &= \bold{var}
+		\\
+			[ \mset{\nu_1, \dots, \nu_n} ] &= \bold{uplet}
+		\\
+			[ \nu^\# \rightarrow \nu ] &= \bold{fleche}
+		\\
+			[ f (\overline \nu) ] &= \bold{cons}_f
+	\end{align*}
+\end{definition}
+
+La normalisation que nous nous apprêtons à définir offre certaines garanties qui ne sont pas contenues dans la définition des types normalisés :
+\begin{itemize}[nosep]
+	\item les éléments d'un uplet ne sont pas eux-mêmes des uplets ;
+	\item le membre droit d'une flèche n'est pas lui-même une flèche ;
+	\item un uplet qui n'est pas le membre gauche d'une flèche n'est pas un simplet.
+\end{itemize}
+C'est pourquoi nous parlerons la plupart du temps de types normalisés \emph{bien formés}. Les fonctions les manipulant se devront de préserver cette qualité.
+
+\begin{definition}[type normalisé bien formé]
+	Les prédicats sur les types normalisés « est bien formé », noté $\bold{bf}$, et « est presque bien formé », noté $\bold{pbf}$, sont définis inductivement :
+	\begin{mathpar}
+		\inferrule*
+			{ }
+			{\alpha\ \bold{bf}}
+		\and
+		\inferrule*
+			{\nu^\#\ \bold{pbf} \\ | \nu^\# |^\#_\N \neq 1}
+			{\nu^\#\ \bold{bf}}
+		\\
+		\inferrule*
+			{\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
+			{\nu^\# \rightarrow \nu\ \bold{bf}}
+		\and
+		\inferrule*
+			{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
+			{f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{bf}}
+		\\
+		\inferrule*
+			{ }
+			{\alpha\ \bold{pbf}}
+		\and
+		\inferrule*
+			{\forall i \in \interval 1 n,\ \nu_i\ \bold{bf} \wedge [\nu_i] \neq \bold{tuple}}
+			{\mset{\nu_1, \dots, \nu_n}\ \bold{pbf}}
+		\\
+		\inferrule*
+			{\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
+			{\nu^\# \rightarrow \nu\ \bold{pbf}}
+		\and
+		\inferrule*
+			{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
+			{f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{pbf}}
+	\end{mathpar}
+	On note $\N^{\bold{bf}}$ l'ensemble des types normalisés bien formés et $\N^{\bold{pbf}}$ l'ensemble des types presque bien formés.
+\end{definition}
+
+\begin{lemme} \label{bf_implique_pfb}
+	Si un type normalisé est bien formé, alors il est presque bien formé.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de $\bold{bf}$ et $\bold{pbf}$.
+\end{preuve}
+
+\begin{exemple}
+	Les types normalisés suivants sont bien formés :
+	\begin{itemize}
+		\item $\mset{int, list (\mset{\alpha, int})}$ ;
+		\item $\mset{int} \rightarrow \mset{\mset{} \rightarrow \alpha, int}$.
+	\end{itemize}
+	Ceux-ci ne le sont pas :
+	\begin{itemize}
+		\item $\mset{int, \mset{}, \alpha}$ ;
+		\item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
+		\item $\mset{} \rightarrow \mset{int}$.
+	\end{itemize}
+\end{exemple}
+
+Nous avons maintenant tout ce qu'il faut pour définir la \emph{normalisation} des types. Elle consiste à tirer parti des quatre isomorphismes en :
+\begin{itemize}[nosep]
+	\item « aplatissant » les produits en vertu des axiomes \eqref{prod_comm} et \eqref{prod_assoc} ;
+	\item éliminant les types $\unit$ en vertu de \eqref{prod_unit} ;
+	\item regroupant les paramètres à gauche des flèches en vertu de \eqref{curry}.
+\end{itemize}
+
+\begin{definition}[normalisée d'un type]
+	La normalisée d'un type $\tau$, notée $\norm (\tau)$, est définie inductivement par :
+	\begin{align*}
+			\norm (\alpha) &=
 			\alpha
 		\\
-			norm (\unit) &=
-			\fmset {}
+			\norm (\unit) &=
+			\mset{}
 		\\
-			norm (\tau_1 \times \tau_2) &=
-			norm' (\tau_1) \oplus_N norm' (\tau_2)
+			\norm (\tau_1 \times \tau_2) &=
+			\norm'' (\norm' (\norm (\tau_1)) +^\#_\N \norm' (\norm (\tau_2)))
 		\\
-			norm (\tau_1 \rightarrow \tau_2) &=
-			(norm' (\tau_1) \oplus_N \nu^\#) \rightarrow \nu &&
-			\text{si } norm (\tau_2) = \nu^\# \rightarrow \nu
+			\norm (\tau_1 \rightarrow \tau_2) &=
+			(\norm' (\norm (\tau_1)) +^\#_\N \nu^\#_2) \rightarrow \nu_2 &&
+			\text{si } \norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2
 		\\
-			norm (\tau_1 \rightarrow \tau_2) &=
-			norm' (\tau_1) \rightarrow norm (\tau_2) &&
+			\norm (\tau_1 \rightarrow \tau_2) &=
+			\norm' (\norm (\tau_1)) \rightarrow \norm (\tau_2) &&
 			\text{sinon}
 		\\
-			norm (f (\tau_1, \dots, \tau_{|f|_\F})) &=
-			f (norm (\tau_1), \dots, norm (\tau_{|f|_\F}))
+			\norm (f (\tau_1, \dots, \tau_{|f|_\F})) &=
+			f (\norm (\tau_1), \dots, \norm (\tau_{|f|_\F}))
 		\\
-			norm' (\tau) &=
-			norm (\tau) &&
-			\text{si } norm (\tau) \in \fmsets N
+			\norm' (\nu) &=
+			\nu &&
+			\text{si } \nu \in \N^\#
 		\\
-			norm' (\tau) &=
-			\fmset {norm (\tau)} &&
+			\norm' (\nu) &=
+			\mset{\nu} &&
 			\text{sinon}
+		\\
+			\norm'' (\mset{\nu}) &=
+			\nu
+		\\
+			\norm'' (\nu^\#) &=
+			\nu^\#
 	\end{align*}
 \end{definition}
 
 \begin{exemple}
 	Quelques exemples de normalisation :
 	\begin{itemize}
-		\item $norm (int \times float \times bool \times int) = \fmset {int, int, float, bool}$ ;
-		\item $norm (\unit \times int \times \alpha) = \fmset {int, \alpha}$ ;
-		\item $norm (\unit \times \unit \times \unit) = \fmset {}$ ;
-		\item $norm (\alpha \times int \rightarrow \beta \rightarrow \gamma) = \fmset {\alpha, int, \beta} \rightarrow \gamma$.
+		\item $\norm (int \times float \times bool \times int) = \mset{int, int, float, bool}$ ;
+		\item $\norm (\unit \times int) = int$ ;
+		\item $\norm (\unit \times int \times \alpha) = \mset{int, \alpha}$ ;
+		\item $\norm (\unit \times \unit \times \unit) = \mset{}$ ;
+		\item $\norm (\alpha \times int \rightarrow \beta \rightarrow \gamma) = \mset{\alpha, int, \beta} \rightarrow \gamma$.
 	\end{itemize}
 \end{exemple}
+
+Comme attendu, la normalisation donne des types normalisés bien formés :
+
+\begin{theoreme} \label{norm_bf}
+	La normalisée de tout type est bien formée.
+\end{theoreme}
+
+\begin{preuve}
+	Par induction structurelle et par cas sur le type.
+	\begin{itemize}[label={\textbf{Cas}}]
+		\item
+			$\alpha$ : trivial.
+		\item
+			$\unit$ : trivial.
+		\item
+			$\tau_1 \times \tau_2$ : \\
+			Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
+			On en déduit le résultat par les lemmes \ref{bf_implique_norm'_pbf}, \ref{pbf_implique_msomme_pbf} et \ref{pbf_implique_norm''_bf}.
+		\item
+			$\tau_1 \rightarrow \tau_2$ : \\
+			Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
+			Par le lemme \ref{bf_implique_norm'_pbf}, $\norm' (\norm (\tau_1))$ est presque bien formé.
+			\begin{itemize}[label={\textbf{Si}}]
+				\item
+					$\norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2$ : \\
+					$\norm (\tau_2)$ étant bien formé, $\nu^\#_2$ est presque bien formé, $\nu_2$ est bien formé et n'est pas une flèche. \\
+					Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\norm' (\norm (\tau_1))$ et $\nu^\#_2$ est presque bien formée. \\
+					On en déduit le résultat attendu.
+				\item
+					non : trivial.
+			\end{itemize}
+		\item
+			$f (\overline \tau)$ : trivial avec l'hypothèse d'induction.
+	\end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{bf_implique_norm'_pbf}
+	Si $\nu$ est bien formé, $\norm' (\nu)$ est presque bien formé.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec le lemme \ref{bf_implique_pfb}.
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_msomme_pbf}
+	La somme de deux uplets presque bien formés est presque bien formée.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de $\bold{pbf}$.
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_norm''_bf}
+	Si $\nu^\#$ dans $\N^\#$ est presque bien formé, $\norm'' (\nu^\#)$ est bien formé.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de $\norm''$.
+\end{preuve}
+
+Nous savons comment passer des types aux types types normalisés. Reste à lier des deux domaines. Ce à quoi nous voulons arriver est un théorème d'équivalence pour l'unification. Il s'agit donc de définir la notion d'unifiabilité pour les types normalisés. De la même manière qu'auparavant, voyons tout d'abord par la notion de \emph{substitution} :
+
+\begin{definition}[substitution de types normalisés]
+	Une substitution de types normalisés est une fonction de $\V$ dans $\N$. \\
+	On note $\Theta$ l'ensemble des substitution de types normalisés.
+\end{definition}
+
+On définit le domaine d'une substitution de types normalisés $\theta$ comme précédemment. Lorsque ce domaine est fini, on s'autorisera de même à la noter sous la forme $\{ \alpha_1 \mapsto \theta (\alpha_1), \dots, \alpha_n \mapsto \theta (\alpha_n) \}$, où $\{ \alpha_1, \dots, \alpha_n \} = \mathrm{dom} (\theta)$.
+
+\begin{definition}[extension d'une substitution de types normalisés]
+	L'extension d'une substitution de types normalisés $\theta$, notée $\hat\theta$, est définie inductivement par :
+	\begin{align*}
+			\hat\theta (\alpha) &=
+			\alpha
+		\\
+			\hat\theta (\nu^\#) &=
+			\tilde \theta (\nu^\#)
+		\\
+			\hat\theta (\nu^\# \rightarrow \nu) &=
+			(\tilde \theta (\nu^\#) +^\#_N {\nu^\#}') \rightarrow \nu' &&
+			\text{si } \hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'
+		\\
+			\hat\theta (\nu^\# \rightarrow \nu) &=
+			\tilde \theta (\nu^\#) \rightarrow \hat\theta (\nu) &&
+			\text{sinon}
+		\\
+			\hat\theta (f (\nu_1, \dots, \nu_{|f|_\F})) &=
+			f (\hat\theta (\nu_1), \dots, \hat\theta (\nu_{|f|_\F}))
+		\\
+			\tilde \theta (\mset{\nu_1, \dots, \nu_n}) &=
+			\msetN_bigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
+	\end{align*}
+\end{definition}
+
+\begin{exemple}
+	Quelques exemples d'applications de substitutions :
+	\begin{itemize}
+		\item $\{ \alpha \mapsto \mset{int, float}, \beta \mapsto bool \}$ appliquée à $\mset{\alpha, \beta, \gamma}$ donne $\mset{int, float, bool, \gamma}$ ;
+		\item $\{ \alpha \mapsto \mset{int} \rightarrow \mset{} \}$ appliquée à $\mset{\alpha} \rightarrow \alpha$ donne $\mset{\mset{int} \rightarrow \mset{}, int} \rightarrow \mset{}$ ;
+		\item $\{ \alpha \mapsto \mset{int, int} \}$ appliquée à $\mset{\alpha} \rightarrow \alpha$ donne $\mset{int, int} \rightarrow \mset{int, int}$.
+	\end{itemize}
+\end{exemple}
+
+On imposera également aux substitutions d'être \emph{bien formées}, c'est-à-dire aux substitués d'être eux-mêmes bien formés et différents de la normalisée de $\unit$.
+
+\begin{definition}[substitution de types normalisés bien formée]
+	Une substitution de types $\theta$ est bien formée, noté $\theta\ \bold{bf}$, \ssi :
+	\[ \forall \alpha \in \V,\ \theta (\alpha)\ \bold{bf} \wedge \theta (\alpha) \neq \mset{} \]
+	On note $\Theta^{\bold{bf}}$ l'ensemble des substitutions de types normalisés bien formées.
+\end{definition}
+
+On montre que l'application d'une substitution bien formée préserve la bonne formation des types normalisés.
+
+\begin{theoreme} \label{bf_implique_subst_bf}
+	Pour tout $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$, $\hat\theta (\nu)$ est bien formé.
+\end{theoreme}
+
+\begin{preuve}
+	Par induction structurelle sur $\nu$.
+	\begin{itemize}[label={\textbf{Cas}}]
+		\item
+			$\alpha$ : $\hat\theta (\alpha)$ est bien formé car $\theta$ l'est.
+		\item
+			$\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
+			Par hypothèse d'induction, les $\hat\theta (\nu_i)$ sont bien formés. \\
+			Par le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont presque bien formés. \\
+			Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme l'est aussi. \\
+			Par l'absurde, supposons que cette somme est de cardinal 1. \\
+			$\nu$ étant bien formé, $n$ est différent de 1. \\
+			Il existe donc $i$ dans $\interval 1 n$ tel que, pour tout $j$ différent de $i$, $\norm' (\hat\theta (\nu_j))$ est le multi-ensemble vide. \\
+			Par les lemmes \ref{norm'_vide_implique_vide} puis \ref{bf_et_subst_vide_implique_vide}, ces derniers $\nu_j$ sont tous le multi-ensemble vide. \\
+			Absurde car $\nu$ est bien formé. \\
+			Le cardinal de la somme est donc différent de 1, ce qui permet de conclure.
+		\item
+			$\nu^\# \rightarrow \nu$ avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$ : \\
+			Par hypothèse, $\nu^\#$ est presque bien formé donc les $\nu_i$ sont bien formés. \\
+			Par hypothèse d'induction puis le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont bien formés. \\
+			Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme $\hat\theta (\nu^\#)$ est presque formée. \\
+			Par hypothèse d'induction, $\hat\theta (\nu)$ est bien formée.
+			\begin{itemize}[label={\textbf{Si}}]
+				\item
+					$\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
+					$\hat\theta (\nu^\#)$ étant bien formé, ${\nu^\#}'$ est presque bien formé, $\nu'$ est bien formé et n'est pas une flèche. \\
+					Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\hat\theta (\nu^\#)$ et ${\nu^\#}'$ est presque bien formée. \\
+					On en déduit le résultat attendu.
+				\item
+					non : trivial.
+			\end{itemize}
+		\item
+			$f (\nu_1, \dots, \nu_{|f|_\F})$ : trivial avec l'hypothèse d'induction.
+	\end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{norm'_vide_implique_vide}
+	Soit $\nu$ dans $\N$. Si $\norm' (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de $\norm'$.
+\end{preuve}
+
+\begin{lemme} \label{bf_et_subst_vide_implique_vide}
+	Soient $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$. Si $\hat\theta (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
+\end{lemme}
+
+\begin{preuve}
+	Par induction structurelle sur $\nu$.
+	\begin{itemize}[label={\textbf{Cas}}]
+		\item
+			$\alpha$ : \\
+			Par définition de $\hat\theta$ : $\hat\theta (\alpha) = \theta (\alpha) = \mset{}$. \\
+			Absurde car $\theta$ st bien formée.
+		\item
+			$\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
+			Par hypothèse, $\nu$ est bien formé donc les $\nu_i$ le sont aussi. \\
+			Leur somme étant vide, les $\norm' (\hat\theta (\nu_i))$ sont nécessairement tous vides. \\
+			Par le lemme \ref{bf_et_subst_vide_implique_vide}, les $\hat\theta (\nu_i)$ sont tous le multi-ensemble vide. \\
+			Par hypothèse d'induction, les $\nu_i$ sont donc tous le multi-ensemble vide. \\
+			Absurde car $\nu$ est bien formé.
+		\item
+			$\nu^\# \rightarrow \nu$ : absurde.
+		\item
+			$f (\overline \nu)$ : absurde.
+	\end{itemize}
+\end{preuve}
+
+Le dernier ingrédient pour parler d'unification est une relation d'\emph{équivalence} sur les types normalisés. Une première approche consiste à repartir de la définition de l'équivalence sur les types sans les axiomes et les règles pour le produit et en y ajoutant des règles pour les uplets :
+
+\begin{definition}[types normalisés équivalents]
+	La relation binaire sur les types normalisés $\cdot \equiv_\N \cdot$ est définie inductivement par :
+	\begin{mathpar}
+		\inferrule*
+			[right = ($\equiv_\N$-refl)]
+			{ }
+			{\nu \equiv_\N \nu}
+		\and
+		\inferrule*
+			[right = ($\equiv_\N$-trans)]
+			{\nu_1 \equiv_\N \nu_2 \\ \nu_2 \equiv_\N \nu_3}
+			{\nu_1 \equiv_\N \nu_3}
+		\and
+		\inferrule*
+			[right = ($\equiv_\N$-sym)]
+			{\nu_1 \equiv_\N \nu_2}
+			{\nu_2 \equiv_\N \nu_1}
+		\\
+		\inferrule*
+			[right = ($\equiv_\N$-$\mset{}$)]
+			{ }
+			{\mset{} \equiv_\N \mset{}}
+		\and
+		\inferrule*
+			[right = ($\equiv_\N$-$+^\#_N$)]
+			{\nu_1 \equiv_\N \nu_2 \\ \nu^\#_1 \equiv_\N \nu^\#_2}
+			{\mset{\nu_1} +^\#_N \nu^\#_1 \equiv_\N \mset{\nu_2} +^\#_N \nu^\#_2}
+		\\
+		\inferrule*
+			[right = ($\equiv_\N$-$\rightarrow_1$)]
+			{\nu^\#_1 \equiv_\N \nu^\#_2}
+			{\nu^\#_1 \rightarrow \nu \equiv_\N \nu^\#_2 \rightarrow \nu}
+		\and
+		\inferrule*
+			[right = ($\equiv_\N$-$\rightarrow_2$)]
+			{\nu_1 \equiv_\N \nu_2}
+			{\nu^\# \rightarrow \nu_1 \equiv_\N \nu^\# \rightarrow \nu_2}
+		\\
+		\inferrule*
+			[right = ($\equiv_\N$-$\F$)]
+			{f \in \F \\ i \in \interval 1 {|f|_\F} \\ \nu_i \equiv_\N \nu_i'}
+			{f (\nu_1, \dots, \nu_i, \dots, \nu_{|f|_\F}) \equiv_\N f (\nu_1, \dots, \nu_i', \dots, \nu_{|f|_\F})}
+	\end{mathpar}
+	Si $\nu_1 \equiv_\N \nu_2$, on dit que $\nu_1$ et $\nu_2$ sont équivalents.
+\end{definition}
+
+Néanmoins, on se rend compte que cette équivalence n'est rien d'autre que l'égalité sur $\N$ :
+
+\begin{lemme}
+	Deux types normalisés sont équivalents \ssi ils sont égaux.
+\end{lemme}
+
+\begin{preuve}
+	Le sens indirect est trivial. \\
+	Le sens direct se montre sans encombre par induction structurelle.
+\end{preuve}
+
+En fait, une partie du travail est déléguée aux substitutions et l'autre à l'égalité sur les multi-ensembles. En expliciter la représentation — en Coq par exemple — pourrait rendre la chose moins aisée. Le temps a manqué pour cela.
+
+Quoi qu'il en soit, nous pouvons maintenant parler d'unification pour les types normalisés :
+
+\begin{definition}[unificateur de types normalisés]
+	Une substitution de types normalisés $\theta$ est un unificateur de deux types normalisés $\nu_1$ et $\nu_2$ \ssi :
+	\[ \hat\theta (\nu_1) = \hat\theta (\nu_2) \]
+\end{definition}
+
+\begin{definition}[types normalisés unifiables]
+	Deux types normalisés $\nu_1$ et $\nu_2$ sont unifiables, noté $\nu_1 \sim_\N \nu_2$, \ssi ils admettent un unificateur.
+\end{definition}
+
+\begin{exemple}
+	Les types normalisés suivants sont unifiables :
+	\begin{itemize}
+		\item $\mset{int, float} \rightarrow int \sim_\N \mset{float} \rightarrow \alpha$ avec $\{ \alpha \mapsto \mset{int} \rightarrow int \}$ ;
+		\item $\mset{int, \alpha} \rightarrow \mset{} \sim_\N \mset{int, int, int} \rightarrow \mset{}$ avec $\{ \alpha \mapsto \mset{int, int} \}$ ;
+		\item $\mset{\mset{\alpha, \beta} \rightarrow \alpha, \alpha, list (\beta)} \rightarrow \alpha \sim_\N \mset{list (\gamma), \delta, \mset{\gamma, \delta} \rightarrow \delta} \rightarrow \delta$ \\ avec $\{ \gamma \mapsto \beta, \delta \mapsto \alpha \}$.
+	\end{itemize}
+\end{exemple}
+
+Le théorème fondamental assure alors l'équivalence entre unifiabilité sur les types et unifiabilité sur les types normalisés. La démonstration n'étant pas complète, nous l'admettons.
+
+\begin{theoreme}
+	Deux types admettent un unificateur de type bien formé \ssi leurs normalisées admettent un unificateur de types normalisés bien formé.
+\end{theoreme}
 
 %============================================================
 %============================================================
@@ -775,47 +1193,103 @@ Etant donné un ensemble $A$, on note $\fmsets A$ l'ensemble des multi-ensembles
 
 \chapter {Indexation}
 
-Dans le chapitre précédent, nous nous sommes employés à formaliser la notion d'équivalence entre types. Nous en avons tiré un algorithme d'unification. Un système de recherche de fonctions par types peut directement utiliser cet algorithme : un type de l'environnement est accepté s'il est unifiable avec le type demandé, c'est-à-dire si les deux types admettent un unificateur.
+Dans le chapitre précédent, nous avons présenté l'\emph{unification modulo isomorphismes de types} et l'algorithme que nous utilisons. Un système de recherche de fonctions par types peut faire directement appel à cet algorithme : un type de l'environnement est accepté s'il est unifiable avec le type demandé, c'est-à-dire si les deux types admettent un unificateur.
 
-Une question se pose alors : ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Considérons par exemple une session OPAM contenant principalement la bibliothèques \texttt{core}, représentant au total près de 1 650 000 identificateurs. Le programme \dowsindex est muni d'une commande \texttt{stats} qui, comme son nom l'indique, calcule des statistiques sur les types de l'environnement. On peut l'invoquer de la manière suivante :
+Une question se pose alors : ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Considérons par exemple une session OPAM contenant principalement la bibliothèques \texttt{core}, représentant au total près de 1 640 000 identificateurs. Afin de se placer dans des conditions similaires, on pourra exécuter :
+
+\begin{minted}{shell}
+$ git clone https://github.com/Drup/dowsing dowsing
+$ cd dowsing
+$ opam switch create dowsing ocaml-base-compiler.4.12.0
+$ opam install . --deps-only
+$ opam install core
+$ make
+\end{minted}
+
+Le programme \dowsindex est muni d'une commande \texttt{stats} qui, comme son nom l'indique, calcule des statistiques sur les types de l'environnement — pour plus de détails, voir le chapitre suivant. Invoquons-la ainsi :
 
 \begin{minted}{shell}
 $ ./dowsindex stats --no-index "int -> int -> int"
 \end{minted}
 
-Le système doit notamment afficher le temps total d'unification avec le type $int \rightarrow int \rightarrow int$ sur tout l'environnement. Pour cette requête très simple, le programme passe typiquement plus d'une dizaine de secondes à unifier. C'est beaucoup trop.
+Le système doit notamment afficher le nombre d'appels à l'unification et le temps d'unification total. Pour cette requête très simple, le programme passe typiquement plus d'une dizaine de secondes à unifier. Ce n'est pas satisfaisant.
 
-Il est deux moyens de remédier à cela. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à pré-traiter les types de l'environnement.
+On peut gagner deux ordres de grandeur en mémorisant les types avec lesquels on a déjà testé l'unification. Cela revient à appeler l'unification autant de fois qu'il y a de types uniques dans l'environnement. On peut le constater en exécutant les commandes :
 
-TODO
+\begin{minted}{shell}
+$ ./dowsindex save
+$ ./dowsindex stats "int -> int -> int"
+\end{minted}
 
-%============================================================
-%============================================================
+Le nombre d'appels est réduit à près de 32 000, soit environ $0.8s$ d'unification. Voyons une requête plus difficile — mais toujours sans polymorphisme — :
 
-\section{Normalisation}
+\begin{minted}{shell}
+$ ./dowsindex stats "int -> int -> int -> int -> int"
+\end{minted}
 
-TODO
-\begin{itemize}
-	\item hashcons
-	\item partage variables
-\end{itemize}
+Cette fois, on a toujours 32 000 appels mais sur près d'une minute. Ce n'est pas satisfaisant. Annonçons la couleur. Les techniques développées dans ce chapitre permettent de réduire le nombre d'appels à 107, pour un temps d'unification de l'ordre de la milliseconde. On pourra s'en convaincre avec :
+
+\begin{minted}{shell}
+$ ./dowsindex stats "int -> int -> int -> int -> int" --with-features
+\end{minted}
+
+L'unification est très coûteuse. Il est deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à réduire le nombre d'appels à l'unification. C'est la voie que nous devions explorer durant ce stage.
+
+Plus précisément, il s'agit de solliciter le moins possible l'algorithme d'unification sans compromettre la qualité des résultats. L'idée est de concevoir un test moins coûteux qui, en cas d'indécision, s'en remettra à l'unification. Ce test doit être \emph{suffisamment discriminant} et \emph{correct} vis-à-vis de l'unifiabilité : s'il est négatif, alors les types ne sont effectivement pas unifiables.
+
+On peut raisonner par \emph{condition nécessaire d'unifiabilité}, ou encore \emph{critère d'unifiabilité}. Le premier objectif de ce stage était de trouver des critères d'unifiabilité satisfaisant les deux conditions. Pour cela, nous avons étudié la constitution de l'environnement à l'aide de \emph{métriques} appropriées. Deux critères se sont imposés ; l'un porte sur la \emph{tête} des types, l'autre sur la \emph{queue}.
+
+Ces critères reposent sur certains traits structurels des types qui peuvent être encodés et mémorisés dans un \emph{index}. Cela induit une étape de pré-traitement des types de l'environnement — pour le moment assez coûteuse mais non optimisée. En pratique, cette étape en vaut largement la peine. L'index prend la forme d'un \emph{trie} — ou \emph{arbre préfixe} — adapté aux critères, dans la même veine que \cite{Schulz}.
 
 %============================================================
 %============================================================
 
 \section{Métriques de types}
 
+Dans cette section, nous présentons trois \emph{métriques} sur les types (normalisés). Il s'agit de mettre en évidence des traits communs potentiellement discriminants. Nous en avons expérimenté plusieurs en les intégrant à la commande \texttt{stats}.
+
+L'unification permet d'instancier les types, c'est-à-dire de substituer une ou plusieurs variables. Il est donc logique d'observer la situation de ces dernières. Dans quelles quantités les trouve-t-on ? Intuitivement, plus un type compte de variables, plus il est polymorphe et plus l'unification est difficile. A l'inverse, si un nombre important de types de l'environnement en comportent peu — ce que nous constaterons —, on peut espérer arriver à un \emph{critère d'unification} fort. Où les trouve-t-on ? Les deux critères que nous avons construits reposent sur la réponse à cette question. Les variables en \emph{tête} — correspondant au type de retour — caractérisent les cas les plus difficiles : par l'isomorphisme \eqref{curry}, on peut « ajouter » des paramètres en substituant par un type-flèche.
+
+Insistons sur le pragmatisme de cette approche : ce qui importe, c'est qu'un critère donne de bons résultats sur l'environnement étudié, en présence de répartitions biaisées.
+
 %============================================================
 
-\subsection{Nombre de variables}
+\subsection{Nombre de variables uniques}
 
-\begin{definition}[nombre de variables d'un type]
-	Le nombre de variables d'un type est le cardinal de son ensemble de variables.
+La première métrique consiste à compter le \emph{nombre de variables uniques} dans un type :
+
+\begin{definition}[variables d'un type normalisé]
+	L'ensemble des variables d'un type normalisé $\nu$, noté $\mathrm{vars} (\nu)$, est défini inductivement par :
+	\begin{align*}
+			\mathrm{vars} (\alpha) &=
+			\{ \alpha \}
+		\\
+			\mathrm{vars} (\mset{\nu_1, \dots, \nu_n}) &=
+			\bigcup _{i=1}^n \mathrm{vars} (\nu_i)
+		\\
+			\mathrm{vars} (\nu^\# \rightarrow \nu) &=
+			\mathrm{vars} (\nu^\#) \cup \mathrm{vars} (\nu)
+		\\
+			\mathrm{vars} (f (\nu_1, \dots, \nu_{|f|_\F})) &=
+			\bigcup_{i \in \interval 1 {|f|_\F}} \mathrm{vars} (\nu_i)
+	\end{align*}
 \end{definition}
 
+\begin{definition}[nombre de variables uniques d'un type normalisé]
+	Le nombre de variables uniques d'un type normalisé est le cardinal de son ensemble de variables.
+\end{definition}
+
+Voyons quelle est la constitution de l'environnement à l'aune de cette mesure. Invoquons donc \dowsindex avec une requête volontairement simple :
+
 \begin{minted}{shell}
-$ ./dowsindex stats --index index.db "int -> int" --measure unique-vars
+$ ./dowsindex stats "int -> int -> int" --measure unique-vars
 \end{minted}
+
+Le programme affiche un tableau de statistiques donné en table \ref{tab_meas_1} — nous avons omis les dernières lignes, ne représentant que quelques individus.
+
+Premier constat : près de 60\% de la population ne possède pas de variable, plus de 20\% n'en possède qu'une. Deuxième constat — auquel on s'attendait — : l'unification des types polymorphes est plus difficile, c'est-à-dire en moyenne beaucoup plus coûteuse.
+
+Cette suprématie des types non polymorphes nous dit la chose suivante : un critère les discriminant pourrait réduire considérablement le nombre d'unifications.
 
 \begin{table}[h]
 	\centering
@@ -827,51 +1301,82 @@ $ ./dowsindex stats --index index.db "int -> int" --measure unique-vars
 			nb. d'unifications
 		\\
 		\hline
-			0 & 71.7845 & 1.91676 & 37451
+			0 & 30.7281 & 1.62565 & 18902
 		\\
-			1 & 79.9656 & 6.52301 & 12259
+			1 & 112.094 & 15.7701 & 7108
 		\\
-			2 & 1125.8 & 201.035 & 5600
+			2 & 376.908 & 109.027 & 3457
 		\\
-			3 & 22.0168 & 10.6619 & 2065
+			3 & 16.1607 & 11.325 & 1427
 		\\
-			4 & 10.3188 & 13.0123 & 793
+			4 & 6.52051 & 16.8489 & 387
 		\\
-			5 & 7.00784 & 14.5693 & 481
+			5 & 4.1194 & 30.9729 & 133
 		\\
-			6 & 5.49746 & 13.1518 & 418
+			6 & 0.938654 & 14.222 & 66
 		\\
-			7 & 2.65694 & 16.0056 & 166
+			7 & 0.621796 & 34.5442 & 18
 		\\
-			8 & 2.79713 & 16.0754 & 174
+			8 & 0.619888 & 24.7955 & 25
 		\\
-			9 & 0.77939 & 26.8755 & 29
+			9 & 0.22316 & 27.895 & 8
 		\\
-			10 & 1.76501 & 26.3435 & 67
+			10 & 0.149012 & 18.6265 & 8
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab2} Tab1.}
+	\caption{\label{tab_meas_1}}
 \end{table}
-
-TODO
 
 %============================================================
 
 \subsection{Type en tête}
 
-\begin{definition}[tête d'un type]
-	La tête d'un type, notée $\uparrow \cdot$, est définie inductivement par :
+La deuxième métrique regarde le type en \emph{tête}. Nous le définissons ainsi :
+
+\begin{definition}[tête d'un type normalisé]
+	La tête d'un type normalisé $\nu$, notée $\uparrow \nu$, est définie par :
 	\begin{align*}
-			\uparrow (\tau_1 \rightarrow \tau_2) &=\ \uparrow \tau_2
+			\uparrow (\nu^\# \rightarrow \nu) &=
+			\nu
 		\\
-			\uparrow \tau &= \tau
+			\uparrow \nu &=
+			\nu
 	\end{align*}
 \end{definition}
 
+La bonne formation des types est ici cruciale : on n'a pas besoin de prendre récursivement la tête du membre droit d'une flèche puisque ce dernier n'est pas lui-même une flèche. Nous avons les garanties suivantes :
+
+\begin{lemme} \label{bf_implique_tete_bf_et_non_fleche}
+	La tête d'un type normalisé bien formé est bien formée et n'est pas une flèche.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de la tête.
+\end{preuve}
+
+De façon symétrique, on peut définir la \emph{queue} d'un type :
+
+\begin{definition}[queue d'un type normalisé]
+	La queue d'un type normalisé $\nu$, notée $\downarrow \nu$, est définie par :
+	\begin{align*}
+			\downarrow (\nu^\# \rightarrow \nu) &=
+			\nu^\#
+		\\
+			\downarrow \nu &=
+			\mset{}
+	\end{align*}
+\end{definition}
+
+A nouveau, invoquons \dowsindex avec la commande suivante :
+
 \begin{minted}{shell}
-$ ./dowsindex stats --index index.db "int -> int" --measure head
+$ ./dowsindex stats "int -> int -> int" --measure head
 \end{minted}
+
+La réponse est donnée en table \ref{tab_meas_2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. Par ailleurs, le temps moyen d'unification sur cette sous-population est frappant : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
+
+C'en est assez pour concevoir un premier critère. D'une part, si les paramètres situés dans la queue n'ont pas de position bien définie, la tête ne bouge pas. D'autre part, l'application d'une substitution en préserve la forme, c'est-à-dire le genre au sens de $\G$ — si ce n'est dans le cas d'une variable, mais nous venons de voir que cela ne concerne qu'une minorité. Nous formaliserons ce résultat dans la section suivante.
 
 \begin{table}[h]
 	\centering
@@ -883,39 +1388,39 @@ $ ./dowsindex stats --index index.db "int -> int" --measure head
 			nb. d'unifications
 		\\
 		\hline
-			variable & 651.057 & 236.834 & 2749
+			variable & 866.083 & 532.319 & 1627
 		\\
-			constructeur & 141.354 & 2.93827 & 48108
+			constructeur & 63.0536 & 2.46592 & 25570
 		\\
-			n-uplet & 36.0177 & 4.26952 & 8436
+			uplet & 11.2414 & 2.72983 & 4118
 		\\
-			autre & 1.22786 & 3.03174 & 405
+			autre & 0.707626 & 2.69059 & 263
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab1} Tab2.}
+	\caption{\label{tab_meas_2}}
 \end{table}
-
-TODO
 
 %============================================================
 
 \subsection{Nombre de variables dans l'« échine »}
 
-\begin{definition}[échine d'un type]
-	L'échine d'un type $\tau$, notée $\updownarrow \tau$, est définie inductivement par :
-	\begin{align*}
-			\updownarrow (\tau_1 \rightarrow \tau_2) &=
-			\{ \tau_1 \} \,\cup \updownarrow \tau_2
-		\\
-			\updownarrow \tau &=
-			\{ \tau \}
-	\end{align*}
+Symétriquement, on peut observer le nombre de variables dans la queue. Néanmoins, le plus intéressant est le nombre de variables dans l'\emph{échine}, qui tient compte de la tête et de la queue :
+
+\begin{definition}[échine d'un type normalisé]
+	L'échine d'un type normalisé $\nu$, notée $\updownarrow \nu$, est définie par :
+	\[ \updownarrow \nu =\ \downarrow \nu +^\#_\N \mset{\uparrow \nu} \]
 \end{definition}
 
+Cette troisième métrique vient naturellement après les deux précédentes. Nous savons que la majorité des types possèdent peu ou pas de variables et qu'il est rare de les trouver en tête. Où sont-elles alors ? Nous poursuivons la recherche en élargissant le champ de vision à l'échine.
+
 \begin{minted}{shell}
-$ ./dowsindex stats --index index.db "int -> int" --measure spine-vars
+$ ./dowsindex stats "int -> int -> int" --measure spine-vars
 \end{minted}
+
+La commande ci-dessus émet un troisième tableau de statistiques — voir table \ref{tab_meas_3}. Là encore, les proportions sont franches. Pas moins de 90\% de la population ne présente pas de variables à l'échine. Le cas à deux variables, très minoritaire, semble particulièrement pathologique.
+
+Cela nous a amené à un second critère plus sophistiqué que le premier. Plaçons-nous tout d'abord dans le cas où les deux types à unifier n'ont pas de variables à l'échine. Il vient aisément que, non seulement leurs têtes doivent avoir le même genre, mais on doit aussi trouver dans chaque queue les genres en quantités égales. Plaçons-nous maintenant dans le cas où un seul des deux types possède cette caractéristique. Intuitivement, une variable de l'échine peut « absorber » des paramètres afin d'unifier — ce qui ne peut se produire dans un type en étant dépourvu. Ainsi, l'idée est que chaque genre non-variable représenté dans la queue d'un type quelconque doit nécessairement trouver son pareil autant de fois dans la queue d'un type n'ayant pas cette capacité d'absorption. Dans le dernier cas — le moins fréquent —, on ne peut rien affirmer.
 
 \begin{table}[h]
 	\centering
@@ -927,68 +1432,378 @@ $ ./dowsindex stats --index index.db "int -> int" --measure spine-vars
 			nb. d'unifications
 		\\
 		\hline
-			0 & 192.445 & 3.58704 & 53650
+			0 & 84.331 & 2.96273 & 28464
 		\\
-			1 & 144.858 & 34.3021 & 4223
+			1 & 109.803 & 51.1663 & 2146
 		\\
-			2 & 930.731 & 611.519 & 1522
+			2 & 598.459 & 731.613 & 818
 		\\
-			3 & 6.42228 & 33.6245 & 191
+			3 & 5.35536 & 57.5845 & 93
 		\\
-			4 & 1.22285 & 21.4535 & 57
+			4 & 2.35057 & 78.3523 & 30
 		\\
-			5 & 0.482798 & 16.0933 & 30
+			5 & 0.712872 & 79.208 & 9
 		\\
-			6 & 0.111103 & 18.5172 & 6
+			6 & 0.0100136 & 5.00679 & 2
 		\\
-			7 & 0.0174046 & 5.80152 & 3
-		\\
-			8 & 0.0360012 & 12.0004 & 3
-		\\
-			9 & 0.0109673 & 5.48363 & 2
-		\\
-			10 & 0.0648499 & 21.6166 & 3
+			7 & 0.0109673 & 5.48363 & 2
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab3} Tab3.}
+	\caption{\label{tab_meas_3}}
 \end{table}
 
-TODO
-
 %============================================================
 %============================================================
 
-\section{Conditions nécessaires d'unifiabilité}
+\section{Critères d'unifiabilité}
+
+Dans cette section, nous formalisons et prouvons les critères mis en évidence précédemment. Leur intérêt potentiel est fondé sur les observations réalisées à l'aide des trois métriques. Nous montrons que ces critères présentent effectivement un intérêt et comment les utiliser dans l'implémentation.
+
+Commençons par définir proprement ce qu'est un \emph{critère d'unification correct} dans des termes proches de l'implémentation.
+
+\begin{definition}[booléens]
+	L'ensemble des booléens, noté $\mathbb{B}$, est défini par :
+	\begin{mathpar}
+		\inferrule*
+			{ }
+			{\bold{V} \in \mathbb{B}}
+		\and
+		\inferrule*
+			{ }
+			{\bold{F} \in \mathbb{B}}
+	\end{mathpar}
+\end{definition}
+
+\begin{definition}[critère d'unifiabilité]
+	Un critère d'unifiabilité sur un domaine $\mathscr{D}$ est la donnée d'une fonction d'encodage dans $\N \rightarrow \mathscr{D}$ et une fonction de test de compatibilité dans $\mathscr{D} \times \mathscr{D} \rightarrow \mathbb{B}$. On note $\mathscr{C}_\mathscr{D}$ l'ensemble des critères sur $\mathscr{D}$.
+\end{definition}
+
+\begin{definition}[critère d'unifiabilité correct]
+	Un critère d'unifiabilité $(encode, compat)$ est correct \ssi :
+	\[ \forall \nu_1 \in \N^{\bold{bf}},\ \forall \nu_2 \in \N^{\bold{bf}},\ compat (encode (\nu_1), encode (\nu_2)) = \bold{F} \implies \nu_1 \nsim_\N \nu_2 \]
+\end{definition}
+
+\begin{exemple}
+	Le critère d'unifiabilité trivial sur $\N$ est correct : $(\nu \mapsto \nu, (\nu_1, \nu_2) \mapsto \bold{V})$.
+\end{exemple}
 
 %============================================================
 
 \subsection{Premier critère}
 
+Le premier critère a été décrit plus haut. Il consiste à lier les genres des têtes des types à unifier.
+
+\begin{theoreme}
+	Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+\end{theoreme}
+
+\begin{exemple}
+	Par contraposée, les types suivants ne sont pas unifiables :
+	\begin{itemize}
+		\item $\mset{} \rightarrow int$ et $\mset{} \rightarrow float$ ;
+		\item $\mset{} \rightarrow \mset{}$ et $\mset{} \rightarrow int$.
+	\end{itemize}
+\end{exemple}
+
+TODO: transcrire démonstration
+
+\begin{lemme} \label{non_var_implique_subst_preserve_genre}
+	L'application d'une substitution étendue à un type normalisé qui n'est pas une variable préserve son genre.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de l'extension d'une substitution.
+\end{preuve}
+
+\begin{lemme} \label{non_fleche_implique_tete_preserve_genre}
+	La tête d'un type normalisé qui n'est pas une flèche préserve son genre.
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de la tête.
+\end{preuve}
+
+Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion de critère que nous avons définie, c'est-à-dire dans les termes de l'implémentation.
+
+\begin{definition}[$\mathrm{crit}^1$]
+	On note $\mathrm{crit}^1$ le critère $(\mathrm{encode}^1, \mathrm{compat}^1)$ sur $\mathscr{D}^1 = \G$, où $\mathrm{encode}^1$ et $\mathrm{compat}^1$ sont définies par :
+	\begin{align*}
+			\mathrm{encode}^1 (\nu) &=
+			[ \nu ]
+		\\
+			\mathrm{compat}^1 (\bold{var}, {g}_2) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^1 ({g}_1, \bold{var}) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^1 (\bold{uplet}, \bold{uplet}) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^1 (\bold{fleche}, \bold{fleche}) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^1 (\bold{cons}_f, \bold{cons}_f) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^1 ({g}_1, {g}_2) &=
+			\bold{F}
+	\end{align*}
+\end{definition}
+
+De façon plus visuelle, la figure \ref{fig_crit1} expose la chose sous la forme d'un arbre de décision auquel on soumet une requête. Les types de l'environnement sont distribués dans les sous-arbres en décidant quelle branche prendre à chaque nœud selon leur code. Les nœuds foncés correspondent aux sous-arbres compatibles avec la requête.
+
 \begin{figure}[h]
-\begin{center}
-	\includegraphics[scale=0.2]{graphs/by_head}
-\end{center}
+	\begin{center}
+		\includegraphics[scale=0.13]{graphs/crit1_1}
+		\includegraphics[scale=0.13]{graphs/crit1_2}
+		\includegraphics[scale=0.13]{graphs/crit1_3}
+	\end{center}
+	\caption{\label{fig_crit1}}
 \end{figure}
 
-TODO
+TODO: apport quantitatif
+
+\begin{minted}{shell}
+$ ./dowsindex save --index index.db --features head
+$ ./dowsindex stats --index index.db --with-features --features head "int -> int -> int"
+\end{minted}
 
 %============================================================
 
 \subsection{Deuxième critère}
 
-TODO
+Le second critère se formalise par la notion de \emph{multiplicité}, qui compte le nombre de types d'un genre donné dans la queue d'un type :
 
-%============================================================
-%============================================================
+\begin{definition}[multiplicité d'un genre dans un type normalisé]
+	La multiplicité d'un genre $g$ dans un type normalisé $\nu$, notée $\mu_g (\nu)$, est définie par :
+	\begin{align*}
+			\mu_g (\nu^\# \rightarrow \nu) &=
+			\mu_g' (\nu^\#)
+		\\
+			\mu_g (\nu) &=
+			0
+		\\
+			\mu_g' (\mset{\nu_1, \dots, \nu_n}) &=
+			\sum_{i=1}^n \mu_g'' (\nu_i)
+		\\
+			\mu_g'' (\nu) &=
+			1 &&
+			\text{si } [\nu] = g
+		\\
+			\mu_g'' (\nu) &=
+			0 &&
+			\text{sinon}
+	\end{align*}
+\end{definition}
 
-\section{Structure de \trie}
+Afin d'exprimer la condition nécessaire sous-tendant ce critère, il nous faut introduire les \emph{types normalisés simples}. Il s'agit des types ne possédant pas de variables à l'échine. Nous avons vu que neuf dixièmes des types de l'environnement sont simples.
+
+\begin{definition}[type normalisé simple]
+	Le prédicat sur les types normalisés « est simple », noté $\bold{simple}$, est défini par :
+	\begin{mathpar}
+		\inferrule*
+			{[\nu] \notin \{ \bold{var}, \bold{fleche} \}}
+			{\nu\ \bold{simple}}
+		\and
+		\inferrule*
+			{\forall i \in \interval 1 n,\ [\nu_i] \neq \bold{var} \\ [\nu] \neq \bold{var}}
+			{\mset{\nu_1, \dots, \nu_n} \rightarrow \nu\ \bold{simple}}
+	\end{mathpar}
+\end{definition}
+
+Bien qu'intéressante dans le cadre des démonstrations, cette définition n'est pas adaptée à l'implémentation. Pour décider si un type est simple, on pourra calculer sa $\V$-\emph{multiplicité} :
+
+\begin{definition}[$\V$-multiplicité d'un type normalisé]
+	La $\V$-multiplicité d'un type normalisé $\nu$, notée $\mu_\V (\nu)$, est définie par :
+	\begin{align*}
+			\mu_\V (\nu^\# \rightarrow \nu) &=
+			\mu_\V' (\nu^\#) + \mu_\V'' (\nu)
+		\\
+			\mu_\V (\alpha) &=
+			1
+		\\
+			\mu_\V (\nu) &=
+			0
+		\\
+			\mu_\V' (\mset{\nu_1, \dots, \nu_n}) &=
+			\sum_{i=1}^n \mu_\V'' (\nu_i)
+		\\
+			\mu_\V'' (\alpha) &=
+			1
+		\\
+			\mu_\V'' (\nu) &=
+			0
+	\end{align*}
+\end{definition}
+
+\begin{lemme}
+	Un type normalisé est simple \ssi sa $\V$-multiplicité est nulle.
+\end{lemme}
+
+\begin{preuve}
+	Les deux sens sont triviaux.
+\end{preuve}
+
+Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde condition nécessaire :
+
+\begin{theoreme}
+	Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, la multiplicité de tout genre différent de $\bold{var}$ dans $\nu_1$ est supérieure ou égale à celle dans $\nu_2$.
+\end{theoreme}
+
+\begin{exemple}
+	Par contraposée, les types suivants ne sont pas unifiables :
+	\begin{itemize}
+		\item $\mset{int, int} \rightarrow int$ et $\mset{int} \rightarrow float$ ;
+		\item $\mset{int} \rightarrow int$ et $\mset{int, int, \alpha} \rightarrow \alpha$ ;
+		\item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{}$ et $\mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$.
+	\end{itemize}
+\end{exemple}
+
+TODO: transcrire démonstration
+
+Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
+
+\begin{definition}[$\mathrm{crit}^2_g$]
+	Soit un genre de types normalisés $g$ différent de $\bold{var}$ et $\bold{uplet}$. \\
+	On note $\mathrm{crit}^2_g$ le critère $(\mathrm{encode}^2_g, \mathrm{compat}^2_g)$ sur $\mathscr{D}^2_{g} = \mathbb{B} \times \mathbb{N}$, où $\mathrm{encode}^2_g$ et $\mathrm{compat}^2_g$ sont définies par :
+	\begin{align*}
+			\mathrm{encode}^2_g (\nu) &=
+			(\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
+		\\
+			\mathrm{vars\mathhyphen echine} (\nu) &=
+			\bold{F} &&
+			\text{si } \mu_\V (\nu) = 0
+		\\
+			\mathrm{vars\mathhyphen echine} (\nu) &=
+			\bold{V} &&
+			\text{sinon}
+	\end{align*}
+	\begin{align*}
+			\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{V}, \mu_2)) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+			\bold{V} &&
+			\text{si } \mu_1 \leqslant \mu_2
+		\\
+			\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+			\bold{F} &&
+			\text{sinon}
+		\\
+			\mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+			\bold{V} &&
+			\text{si } \mu_2 \leqslant \mu_1
+		\\
+			\mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+			\bold{F} &&
+			\text{sinon}
+	\end{align*}
+\end{definition}
 
 \begin{figure}[h]
-\begin{center}
-	\includegraphics[scale=0.3]{graphs/trie}
-\end{center}
+	\begin{center}
+		\includegraphics[scale=0.13]{graphs/crit2_1}
+		\includegraphics[scale=0.13]{graphs/crit2_2}
+	\end{center}
+	\caption{\label{fig_crit2}}
 \end{figure}
+
+Cependant, inclure autant de critères qu'il y a de constructeurs de types n'est pas une bonne idée. En fait, on peut « paralléliser » tous ces critères en travaillant sur des multi-ensembles de genres. On s'appuie alors sur l'inclusion entre multi-ensembles.
+
+\begin{definition}[$\mathrm{crit}^2$]
+	On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
+	\[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
+	\begin{align*}
+			\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+			\bold{V}
+		\\
+			\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+			\bold{V} &&
+			\text{si } {g}^\#_1 \subseteq^\#_\G {g}^\#_2
+		\\
+			\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+			\bold{F} &&
+			\text{sinon}
+		\\
+			\mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+			\bold{V} &&
+			\text{si } {g}^\#_2 \subseteq^\#_\G {g}^\#_1
+		\\
+			\mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+			\bold{F} &&
+			\text{sinon}
+	\end{align*}
+\end{definition}
+
+TODO: apport quantitatif
+
+\begin{minted}{shell}
+$ ./dowsindex save --index index.db --features tail
+$ ./dowsindex stats --index index.db --with-features --features tail "int -> int -> int"
+\end{minted}
+
+%============================================================
+%============================================================
+
+\section{Utilisation d'un trie}
+
+Nous avons à présent tous les éléments pour construire un \emph{index}. On est naturellement confronté au choix de la structure de données à employer. L'idée de Gabriel Radanne, inspirée par \cite{Schulz}, est d'adapter la structure de \emph{trie} aux critères.
+
+Les tries servent à stocker efficacement une table associative où les clefs sont des mots sur un alphabet donné. Ce n'est pas le cas ici. Nous travaillons plutôt sur la concaténation des codes des deux critères, dans laquelle est contenue toute l'information nécessaire aux tests de compatibilité. Ces derniers compliquent d'ailleurs la chose : plusieurs branches peuvent être compatibles avec la requête (voir les figures \ref{fig_crit1} et \ref{fig_crit2}). En somme, il faut revoir la structure.
+
+En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. Voici à quoi elle ressemble :
+
+\begin{definition}[tries de types normalisés]
+	L'ensemble des tries de types normalisés, noté $\mathscr{T}$, est défini inductivement par :
+	\begin{mathpar}
+		\inferrule*
+			{N \subseteq \N}
+			{\bold{feuille} (N) \in \mathscr{T}}
+		\and
+		\inferrule*
+			{crit \in \mathscr{C}_\mathscr{D} \\ fils \in \mathscr{F} (\mathscr{D}, \mathscr{T})}
+			{\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
+	\end{mathpar}
+\end{definition}
+
+On les manipule à l'aide de deux fonctions. La première ajoute un type à un trie par un appel récursif sur le sous-arbre associé au code du type ajouté.
+
+\begin{definition}[$\mathrm{trie\mathhyphen ajoute}$]
+	La fonction $\mathrm{trie\mathhyphen ajoute}$ est définie récursivement par :
+	\begin{align*}
+			\mathrm{trie\mathhyphen ajoute} (\bold{feuille} (N), \nu) &=
+			\bold{feuille} (N \cup \{ \nu \})
+		\\
+			\mathrm{trie\mathhyphen ajoute} (\bold{noeud}_\mathscr{D} (crit, fils), \nu) &=
+			\bold{noeud}_\mathscr{D} (crit, d \mapsto \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' (crit, fils, \nu, d))
+	\end{align*}
+	\begin{align*}
+			\mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+			\mathrm{trie\mathhyphen ajoute} (fils (d), \nu) &&
+			\text{si } d = encode (\nu)
+		\\
+			\mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+			fils (d) &&
+			\text{sinon}
+	\end{align*}
+\end{definition}
+
+La seconde calcule l'ensemble des types d'un trie compatibles pour tous les critères avec une requête donnée. Elle consiste en un appel récursif sur les sous-arbres compatibles avec la requête.
+
+\begin{definition}[$\mathrm{trie\mathhyphen cherche}$]
+	La fonction $\mathrm{trie\mathhyphen cherche}$ est définie récursivement par :
+	\begin{align*}
+			\mathrm{trie\mathhyphen cherche} (\bold{feuille} (N), \nu) &=
+			N
+		\\
+			\mathrm{trie\mathhyphen cherche} (\bold{noeud}_\mathscr{D} ((encode, compat), fils), \nu) &=
+			\bigcup_{\mathclap{{d \in \mathscr{D} \mid compat (d, encode (\nu)) = \bold{T}}}} \mathrm{trie\mathhyphen cherche} (fils (d), \nu)
+	\end{align*}
+\end{definition}
+
+L'interface de implémentation OCaml correspondante est présentée ci-dessous. On y retrouve les fonctions d'encodage et de test de compatibilité des critères — \mintinline{ocaml}{compute} et \mintinline{ocaml}{compatible} — la structure arborescente avec feuilles et nœuds — \mintinline{ocaml}{Leaf} et \mintinline{ocaml}{Node} — ainsi que les fonctions d'ajout et de recherche — \mintinline{ocaml}{add} et \mintinline{ocaml}{iter_with}. Sa simplicité est particulièrement appréciable ; l'ajout et l'expérimentation de nouveaux critères s'en trouvent simplifiés.
 
 \begin{minted}{ocaml}
 module type FEATURE = sig
@@ -997,15 +1812,11 @@ module type FEATURE = sig
   val compare : t -> t -> Int.t
   val compatible : query:t -> data:t -> Bool.t
 end
-\end{minted}
 
-\begin{minted}{ocaml}
 module type NODE = sig
   type t
   val empty : t
   val add : Type.t -> t -> t
-  val remove : Type.t -> t -> t
-  val iter : t -> Type.t Iter.t
   val iter_with : Type.t -> t -> Type.t Iter.t
 end
 
@@ -1013,31 +1824,58 @@ module Leaf : NODE
 module Node (Feat : FEATURE) (Sub : NODE) : NODE
 \end{minted}
 
-TODO
-\begin{itemize}
-	\item motivation avec \cite{Schulz}
-	\item interface OCaml : Feature, Trie
-	\item exemples
-\end{itemize}
-
 %============================================================
 %============================================================
 %============================================================
 
 \chapter{\dowsindex}
 
-TODO
-\begin{itemize}
-	\item sélection de librairies
-	\item incrémental
-	\item matching
-\end{itemize}
+Dans ce dernier chapitre, nous visitons les fonctionnalités du programme \dowsindex. On pourra en trouver le code source sur le dépôt \textit{github} \texttt{Drup/dowsing}. La version actuelle est compatible avec les systèmes d'exploitation Linux et macOS.
 
-\begin{figure}[h]
-\begin{center}
-	\includegraphics[scale=0.35]{graphs/dowsindex}
-\end{center}
-\end{figure}
+\dowsindex met en application les techniques présentées dans le chapitre précédent. Avant toute chose, il faut donc créer un \emph{index} auquel \dowsindex se référera au moment de la recherche. La commande suivante fait l'affaire :
+
+\begin{minted}{shell}
+$ dowsindex save
+\end{minted}
+
+L'index est entreposé dans un répertoire standard destiné aux données d'applications. On peut aussi indiquer explicitement où le sauvegarder :
+
+\begin{minted}{shell}
+$ dowsindex save --index <fichier>
+\end{minted}
+
+On peut également préciser quels paquets OPAM inclure dans l'index — notamment afin de réduire le temps de construction. La command suivante a cet effet, mais aussi — si l'index existe déjà — celui de charger ou recharger les paquets désignés :
+
+\begin{minted}{shell}
+$ dowsindex save [--index <fichier>] <paquet>...
+\end{minted}
+
+Ceci étant fait — et une bonne fois pour toutes —, on peut maintenant utiliser \dowsindex pour sa fin première : recherche une fonction par son type. Si l'index a été créé dans le répertoire standard, il suffit de demander :
+
+\begin{minted}{shell}
+$ dowsindex search <type>
+\end{minted}
+
+Sinon, il faut préciser le chemin de l'index :
+
+\begin{minted}{shell}
+$ dowsindex search --index <fichier> <type>
+\end{minted}
+
+Si tout se passe bien, le programme affiche la liste des fonctions retenues avec leurs types. Pour ne garder que les $n$ premières réponses, on peut employer l'option \texttt{-n} :
+
+\begin{minted}{shell}
+$ dowsindex search [--index <fichiers>] -n <n> <type>
+\end{minted}
+
+L'espace de recherche peut être limité à certains paquets — c'est d'ailleurs le scénario le plus courant — :
+
+\begin{minted}{shell}
+$ dowsindex search [--index <fichiers>] [-n <n>] <paquet>... <type>
+\end{minted}
+
+TODO: matching
+\[ \mathrm{S} ::= \T \mid \V \dots \V . \T \]
 
 %============================================================
 %============================================================
@@ -1047,14 +1885,13 @@ TODO
 La commande \dowsindex \texttt{save} admet les options suivantes :
 
 \begin{table}[h]
-\begin{tabular}{ll}
+\begin{tabularx}{\textwidth}{lX}
 		\textbf{-{}-index}=\textit{fichier} &
-		Sauvegarde l'index dans \textit{fichier}. \\ &
-		Par défaut : dans un répertoire standard propre à stocker les données d'applications.
+		Sauvegarde l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
 	\\
 		\textbf{-{}-verbose} &
 		Active le mode verbeux. Affiche les paquets trouvés.
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 TODO
@@ -1066,49 +1903,21 @@ TODO
 %============================================================
 %============================================================
 
-\section{\dowsindex \texttt{stats}}
-
-La commande \dowsindex \texttt{stats} admet les options suivantes :
-
-\begin{table}[h]
-\begin{tabular}{ll}
-		\textbf{-{}-filter} &
-		Calcule aussi les statistiques avec filtrage par critères.
-	\\
-		\textbf{-{}-index}=\textit{fichier} &
-		Cherche l'index dans \textit{fichier}. \\ &
-		Par défaut : dans un répertoire standard propre à stocker les données d'applications.
-	\\
-		\textbf{-{}-measure}=\textit{mesure} &
-		Mesure les types avec \textit{mesure}.
-\end{tabular}
-\end{table}
-
-TODO
-\begin{itemize}
-	\item présentation
-	\item exemples
-\end{itemize}
-
-%============================================================
-%============================================================
-
 \section{\dowsindex \texttt{search}}
 
 La commande \dowsindex \texttt{search} admet les options suivantes :
 
 \begin{table}[h]
-\begin{tabular}{ll}
+\begin{tabularx}{\textwidth}{lX}
 		\textbf{-{}-exhaustive} &
 		Recherche exhaustive (sans filtrage par critères).
 	\\
 		\textbf{-{}-index}=\textit{fichier} &
-		Cherche l'index dans \textit{fichier}. \\ &
-		Par défaut : dans un répertoire standard propre à stocker les données d'applications.
+		Cherche l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
 	\\
 		\textbf{-n} \textit{n} &
 		Affiche les \textit{n} premiers résultats seulement.
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 TODO
@@ -1120,15 +1929,41 @@ TODO
 %============================================================
 %============================================================
 
-\section{Extensions}
+\section{\dowsindex \texttt{stats}}
 
-\begin{figure}[h]
-\begin{center}
-	\includegraphics[scale=0.15]{images/vim_plugin}
-\end{center}
-\end{figure}
+La commande \dowsindex \texttt{stats} admet les options suivantes :
+
+\begin{table}[h]
+\begin{tabularx}{\textwidth}{lX}
+		\textbf{-{}-filter} &
+		Calcule aussi les statistiques avec filtrage par critères.
+	\\
+		\textbf{-{}-index}=\textit{fichier} &
+		Cherche l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
+	\\
+		\textbf{-{}-measure}=\textit{mesure} &
+		Mesure les types avec \textit{mesure}.
+\end{tabularx}
+\end{table}
 
 TODO
+\begin{itemize}
+	\item présentation
+	\item exemples
+\end{itemize}
+
+%============================================================
+%============================================================
+
+\section{Plugin Vim}
+
+TODO
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[scale=0.15]{images/plugin_vim}
+	\end{center}
+\end{figure}
 
 %============================================================
 %============================================================
@@ -1138,167 +1973,13 @@ TODO
 
 TODO
 \begin{itemize}
+	\item terminer les preuves
 	\item problèmes noms : qualification par rapport au module englobant
 	\item alias de type
 	\item temps de construction de l'index (LibIndex)
 	\item temps de chargement de l'index (Marshall)
+	\item modules
 \end{itemize}
-
-%============================================================
-%============================================================
-%============================================================
-
-\chapter* {Annexe}
-\addcontentsline{toc}{chapter}{Annexe}
-
-Cette annexe est dévolue à la démonstration des conditions nécessaires d'unifiabilité sans l'axiome ($*$-unit). Son inclusion complexifie considérablement le travail ; nous n'en sommes pas encore venus à bout.
-
-%============================================================
-%============================================================
-
-\section{Premier critère}
-
-\begin{definition}[racine d'un type]
-	La racine d'un type, notée $[ \cdot ]$, est le symbole défini inductivement par :
-	\begin{align*}
-			[ \alpha ] &= \alpha
-		\\
-			[ \unit ] &= \unit
-		\\
-			[ \tau_1 \times \tau_2 ] &= \times
-		\\
-			[ \tau_1 \rightarrow \tau_2 ] &=\ \rightarrow
-		\\
-			[ f (\tau_1, \dots, \tau_{|f|_\F}) ] &= f
-	\end{align*}
-\end{definition}
-
-\begin{lemme} \label{equiv_tete}
-	Si deux types sont équivalents, leurs têtes le sont aussi.
-\end{lemme}
-
-\begin{lemme} \label{tete_subst_tete}
-	\[ \forall \tau \in T,\ \forall \sigma \in \Sigma,\ \uparrow \hat \sigma (\tau) =\ \uparrow \hat \sigma (\uparrow \tau) \]
-\end{lemme}
-
-\begin{lemme} \label{tete_non_fleche}
-	La tête d'un type n'est pas une flèche.
-\end{lemme}
-
-\begin{lemme} \label{cons_equiv}
-	\[
-		\forall f_1 \in \F ,\ 
-		\forall f_2 \in \F,\ 
-		\forall (\tau^1_i)_{i \in \interval 1 {|f_1|_\F}} \in T^{|f_1|_\F},\ 
-		\forall (\tau^2_i)_{i \in \interval 1 {|f_2|_\F}} \in T^{|f_2|_\F},
-	\]\[
-		f_1 (\tau^1_1, \dots, \tau^1_{|f_1|_\F}) =
-		f_2 (\tau^2_1, \dots, \tau^2_{|f_2|_\F})
-		\implies f_1 = f_2
-	\]
-\end{lemme}
-
-\begin{theoreme}
-	Si deux types $\tau_1$ et $\tau_2$ sont unifiables et les racines de leurs têtes appartiennent à $\F$, alors ces racines sont les mêmes.
-\end{theoreme}
-
-\begin{preuve}
-	Par hypothèse, il existe une substitution $\sigma$ telle que :
-	\[ \hat \sigma (\tau_1) \Tequiv \hat \sigma (\tau_2) \]
-	Par le lemme \ref{equiv_tete}, les têtes sont équivalentes :
-	\[ \uparrow \hat \sigma (\tau_1) \Tequiv\ \uparrow \hat \sigma (\tau_2) \]
-	Par le lemme \ref{tete_subst_tete}, on a donc :
-	\[ \uparrow \hat \sigma (\uparrow \tau_1) \Tequiv\ \uparrow \hat \sigma (\uparrow \tau_2) \]
-	Par hypothèse, il existe $f_1$ et $f_2$ dans $\F$ ainsi que $(\tau^1_i)_{i \in \interval 1 {|f_1|_\F}}$ dans $T^{|f_1|_\F}$ et $(\tau^2_i)_{i \in \interval 1 {|f_2|_\F}}$ dans $T^{|f_2|_\F}$ tels que :
-	\begin{align*}
-			\tau_1 &= f_1 (\tau^1_1, \dots \tau^1_{|f_1|_\F})
-		\\
-			\tau_2 &= f_2 (\tau^2_1, \dots \tau^2_{|f_2|_\F})
-	\end{align*}
-	Par le lemme \ref{tete_non_fleche}, $f_1$ et $f_2$ sont différents de $\rightarrow$. Par definition de $\uparrow \cdot$ et $\hat \sigma$, il vient alors :
-	\[ f_1 (\hat \sigma (\tau^1_1), \dots, \hat \sigma (\tau^1_{|f_1|_\F})) \Tequiv f_2 (\hat \sigma (\tau^2_1), \dots, \hat \sigma (\tau^2_{|f_2|_\F})) \]
-	Enfin, le lemme \ref{cons_equiv} donne :
-	\[ f_1 = f_2 \]
-\end{preuve}
-
-%============================================================
-%============================================================
-
-\section{Deuxième critère}
-
-\begin {definition} [multiplicité d'un symbole de fonctions]
-	La multiplicité d'un symbole $f$ de $\F$ dans un type $\tau$, notée $\mu_f (\tau)$, est définie inductivement par :
-	\begin{align*}
-			\mu_f (\tau_1 \rightarrow \tau_2) &=
-			\mu_f' (\tau_1) + \mu_f (\tau_2)
-		\\
-			\mu_f (\tau) &=
-			0
-		\\
-			\mu_f' (\tau_1 \times \tau_2) &=
-			\mu_f' (\tau_1) + \mu_f' (\tau_2)
-		\\
-			\mu_f' (f (\tau_1, \dots, \tau_n)) &=
-			1
-		\\
-			\mu_f' (\tau) &=
-			0
-	\end{align*}
-\end{definition}
-
-\begin{definition}[$\V$-multiplicité]
-	La $\V$-multiplicité est définie inductivement par :
-	\begin{align*}
-			\mu_\V (\tau_1 \rightarrow \tau_2) &=
-			\mu_\V' (\tau_1) + \mu_\V (\tau_2)
-		\\
-			\mu_\V (\tau) &=
-			0
-		\\
-			\mu_\V' (v) &=
-			1
-		\\
-			\mu_\V' (\tau_1 \times \tau_2) &=
-			\mu_\V' (\tau_1) + \mu_\V' (\tau_2)
-		\\
-			\mu_\V' (\tau) &=
-			0
-	\end{align*}
-\end{definition}
-
-\begin{definition}[type simple]
-	Un type $\tau$ est simple si sa $\V$-multiplicité est nulle.
-\end{definition}
-
-\begin{lemme} \label{mu_equiv}
-	Si deux type $\tau_1$ et $\tau_2$ sont équivalents, alors, pour tout symbole $f$ de $\F$, on a : $\mu_f (\tau_1) = \mu_f (\tau_2)$.
-\end{lemme}
-
-\begin{lemme} \label{mu_subst_simple}
-	Si un type $\tau$ est simple, alors, pour tout symbole $f$ de $\F$ et toute substitution $\sigma$, on a : $\mu_f (\hat \sigma (\tau)) = \mu_f (\tau)$.
-\end{lemme}
-
-\begin{lemme} \label{mu_subst}
-	La multiplicité de tout symbole $f$ de $\F$ dans un type est inférieure à celle de toute instance de ce type.
-\end{lemme}
-
-\begin{theoreme}
-	Soit deux types $\tau_1$ et $\tau_2$. \\
-	Si $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ simple, alors la multiplicité de tout symbole de $\F$ dans $\tau_1$ est supérieure à celle dans $\tau_2$.
-\end{theoreme}
-
-\begin{preuve}
-	Par hypothèse, il existe une substitution $\sigma$ telle que :
-	\[ \hat \sigma (\tau_1) \Tequiv \hat \sigma (\tau_2) \]
-	Soit $f$ un symbole de $\F$. Par le lemme \ref{mu_equiv}, les multiplicités sont égales :
-	\[ \mu_f (\hat \sigma (\tau_1)) = \mu_f (\hat \sigma (\tau_2)) \]
-	Par le lemme \ref{mu_subst_simple}, la simplicité de $\tau_1$ apporte :
-	\[ \mu_f (\hat \sigma (\tau_1)) = \mu_f (\tau_1) \]
-	Par le lemme \ref{mu_subst}, on a par ailleurs :
-	\[ \mu_f (\hat \sigma (\tau_2)) \geqslant \mu_f (\tau_2) \]
-	Il vient donc le résultat attendu :
-	\[ \mu_f (\tau_1) \geqslant \mu_f (\tau_2) \]
-\end{preuve}
 
 %============================================================
 %============================================================
@@ -1307,31 +1988,6 @@ Cette annexe est dévolue à la démonstration des conditions nécessaires d'uni
 \printbibliography
 
 \end{document}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 %%% Local Variables:
 %%% mode: latex

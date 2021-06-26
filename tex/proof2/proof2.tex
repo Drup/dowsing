@@ -90,7 +90,7 @@ as follow:
   |& \Var\\
   |& (\tlist\tau) \tconstr\\
   |& \tau \tprod \tau\\
-  |& \tau \to \tau  
+  |& \tau \to \tau
 \end{align*}
 
 \subsection{Equivalence}
@@ -104,7 +104,7 @@ equivalence as the smallest congruence which is transitive, reflexive, symmetric
 \begin{itemize}
 \item Associativity of $\tprod$ : $x \tprod (y \tprod z) \eqT (x \tprod y) \tprod z$
 \item Commutativity of $\tprod$ : $x \tprod y \eqT y \tprod x$
-\item Neutrality of \texttt{unit} for $\tprod$ : $\texttt{unit} \tprod x \eqT x$ 
+\item Neutrality of \texttt{unit} for $\tprod$ : $\texttt{unit} \tprod x \eqT x$
 \item Currification : $(x \tprod y) \to z \eqT x \to y \to z$
 \end{itemize}
 
@@ -154,10 +154,10 @@ We define the normalize on types, noted $\nf\tau$, as follow:
   \nf{\tau \to \tau'}
   &= \begin{cases}
     (\nf\tau \cup \tmset{\tau_{args}}) \to \tau_{res} & \text{when $\nf\tau' = \tmset{\tau_{args}} \to \tau_{res}$}\\
-    \nf\tau \to \nf{\tau'} & \text{otherwise}    
+    \nf\tau \to \nf{\tau'} & \text{otherwise}
   \end{cases} \\
   \nf{\alpha} &= \alpha \qquad\text{for }\alpha\in\Var\\
-  \nf{(\tlist\tau)\ \tconstr} &= (\tlist{\nf\tau})\ \tconstr  
+  \nf{(\tlist\tau)\ \tconstr} &= (\tlist{\nf\tau})\ \tconstr
 \end{align*}
 
 
@@ -173,7 +173,7 @@ equivalence as the smallest congruence which is transitive, reflexive, symmetric
 
 \begin{itemize}
 \item AC of tuples : $\tmset{x} \eqN \tmset{y}$ iff $\tmset{x} \eqAC \tmset{y}$.
-\item Neutrality of \texttt{unit} : $\{x\} \eqN x$ 
+\item Neutrality of \texttt{unit} : $\{x\} \eqN x$
 \item Currification : $\{\tlist{x},\tlist{y}\} \to z \eqN \tmset{x} \to (\tmset{y} \to z)$
 \end{itemize}
 
