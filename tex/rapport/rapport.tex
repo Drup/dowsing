@@ -103,8 +103,8 @@
 
 \newcommand{\mathhyphen}{{\hbox{-}}}
 
-\DeclareMathOperator*{\msetN_bigplus}{\scalerel*{+}{\sum}^\#_\N}
-\DeclareMathOperator*{\msetG_bigplus}{\scalerel*{+}{\sum}^\#_\G}
+\DeclareMathOperator*{\msetNbigplus}{\scalerel*{+}{\sum}^\#_\N}
+\DeclareMathOperator*{\msetGbigplus}{\scalerel*{+}{\sum}^\#_\G}
 
 %============================================================
 
@@ -594,6 +594,7 @@ Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs.
 
 Avant d'aborder l'implémentation, revenons sur l'ancêtre commun des algorithmes d'unification sémantique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}. Leur algorithme d'unification syntaxique consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
 
+
 Définissons tout d'abord les objets manipulés par l'algorithme : \emph{équations de types} et \emph{problèmes équationnels}.
 
 \begin{definition}[équation de types]
@@ -617,7 +618,10 @@ Définissons tout d'abord les objets manipulés par l'algorithme : \emph{équati
 
 On étend naturellement substitution, ensemble de variables et unificateur aux équations de types et problèmes équationnels.
 
+
 Ceci étant fait, voyons maintenant comment \emph{transformer} un problème équationnel. Dans cette présentation, six règles suffisent :
+% Nous exposons maintenant comment \emph{transformer} un problème équationnel\laure{pour quoi faire}. Dans cette présentation, six règles suffisent, \laure{plus formellement décrites dans la définition~\ref{def:transfo}}
+% >>>>>>> 1b38a4b (fin section 2)
 \begin{itemize}
   \item (effacer) efface une équation triviale ;
   \item (orienter) réoriente une équation de la forme $\tau \qeq \alpha$, rendant (remplacer) potentiellement applicable ;
@@ -662,7 +666,11 @@ Ceci étant fait, voyons maintenant comment \emph{transformer} un problème équ
 
 Explicitons l'algorithme d'unification syntaxique résultant $\mathscr{A}$. Etant donné deux types $\tau_1$ et $\tau_2$ à unifier, $\mathscr{A} (\tau_1, \tau_2)$ applique ces transformations autant que possible en partant du problème $\{ \tau_1 \qeq \tau_2 \}$. Il échoue si le problème obtenu n'est pas en forme résolue et retourne la substitution induite sinon.
 
+
 Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_2$ admettent un unificateur $\sigma$ minimal pour $\leqslant_\Sigma$ \ssi $\mathscr{A} (\tau_1, \tau_2)$ retourne $\sigma$. Nous ne le redémontrons pas ici.
+% =======
+% Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_2$ admettent un unificateur $\sigma$ minimal\laure{notion non expliquée} pour $\leqslant_\Sigma$ \ssi $\mathscr{A} (\tau_1, \tau_2)$ retourne $\sigma$. %Nous ne le redémontrons pas ici.
+% >>>>>>> 1b38a4b (fin section 2)
 
 \begin{exemple}
   Appliquons $\mathscr{A}$ aux types $int \rightarrow list (\alpha) \rightarrow \beta$ et $\gamma \rightarrow \delta \rightarrow \gamma$.
@@ -691,18 +699,21 @@ Cet algorithme est correct et complet en ce sens : deux types $\tau_1$ et $\tau_
 
 \subsection{Algorithme d'unification modulo isomorphismes}
 
-Le matching et l'unification modulo $\E$ sont décidables \cite{Narendran_Pfenning_Statman}. Gabriel Radanne a implémenté un algorithme d'unification. Néanmoins, comme nous l'avons vu auparavant, le matching s'y réduit. L'usage indique d'ailleurs qu'il n'est généralement pas souhaitable d'instancier le type demandé ; c'est pourquoi nous en avons fait le comportement par défaut, avec la possibilité d'expliciter les variables de types instanciables.
+Le matching et l'unification modulo $\E$ sont décidables \cite{Narendran_Pfenning_Statman}. Gabriel Radanne a implémenté un algorithme d'unification, qui servira de base à notre implementation, dont nous expliquons les principes ici.
 
-L'algorithme d'unification modulo $\E$ est conçu à partir d'un algorithme d'unification modulo associativité et commutativité (AC) développé par Boudet \cite{Boudet}. Ce dernier possède les mêmes traits que l'algorithme d'unification syntaxique présenté précédemment : il s'agit de transformer un problème à l'aide d'un jeu de règles. Dans un souci d'optimisation, les objets qu'il manipule s'avèrent toutefois plus élaborés. Le plus important est l'ajout d'une règle de transformation résolvant un \emph{problème AC élémentaire} n'impliquant que des termes simples (variables et constantes) et un unique opérateur AC.
+% . Néanmoins\laure{pourquoi néanmoins}, comme nous l'avons vu auparavant, le matching s'y réduit. L'usage indique d'ailleurs qu'il n'est généralement pas souhaitable d'instancier le type demandé ; c'est pourquoi nous en avons fait le comportement par défaut, avec la possibilité d'expliciter les variables de types instanciables. \laure{Je ne comprends pas le paragraphe commençant à ``l'usage'', et à mon avis c'est inutile}
+\medskip
+L'algorithme d'unification modulo $\E$ est conçu à partir d'un algorithme d'unification modulo associativité et commutativité (AC)~\cite{Boudet}. Ce dernier possède les mêmes traits que l'algorithme d'unification syntaxique présenté à la Section~\ref{sec:unif_syntax}: il s'agit de transformer un problème à l'aide d'un jeu de règles. Les objets qu'il manipule s'avèrent toutefois plus élaborés. Le plus important est l'ajout d'une règle de transformation résolvant un \emph{problème AC élémentaire} n'impliquant que des termes simples (variables et constantes) et un unique opérateur AC.
 
+\medskip
 L'algorithme de Boudet a été adapté de la manière suivante :
 \begin{itemize}[nosep]
-  \item la représentation des termes à base de pointeurs se traduit par d'autres mécanismes d'indirection en OCaml ;
+%  \item la représentation des termes à base de pointeurs\laure{Je pense qu'on se fiche de ce détail} se traduit par d'autres mécanismes d'indirection en OCaml ;
   \item les types sont \emph{normalisés} : les produits sont « aplatis » pour former des uplets compatibles avec la procédure d'unification AC élémentaire ;
   \item une règle supplémentaire permet de traiter l'unification des flèches que l'isomorphisme \eqref{curry} rend non triviale.
 \end{itemize}
 
-Mentionnons un dernier trait de l'implémentation de l'unification. La puissance des quatre isomorphismes réunis — en particulier \eqref{prod_unit} — permet de réduire le nombre de paramètres d'une fonction en instanciant une ou plusieurs variables de type en $\unit$. L'utilisateur pourrait ainsi positionner une variable « joker » potentiellement annulable en paramètre : $int \rightarrow \alpha \rightarrow list (int)$. Néanmoins, cela présente l'inconvénient de grossir les résultats de manière superflue lorsque ce n'est pas l'effet souhaité. Conformément à l'article de Rittri \cite{Rittri93}, l'instanciation d'une variable de type en $\unit$ est donc exclue. Cette objection n'est pas sans importance ; dans le chapitre qui suit, la correction du premier critère d'unifiabilité la nécessite. Formellement, il s'agit d'exiger de l'unificateur qu'il soit \emph{bien formé} :
+\reformule{Mentionnons un dernier trait de l'implémentation de l'unification. La puissance des quatre isomorphismes réunis — en particulier \eqref{prod_unit} — permet de réduire le nombre de paramètres d'une fonction en instanciant une ou plusieurs variables de type en $\unit$}. L'utilisateur pourrait ainsi positionner une variable « joker » potentiellement annulable en paramètre : $int \rightarrow \alpha \rightarrow list (int)$. Néanmoins, cela présente l'inconvénient de grossir les résultats de manière superflue lorsque ce n'est pas l'effet souhaité. Conformément à l'article de Rittri \cite{Rittri93}, l'instanciation d'une variable de type en $\unit$ est donc exclue. Cette objection n'est pas sans importance ; dans le chapitre qui suit, la correction du premier critère d'unifiabilité la nécessite. Formellement, il s'agit d'exiger de l'unificateur qu'il soit \emph{bien formé} :
 
 \begin{definition}[substitution de types bien formée]
   Une substitution de types $\sigma$ est bien formée, noté $\sigma\ \bold{bf}$, \ssi :
@@ -710,21 +721,30 @@ Mentionnons un dernier trait de l'implémentation de l'unification. La puissance
   On note $\Sigma^{\bold{bf}}$ l'ensemble des substitutions de types bien formées.
 \end{definition}
 
+\laure{et donc ?}
+
 %============================================================
 
 \subsection{Normalisation des types}
+\laure{Pour ....., nous devons normaliser les types}
+%Attachons-nous à formaliser la \emph{normalisation des types}. Pour se faire,
 
-Attachons-nous à formaliser la \emph{normalisation des types}. Pour ce faire, on définit d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
+Nous définissons d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
 
-Etant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.
+\smallskip
+Étant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.\laure{je pense qu'on s'en fiche}
 
-Définissons donc les \emph{types normalisés}. Un \emph{type} normalisé est soit :
+%Définissons donc les \emph{types normalisés}.
+
+Un \emph{type normalisé} est soit :
 \begin{itemize}[nosep]
   \item une variable ;
   \item un uplet de types normalisés représenté par un multi-ensemble ;
   \item une flèche où les paramètres sont regroupés dans un uplet ;
   \item construit avec un symbole de la signature.
 \end{itemize}
+
+\laure{le plus important est de dire ce qu'il y a de différent avec la def d'un type 10 pages plus tôt}
 
 \begin{definition}[type normalisé]
   L'ensemble des types normalisés, noté $\N$, est défini inductivement par :
@@ -753,10 +773,11 @@ Définissons donc les \emph{types normalisés}. Un \emph{type} normalisé est so
     \item $\mset{int, \mset{}, \alpha}$ ;
     \item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
     \item $\mset{list (\mset{\alpha, int})} \rightarrow \mset{\alpha, \beta}$.
-  \end{itemize}
+    \end{itemize}
+    \laure{et un type pas normalisé}
 \end{exemple}
 
-Afin de désigner la forme d'un type normalisé de manière concise, introduisons par ailleurs la notion de \emph{genre}.
+Afin de désigner la forme d'un type normalisé de manière concise, introduisons par ailleurs la notion de \emph{genre}. \laure{NO WAY, utiliser un autre terme.}
 
 \begin{definition}[genre de types normalisés]
   L'ensemble des genres de types normalisés, noté $\G$, est défini par :
@@ -834,9 +855,14 @@ C'est pourquoi nous parlerons la plupart du temps de types normalisés \emph{bie
     \inferrule*
       {f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
       {f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{pbf}}
-  \end{mathpar}
+    \end{mathpar}
+    \laure{Souvent on définit plutôt un prédicat par $\models_{BF}\nu$}
   On note $\N^{\bold{bf}}$ l'ensemble des types normalisés bien formés et $\N^{\bold{pbf}}$ l'ensemble des types presque bien formés.
 \end{definition}
+
+\begin{exemple}
+  \laure{bla est bf alors que blu est pbf et foo n'est ni bf ni pbf}
+\end{exemple}
 
 \begin{lemme} \label{bf_implique_pfb}
   Si un type normalisé est bien formé, alors il est presque bien formé.
@@ -867,8 +893,8 @@ Nous avons maintenant tout ce qu'il faut pour définir la \emph{normalisation} d
   \item regroupant les paramètres à gauche des flèches en vertu de \eqref{curry}.
 \end{itemize}
 
-\begin{definition}[normalisée d'un type]
-  La normalisée d'un type $\tau$, notée $\norm (\tau)$, est définie inductivement par :
+\begin{definition}[forme normalisée d'un type]
+  La forme normalisée d'un type $\tau$, notée $\norm (\tau)$, est définie inductivement par :
   \begin{align*}
       \norm (\alpha) &=
       \alpha
@@ -904,6 +930,7 @@ Nous avons maintenant tout ce qu'il faut pour définir la \emph{normalisation} d
       \norm'' (\nu^\#) &=
       \nu^\#
   \end{align*}
+  \laure{attention ça dépasse de la marge à droite}
 \end{definition}
 
 \begin{exemple}
@@ -917,17 +944,17 @@ Nous avons maintenant tout ce qu'il faut pour définir la \emph{normalisation} d
   \end{itemize}
 \end{exemple}
 
-Comme attendu, la normalisation donne des types normalisés bien formés :
+Comme attendu, la normalisation donne des types normalisés bien formés~:
 
 \begin{theoreme} \label{norm_bf}
-  La normalisée de tout type est bien formée.
+  La forme normalisée de tout type est bien formée.
 \end{theoreme}
 
 \begin{preuve}
-  Par induction structurelle et par cas sur le type.
+  La preuve se fait par  induction structurelle et par cas sur le type.
   \begin{itemize}[label={\textbf{Cas}}]
     \item
-      $\alpha$ : trivial.
+      $\alpha$ : trivial. \laure{immédiat, pas trivial}
     \item
       $\unit$ : trivial.
     \item
@@ -976,7 +1003,11 @@ Comme attendu, la normalisation donne des types normalisés bien formés :
   Trivial avec la définition de $\norm''$.
 \end{preuve}
 
-Nous savons comment passer des types aux types types normalisés. Reste à lier des deux domaines. Ce à quoi nous voulons arriver est un théorème d'équivalence pour l'unification. Il s'agit donc de définir la notion d'unifiabilité pour les types normalisés. De la même manière qu'auparavant, voyons tout d'abord par la notion de \emph{substitution} :
+\laure{je te laisse faire un query replace de trivial}
+
+Nous savons comment passer des types aux types types normalisés. Reste à lier des deux domaines\laure{quels deux domaines}. Ce à quoi nous voulons arriver est un théorème d'équivalence pour l'unification. Il s'agit donc de définir la notion d'unifiabilité pour les types normalisés. De la même manière qu'auparavant, voyons tout d'abord par la notion de \emph{substitution} :
+
+\laure{à quoi sert de tout redonner !}
 
 \begin{definition}[substitution de types normalisés]
   Une substitution de types normalisés est une fonction de $\V$ dans $\N$. \\
@@ -1006,12 +1037,15 @@ On définit le domaine d'une substitution de types normalisés $\theta$ comme pr
       f (\hat\theta (\nu_1), \dots, \hat\theta (\nu_{|f|_\F}))
     \\
       \tilde \theta (\mset{\nu_1, \dots, \nu_n}) &=
-      \msetN_bigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
+      \msetNbigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
   \end{align*}
+  
 \end{definition}
 
+  \laure{big plus undefined} 
+
 \begin{exemple}
-  Quelques exemples d'applications de substitutions :
+  Nous donnons ci-dessous quelques exemples d'applications de substitutions :
   \begin{itemize}
     \item $\{ \alpha \mapsto \mset{int, float}, \beta \mapsto bool \}$ appliquée à $\mset{\alpha, \beta, \gamma}$ donne $\mset{int, float, bool, \gamma}$ ;
     \item $\{ \alpha \mapsto \mset{int} \rightarrow \mset{} \}$ appliquée à $\mset{\alpha} \rightarrow \alpha$ donne $\mset{\mset{int} \rightarrow \mset{}, int} \rightarrow \mset{}$ ;
@@ -1029,12 +1063,13 @@ On imposera également aux substitutions d'être \emph{bien formées}, c'est-à-
 
 On montre que l'application d'une substitution bien formée préserve la bonne formation des types normalisés.
 
-\begin{theoreme} \label{bf_implique_subst_bf}
+\begin{theoreme} 
+\label{bf-implique-subst-bf} %pas de underscore dans les label, ça plante la coloration de mon editeur
   Pour tout $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$, $\hat\theta (\nu)$ est bien formé.
 \end{theoreme}
 
 \begin{preuve}
-  Par induction structurelle sur $\nu$.
+  La preuve est faite par induction structurelle sur $\nu$.
   \begin{itemize}[label={\textbf{Cas}}]
     \item
       $\alpha$ : $\hat\theta (\alpha)$ est bien formé car $\theta$ l'est.
@@ -1161,9 +1196,9 @@ Néanmoins, on se rend compte que cette équivalence n'est rien d'autre que l'é
   Le sens direct se montre sans encombre par induction structurelle.
 \end{preuve}
 
-En fait, une partie du travail est déléguée aux substitutions et l'autre à l'égalité sur les multi-ensembles. En expliciter la représentation — en Coq par exemple — pourrait rendre la chose moins aisée. Le temps a manqué pour cela.
+En fait, une partie du travail est déléguée aux substitutions et l'autre à l'égalité sur les multi-ensembles. % En expliciter la représentation — en Coq par exemple — pourrait rendre la chose moins aisée. Le temps a manqué pour cela.
 
-Quoi qu'il en soit, nous pouvons maintenant parler d'unification pour les types normalisés :
+Finalement, nous obtenons une notion d'unification pour les types normalisés :
 
 \begin{definition}[unificateur de types normalisés]
   Une substitution de types normalisés $\theta$ est un unificateur de deux types normalisés $\nu_1$ et $\nu_2$ \ssi :
@@ -1183,11 +1218,16 @@ Quoi qu'il en soit, nous pouvons maintenant parler d'unification pour les types 
   \end{itemize}
 \end{exemple}
 
-Le théorème fondamental assure alors l'équivalence entre unifiabilité sur les types et unifiabilité sur les types normalisés. La démonstration n'étant pas complète, nous l'admettons.
+Le théorème fondamental \laure{lequel !ci-dessous ? } assure alors l'équivalence entre unifiabilité sur les types et unifiabilité sur les types normalisés. La démonstration n'étant pas complète \laure{au sens terminée ?}, nous l'admettons.
 
 \begin{theoreme}
-  Deux types admettent un unificateur de type bien formé \ssi leurs normalisées admettent un unificateur de types normalisés bien formé.
+  Deux types admettent un unificateur de type bien formé \ssi leurs formes normalisées admettent un unificateur de types normalisés bien formé.
 \end{theoreme}
+
+\laure{C'est très dommage, tu passes un temps fou à redéfinir des trucs alors que c'est la preuve importante}
+
+
+\laure{En conclusion, pour ... il suffit de résoudre .... ce qui est facilité par ...}
 
 %============================================================
 %============================================================
@@ -1744,6 +1784,104 @@ Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde con
 
 Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
 
+
+\begin{lemme} \label{bf_simple_implique_mu_eq_mu_subst}
+  Soient $\nu$ dans $\N^{\bold{bf}}$ simple, $g$ dans $\G$ différent de $\bold{var}$ et $\theta$ dans $\Theta$. La multiplicité de $g$ dans $\nu$ est la même que dans $\hat\theta (\nu)$.
+\end{lemme}
+
+\begin{preuve}
+  Par cas sur le type. \\
+  Seul le cas flèche est non trivial : $\nu^\# \rightarrow \nu$, avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$. \\
+  Par hypothèse de simplicité et bonne formation, le genre de $\nu$ est différent de $\bold{var}$ et $\bold{fleche}$. \\
+  Par le lemme \ref{non_var_implique_subst_preserve_genre}, le genre de $\hat\theta (\nu)$ est donc différent de $\bold{fleche}$. \\
+  Il vient alors par définition de $\hat\theta$ :
+  \[ \hat\theta (\nu^\# \rightarrow \nu) = \tilde\theta (\nu^\#) \rightarrow \hat\theta (\nu) \]
+  Par définition de $\mu_g$ et $\tilde\theta$, on a :
+  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetNbigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
+  Par simplicité et bonne formation, tous les $\nu_i$ sont de genre différent de $\bold{var}$ et $\bold{uplet}$. \\
+  Par le lemme \ref{non_var_implique_subst_preserve_genre}, on a donc :
+  \[ \forall i \in \interval 1 n,\ [ \hat\theta (\nu_i) ] = [ \nu_i ] \neq \bold{uplet} \]
+  Par définition de $\norm'$, cela implique :
+  \[ \forall i \in \interval 1 n,\ \norm' (\hat\theta (\nu_i)) = \mset{\hat\theta (\nu_i)} \]
+  On peut donc écrire :
+  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\mset{\hat\theta (\nu_1), \dots, \hat\theta (\nu_n)}) = \sum_{i=1}^n \mu_g'' (\hat\theta (\nu_i)) \]
+  Par le lemme \ref{genre_eq_implique_mug''_eq}, on a en outre :
+  \[ \forall i \in \interval 1 n,\ \mu_g'' (\hat\theta (\nu_i)) = \mu_g'' (\nu_i) \]
+  Ce qui nous donne :
+  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \sum_{i=1}^n \mu_g'' (\nu_i) = \mu_g' (\nu^\#) = \mu_g (\nu^\# \rightarrow \nu) \]
+  C'est bien le résultat attendu.
+\end{preuve}
+
+\begin{lemme} \label{mug'_somme_eq_somme_mug'}
+  Pour tous $\nu^\#_1$ et $\nu^\#_2$ dans $\N^\#$ et $g$ dans $\G$, on a :
+  \[ \mu_g' (\nu^\#_1 +^\#_\N \nu^\#_2) = \mu_g' (\nu^\#_1) +^\#_\N \mu_g' (\nu^\#_2) \]
+\end{lemme}
+
+\begin{preuve}
+  Trivial par définition de $\mu_g'$.
+\end{preuve}
+
+\begin{lemme} \label{non_uplet_implique_mug'_norm'_subst_geq_mug''}
+  Pour tout $\nu$ dans $\N$ de genre différent de $\bold{uplet}$ et $g$ dans $\G$ différent de $\bold{var}$, on a :
+  \[ \mu_g' (\norm' (\hat\theta (\nu))) \geqslant \mu_g'' (\nu) \]
+\end{lemme}
+
+\begin{preuve}
+  Par hypothèse, $\nu$ n'est pas un uplet. Reste trois cas.
+  \begin{itemize}[label={\textbf{Si}}]
+    \item
+      $\nu$ est une variable : trivial.
+    \item
+      non : \\
+      Par le lemme \ref{non_var_implique_subst_preserve_genre}, $\hat\theta (\nu)$ est du même genre que $\nu$, différent de $\bold{uplet}$ par hypothèse. \\
+      Par définition de $\norm'$ et $\mu_g'$, on a donc :
+      \[ \mu_g' (\norm' (\hat\theta (\nu))) = \mu_g'' (\hat\theta (\nu)) \]
+      Le lemme \ref{genre_eq_implique_mug''_eq} nous donne le résultat attendu :
+      \[ \mu_g' (\norm' (\hat\theta (\nu))) = \mu_g'' (\nu) \]
+  \end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_mug'_subst_geq_mug'}
+  Pour tout $\nu^\#$ dans $\N^\#$ presque bien formé et $g$ dans $\G$ différent de $\bold{var}$, on a :
+  \[ \mu_g' (\tilde\theta (\nu^\#)) \geqslant \mu_g' (\nu^\#) \]
+\end{lemme}
+
+\begin{preuve}
+  Par définition de $\hat\theta$ et par le lemme \ref{mug'_somme_eq_somme_mug'}, il vient :
+  \[ \mu_g' (\tilde\theta (\nu^\#)) = \sum_{i=1}^n \mu_g' (\norm' (\hat\theta (\nu_i))) \]
+  $\nu^\#$ étant presque bien formé par hypothèse, tous les $\nu_i$ sont de genre différent de $\bold{uplet}$. \\
+  Par le lemme \ref{non_uplet_implique_mug'_norm'_subst_geq_mug''}, on a donc :
+  \[ \forall i \in \interval 1 n,\ \mu_g' (\norm' (\hat\theta (\nu_i))) \geqslant \mu_g'' (\nu_i) \]
+  D'où le résultat attendu :
+  \[ \mu_g' (\tilde\theta (\nu^\#)) \geqslant \sum_{i=1}^n \mu_g'' (\nu_i) = \mu_g' (\nu^\#) \]
+\end{preuve}
+
+\begin{lemme} \label{bf_implique_mug_subst_geq_mug}
+  Pour tout $\nu$ dans $\N^{\bold{bf}}$ et $g$ dans $\G$ différent de $\bold{var}$, on a :
+  \[ \mu_g (\hat\theta (\nu)) \geqslant \mu_g (\nu) \]
+\end{lemme}
+
+\begin{preuve}
+  Par cas sur le type. \\
+  Seul le cas flèche est non trivial : $\nu^\# \rightarrow \nu$ avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$.
+  \begin{itemize}[label={\textbf{Si}}]
+    \item
+      $\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
+      Par définition de $\hat\theta$, $\mu_g$ et par le lemme \ref{mug'_somme_eq_somme_mug'}, il vient :
+      \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\hat\theta (\nu^\#)) +^\#_\N \mu_g' ({\nu^\#}') \geqslant \mu_g' (\hat\theta (\nu^\#)) \]
+    \item
+      non : \\
+      Par définition de $\hat\theta$ et $\mu_g$, il vient :
+      \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\hat\theta (\nu^\#)) \]
+  \end{itemize}
+  Dans les deux cas, le lemme \ref{pbf_implique_mug'_subst_geq_mug'} nous donne le résultat attendu.
+\end{preuve}
+
+\subsubsection{Implémentation}
+
+Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
+
+
 \begin{definition}[$\mathrm{crit}^2_g$]
   Soit un genre de types normalisés $g$ différent de $\bold{var}$ et $\bold{uplet}$. \\
   On note $\mathrm{crit}^2_g$ le critère $(\mathrm{encode}^2_g, \mathrm{compat}^2_g)$ sur $\mathscr{D}^2_{g} = \mathbb{B} \times \mathbb{N}$, où $\mathrm{encode}^2_g$ et $\mathrm{compat}^2_g$ sont définies par :
@@ -1753,7 +1891,11 @@ Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour
     \\
       \mathrm{vars\mathhyphen echine} (\nu) &=
       \bold{F} &&
+
       \text{si } \mu^3 (\nu) = 0
+
+      % \text{si } \mu_\V (\nu) = 0
+
     \\
       \mathrm{vars\mathhyphen echine} (\nu) &=
       \bold{V} &&
@@ -1801,7 +1943,7 @@ Cependant, introduire autant de critères qu'il y a de constructeurs de types n'
 
 \begin{definition}[$\mathrm{crit}^2$]
   On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
-  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
+  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetGbigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetGbigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
   \begin{align*}
       \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
       \bold{V}
