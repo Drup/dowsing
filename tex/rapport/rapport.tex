@@ -1276,13 +1276,20 @@ Ces critères reposent sur certains traits structurels des types qui peuvent êt
 
 \section{Métriques de types}
 
+\gab{Globalement, le message est plutot bon, je pense que tu pourrais le rendre plus direct/claire: \og On veut trouver nos critères nécessaire pour éviter des unif. Pour pouvoir bien faire ca, il faut voir dans quel cas il y a plein d'unifs\fg (c'est globalement ce que tu dis, mais avec plus de détours).}
+
 Dans cette section, nous présentons trois \emph{métriques} sur les types (normalisés). Il s'agit de mettre en évidence des traits communs potentiellement discriminants. Nous en avons expérimenté plusieurs en les intégrant à la commande \texttt{stats}.
 
-L'unification permet d'instancier les types, c'est-à-dire de substituer une ou plusieurs variables. Il est donc logique d'observer la situation de ces dernières. Dans quelles quantités les trouve-t-on ? Intuitivement, plus un type compte de variables, plus il est polymorphe et plus l'unification est difficile. A l'inverse, si un nombre important de types de l'environnement en comportent peu — ce que nous constaterons —, on peut espérer arriver à un \emph{critère d'unification} fort. Où les trouve-t-on ? Les deux critères que nous avons construits reposent sur la réponse à cette question. Les variables en \emph{tête} — correspondant au type de retour — caractérisent les cas les plus difficiles : par l'isomorphisme \eqref{curry}, on peut « ajouter » des paramètres en substituant par un type-flèche.
+L'unification permet d'instancier les types, c'est-à-dire de substituer une ou plusieurs variables. Il est donc logique d'observer la situation de ces dernières. Dans quelles quantités les trouve-t-on ? Intuitivement, plus un type compte de variables, plus il est polymorphe et plus l'unification est difficile. A l'inverse, si un nombre important de types de l'environnement en comportent peu — ce que nous constaterons —, on peut espérer arriver à un \emph{critère d'unification} fort. \reformule{Où les trouve-t-on ? Les deux critères que nous avons construits reposent sur la réponse à cette question}. Les variables en \emph{tête} — correspondant au type de retour — caractérisent les cas les plus difficiles : par l'isomorphisme \eqref{curry}, on peut « ajouter » des paramètres en substituant par un type-flèche.
+\gab{la dernière phrase n'est pas claire}
 
 Insistons sur le pragmatisme de cette approche : ce qui importe, c'est qu'un critère donne de bons résultats sur l'environnement étudié, en présence de répartitions biaisées.
 
 %============================================================
+
+\gab{Dans la présentation de la suite, j'ai l'impression que tu essayes de faire 2 choses en même temps: 1. Présenter les mesures , et donner une intuition des critères qui s'en servent. Je ne suis pas convaincu qu'il faille absolument faire les 2 en même temps. Tu vas de toute façon voir les critères en détails juste après. En pratique, le petit 1 est assez clair et compréhensible, mais le petit 2 est souvent beaucoup plus confus (car tu n'as pas encore donné la vrai définition).}
+
+\gab{Globalement, dans toutes les mesures présentées, il manque des exemples}
 
 \subsection{Nombre de variables uniques}
 
@@ -1311,6 +1318,7 @@ La première métrique consiste à compter le \emph{nombre de variables uniques}
 
 Voyons quelle est la constitution de l'environnement à l'aune de cette mesure. Invoquons donc \dowsindex avec une requête volontairement simple :
 
+\gab{il faut dire/répéter que contient la bdd qu'on utilise}
 \begin{minted}{shell}
 $ ./dowsindex stats "int -> int -> int" --measure unique-vars
 \end{minted}
@@ -1319,7 +1327,7 @@ Le programme affiche un tableau de statistiques donné en table \ref{tab_meas1} 
 
 Premier constat : près de 60\% de la population ne possède pas de variable, plus de 20\% n'en possède qu'une. Deuxième constat — auquel on s'attendait — : l'unification des types polymorphes est plus difficile, c'est-à-dire en moyenne beaucoup plus coûteuse.
 
-Cette suprématie des types non polymorphes nous dit la chose suivante : un critère les discriminant pourrait réduire considérablement le nombre d'unifications.
+Cette \reformule{suprématie} des types non polymorphes nous dit la chose suivante : un critère les discriminant pourrait réduire considérablement le nombre d'unifications.
 
 \begin{table}[h]
   \centering
@@ -1404,9 +1412,10 @@ A nouveau, invoquons \dowsindex avec la commande suivante :
 $ ./dowsindex stats "int -> int -> int" --measure head
 \end{minted}
 
-La réponse est donnée en table \ref{tab_meas2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. Par ailleurs, le temps moyen d'unification sur cette sous-population est frappant : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
+La réponse est donnée en table \ref{tab_meas2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. {Par ailleurs, \reformule{le temps moyen d'unification sur cette sous-population est frappant} : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
 
-C'en est assez pour concevoir un premier critère. D'une part, si les paramètres situés dans la queue n'ont pas de position bien définie, la tête ne bouge pas. D'autre part, l'application d'une substitution en préserve la forme, c'est-à-dire le genre au sens de $\G$ — si ce n'est dans le cas d'une variable, mais nous venons de voir que cela ne concerne qu'une minorité. Nous formaliserons ce résultat dans la section suivante.
+\reformule{C'en est assez pour concevoir un premier critère}. D'une part, si les paramètres situés dans la queue n'ont pas de position bien définie, la tête ne bouge pas. D'autre part, l'application d'une substitution en préserve la forme, c'est-à-dire le genre au sens de $\G$ — si ce n'est dans le cas d'une variable, mais nous venons de voir que cela ne concerne qu'une minorité. Nous formaliserons ce résultat dans la section suivante.
+\gab{Pas compris ce paragraph, clarifier.}
 
 \begin{table}[h]
   \centering
