@@ -2066,7 +2066,7 @@ $ ./dowsindex stats --with-features <type>
   \caption{\label{tab_apport2}}
 \end{table}
 
-Force est de constater que les critères fonctionnent très bien sur ces requêtes. Les plus simples sont traitées de façon instantanée. Il est satisfaisant de constater que l'unification sur un environnement de dizaines de millers de types se réduit dans ces cas à quelques centaines seulement.
+\reformule{Force est de constater que les} critères fonctionnent très bien sur ces requêtes. Les plus simples sont traitées de façon instantanée. Il est satisfaisant de constater que l'unification sur un environnement de dizaines de millers de types se réduit dans ces cas à quelques centaines seulement.
 
 Au vu de ces faibles résidus, on peut raisonnablement affirmer avoir épuisé les cas simples. Un troisième critère devrait se confronter à des types plus retors.
 
@@ -2080,6 +2080,8 @@ Nous avons à présent tous les éléments pour construire un \emph{index}. On e
 Les tries servent à stocker efficacement une table associative où les clefs sont des mots sur un alphabet donné. Ce n'est pas le cas ici. Nous travaillons plutôt sur la concaténation des codes des deux critères, dans laquelle est contenue toute l'information nécessaire aux tests de compatibilité. Ces derniers compliquent d'ailleurs la chose : plusieurs branches peuvent être compatibles avec la requête (voir les figures \ref{fig_crit1} et \ref{fig_crit2}). En somme, il faut revoir la structure.
 
 En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. On la définit ainsi :
+
+\gab{Je pense que les définitions matheuses sont ici inutiles. Le code OCaml (ou un pseudo code équivalent) est plus clair.}
 
 \begin{definition}[tries de types normalisés]
   L'ensemble des tries de types normalisés, noté $\mathscr{T}$, est défini inductivement par :
