@@ -129,7 +129,7 @@
 
 \chapter{Introduction}
 
-S'il est une chose dont on a besoin en programmation fonctionnelle, c'est bien de fonctions. Seulement voilà, ce n'est pas si simple. Mettre la main sur l'une d'entre elles en présence d'un environnement de grande taille s'avère parfois difficile, à tout le moins fastidieux. Aussi, remédions.
+\reformule{\reformule{S'il est une chose dont on a besoin en programmation fonctionnelle}, c'est bien de fonctions. \reformule{Seulement voilà, ce n'est pas si simple.} Mettre la main sur l'une d'entre elles en présence d'un environnement de grande taille s'avère parfois difficile, à tout le moins fastidieux. \reformule{Aussi, remédions.}}
 
 Il s'agit de mettre sur pied un système de recherche de fonctions pour le langage OCaml \cite{OCaml}. L'écosystème en est principalement composé des paquets OPAM --- des centaines de milliers d'identificateurs. Un tel outil épargnerait à l'utilisateur la peine de fouiller telle ou telle bibliothèque dans l'espoir d'y trouver une fonction s'accordant à son usage.
 
@@ -171,7 +171,7 @@ Mais que chercher et comment ? Des travaux similaires ont été menés notamment
 
 Plusieurs observations en émanent. Une recherche par identificateur en l'espèce — une fonction se comportant comme \texttt{List.fold\_left} en OCaml — se heurterait à la diversité des noms potentiels. De même, une recherche syntaxique sur les types s'accommoderait mal des variations en un sens équivalentes de la forme du type. Pourtant, toutes ces fonctions font essentiellement le même travail ; cette diversité est due à l'arbitraire de l'auteur de la fonction.
 
-Que faire, alors ? Une recherche par spécification s'avérerait bien plus satisfaisante, mais pas forcément décidable. On peut retenir comme spécification grossière le type d'une fonction — « \textit{type as search key} » — tout en l'enrichissant par une approche sémantique et non plus purement syntaxique. La \textit{recherche modulo isomorphisme de type} s'est imposée dans la littérature. Elle consiste intuitivement à autoriser des réarrangements triviaux dans les types : permutations des paramètres et curryfication. Cette notion reste néanmoins à définir formellement, et surtout à décider algorithmiquement. Nous y consacrerons le chapitre 2.
+\reformule{Que faire, alors ? }Une recherche par spécification s'avérerait bien plus satisfaisante, mais pas forcément décidable. On peut retenir comme spécification grossière le type d'une fonction — « \textit{type as search key} » — tout en l'enrichissant par une approche sémantique et non plus purement syntaxique. La \textit{recherche modulo isomorphisme de type} s'est imposée dans la littérature. Elle consiste intuitivement à autoriser des réarrangements triviaux dans les types : permutations des paramètres et curryfication. Cette notion reste néanmoins à définir formellement, et surtout à décider algorithmiquement. Nous y consacrerons le chapitre 2.
 
 Comme souligné par Rittri \cite{Rittri93}, il est bienvenu d'autoriser l'instantiation des types dans la recherche. Si la chose est seulement permise aux types issus de l'écosystème, il s'agit de \emph{matching} ; si le type demandé peut aussi être instancié, on parlera d'\emph{unification}. Gabriel Radanne a implémenté un algorithme d'unification présenté dans la dernière partie du chapitre 2.
 
