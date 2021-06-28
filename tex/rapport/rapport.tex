@@ -605,11 +605,14 @@ Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs.
 
 \section{Implémentation de l'unification modulo isomorphismes}
 
+
+\laure{Nous décrivons maintenant .....}
 %============================================================
 
 \subsection{Algorithme d'unification syntaxique}
 
-Avant d'aborder l'implémentation, revenons sur l'ancêtre commun des algorithmes d'unification sémantique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}. Leur algorithme d'unification syntaxique consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
+
+L'algorithme d'unification syntaxique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}.  consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
 
 Définissons tout d'abord les objets manipulés par l'algorithme : \emph{équations de types} et \emph{problèmes équationnels}.
 
