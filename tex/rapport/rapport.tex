@@ -105,6 +105,8 @@
 \newcommand\gab[1]{{\bf\color{Orange}{TODO: #1}}\\}
 \newcommand\laure[1]{{\bf\color{WildStrawberry}{TODO: #1}}\\}
 
+\newcommand\reformule[1]{\underline{#1}}
+
 %============================================================
 
 \title{Recherche de fonctions \\ par \\ unification modulo isomorphismes de types}
@@ -1210,9 +1212,13 @@ Le théorème fondamental assure alors l'équivalence entre unifiabilité sur le
 
 \chapter {Indexation}
 
+\gab{Pour moi, cette introduction est bien trop longue. Tu essayes de présenter l'outil et de l'utiliser pour justifier le developement, mais ce n'est pas du tout nécéssaire. Si tu voulais le faire, il faudrait une section benchmark plus détaillée. Si tu veux \og teaser\fg ces résultats, tu peux le faire en une phrase, pas plus}
+
 Dans le chapitre précédent, nous avons présenté l'\emph{unification modulo isomorphismes de types} et l'algorithme que nous utilisons. Un système de recherche de fonctions par types peut faire directement appel à cet algorithme : un type de l'environnement est accepté s'il est unifiable avec le type demandé, c'est-à-dire si les deux types admettent un unificateur.
 
-Une question se pose alors : ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Considérons par exemple une session OPAM contenant principalement la bibliothèques \texttt{core}, représentant au total près de 1 640 000 identificateurs. Afin de se placer dans des conditions similaires, on pourra exécuter :
+\reformule{Une question se pose alors : }ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Considérons par exemple une session OPAM contenant principalement la bibliothèques \texttt{core}\gab{Un petit lien ici}, représentant au total près de 1 640 000 identificateurs. Afin de se placer dans des conditions similaires, on pourra exécuter :
+
+\gab{Ce bout aurait plus de sens dans la dernière partie}
 
 \begin{minted}{shell}
 $ git clone https://github.com/Drup/dowsing dowsing
@@ -1228,6 +1234,8 @@ Le programme \dowsindex est muni d'une commande \texttt{stats} qui, comme son no
 \begin{minted}{shell}
 $ ./dowsindex stats --no-index "int -> int -> int"
 \end{minted}
+\gab{Il faut mettre la sortie sur tout les exemples de ligne de commande}
+
 
 Le système doit notamment afficher le nombre d'appels à l'unification et le temps d'unification total. Pour cette requête très simple, le programme passe typiquement plus d'une dizaine de secondes à unifier. Ce n'est pas satisfaisant.
 
@@ -1244,13 +1252,15 @@ Le nombre d'appels est réduit à près de 32 000, soit environ $0.8s$ d'unifica
 $ ./dowsindex stats "int -> int -> int -> int -> int"
 \end{minted}
 
-Cette fois, on a toujours 32 000 appels mais sur près d'une minute. Ce n'est pas satisfaisant. Annonçons la couleur. Les techniques développées dans ce chapitre permettent de réduire le nombre d'appels à 107, pour un temps d'unification de l'ordre de la milliseconde. On pourra s'en convaincre avec :
+Cette fois, on a toujours 32 000 appels mais sur près d'une minute. Ce n'est pas satisfaisant. \reformule{Annonçons la couleur. }Les techniques développées dans ce chapitre permettent de réduire le nombre d'appels à 107, pour un temps d'unification de l'ordre de la milliseconde. On pourra s'en convaincre avec :
 
 \begin{minted}{shell}
 $ ./dowsindex stats "int -> int -> int -> int -> int" --with-features
 \end{minted}
 
-L'unification est très coûteuse. Il est deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à réduire le nombre d'appels à l'unification. C'est la voie que nous devions explorer durant ce stage.
+\gab{Le paragraph juste en dessous contient a peu près tout ce que tu veux dire. Tu n'as pas besoin de la pseudo-demo/ desargument pour dire que l'unification est couteuse, tu peux simplement l'affirmer. Le texte à partir d'ici est bien. }
+
+L'unification est très coûteuse. Il y a deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à réduire le nombre d'appels à l'unification. C'est la voie que nous devions explorer durant ce stage.\gab{\og que j'ai exploré\fg}.
 
 Plus précisément, il s'agit de solliciter le moins possible l'algorithme d'unification sans compromettre la qualité des résultats. L'idée est de concevoir un test moins coûteux qui, en cas d'indécision, s'en remettra à l'unification. Ce test doit être \emph{suffisamment discriminant} et \emph{correct} vis-à-vis de l'unifiabilité : s'il est négatif, alors les types ne sont effectivement pas unifiables.
 
