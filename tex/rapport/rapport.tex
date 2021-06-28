@@ -179,7 +179,9 @@ Enfin, nous décrirons dans le chapitre 4 le fruit de notre travail : le program
 
 \chapter{Unification modulo isomorphismes de types}
 
-Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types}. L'\emph{unifiabilité modulo isomorphismes}, ajoute à cela la capacité d'instancier les types. Nous présentons l'implémentation de Gabriel Radanne qui a servi de point de départ à ce stage. Nous insistons sur la formalisation des objets en cause afin de les invoquer proprement au chapitre suivant.
+Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types} \laure{donner une intuition ici}. L'\emph{unifiabilité modulo isomorphismes}, ajoute à cela la capacité d'instancier les types. Nous présentons également l'implémentation de Gabriel Radanne qui a servi de point de départ à ce stage.
+
+%Nous insistons sur la formalisation des objets en cause afin de les invoquer proprement au chapitre suivant.%inutile
 
 %============================================================
 %============================================================
@@ -188,8 +190,9 @@ Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et 
 
 Commençons par poser quelques définitions : \emph{types}, \emph{axiome équationnel}, \emph{théorie équationnelle}, \emph{unifiabilité}. Pour cela, on se donne un ensemble dénombrable $\V = \{ \alpha, \beta, \gamma, \delta, \dots \}$ de symboles de variables.
 
-Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistrements\dots A terme, nous aurons donc besoin de \emph{constructeurs de types}. Nous les formalisons par la notion de \emph{signature}.
+Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistrements\ldots Nous aurons donc besoin de \emph{constructeurs de types}. Nous les formalisons par la notion de \emph{signature}.
 
+\laure{Il me semblait qu'on était d'accord pour ne pas passer par cette définition}
 \begin{definition}[signature]
 	Une signature est un ensemble fini $\F$ de symboles de constructeurs muni d'une fonction d'arité $| \cdot |_\F$ de $\F$ dans $\mathbb{N}$ et tel que $\V \cap \F = \emptyset$. Les constructeurs d'arité nulle sont appelés constantes.
 \end{definition}
@@ -206,7 +209,8 @@ Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistre
 	\end{itemize}
 \end{exemple}
 
-Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
+%Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
+% inutile, typo
 
 %============================================================
 
@@ -214,7 +218,7 @@ Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
 
 Définissons alors les \emph{types}. Un \emph{type} est soit :
 \begin{itemize}[nosep]
-	\item une variable ;
+	\item une variable ; \laure{qui moralement est ...}
 	\item le type $\unit$ ;
 	\item un type-produit ;
 	\item une type-flèche ;
@@ -333,7 +337,8 @@ Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — diso
 
 \subsection{Théorie équationnelle}
 
-Passées ces premières définitions, nous savons de qui nous parlons. Il reste à aborder la notion capitale de \emph{théorie équationnelle}. Le plus important est en fait la donnée des \emph{axiomes équationnels}, qui exprimeront les \emph{isomorphismes de types} qui nous intéressent et feront toute la force et la difficulté de l'\emph{unification modulo isomorphismes}. En découle naturellement une \emph{théorie équationnelle} : la plus petite congruence contenant les instances des axiomes.
+%Passées ces premières définitions, nous savons de qui nous parlons.
+Nous abordons maintenant la notion de \emph{théorie équationnelle}. Le plus important est en fait la donnée des \emph{axiomes équationnels}, qui exprimeront les \emph{isomorphismes de types} qui nous intéressent \laure{car.... donner une intuition} et feront toute la force et la difficulté de l'\emph{unification modulo isomorphismes}. En découle naturellement une \emph{théorie équationnelle} : la plus petite congruence contenant les instances des axiomes.
 
 \begin{definition}[axiome équationnel]
 	Un axiome équationnel est un couple de types de la forme $\tau_1 \cong_\T \tau_2$.
@@ -422,6 +427,8 @@ Passées ces premières définitions, nous savons de qui nous parlons. Il reste 
 		\item $\alpha \rightarrow (\beta \times \gamma) \equiv_\T^\E (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)$.
 	\end{itemize}
 \end{exemple}
+\laure{On a donc à ce stade capturé ce que l'on voulait, ie blablabla}
+
 
 Bien que la définition d'une théorie équationnelle ne mentionne pas la stabilité par substitution, c'en est un corollaire :
 
