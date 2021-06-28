@@ -517,10 +517,13 @@ Lorsque $\E$ est vide, nous parlerons d'unification syntaxique ; dans le cas con
 
 \section{Isomorphismes de types}
 
-Ainsi parés, nous sommes à présent en mesure d'aborder le cœur de ce chapitre. Nous allons définir la notion d'équivalence entre types de notre système de recherche.
 
-Les travaux de Mikael Rittri \cite{Rittri91, Rittri93} sur lesquels nous nous appuyons ont assis celle d'\emph{équivalence modulo isomorphismes de types}. La chose a fait l'objet de plusieurs recherches importantes, menées notamment par Giusseppe Longo, Kim Bruce, Roberto Di Cosmo \cite{Bruce_DiCosmo_Longo, DiCosmo92, DiCosmo93, DiCosmo95}, Sergei Soloviev \cite{Soloviev83, Soloviev93}, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman}.
+%Ainsi parés, nous sommes à présent en mesure d'aborder le cœur de ce chapitre.
+Nous allons maintenant définir la notion d'équivalence entre types de notre système de recherche.
 
+% Les travaux de Mikael Rittri \cite{Rittri91, Rittri93} sur lesquels nous nous appuyons ont assis celle d'\emph{équivalence modulo isomorphismes de types}. La chose a fait l'objet de plusieurs recherches importantes, menées notamment par Giusseppe Longo, Kim Bruce, Roberto Di Cosmo \cite{Bruce_DiCosmo_Longo, DiCosmo92, DiCosmo93, DiCosmo95}, Sergei Soloviev \cite{Soloviev83, Soloviev93}, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman}
+.
+\laure{bof, la liste des gens, surtout que tu les cite après}
 %============================================================
 
 \subsection{Isomorphismes de types en $\lambda$-calcul}
@@ -571,17 +574,17 @@ On peut donner une caractérisation équationnelle des isomorphismes de $\Lambda
     \tag{dist-$\unit$}
 \end{align}
 
-Néanmoins, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman} ont établi que, si le \emph{matching} modulo $\E^1$ est NP-complet, l'unification modulo $\E^1$ est indécidable. C'est ce qui a poussé Rittri \cite{Rittri93} à se concentrer sur les cinq premiers axiomes correspondant aux \emph{isomorphismes linéaires} (pour plus de détails, voir \cite{Rittri93}) complets dans les \emph{catégories monoïdales fermées symétriques} \cite{Soloviev93}. L'unification modulo cette nouvelle théorie est NP-complète \cite{Narendran_Pfenning_Statman}. Cet abandon des deux axiomes de distributivité \eqref{dist} et \eqref{dist_unit} — et donc de la complétude dans $\Lambda^1$ — s'avère d'après lui bénin, arguant que ces isomorphismes sont peu utiles en pratique.
+Néanmoins, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman} ont établi que, si le \emph{matching} modulo $\E^1$ est NP-complet, l'unification modulo $\E^1$ est indécidable. C'est ce qui a poussé Rittri \cite{Rittri93} à se concentrer sur les cinq premiers axiomes correspondant aux \emph{isomorphismes linéaires} (pour plus de détails, voir \cite{Rittri93}) complets dans les \emph{catégories monoïdales fermées symétriques} \cite{Soloviev93}. L'unification modulo cette nouvelle théorie est NP-complète \cite{Narendran_Pfenning_Statman}. Cet abandon des deux axiomes de distributivité \eqref{dist} et \eqref{dist_unit} — et donc de la complétude dans $\Lambda^1$ — s'avère d'après lui bénin, arguant que ces isomorphismes sont peu utiles en pratique.\laure{phrase non grammaticalement correcte}
 
 %============================================================
 
 \subsection{Isomorphismes de types en OCaml}
 
-En outre, Di Cosmo \cite{DiCosmo92} a étudié les isomorphismes de types en Core-ML. De même, il en a tiré une axiomatisation équationnelle complète comportant de nouveaux isomorphismes. L'équivalence est alors décidable par un algorithme qu'il introduit dans \cite{DiCosmo95}. Malheureusement, cet algorithme ne s'adapte a priori pas directement au matching ou l'unification.
+Di Cosmo \cite{DiCosmo92} a étudié les isomorphismes de types en Core-ML. De même, il en a tiré une axiomatisation équationnelle complète comportant de nouveaux isomorphismes. L'équivalence est alors décidable par un algorithme qu'il introduit dans \cite{DiCosmo95}. Malheureusement, cet algorithme ne s'adapte a priori pas directement au matching ou l'unification.
 
-L'implémentation suit les préconisations de Rittri en renonçant à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, il complexifie l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
+L'implémentation existante au début du stage~\footnote{\laure{blabla}} suit les préconisations de Rittri en renonçant à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, il complexifie l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
 
-Reste donc les quatre premiers isomorphismes : \eqref{prod_comm}, \eqref{prod_assoc}, \eqref{prod_unit}, \eqref{curry}. Ils capturent exactement les réarrangements qui nous intéressent, en particulier la permutation des paramètres. Relevons toutefois que, si ces isomorphismes sont corrects pour Core-ML \cite{DiCosmo93}, leur correction pour OCaml n'est pas démontrée. Nous admettons ici qu'ils se « propagent » aux constructeurs de types, c'est-à-dire la congruence sur la signature OCaml.
+Il reste donc les quatre premiers isomorphismes : \eqref{prod_comm}, \eqref{prod_assoc}, \eqref{prod_unit}, \eqref{curry}. Ils capturent exactement les réarrangements qui nous intéressent, en particulier la permutation des paramètres. Relevons toutefois que, si ces isomorphismes sont corrects pour Core-ML \cite{DiCosmo93}, leur correction pour OCaml n'est pas démontrée. Nous admettons ici qu'ils se « propagent » aux constructeurs de types, c'est-à-dire la congruence sur la signature OCaml.
 
 Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs. Nous dénoterons par $\E$ le système équationnel formé par les quatre axiomes, $\cdot \equiv_\T \cdot$ la théorie équationnelle induite par $\E$ et $\cdot \sim_\T \cdot$ l'$\E$-unifiabilité. Nous parlerons d'équivalence pour l'$\E$-équivalence, de matching pour l'$\E$-matching, d'unifiabilité pour l'$\E$-unifiabilité et d'unification pour l'$\E$-unification.
 
