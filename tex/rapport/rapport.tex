@@ -104,7 +104,7 @@
 %============================================================
 
 \title{Recherche de fonctions \\ par \\ unification modulo isomorphismes de types}
-\author{Clément ALLAIN}
+\author{Clément ALLAIN \\ Stage de M1 encadré par Gabriel RADANNE}
 \date{Juin 2021}
 
 %============================================================
@@ -122,8 +122,6 @@
 %============================================================
 
 \chapter{Introduction}
-
-TODO: réécrire cette introduction
 
 S'il est une chose dont on a besoin en programmation fonctionnelle, c'est bien de fonctions. Seulement voilà, ce n'est pas si simple. Mettre la main sur l'une d'entre elles en présence d'un environnement de grande taille s'avère parfois difficile, à tout le moins fastidieux. Aussi, remédions.
 
@@ -171,7 +169,7 @@ Que faire, alors ? Une recherche par spécification s'avérerait bien plus satis
 
 Comme souligné par Rittri \cite{Rittri93}, il est bienvenu d'autoriser l'instantiation des types dans la recherche. Si la chose est seulement permise aux types issus de l'écosystème, il s'agit de \emph{matching} ; si le type demandé peut aussi être instancié, on parlera d'\emph{unification}. Gabriel Radanne a implémenté un algorithme d'unification présenté dans la dernière partie du chapitre 2.
 
-Le système résultant ne saurait passer à l'échelle sans un travail sur les fonctions de l'écosystème préalable à la recherche. Nous discuterons de ces limites dans le chapitre 3. Nous y proposerons une technique d'indexation reposant sur des conditions nécessaires d'unifiabilité. L'apport de cette technique se révélera substantiel.
+Le système résultant ne saurait passer à l'échelle sans un travail sur les fonctions de l'écosystème préalable à la recherche. Dans le chapitre 3, nous proposerons une technique d'indexation reposant sur des conditions nécessaires d'unifiabilité. L'apport de cette technique se révélera substantiel.
 
 Enfin, nous décrirons dans le chapitre 4 le fruit de notre travail : le programme \dowsindex.
 
@@ -1285,7 +1283,7 @@ Voyons quelle est la constitution de l'environnement à l'aune de cette mesure. 
 $ ./dowsindex stats "int -> int -> int" --measure unique-vars
 \end{minted}
 
-Le programme affiche un tableau de statistiques donné en table \ref{tab_meas_1} — nous avons omis les dernières lignes, ne représentant que quelques individus.
+Le programme affiche un tableau de statistiques donné en table \ref{tab_meas1} — nous avons omis les dernières lignes, ne représentant que quelques individus.
 
 Premier constat : près de 60\% de la population ne possède pas de variable, plus de 20\% n'en possède qu'une. Deuxième constat — auquel on s'attendait — : l'unification des types polymorphes est plus difficile, c'est-à-dire en moyenne beaucoup plus coûteuse.
 
@@ -1325,7 +1323,7 @@ Cette suprématie des types non polymorphes nous dit la chose suivante : un crit
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab_meas_1}}
+	\caption{\label{tab_meas1}}
 \end{table}
 
 %============================================================
@@ -1374,7 +1372,7 @@ A nouveau, invoquons \dowsindex avec la commande suivante :
 $ ./dowsindex stats "int -> int -> int" --measure head
 \end{minted}
 
-La réponse est donnée en table \ref{tab_meas_2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. Par ailleurs, le temps moyen d'unification sur cette sous-population est frappant : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
+La réponse est donnée en table \ref{tab_meas2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. Par ailleurs, le temps moyen d'unification sur cette sous-population est frappant : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
 
 C'en est assez pour concevoir un premier critère. D'une part, si les paramètres situés dans la queue n'ont pas de position bien définie, la tête ne bouge pas. D'autre part, l'application d'une substitution en préserve la forme, c'est-à-dire le genre au sens de $\G$ — si ce n'est dans le cas d'une variable, mais nous venons de voir que cela ne concerne qu'une minorité. Nous formaliserons ce résultat dans la section suivante.
 
@@ -1398,7 +1396,7 @@ C'en est assez pour concevoir un premier critère. D'une part, si les paramètre
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab_meas_2}}
+	\caption{\label{tab_meas2}}
 \end{table}
 
 %============================================================
@@ -1418,9 +1416,9 @@ Cette troisième métrique vient naturellement après les deux précédentes. No
 $ ./dowsindex stats "int -> int -> int" --measure spine-vars
 \end{minted}
 
-La commande ci-dessus émet un troisième tableau de statistiques — voir table \ref{tab_meas_3}. Là encore, les proportions sont franches. Pas moins de 90\% de la population ne présente pas de variables à l'échine. Le cas à deux variables, très minoritaire, semble particulièrement pathologique.
+La commande ci-dessus émet un troisième tableau de statistiques — voir table \ref{tab_meas3}. Là encore, les proportions sont franches. Pas moins de 90\% de la population ne présente pas de variables à l'échine. Le cas à deux variables, très minoritaire, semble particulièrement pathologique.
 
-Cela nous a amené à un second critère plus sophistiqué que le premier. Plaçons-nous tout d'abord dans le cas où les deux types à unifier n'ont pas de variables à l'échine. Il vient aisément que, non seulement leurs têtes doivent avoir le même genre, mais on doit aussi trouver dans chaque queue les genres en quantités égales. Plaçons-nous maintenant dans le cas où un seul des deux types possède cette caractéristique. Intuitivement, une variable de l'échine peut « absorber » des paramètres afin d'unifier — ce qui ne peut se produire dans un type en étant dépourvu. Ainsi, l'idée est que chaque genre non-variable représenté dans la queue d'un type quelconque doit nécessairement trouver son pareil autant de fois dans la queue d'un type n'ayant pas cette capacité d'absorption. Dans le dernier cas — le moins fréquent —, on ne peut rien affirmer.
+Cela nous a amené à un deuxième critère plus sophistiqué que le premier. Plaçons-nous tout d'abord dans le cas où les deux types à unifier n'ont pas de variables à l'échine. Il vient aisément que, non seulement leurs têtes doivent avoir le même genre, mais on doit aussi trouver dans chaque queue les genres en quantités égales. Plaçons-nous maintenant dans le cas où un seul des deux types possède cette caractéristique. Intuitivement, une variable de l'échine peut « absorber » des paramètres afin d'unifier — ce qui ne peut se produire dans un type en étant dépourvu. Ainsi, l'idée est que chaque genre non-variable représenté dans la queue d'un type quelconque doit nécessairement trouver son pareil au moins autant de fois dans la queue d'un type n'ayant pas cette capacité d'absorption. Dans le dernier cas — le moins fréquent —, on ne peut rien affirmer.
 
 \begin{table}[h]
 	\centering
@@ -1450,7 +1448,7 @@ Cela nous a amené à un second critère plus sophistiqué que le premier. Plaç
 		\\
 		\hline
 	\end{tabular}
-	\caption{\label{tab_meas_3}}
+	\caption{\label{tab_meas3}}
 \end{table}
 
 %============================================================
@@ -1492,9 +1490,11 @@ Commençons par définir proprement ce qu'est un \emph{critère d'unification co
 
 \subsection{Premier critère}
 
+\subsubsection{Démonstration}
+
 Le premier critère a été décrit plus haut. Il consiste à lier les genres des têtes des types à unifier.
 
-\begin{theoreme}
+\begin{theoreme} \label{thm_cond1}
 	Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
 \end{theoreme}
 
@@ -1506,7 +1506,46 @@ Le premier critère a été décrit plus haut. Il consiste à lier les genres de
 	\end{itemize}
 \end{exemple}
 
-TODO: transcrire démonstration
+\begin{preuve}
+	Par hypothèse, il existe $\theta$ dans $\Theta$ telle que :
+	\[ \hat\theta (\nu_1) = \hat\theta (\nu_2) \]
+	On passe à la tête dans cette égalité :
+	\[ \uparrow \hat\theta (\nu_1) =\ \uparrow \hat\theta (\nu_2) \]
+	Le lemme \ref{tete_subst_eq_tete_subst_tete} donne :
+	\[ \uparrow \hat\theta (\uparrow \nu_1) =\ \uparrow \hat\theta (\uparrow \nu_2) \]
+	Soit $i$ dans $\{ 1, 2 \}$. \\
+	Par hypothèse, la tête de $\nu_i$ n'est pas une variable. Le lemme \ref{non_var_implique_subst_preserve_genre} nous assure donc que :
+	\[ [ \hat\theta (\uparrow \nu_i) ] = [ \uparrow \nu_1 ] \]
+	Par hypothèse, $\nu_i$ est bien formé. Par le lemme \ref{bf_implique_tete_bf_et_non_fleche}, sa tête n'est pas une flèche et donc, d'après la remarque précédente, $\hat\theta (\uparrow \nu_i)$ non plus. Par le lemme \ref{non_fleche_implique_tete_preserve_genre}, on a ainsi :
+	\[ [ \uparrow \hat\theta (\uparrow \nu_i) ] = [ \hat\theta (\uparrow \nu_i) ] = [ \uparrow \nu_i ] \]
+	On en déduit le résultat attendu.
+\end{preuve}
+
+\begin{lemme} \label{tete_subst_eq_tete_subst_tete}
+	Pour tout $\nu$ dans $\N$ et $\theta$ dans $\Theta$, on a :
+	\[ \uparrow \hat\theta (\nu) =\ \uparrow \hat\theta (\uparrow \nu) \]
+\end{lemme}
+
+\begin{preuve}
+	Par cas sur le type. \\
+	Seul le cas flèche est non trivial : $\nu^\# \rightarrow \nu$. \\
+	Par définition de $\uparrow \cdot$, on a d'abord :
+	\[ \uparrow \hat\theta (\uparrow (\nu^\# \rightarrow \nu)) =\ \uparrow \hat\theta (\nu) \]
+	\begin{itemize}[label={\textbf{Si}}]
+		\item 
+			$\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
+			Par définition de $\hat\theta$ et $\uparrow \cdot$, on a d'une part :
+			\[ \uparrow \hat\theta (\nu^\# \rightarrow \nu) = \nu' \]
+			Par définition de $\uparrow \cdot$, on a d'autre part :
+			\[ \uparrow \hat\theta (\nu) = \nu' \]
+			On en déduit le résultat.
+		\item 
+			non : \\
+			Par définition de $\hat\theta$ et $\uparrow \cdot$, on a :
+			\[ \uparrow \hat\theta (\nu^\# \rightarrow \nu) = \hat\theta (\nu) \]
+			Le résultat se déduit du fait que $\hat\theta (\nu)$ n'est pas une flèche.
+	\end{itemize}
+\end{preuve}
 
 \begin{lemme} \label{non_var_implique_subst_preserve_genre}
 	L'application d'une substitution étendue à un type normalisé qui n'est pas une variable préserve son genre.
@@ -1523,6 +1562,8 @@ TODO: transcrire démonstration
 \begin{preuve}
 	Trivial avec la définition de la tête.
 \end{preuve}
+
+\subsubsection{Implémentation}
 
 Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion de critère que nous avons définie, c'est-à-dire dans les termes de l'implémentation.
 
@@ -1554,6 +1595,14 @@ Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion
 
 De façon plus visuelle, la figure \ref{fig_crit1} expose la chose sous la forme d'un arbre de décision auquel on soumet une requête. Les types de l'environnement sont distribués dans les sous-arbres en décidant quelle branche prendre à chaque nœud selon leur code. Les nœuds foncés correspondent aux sous-arbres compatibles avec la requête.
 
+\begin{theoreme} \label{thm_crit1}
+	Le critère d'unifiabilité $\mathrm{crit}^1$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+	Par le théorème \ref{thm_cond1}.
+\end{preuve}
+
 \begin{figure}[h]
 	\begin{center}
 		\includegraphics[scale=0.13]{graphs/crit1_1}
@@ -1563,18 +1612,71 @@ De façon plus visuelle, la figure \ref{fig_crit1} expose la chose sous la forme
 	\caption{\label{fig_crit1}}
 \end{figure}
 
-TODO: apport quantitatif
+\subsubsection{Apport}
+
+Voyons ce qu'apporte ce premier critère en pratique. Nous avons collecté dans la table \ref{tab_apport1} les résultats de plusieurs requêtes. Les deuxième et troisième colonnes donnent le temps total d'unification sans et avec le critère ; il en est de même pour les quatrième et cinquième avec le nombre d'unifications. On peut obtenir ces données à l'aide des commandes (il n'y a pas besoin de répéter la première) :
 
 \begin{minted}{shell}
 $ ./dowsindex save --index index.db --features head
-$ ./dowsindex stats --index index.db --with-features --features head "int -> int -> int"
+$ ./dowsindex stats --index index.db --features head --with-features <type>
 \end{minted}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|*{5}{c|}}
+		\hline
+			type &
+			\multicolumn{2}{c|}{temps total ($s$)} &
+			\multicolumn{2}{c|}{nb. d'unifications}
+		\\
+		\cline{2-5}
+			&
+			sans critère & avec critère &
+			sans critère & avec critère
+		\\
+		\hline
+			$int \rightarrow int \rightarrow int$ &
+			0.63 & 0.08 (12.1\%) &
+			31578 & 2714 (8.6\%)
+		\\
+			$int \rightarrow int \rightarrow int \rightarrow int$ &
+			1.08 & 0.88 (81.4\%) &
+			31578 & 2714 (8.6\%)
+		\\
+			$int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+			1.09 & 0.29 (26.4\%) &
+			31578 & 2945 (9.3\%)
+		\\
+			$int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+			0.31 & 0.17 (53.6\%) &
+			31578 & 5745 (18.2\%)
+		\\
+			$\alpha \rightarrow int \rightarrow \bold{unit}$ &
+			0.83 & 0.30 (36.4\%) &
+			31578 & 5745 (18.2\%)
+		\\
+			$int \rightarrow int \rightarrow \alpha$ &
+			5.77 & 5.43 (94.1\%) &
+			31578 & 31578 (100\%)
+		\\
+		\hline
+	\end{tabular}
+	\caption{\label{tab_apport1}}
+\end{table}
+
+Premier constat : le critère se comporte comme prévu. Deux types distincts mais dont les têtes ont le même genre unifient autant de fois et la requête présentant une variable en tête ne profite pas du critère.
+
+Deuxième constat : pour la plupart des requêtes, ce premier critère assez simple diminue considérablement le nombre d'unifications — entre 81.8\% et 91.4\% sont éliminées. Tant que la requête n'a pas de variable en tête, on peut tirer pleinement parti du fait que 95\% des types de l'environnement partagent cette caractéristique.
+
+Le plus satisfaisant est de noter que le potentiel estimé à l'aide de la deuxième métrique se réalise par un critère intéressant. L'approche que nous avons adoptée en est corroborée.
 
 %============================================================
 
 \subsection{Deuxième critère}
 
-Le second critère se formalise par la notion de \emph{multiplicité}, qui compte le nombre de types d'un genre donné dans la queue d'un type :
+\subsubsection{Démonstration}
+
+Le deuxième critère se formalise par la notion de \emph{multiplicité}, qui compte le nombre de types d'un genre donné dans la queue d'un type :
 
 \begin{definition}[multiplicité d'un genre dans un type normalisé]
 	La multiplicité d'un genre $g$ dans un type normalisé $\nu$, notée $\mu_g (\nu)$, est définie par :
@@ -1598,7 +1700,7 @@ Le second critère se formalise par la notion de \emph{multiplicité}, qui compt
 	\end{align*}
 \end{definition}
 
-Afin d'exprimer la condition nécessaire sous-tendant ce critère, il nous faut introduire les \emph{types normalisés simples}. Il s'agit des types ne possédant pas de variables à l'échine. Nous avons vu que neuf dixièmes des types de l'environnement sont simples.
+Afin d'exprimer la condition nécessaire sous-tendant ce critère, il nous faut introduire les \emph{types normalisés simples}. Il s'agit des types ne possédant pas de variables à l'échine. Nous avons vu que neuf dixièmes des types de l'environnement sont simples. A cela s'ajoute le fait que le motif du matching est toujours simple.
 
 \begin{definition}[type normalisé simple]
 	Le prédicat sur les types normalisés « est simple », noté $\bold{simple}$, est défini par :
@@ -1643,12 +1745,12 @@ Bien qu'intéressante dans le cadre des démonstrations, cette définition n'est
 \end{lemme}
 
 \begin{preuve}
-	Les deux sens sont triviaux.
+	Les deux sens se démontrent sans difficulté.
 \end{preuve}
 
 Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde condition nécessaire :
 
-\begin{theoreme}
+\begin{theoreme} \label{thm_cond2}
 	Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, la multiplicité de tout genre différent de $\bold{var}$ dans $\nu_1$ est supérieure ou égale à celle dans $\nu_2$.
 \end{theoreme}
 
@@ -1661,7 +1763,121 @@ Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde con
 	\end{itemize}
 \end{exemple}
 
-TODO: transcrire démonstration
+\begin{preuve}
+	Soit $g$ dans $\G$ différent de $\bold{var}$. \\
+	Par hypothèse, il existe $\theta$ dans $\Theta$ telle que :
+	\[ \hat\theta (\nu_1) = \hat\theta (\nu_2) \]
+	On passe aux multiplicités dans cette égalité :
+	\[ \mu_g (\hat\theta (\nu_1)) = \mu_g (\hat\theta (\nu_2)) \]
+	Par le lemme \ref{bf_simple_implique_mu_eq_mu_subst}, on a d'une part :
+	\[ \mu_g (\hat\theta (\nu_1)) = \mu_g (\nu_1) \]
+	Par le lemme \ref{bf_implique_mug_subst_geq_mug}, on a d'autre part :
+	\[ \mu_g (\hat\theta (\nu_2)) \geqslant \mu_g (\nu_2) \]
+	On en déduit le résultat attendu.
+\end{preuve}
+
+\begin{lemme} \label{genre_eq_implique_mug''_eq}
+	Soient $\nu_1$ et $\nu_2$ dans $\N$ de même genre. Pour tout genre $g$, on a :
+	\[ \mu_g'' (\nu_1) = \mu_g'' (\nu_2) \]
+\end{lemme}
+
+\begin{preuve}
+	Trivial avec la définition de $\mu_g''$.
+\end{preuve}
+
+\begin{lemme} \label{bf_simple_implique_mu_eq_mu_subst}
+	Soient $\nu$ dans $\N^{\bold{bf}}$ simple, $g$ dans $\G$ différent de $\bold{var}$ et $\theta$ dans $\Theta$. La multiplicité de $g$ dans $\nu$ est la même que dans $\hat\theta (\nu)$.
+\end{lemme}
+
+\begin{preuve}
+	Par cas sur le type. \\
+	Seul le cas flèche est non trivial : $\nu^\# \rightarrow \nu$, avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$. \\
+	Par hypothèse de simplicité et bonne formation, le genre de $\nu$ est différent de $\bold{var}$ et $\bold{fleche}$. \\
+	Par le lemme \ref{non_var_implique_subst_preserve_genre}, le genre de $\hat\theta (\nu)$ est donc différent de $\bold{fleche}$. \\
+	Il vient alors par définition de $\hat\theta$ :
+	\[ \hat\theta (\nu^\# \rightarrow \nu) = \tilde\theta (\nu^\#) \rightarrow \hat\theta (\nu) \]
+	Par définition de $\mu_g$ et $\tilde\theta$, on a :
+	\[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetN_bigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
+	Par simplicité et bonne formation, tous les $\nu_i$ sont de genre différent de $\bold{var}$ et $\bold{uplet}$. \\
+	Par le lemme \ref{non_var_implique_subst_preserve_genre}, on a donc :
+	\[ \forall i \in \interval 1 n,\ [ \hat\theta (\nu_i) ] = [ \nu_i ] \neq \bold{uplet} \]
+	Par définition de $\norm'$, cela implique :
+	\[ \forall i \in \interval 1 n,\ \norm' (\hat\theta (\nu_i)) = \mset{\hat\theta (\nu_i)} \]
+	On peut donc écrire :
+	\[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\mset{\hat\theta (\nu_1), \dots, \hat\theta (\nu_n)}) = \sum_{i=1}^n \mu_g'' (\hat\theta (\nu_i)) \]
+	Par le lemme \ref{genre_eq_implique_mug''_eq}, on a en outre :
+	\[ \forall i \in \interval 1 n,\ \mu_g'' (\hat\theta (\nu_i)) = \mu_g'' (\nu_i) \]
+	Ce qui nous donne :
+	\[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \sum_{i=1}^n \mu_g'' (\nu_i) = \mu_g' (\nu^\#) = \mu_g (\nu^\# \rightarrow \nu) \]
+	C'est bien le résultat attendu.
+\end{preuve}
+
+\begin{lemme} \label{mug'_somme_eq_somme_mug'}
+	Pour tous $\nu^\#_1$ et $\nu^\#_2$ dans $\N^\#$ et $g$ dans $\G$, on a :
+	\[ \mu_g' (\nu^\#_1 +^\#_\N \nu^\#_2) = \mu_g' (\nu^\#_1) +^\#_\N \mu_g' (\nu^\#_2) \]
+\end{lemme}
+
+\begin{preuve}
+	Trivial par définition de $\mu_g'$.
+\end{preuve}
+
+\begin{lemme} \label{non_uplet_implique_mug'_norm'_subst_geq_mug''}
+	Pour tout $\nu$ dans $\N$ de genre différent de $\bold{uplet}$ et $g$ dans $\G$ différent de $\bold{var}$, on a :
+	\[ \mu_g' (\norm' (\hat\theta (\nu))) \geqslant \mu_g'' (\nu) \]
+\end{lemme}
+
+\begin{preuve}
+	Par hypothèse, $\nu$ n'est pas un uplet. Reste trois cas.
+	\begin{itemize}[label={\textbf{Si}}]
+		\item
+			$\nu$ est une variable : trivial.
+		\item
+			non : \\
+			Par le lemme \ref{non_var_implique_subst_preserve_genre}, $\hat\theta (\nu)$ est du même genre que $\nu$, différent de $\bold{uplet}$ par hypothèse. \\
+			Par définition de $\norm'$ et $\mu_g'$, on a donc :
+			\[ \mu_g' (\norm' (\hat\theta (\nu))) = \mu_g'' (\hat\theta (\nu)) \]
+			Le lemme \ref{genre_eq_implique_mug''_eq} nous donne le résultat attendu :
+			\[ \mu_g' (\norm' (\hat\theta (\nu))) = \mu_g'' (\nu) \]
+	\end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_mug'_subst_geq_mug'}
+	Pour tout $\nu^\#$ dans $\N^\#$ presque bien formé et $g$ dans $\G$ différent de $\bold{var}$, on a :
+	\[ \mu_g' (\tilde\theta (\nu^\#)) \geqslant \mu_g' (\nu^\#) \]
+\end{lemme}
+
+\begin{preuve}
+	Par définition de $\hat\theta$ et par le lemme \ref{mug'_somme_eq_somme_mug'}, il vient :
+	\[ \mu_g' (\tilde\theta (\nu^\#)) = \sum_{i=1}^n \mu_g' (\norm' (\hat\theta (\nu_i))) \]
+	$\nu^\#$ étant presque bien formé par hypothèse, tous les $\nu_i$ sont de genre différent de $\bold{uplet}$. \\
+	Par le lemme \ref{non_uplet_implique_mug'_norm'_subst_geq_mug''}, on a donc :
+	\[ \forall i \in \interval 1 n,\ \mu_g' (\norm' (\hat\theta (\nu_i))) \geqslant \mu_g'' (\nu_i) \]
+	D'où le résultat attendu :
+	\[ \mu_g' (\tilde\theta (\nu^\#)) \geqslant \sum_{i=1}^n \mu_g'' (\nu_i) = \mu_g' (\nu^\#) \]
+\end{preuve}
+
+\begin{lemme} \label{bf_implique_mug_subst_geq_mug}
+	Pour tout $\nu$ dans $\N^{\bold{bf}}$ et $g$ dans $\G$ différent de $\bold{var}$, on a :
+	\[ \mu_g (\hat\theta (\nu)) \geqslant \mu_g (\nu) \]
+\end{lemme}
+
+\begin{preuve}
+	Par cas sur le type. \\
+	Seul le cas flèche est non trivial : $\nu^\# \rightarrow \nu$ avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$.
+	\begin{itemize}[label={\textbf{Si}}]
+		\item
+			$\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
+			Par définition de $\hat\theta$, $\mu_g$ et par le lemme \ref{mug'_somme_eq_somme_mug'}, il vient :
+			\[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\hat\theta (\nu^\#)) +^\#_\N \mu_g' ({\nu^\#}') \geqslant \mu_g' (\hat\theta (\nu^\#)) \]
+		\item
+			non : \\
+			Par définition de $\hat\theta$ et $\mu_g$, il vient :
+			\[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' (\hat\theta (\nu^\#)) \]
+	\end{itemize}
+	Dans les deux cas, le lemme \ref{pbf_implique_mug'_subst_geq_mug'} nous donne le résultat attendu.
+\end{preuve}
+
+\subsubsection{Implémentation}
 
 Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
 
@@ -1710,7 +1926,15 @@ Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour
 	\caption{\label{fig_crit2}}
 \end{figure}
 
-Cependant, inclure autant de critères qu'il y a de constructeurs de types n'est pas une bonne idée. En fait, on peut « paralléliser » tous ces critères en travaillant sur des multi-ensembles de genres. On s'appuie alors sur l'inclusion entre multi-ensembles.
+\begin{theoreme} \label{thm_crit2g}
+	Pour tout genre $g$ différent de $\bold{var}$ et $\bold{uplet}$, le critère d'unifiabilité $\mathrm{crit}^1_g$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+	Par le théorème \ref{thm_cond2}.
+\end{preuve}
+
+Cependant, introduire autant de critères qu'il y a de constructeurs de types n'est pas une bonne idée. En fait, on peut « paralléliser » tous ces critères en travaillant sur des multi-ensembles de genres. Les inégalités ci-dessus laissent place à des inclusions entre multi-ensembles.
 
 \begin{definition}[$\mathrm{crit}^2$]
 	On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
@@ -1737,12 +1961,68 @@ Cependant, inclure autant de critères qu'il y a de constructeurs de types n'est
 	\end{align*}
 \end{definition}
 
-TODO: apport quantitatif
+\begin{theoreme} \label{thm_crit2}
+	Le critère d'unifiabilité $\mathrm{crit}^2$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+	On interprète l'inclusion sur les multi-ensembles en termes de multiplicités. Le résultat se déduit du théorème \ref{thm_crit2g}.
+\end{preuve}
+
+\subsubsection{Apport}
+
+Allions les deux critères. Les résultats sont présentés en table \ref{tab_apport2}. Ils ont été obtenus grâce à la commande suivante :
 
 \begin{minted}{shell}
-$ ./dowsindex save --index index.db --features tail
-$ ./dowsindex stats --index index.db --with-features --features tail "int -> int -> int"
+$ ./dowsindex stats --with-features <type>
 \end{minted}
+
+\begin{table}[h]
+	\centering
+	\begin{tabular}{|*{5}{c|}}
+		\hline
+			type &
+			\multicolumn{2}{c|}{temps total ($s$)} &
+			\multicolumn{2}{c|}{nb. d'unifications}
+		\\
+		\cline{2-5}
+			&
+			sans critères & avec critères &
+			sans critères & avec critères
+		\\
+		\hline
+			$int \rightarrow int \rightarrow int$ &
+			0.638 & 0.001 (0.23\%) &
+			31578 & 121 (0.38\%)
+		\\
+			$int \rightarrow int \rightarrow int \rightarrow int$ &
+			1.622 & 0.001 (0.08\%) &
+			31578 & 107 (0.34\%)
+		\\
+			$int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+			11.193 & 0.011 (0.93\%) &
+			31578 & 141 (0.45\%)
+		\\
+			$int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+			0.636 & 0.004 (0.60\%) &
+			31578 & 126 (0.40\%)
+		\\
+			$\alpha \rightarrow int \rightarrow \bold{unit}$ &
+			1.180 & 0.225 (19.06\%) &
+			31578 & 2443 (7.74\%)
+		\\
+			$int \rightarrow int \rightarrow \alpha$ &
+			5.097 & 1.566 (30.71\%) &
+			31578 & 3677 (11.64\%)
+		\\
+		\hline
+	\end{tabular}
+	\caption{\label{tab_apport2}}
+\end{table}
+
+Force est de constater que les critères fonctionnent très bien sur ces requêtes. Les plus simples sont traitées de façon instantanée. Il est satisfaisant de constater que l'unification sur un environnement de dizaines de millers de types se réduit dans ces cas à quelques centaines seulement.
+
+Au vu de ces faibles résidus, on peut raisonnablement affirmer avoir épuisé les cas simples. Un troisième critère devrait se confronter à des types plus retors.
 
 %============================================================
 %============================================================
@@ -1753,7 +2033,7 @@ Nous avons à présent tous les éléments pour construire un \emph{index}. On e
 
 Les tries servent à stocker efficacement une table associative où les clefs sont des mots sur un alphabet donné. Ce n'est pas le cas ici. Nous travaillons plutôt sur la concaténation des codes des deux critères, dans laquelle est contenue toute l'information nécessaire aux tests de compatibilité. Ces derniers compliquent d'ailleurs la chose : plusieurs branches peuvent être compatibles avec la requête (voir les figures \ref{fig_crit1} et \ref{fig_crit2}). En somme, il faut revoir la structure.
 
-En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. Voici à quoi elle ressemble :
+En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. On la définit ainsi :
 
 \begin{definition}[tries de types normalisés]
 	L'ensemble des tries de types normalisés, noté $\mathscr{T}$, est défini inductivement par :
@@ -1767,6 +2047,11 @@ En première approximation, notre structure consiste en un arbre dont les nœuds
 			{\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
 	\end{mathpar}
 \end{definition}
+
+\begin{exemple}
+	Avec nos deux critères, le trie vide s'écrit : \\
+	\[ \bold{noeud}_{\mathscr{D}^1} (\mathrm{crit}^1, g \mapsto \bold{noeud}_{\mathscr{D}^2} (\mathrm{crit}^2, (b, g^\#) \mapsto \bold{feuille} (\{ \}))) \]
+\end{exemple}
 
 On les manipule à l'aide de deux fonctions. La première ajoute un type à un trie par un appel récursif sur le sous-arbre associé au code du type ajouté.
 
@@ -1803,7 +2088,9 @@ La seconde calcule l'ensemble des types d'un trie compatibles pour tous les crit
 	\end{align*}
 \end{definition}
 
-L'interface de implémentation OCaml correspondante est présentée ci-dessous. On y retrouve les fonctions d'encodage et de test de compatibilité des critères — \mintinline{ocaml}{compute} et \mintinline{ocaml}{compatible} — la structure arborescente avec feuilles et nœuds — \mintinline{ocaml}{Leaf} et \mintinline{ocaml}{Node} — ainsi que les fonctions d'ajout et de recherche — \mintinline{ocaml}{add} et \mintinline{ocaml}{iter_with}. Sa simplicité est particulièrement appréciable ; l'ajout et l'expérimentation de nouveaux critères s'en trouvent simplifiés.
+L'interface de implémentation OCaml correspondante est présentée ci-dessous. On y retrouve les fonctions d'encodage et de test de compatibilité des critères — \mintinline{ocaml}{compute} et \mintinline{ocaml}{compatible} — la structure arborescente avec feuilles et nœuds — \mintinline{ocaml}{Leaf} et \mintinline{ocaml}{Node} — ainsi que les fonctions d'ajout et de recherche — \mintinline{ocaml}{add} et \mintinline{ocaml}{iter_with}. La fonction \mintinline{ocaml}{compare} définit un ordre total sur les critères dont \mintinline{ocaml}{Node} a besoin pour ses structures de données. \mintinline{ocaml}{empty} est le trie vide.
+
+Sa simplicité est particulièrement appréciable. Il est aisé d'ajouter et expérimenter de nouveaux critères.
 
 \begin{minted}{ocaml}
 module type FEATURE = sig
@@ -1874,95 +2161,160 @@ L'espace de recherche peut être limité à certains paquets — c'est d'ailleur
 $ dowsindex search [--index <fichiers>] [-n <n>] <paquet>... <type>
 \end{minted}
 
-TODO: matching
-\[ \mathrm{S} ::= \T \mid \V \dots \V . \T \]
+Mentionnons une dernière fonctionnalité. Par défaut, \dowsindex fait du \emph{matching} (voir chapitre 2). Pour les requêtes non polymorphes, cela revient à unifier. Pour les requêtes polymorphes, cela signifie que les variables sont chacune remplacées avant unification par une constante fraîche — n'apparaissant pas dans l'environnement — qui leur est propre. Sous cette nouvelle apparence, elles ne sont unifiables qu'avec des variables ; autrement dit, cela force le polymorphisme. C'est généralement le comportement souhaité. Néanmoins, l'utilisateur peut formuler sa requête sous la forme plus générale d'un \emph{schéma de types}. Les variables polymorphes non instanciables y sont spécifiées avant le type, les deux étant séparés d'un point ; les autres variables libres du type seront alors instanciables. En résumé, \dowsindex accepte la syntaxe suivante :
+
+\[ \T \mid \V \dots \V \texttt{.} \T \]
+
+On peut par exemple demander :
+
+\begin{minted}{shell}
+$ dowsindex search "a b. ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{minted}
+
+Les deux variables étant explicitement liées, cela revient à :
+
+\begin{minted}{shell}
+$ dowsindex search "('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{minted}
+
+En revanche, les variables de cette requête sont instanciables car non liées :
+
+\begin{minted}{shell}
+$ dowsindex search ". ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{minted}
+
+Ainsi s'achève cette présentation générale. Les sections suivantes examinent plus précisément les différentes commandes que propose \dowsindex.
 
 %============================================================
 %============================================================
 
 \section{\dowsindex \texttt{save}}
 
-La commande \dowsindex \texttt{save} admet les options suivantes :
+Comme dit plus haut, la commande \texttt{save} sert à construire l'index avant la recherche. On l'invoque ainsi :
+
+\begin{center}
+	\begin{minted}{shell}
+	dowsindex save [<option>]... [<paquet>]...
+	\end{minted}
+\end{center}
+
+Elle admet les options suivantes :
 
 \begin{table}[h]
-\begin{tabularx}{\textwidth}{lX}
-		\textbf{-{}-index}=\textit{fichier} &
-		Sauvegarde l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
-	\\
-		\textbf{-{}-verbose} &
-		Active le mode verbeux. Affiche les paquets trouvés.
-\end{tabularx}
+	\begin{tabularx}{\textwidth}{lX}
+			\textbf{-{}-features}=\textit{critères} &
+			Utilise les critères \textit{critères} dans le trie. \textit{critères} doit être une suite de noms de critères séparés par des virgules. Deux critères sont actuellement acceptés : "head" et "tail". Par défaut : "head,tail".
+		\\
+			\textbf{-{}-index}=\textit{fichier} &
+			L'index est sauvegardé dans \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
+		\\
+			\textbf{-{}-verbose} &
+			Affiche les paquets trouvés.
+	\end{tabularx}
 \end{table}
 
-TODO
-\begin{itemize}
-	\item présentation
-	\item exemples : varier nombre de paquets, mise à jour
-\end{itemize}
+L'option \textbf{-{}-features} a été conçue pour tester un critère indépendamment des autres sans avoir à modifier le code source. Si \texttt{save} est utilisée conjointement avec \texttt{stats} avec cette option, les mêmes critères doivent être passés aux deux commandes.
 
-%============================================================
-%============================================================
+Par exemple, la commande suivante construit l'index \texttt{./index.db} avec le premier critère pour le paquet \texttt{containers}.
 
-\section{\dowsindex \texttt{search}}
-
-La commande \dowsindex \texttt{search} admet les options suivantes :
-
-\begin{table}[h]
-\begin{tabularx}{\textwidth}{lX}
-		\textbf{-{}-exhaustive} &
-		Recherche exhaustive (sans filtrage par critères).
-	\\
-		\textbf{-{}-index}=\textit{fichier} &
-		Cherche l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
-	\\
-		\textbf{-n} \textit{n} &
-		Affiche les \textit{n} premiers résultats seulement.
-\end{tabularx}
-\end{table}
-
-TODO
-\begin{itemize}
-	\item présentation
-	\item exemples : varier nombre de paquets, types plus ou moins complexes
-\end{itemize}
+\begin{minted}{shell}
+./dowsindex save --features head --index index.db containers
+\end{minted}
 
 %============================================================
 %============================================================
 
 \section{\dowsindex \texttt{stats}}
 
-La commande \dowsindex \texttt{stats} admet les options suivantes :
+La commande \texttt{stats} a été utilisée dans le chapitre précédent. Elle calcule des statistiques sur l'environnement à l'aide d'une certaine métrique.
+
+\begin{center}
+	\begin{minted}{shell}
+	dowsindex stats [<option>]... [<paquet>]... <type>
+	\end{minted}
+\end{center}
+
+Elle admet les options suivantes :
 
 \begin{table}[h]
-\begin{tabularx}{\textwidth}{lX}
-		\textbf{-{}-filter} &
-		Calcule aussi les statistiques avec filtrage par critères.
-	\\
-		\textbf{-{}-index}=\textit{fichier} &
-		Cherche l'index dans \textit{fichier}. Par défaut : dans un répertoire standard propre à stocker les données d'applications.
-	\\
-		\textbf{-{}-measure}=\textit{mesure} &
-		Mesure les types avec \textit{mesure}.
-\end{tabularx}
+	\begin{tabularx}{\textwidth}{lX}
+			\textbf{-{}-features}=\textit{critères} &
+			L'index doit utiliser les critères \textit{critères}. \textit{critères} doit être une suite de noms de critères séparés par des virgules. Deux critères sont actuellement acceptés : "head" et "tail". Par défaut : "head,tail".
+		\\
+			\textbf{-{}-index}=\textit{fichier} &
+			Extrait l'index de \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
+		\\
+			\textbf{-{}-measure}=\textit{métrique} &
+			Utilise la métrique \textit{métrique}. Les métriques suivantes sont acceptées : "vars", "unique-vars", "nodes", "head", "tail-spine-vars", "tail-spine-non-vars", "spine-vars" et "tail-length". Par défaut : "head".
+		\\
+			\textbf{-{}-no-index} &
+			N'utilise pas l'index : les fonctions sont directement tirées de l'environnement OPAM.
+		\\
+			\textbf{-{}-with-features} &
+			Calcule aussi les statistiques avec les critères. Ne fonctionne qu'avec un index.
+	\end{tabularx}
 \end{table}
 
-TODO
-\begin{itemize}
-	\item présentation
-	\item exemples
-\end{itemize}
+Par exemple, à la suite de celui donné pour \texttt{save}, on peut calculer les statistiques sur l'index créé avec la métrique "vars" (comptant le nombre de variables) pour le type $int$ :
 
-%============================================================
-%============================================================
+\begin{minted}{shell}
+./dowsindex stats --features head --index index.db --measure vars "int"
+\end{minted}
 
-\section{Plugin Vim}
+L'option \textbf{-{}-with-features} rapport les statistiques sans et avec application des critères d'unifiabilité. La sortie de l'exemple suivant est donnée en figure \ref{fig_dowsindex_save}.
 
-TODO
+\begin{minted}{shell}
+./dowsindex stats --with-features "int -> int -> int"
+\end{minted}
 
 \begin{figure}[h]
 	\begin{center}
-		\includegraphics[scale=0.15]{images/plugin_vim}
+		\includegraphics[scale=0.22]{images/dowsindex-save}
 	\end{center}
+	\caption{\label{fig_dowsindex_save}}
+\end{figure}
+
+%============================================================
+%============================================================
+
+\section{\dowsindex \texttt{search}}
+
+La commande \texttt{search} est la plus importante, puisque c'est sur elle qu'un utilisateur peut compter pour trouver une fonction. C'est aussi la plus simple.
+
+\begin{center}
+	\begin{minted}{shell}
+	dowsindex search [<option>]... [<paquet>]... <type>
+	\end{minted}
+\end{center}
+
+Elle admet les options suivantes :
+
+\begin{table}[h]
+	\begin{tabularx}{\textwidth}{lX}
+			\textbf{-{}-exhaustive} &
+			Recherche de façon exhaustive, sans appliquer les critères d'unifiabilité.
+		\\
+			\textbf{-{}-index}=\textit{fichier} &
+			Extrait l'index de \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
+		\\
+			\textbf{-n} \textit{n} &
+			Affiche les \textit{n} premiers résultats seulement.
+	\end{tabularx}
+\end{table}
+
+L'option \textbf{-{}-exhaustive} permet de s'assurer de la correction des critères. Elle n'est pas destinée aux utilisateurs.
+
+On peut par exemple rechercher une fonction de la bibliothèque standard testant l'appartenance à une liste. Le résultat est donné en figure \ref{fig_dowsindex_search}.
+
+\begin{minted}{shell}
+./dowsindex search stdlib "'a list * 'a -> bool"
+\end{minted}
+
+\begin{figure}[h]
+	\begin{center}
+		\includegraphics[scale=0.25]{images/dowsindex-search}
+	\end{center}
+	\caption{\label{fig_dowsindex_search}}
 \end{figure}
 
 %============================================================
@@ -1971,15 +2323,11 @@ TODO
 
 \chapter{Conclusion}
 
-TODO
-\begin{itemize}
-	\item terminer les preuves
-	\item problèmes noms : qualification par rapport au module englobant
-	\item alias de type
-	\item temps de construction de l'index (LibIndex)
-	\item temps de chargement de l'index (Marshall)
-	\item modules
-\end{itemize}
+Nous arrivons au terme de ce rapport. Retraçons ses grandes lignes. A partir d'une implémentation de l'\emph{unification modulo isomorphismes de types}, nous avons amené, défini et démontré deux \emph{critères d'unifiabilité}. Ces critères sont utilisés par \dowsindex dans la construction d'un \emph{index}. Ce travail permet de réduire significativement le nombre d'appels à l'unification. Les requêtes les plus simples sont traitées de façon instantanée.
+
+Il y a encore à faire : terminer les preuves, définir d'autres critères visant les cas plus difficiles, prendre en compte des types OCaml plus sophistiqués\dots Plusieurs aspects de l'indexation mériteraient qu'on s'y arrête : récupération des fonctions de l'environnement OPAM, sauvegarde et chargement de l'index (pour le moment réalisés avec le module \mintinline{ocaml}{Marshall}). \dowsindex souffre particulièrement du fait que la qualification des types par rapport au module englobant est mal assurée ; par exemple, la fonction \mintinline{ocaml}{Format.pp_print_int} est connue sous le type \mintinline{ocaml}{formatter -> int -> unit}, et non pas \mintinline{ocaml}{Format.formatter -> int -> unit}.
+
+Quoi qu'il en soit, nous espérons avoir posé de solides bases au système \dowsindex. Je remercie Gabriel Radanne et Laure Gonnord pour leur encadrement tout au long du stage. Je ne remercie pas le SARS-CoV-2 pour les conditions particulières dans lesquelles il s'est déroulé.
 
 %============================================================
 %============================================================
