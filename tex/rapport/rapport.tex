@@ -2165,7 +2165,7 @@ module Node (Feat : FEATURE) (Sub : NODE) : NODE
 
 \chapter{\dowsindex}
 
-Dans ce dernier chapitre, nous visitons les fonctionnalités du programme \dowsindex. On pourra en trouver le code source sur le dépôt \textit{github} \texttt{Drup/dowsing}. La version actuelle est compatible avec les systèmes d'exploitation Linux et macOS.
+Dans ce dernier chapitre, nous visitons les fonctionnalités du programme \dowsindex. On pourra en trouver le code source sur le dépôt \textit{github} \texttt{Drup/dowsing}.\gab{Un lien!} La version actuelle est compatible avec les systèmes d'exploitation Linux et macOS.
 
 \dowsindex met en application les techniques présentées dans le chapitre précédent. Avant toute chose, il faut donc créer un \emph{index} auquel \dowsindex se référera au moment de la recherche. La commande suivante fait l'affaire :
 
@@ -2179,6 +2179,7 @@ L'index est entreposé dans un répertoire standard destiné aux données d'appl
 $ dowsindex save --index <fichier>
 \end{minted}
 
+\gab{\og Par default, ca prend tout les paquest, donc ... \fg}
 On peut également préciser quels paquets OPAM inclure dans l'index — notamment afin de réduire le temps de construction. La command suivante a cet effet, mais aussi — si l'index existe déjà — celui de charger ou recharger les paquets désignés :
 
 \begin{minted}{shell}
@@ -2371,7 +2372,7 @@ On peut par exemple rechercher une fonction de la bibliothèque standard testant
 
 \chapter{Conclusion}
 
-Nous arrivons au terme de ce rapport. Retraçons ses grandes lignes. A partir d'une implémentation de l'\emph{unification modulo isomorphismes de types}, nous avons amené, défini et démontré deux \emph{critères d'unifiabilité}. Ces critères sont utilisés par \dowsindex dans la construction d'un \emph{index}. Ce travail permet de réduire significativement le nombre d'appels à l'unification. Les requêtes les plus simples sont traitées de façon instantanée.
+\reformule{Nous arrivons au terme de ce rapport. Retraçons ses grandes lignes.} A partir d'une implémentation de l'\emph{unification modulo isomorphismes de types}, nous avons amené, défini et démontré deux \emph{critères d'unifiabilité}. Ces critères sont utilisés par \dowsindex dans la construction d'un \emph{index}. Ce travail permet de réduire significativement le nombre d'appels à l'unification. Les requêtes les plus simples sont traitées de façon instantanée.
 
 Il y a encore à faire : terminer les preuves, définir d'autres critères visant les cas plus difficiles, prendre en compte des types OCaml plus sophistiqués\dots Plusieurs aspects de l'indexation mériteraient qu'on s'y arrête : récupération des fonctions de l'environnement OPAM, sauvegarde et chargement de l'index (pour le moment réalisés avec le module \mintinline{ocaml}{Marshall}). \dowsindex souffre particulièrement du fait que la qualification des types par rapport au module englobant est mal assurée ; par exemple, la fonction \mintinline{ocaml}{Format.pp_print_int} est connue sous le type \mintinline{ocaml}{formatter -> int -> unit}, et non pas \mintinline{ocaml}{Format.formatter -> int -> unit}.
 
