@@ -441,15 +441,16 @@ Bien que la définition d'une théorie équationnelle ne mentionne pas la stabil
 \end{lemme}
 
 \begin{preuve}
-  Par induction structurelle sur la dérivation de $\tau_1 \equiv_\T^\E \tau_2$ et par cas sur la dernière règle utilisée. \\
-  Dans le cas ($\equiv_\T^\E$-ax), il s'agit de montrer que $\hat\sigma (\hat\sigma' (\tau_1))$ et $\hat\sigma (\hat\sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \cong_\T \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat\sigma \circ \hat\sigma'$ est l'extension de la substitution $\hat\sigma \circ \sigma'$. Les autres cas sont triviaux.
+  La preuve se fait par induction structurelle sur la dérivation de $\tau_1 \equiv_\T^\E \tau_2$ et par cas sur la dernière règle utilisée.
+  \smallskip % pas de \\
+  Dans le cas ($\equiv_\T^\E$-ax), il s'agit de montrer que $\hat\sigma (\hat\sigma' (\tau_1))$ et $\hat\sigma (\hat\sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \cong_\T \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat\sigma \circ \hat\sigma'$ est l'extension de la substitution $\hat\sigma \circ \sigma'$ \laure{extension : undefined word}. Les autres cas sont similaires. %triviaux.
 \end{preuve}
 
 %============================================================
 
 \subsection{Matching et unification}
 
-Nous en arrivons enfin aux notions fondamentales de \emph{matching} et \emph{unification}. Un type sujet \emph{matche} un type motif si l'on peut les rendre équivalents en instanciant le motif. Deux types sont \emph{unifiables} si l'on peut les rendre équivalents en les instanciant simultanément. En fait, on peut réduire le \emph{matching} à l'\emph{unification} en substituant chaque variable du sujet par une constante n'apparaissant pas dans le motif (de manière exclusive).
+Le problème traité ici utilise les notions fondamentales de \emph{matching} et \emph{unification}. Un type sujet \emph{matche}\footnote{\laure{ici mettre blabla sur l'usage d'un anglicisme}} un type motif\laure{je ne sais pas ce qu'est un motif} si l'on peut les rendre équivalents en instanciant le motif. Deux types sont \emph{unifiables} si l'on peut les rendre équivalents en les instanciant simultanément. En fait, on peut réduire le \emph{matching} à l'\emph{unification} en substituant chaque variable du sujet par une constante n'apparaissant pas dans le motif (de manière exclusive)\laure{le dire plutôt à la fin, en montrant sur un exemple ?}.
 
 Soit un système équationnel $\E$.
 
@@ -466,9 +467,11 @@ Soit un système équationnel $\E$.
   Le problème d'$\E$-matchabilité — ou encore problème de matchabilité modulo $\E$ — consiste à déterminer si un type est matchable avec un autre.
 \end{definition}
 
+\laure{Les trois defs ci dessus sont inutilement verbeuses, si tu modifies comme ci-dessous}
+
 \begin{definition}[problème d'$\E$-matching]
   Soient $\tau_1$ et $\tau_2$ deux types. \\
-  Le problème d'$\E$-matching — ou encore problème de matching modulo $\E$ — consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$.
+  Le problème d'$\E$-matching — ou encore problème de matching modulo $\E$ — consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$, \laure{c'est-à-dire une substitution $\sigma$ telle que  \[ \tau_1 \equiv_\T^\E \hat\sigma (\tau_2) \]}
 \end{definition}
 
 \begin{exemple}
@@ -488,8 +491,9 @@ Soit un système équationnel $\E$.
   Deux types $\tau_1$ et $\tau_2$ sont $\E$-unifiables — ou encore unifiables modulo $\E$ —, noté $\tau_1 \sim_\T^\E \tau_2$, \ssi ils admettent un $\E$-unificateur.
 \end{definition}
 
+\laure{idem pour les deux defs d'en dessus}
 \begin{definition}[problème d'$\E$-unifiabilité]
-  Le problème d'$\E$-unifiabilité — ou encore problème d'unifiabilité modulo $\E$ — consiste à déterminer si deux types sont $\E$-unifiables.
+  Le problème d'$\E$-unifiabilité — ou encore problème d'unifiabilité modulo $\E$ — consiste à déterminer si deux types sont $\E$-unifiables \laure{, c'est-à-dire ...}
 \end{definition}
 
 \begin{definition}[problème d'$\E$-unification]
@@ -507,6 +511,7 @@ Lorsque $\E$ est vide, nous parlerons d'unification syntaxique ; dans le cas con
   \end{itemize}
 \end{exemple}
 
+\laure{parler de unif versus matching ici}
 %============================================================
 %============================================================
 
