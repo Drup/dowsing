@@ -28,6 +28,10 @@
 \DeclareCaptionFormat{empty}{#1}
 \renewcommand*\figurename{}
 
+\makeatletter
+\renewcommand\verbatim@font{\normalfont\fontencoding{T1}\ttfamily}
+\makeatother
+
 %============================================================
 
 \usepackage{amsmath}  % align*
@@ -101,11 +105,6 @@
 
 \DeclareMathOperator*{\msetN_bigplus}{\scalerel*{+}{\sum}^\#_\N}
 \DeclareMathOperator*{\msetG_bigplus}{\scalerel*{+}{\sum}^\#_\G}
-
-\newcommand\gab[1]{{\bf\color{Orange}{TODO: #1}}\\}
-\newcommand\laure[1]{{\bf\color{WildStrawberry}{TODO: #1}}\\}
-
-\newcommand\reformule[1]{\underline{#1}}
 
 %============================================================
 
@@ -185,9 +184,7 @@ Enfin, nous décrirons dans le chapitre 4 le fruit de notre travail : le program
 
 \chapter{Unification modulo isomorphismes de types}
 
-Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types} \laure{donner une intuition ici}. L'\emph{unifiabilité modulo isomorphismes}, ajoute à cela la capacité d'instancier les types. Nous présentons également l'implémentation de Gabriel Radanne qui a servi de point de départ à ce stage.
-
-%Nous insistons sur la formalisation des objets en cause afin de les invoquer proprement au chapitre suivant.%inutile
+Nous éclairons dans ce chapitre la notion d'\emph{équivalence entre types} et la façon dont nous l'exploitons. Il s'agit de formaliser les réarrangements permis par des \emph{isomorphismes de types}. Intuitivement, deux types sont \emph{isomorphes} s'ils admettent deux fonctions de conversion permettant de passer de l'un à l'autre. L'\emph{unifiabilité modulo isomorphismes}, ajoute à cela la capacité d'instancier les types. Nous présentons également l'implémentation de Gabriel Radanne qui a servi de point de départ à ce stage.
 
 %============================================================
 %============================================================
@@ -198,7 +195,6 @@ Commençons par poser quelques définitions : \emph{types}, \emph{axiome équati
 
 Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistrements\ldots Nous aurons donc besoin de \emph{constructeurs de types}. Nous les formalisons par la notion de \emph{signature}.
 
-\laure{Il me semblait qu'on était d'accord pour ne pas passer par cette définition}
 \begin{definition}[signature]
   Une signature est un ensemble fini $\F$ de symboles de constructeurs muni d'une fonction d'arité $| \cdot |_\F$ de $\F$ dans $\mathbb{N}$ et tel que $\V \cap \F = \emptyset$. Les constructeurs d'arité nulle sont appelés constantes.
 \end{definition}
@@ -215,8 +211,7 @@ Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistre
   \end{itemize}
 \end{exemple}
 
-%Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
-% inutile, typo
+Soit une signature $( \F, | \cdot |_\F )$ avec $\F = \{ f, \dots \}$.
 
 %============================================================
 
@@ -224,7 +219,7 @@ Le langage OCaml permet de définir de nouveaux types : types-sommes, enregistre
 
 Définissons alors les \emph{types}. Un \emph{type} est soit :
 \begin{itemize}[nosep]
-  \item une variable ; \laure{qui moralement est ...}
+  \item une variable ;
   \item le type $\unit$ ;
   \item un type-produit ;
   \item une type-flèche ;
@@ -343,8 +338,7 @@ Lorsque le domaine d'une substitution $\sigma$ est fini de cardinal $n$ — diso
 
 \subsection{Théorie équationnelle}
 
-%Passées ces premières définitions, nous savons de qui nous parlons.
-Nous abordons maintenant la notion de \emph{théorie équationnelle}. Le plus important est en fait la donnée des \emph{axiomes équationnels}, qui exprimeront les \emph{isomorphismes de types} qui nous intéressent \laure{car.... donner une intuition} et feront toute la force et la difficulté de l'\emph{unification modulo isomorphismes}. En découle naturellement une \emph{théorie équationnelle} : la plus petite congruence contenant les instances des axiomes.
+Passées ces premières définitions, nous savons de qui nous parlons. Abordons maintenant la notion de \emph{théorie équationnelle}. Le plus important est la donnée des \emph{axiomes équationnels}, qui exprimeront les \emph{isomorphismes de types} qui nous intéressent et feront toute la force et la difficulté de l'\emph{unification modulo isomorphismes}. En découle naturellement une \emph{théorie équationnelle} : la plus petite congruence contenant les instances des axiomes.
 
 \begin{definition}[axiome équationnel]
   Un axiome équationnel est un couple de types de la forme $\tau_1 \cong_\T \tau_2$.
@@ -433,8 +427,6 @@ Nous abordons maintenant la notion de \emph{théorie équationnelle}. Le plus im
     \item $\alpha \rightarrow (\beta \times \gamma) \equiv_\T^\E (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)$.
   \end{itemize}
 \end{exemple}
-\laure{On a donc à ce stade capturé ce que l'on voulait, ie blablabla}
-
 
 Bien que la définition d'une théorie équationnelle ne mentionne pas la stabilité par substitution, c'en est un corollaire :
 
@@ -443,16 +435,14 @@ Bien que la définition d'une théorie équationnelle ne mentionne pas la stabil
 \end{lemme}
 
 \begin{preuve}
-  La preuve se fait par induction structurelle sur la dérivation de $\tau_1 \equiv_\T^\E \tau_2$ et par cas sur la dernière règle utilisée.
-  \smallskip % pas de \\
-  Dans le cas ($\equiv_\T^\E$-ax), il s'agit de montrer que $\hat\sigma (\hat\sigma' (\tau_1))$ et $\hat\sigma (\hat\sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \cong_\T \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat\sigma \circ \hat\sigma'$ est l'extension de la substitution $\hat\sigma \circ \sigma'$ \laure{extension : undefined word}. Les autres cas sont similaires. %triviaux.
+  La preuve se fait par induction structurelle sur la dérivation de $\tau_1 \equiv_\T^\E \tau_2$ et par cas sur la dernière règle utilisée. Dans le cas ($\equiv_\T^\E$-ax), il s'agit de montrer que $\hat\sigma (\hat\sigma' (\tau_1))$ et $\hat\sigma (\hat\sigma' (\tau_2))$ sont $\E$-équivalents, où $\tau_1 \cong_\T \tau_2$ est un axiome de $\E$. Il suffit de remarquer que $\hat\sigma \circ \hat\sigma'$ est l'extension de la substitution $\hat\sigma \circ \sigma'$. Les autres cas sont triviaux.
 \end{preuve}
 
 %============================================================
 
 \subsection{Matching et unification}
 
-Le problème traité ici utilise les notions fondamentales de \emph{matching} et \emph{unification}. Un type sujet \emph{matche}\footnote{\laure{ici mettre blabla sur l'usage d'un anglicisme}} un type motif\laure{je ne sais pas ce qu'est un motif} si l'on peut les rendre équivalents en instanciant le motif. Deux types sont \emph{unifiables} si l'on peut les rendre équivalents en les instanciant simultanément. En fait, on peut réduire le \emph{matching} à l'\emph{unification} en substituant chaque variable du sujet par une constante n'apparaissant pas dans le motif (de manière exclusive)\laure{le dire plutôt à la fin, en montrant sur un exemple ?}.
+Nous en arrivons enfin aux notions fondamentales de \emph{matching} et \emph{unification}. Un type sujet \emph{matche} un type motif si l'on peut les rendre équivalents en instanciant le motif. Deux types sont \emph{unifiables} si l'on peut les rendre équivalents en les instanciant simultanément. En fait, on peut réduire le \emph{matching} à l'\emph{unification} en substituant chaque variable du sujet par une constante n'apparaissant pas dans le motif (de manière exclusive).
 
 Soit un système équationnel $\E$.
 
@@ -469,11 +459,9 @@ Soit un système équationnel $\E$.
   Le problème d'$\E$-matchabilité — ou encore problème de matchabilité modulo $\E$ — consiste à déterminer si un type est matchable avec un autre.
 \end{definition}
 
-\laure{Les trois defs ci dessus sont inutilement verbeuses, si tu modifies comme ci-dessous}
-
 \begin{definition}[problème d'$\E$-matching]
   Soient $\tau_1$ et $\tau_2$ deux types. \\
-  Le problème d'$\E$-matching — ou encore problème de matching modulo $\E$ — consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$, \laure{c'est-à-dire une substitution $\sigma$ telle que  \[ \tau_1 \equiv_\T^\E \hat\sigma (\tau_2) \]}
+  Le problème d'$\E$-matching — ou encore problème de matching modulo $\E$ — consiste à trouver un $\E$-matcheur de $\tau_1$ pour $\tau_2$.
 \end{definition}
 
 \begin{exemple}
@@ -493,9 +481,8 @@ Soit un système équationnel $\E$.
   Deux types $\tau_1$ et $\tau_2$ sont $\E$-unifiables — ou encore unifiables modulo $\E$ —, noté $\tau_1 \sim_\T^\E \tau_2$, \ssi ils admettent un $\E$-unificateur.
 \end{definition}
 
-\laure{idem pour les deux defs d'en dessus}
 \begin{definition}[problème d'$\E$-unifiabilité]
-  Le problème d'$\E$-unifiabilité — ou encore problème d'unifiabilité modulo $\E$ — consiste à déterminer si deux types sont $\E$-unifiables \laure{, c'est-à-dire ...}
+  Le problème d'$\E$-unifiabilité — ou encore problème d'unifiabilité modulo $\E$ — consiste à déterminer si deux types sont $\E$-unifiables.
 \end{definition}
 
 \begin{definition}[problème d'$\E$-unification]
@@ -513,19 +500,15 @@ Lorsque $\E$ est vide, nous parlerons d'unification syntaxique ; dans le cas con
   \end{itemize}
 \end{exemple}
 
-\laure{parler de unif versus matching ici}
 %============================================================
 %============================================================
 
 \section{Isomorphismes de types}
 
+Ainsi parés, nous sommes à présent en mesure d'aborder le cœur de ce chapitre. Nous allons définir la notion d'équivalence entre types de notre système de recherche.
 
-%Ainsi parés, nous sommes à présent en mesure d'aborder le cœur de ce chapitre.
-Nous allons maintenant définir la notion d'équivalence entre types de notre système de recherche.
+Les travaux de Mikael Rittri \cite{Rittri91, Rittri93} sur lesquels nous nous appuyons ont assis celle d'\emph{équivalence modulo isomorphismes de types}. La chose a fait l'objet de plusieurs recherches importantes, menées notamment par Giusseppe Longo, Kim Bruce, Roberto Di Cosmo \cite{Bruce_DiCosmo_Longo, DiCosmo92, DiCosmo93, DiCosmo95}, Sergei Soloviev \cite{Soloviev83, Soloviev93}, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman}.
 
-% Les travaux de Mikael Rittri \cite{Rittri91, Rittri93} sur lesquels nous nous appuyons ont assis celle d'\emph{équivalence modulo isomorphismes de types}. La chose a fait l'objet de plusieurs recherches importantes, menées notamment par Giusseppe Longo, Kim Bruce, Roberto Di Cosmo \cite{Bruce_DiCosmo_Longo, DiCosmo92, DiCosmo93, DiCosmo95}, Sergei Soloviev \cite{Soloviev83, Soloviev93}, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman}
-.
-\laure{bof, la liste des gens, surtout que tu les cite après}
 %============================================================
 
 \subsection{Isomorphismes de types en $\lambda$-calcul}
@@ -576,17 +559,17 @@ On peut donner une caractérisation équationnelle des isomorphismes de $\Lambda
     \tag{dist-$\unit$}
 \end{align}
 
-Néanmoins, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman} ont établi que, si le \emph{matching} modulo $\E^1$ est NP-complet, l'unification modulo $\E^1$ est indécidable. C'est ce qui a poussé Rittri \cite{Rittri93} à se concentrer sur les cinq premiers axiomes correspondant aux \emph{isomorphismes linéaires} (pour plus de détails, voir \cite{Rittri93}) complets dans les \emph{catégories monoïdales fermées symétriques} \cite{Soloviev93}. L'unification modulo cette nouvelle théorie est NP-complète \cite{Narendran_Pfenning_Statman}. Cet abandon des deux axiomes de distributivité \eqref{dist} et \eqref{dist_unit} — et donc de la complétude dans $\Lambda^1$ — s'avère d'après lui bénin, arguant que ces isomorphismes sont peu utiles en pratique.\laure{phrase non grammaticalement correcte}
+Néanmoins, Paliath Narendran, Frank Pfenning et Richard Statman \cite{Narendran_Pfenning_Statman} ont établi que, si le \emph{matching} modulo $\E^1$ est NP-complet, l'unification modulo $\E^1$ est indécidable. C'est ce qui a poussé Rittri \cite{Rittri93} à se concentrer sur les cinq premiers axiomes correspondant aux \emph{isomorphismes linéaires} (pour plus de détails, voir \cite{Rittri93}) complets dans les \emph{catégories monoïdales fermées symétriques} \cite{Soloviev93}. L'unification modulo cette nouvelle théorie est NP-complète \cite{Narendran_Pfenning_Statman}. Cet abandon des deux axiomes de distributivité \eqref{dist} et \eqref{dist_unit} — et donc de la complétude dans $\Lambda^1$ — s'avère d'après lui bénin, arguant que ces isomorphismes sont peu utiles en pratique.
 
 %============================================================
 
 \subsection{Isomorphismes de types en OCaml}
 
-Di Cosmo \cite{DiCosmo92} a étudié les isomorphismes de types en Core-ML. De même, il en a tiré une axiomatisation équationnelle complète comportant de nouveaux isomorphismes. L'équivalence est alors décidable par un algorithme qu'il introduit dans \cite{DiCosmo95}. Malheureusement, cet algorithme ne s'adapte a priori pas directement au matching ou l'unification.
+En outre, Di Cosmo \cite{DiCosmo92} a étudié les isomorphismes de types en Core-ML. De même, il en a tiré une axiomatisation équationnelle complète comportant de nouveaux isomorphismes. L'équivalence est alors décidable par un algorithme qu'il introduit dans \cite{DiCosmo95}. Malheureusement, cet algorithme ne s'adapte a priori pas directement au matching ou l'unification.
 
-L'implémentation existante au début du stage~\footnote{\laure{blabla}} suit les préconisations de Rittri en renonçant à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, il complexifie l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
+L'implémentation suit les préconisations de Rittri en renonçant à l'axiome \eqref{curry_unit}. En effet, bien qu'utile en pratique pour simuler une expression paresseuse, il complexifie l'algorithme d'unification. Ne s'agissant pas de l'isomorphisme le plus important, cela affecte peu la qualité de la recherche.
 
-Il reste donc les quatre premiers isomorphismes : \eqref{prod_comm}, \eqref{prod_assoc}, \eqref{prod_unit}, \eqref{curry}. Ils capturent exactement les réarrangements qui nous intéressent, en particulier la permutation des paramètres. Relevons toutefois que, si ces isomorphismes sont corrects pour Core-ML \cite{DiCosmo93}, leur correction pour OCaml n'est pas démontrée. Nous admettons ici qu'ils se « propagent » aux constructeurs de types, c'est-à-dire la congruence sur la signature OCaml.
+Reste donc les quatre premiers isomorphismes : \eqref{prod_comm}, \eqref{prod_assoc}, \eqref{prod_unit}, \eqref{curry}. Ils capturent exactement les réarrangements qui nous intéressent, en particulier la permutation des paramètres. Relevons toutefois que, si ces isomorphismes sont corrects pour Core-ML \cite{DiCosmo93}, leur correction pour OCaml n'est pas démontrée. Nous admettons ici qu'ils se « propagent » aux constructeurs de types, c'est-à-dire la congruence sur la signature OCaml.
 
 Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs. Nous dénoterons par $\E$ le système équationnel formé par les quatre axiomes, $\cdot \equiv_\T \cdot$ la théorie équationnelle induite par $\E$ et $\cdot \sim_\T \cdot$ l'$\E$-unifiabilité. Nous parlerons d'équivalence pour l'$\E$-équivalence, de matching pour l'$\E$-matching, d'unifiabilité pour l'$\E$-unifiabilité et d'unification pour l'$\E$-unification.
 
@@ -605,14 +588,11 @@ Dans le reste de ce rapport, nous traiterons des types OCaml avec constructeurs.
 
 \section{Implémentation de l'unification modulo isomorphismes}
 
-
-\laure{Nous décrivons maintenant .....}
 %============================================================
 
 \subsection{Algorithme d'unification syntaxique}
 
-
-L'algorithme d'unification syntaxique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}.  consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
+Avant d'aborder l'implémentation, revenons sur l'ancêtre commun des algorithmes d'unification sémantique, dû à Herbrand \cite{Herbrand}, Martelli et Montanari \cite{Martelli_Montanari}. Leur algorithme d'unification syntaxique consiste à transformer le problème initial par applications successives d'un certain nombre de règles afin d'aboutir à une forme résolue — essentiellement une substitution. La conception d'un algorithme d'unification sémantique repart souvent de ce principe, en modifiant les règles ou en en ajoutant.
 
 Définissons tout d'abord les objets manipulés par l'algorithme : \emph{équations de types} et \emph{problèmes équationnels}.
 
@@ -1215,55 +1195,73 @@ Le théorème fondamental assure alors l'équivalence entre unifiabilité sur le
 
 \chapter {Indexation}
 
-\gab{Pour moi, cette introduction est bien trop longue. Tu essayes de présenter l'outil et de l'utiliser pour justifier le developement, mais ce n'est pas du tout nécéssaire. Si tu voulais le faire, il faudrait une section benchmark plus détaillée. Si tu veux \og teaser\fg ces résultats, tu peux le faire en une phrase, pas plus}
-
 Dans le chapitre précédent, nous avons présenté l'\emph{unification modulo isomorphismes de types} et l'algorithme que nous utilisons. Un système de recherche de fonctions par types peut faire directement appel à cet algorithme : un type de l'environnement est accepté s'il est unifiable avec le type demandé, c'est-à-dire si les deux types admettent un unificateur.
 
-\reformule{Une question se pose alors : }ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Considérons par exemple une session OPAM contenant principalement la bibliothèques \texttt{core}\gab{Un petit lien ici}, représentant au total près de 1 640 000 identificateurs. Afin de se placer dans des conditions similaires, on pourra exécuter :
+Une question se pose alors : ce système passe-t-il à l'échelle ? Un écosystème OCaml, essentiellement les paquets OPAM, peut aisément contenir des centaines de milliers d'identificateurs de fonctions. Dans tout ce chapitre, nous considérons une session OPAM contenant principalement la bibliothèques \href{https://opensource.janestreet.com/core/}{\texttt{core}}, représentant au total 1 638 855 identificateurs. Afin de se placer dans des conditions similaires, on pourra exécuter :
 
-\gab{Ce bout aurait plus de sens dans la dernière partie}
-
-\begin{minted}{shell}
+\begin{verbatim}
 $ git clone https://github.com/Drup/dowsing dowsing
 $ cd dowsing
 $ opam switch create dowsing ocaml-base-compiler.4.12.0
 $ opam install . --deps-only
 $ opam install core
 $ make
-\end{minted}
+\end{verbatim}
 
 Le programme \dowsindex est muni d'une commande \texttt{stats} qui, comme son nom l'indique, calcule des statistiques sur les types de l'environnement — pour plus de détails, voir le chapitre suivant. Invoquons-la ainsi :
 
-\begin{minted}{shell}
+\begin{verbatim}
 $ ./dowsindex stats --no-index "int -> int -> int"
-\end{minted}
-\gab{Il faut mettre la sortie sur tout les exemples de ligne de commande}
+------------------------------------------------------------
+measure        total time (ms)    avg. time (µs)    # unif.
+------------------------------------------------------------
+variable       4896.79            52.2994            93630
+constructor    5150.43            3.805              1353597
+tuple          854.756            5.16116            165613
+other          119.108            4.57843            26015
+------------------------------------------------------------
+total time (s): 11.0211
+total # unif.: 1638855
+\end{verbatim}
 
-
-Le système doit notamment afficher le nombre d'appels à l'unification et le temps d'unification total. Pour cette requête très simple, le programme passe typiquement plus d'une dizaine de secondes à unifier. Ce n'est pas satisfaisant.
+Le système affiche le nombre d'appels à l'unification et le temps d'unification total. Pour cette requête très simple, le programme passe typiquement plus d'une dizaine de secondes à unifier. Ce n'est pas satisfaisant.
 
 On peut gagner deux ordres de grandeur en mémorisant les types avec lesquels on a déjà testé l'unification. Cela revient à appeler l'unification autant de fois qu'il y a de types uniques dans l'environnement. On peut le constater en exécutant les commandes :
 
-\begin{minted}{shell}
+\begin{verbatim}
 $ ./dowsindex save
 $ ./dowsindex stats "int -> int -> int"
-\end{minted}
+------------------------------------------------------------
+measure        total time (ms)    avg. time (µs)    # unif.
+------------------------------------------------------------
+variable       518.931            318.95             1627
+constructor    63.6716            2.49009            25570
+tuple          11.7421            2.85141            4118
+other          0.940561           3.57628            263
+------------------------------------------------------------
+total time (s): 0.595286
+total # unif.: 31578
+\end{verbatim}
 
-Le nombre d'appels est réduit à près de 32 000, soit environ $0.8s$ d'unification. Voyons une requête plus difficile — mais toujours sans polymorphisme — :
+Le nombre d'appels est réduit à 31 578, soit environ $0.6s$ d'unification. Voyons une requête plus difficile — mais toujours sans polymorphisme — :
 
-\begin{minted}{shell}
+\begin{verbatim}
 $ ./dowsindex stats "int -> int -> int -> int -> int"
-\end{minted}
+------------------------------------------------------------
+measure        total time (ms)    avg. time (µs)    # unif.
+------------------------------------------------------------
+variable       58149.9            35740.6            1627
+constructor    71.579             2.79933            25570
+tuple          12.8505            3.12057            4118
+other          0.865698           3.29163            263
+------------------------------------------------------------
+total time (s): 58.2352
+total # unif.: 31578
+\end{verbatim}
 
-Cette fois, on a toujours 32 000 appels mais sur près d'une minute. Ce n'est pas satisfaisant. \reformule{Annonçons la couleur. }Les techniques développées dans ce chapitre permettent de réduire le nombre d'appels à 107, pour un temps d'unification de l'ordre de la milliseconde. On pourra s'en convaincre avec :
+Cette fois, on a toujours 31 578 appels mais sur près d'une minute. Ce n'est pas satisfaisant. Les techniques développées dans ce chapitre permettent de réduire le nombre d'appels à 107, pour un temps d'unification de l'ordre de la milliseconde.
 
-\begin{minted}{shell}
-$ ./dowsindex stats "int -> int -> int -> int -> int" --with-features
-\end{minted}
-
-\gab{Le paragraph juste en dessous contient a peu près tout ce que tu veux dire. Tu n'as pas besoin de la pseudo-demo/ desargument pour dire que l'unification est couteuse, tu peux simplement l'affirmer. Le texte à partir d'ici est bien. }
-
-L'unification est très coûteuse. Il y a deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à réduire le nombre d'appels à l'unification. C'est la voie que nous devions explorer durant ce stage.\gab{\og que j'ai exploré\fg}.
+L'unification est très coûteuse. Il y a deux moyens d'y remédier. Le premier consiste à améliorer l'algorithme d'unification. Néanmoins, celui que nous utilisons est déjà optimisé et assez complexe. Le second consiste à réduire le nombre d'appels à l'unification. C'est la voie que avons explorée durant ce stage.
 
 Plus précisément, il s'agit de solliciter le moins possible l'algorithme d'unification sans compromettre la qualité des résultats. L'idée est de concevoir un test moins coûteux qui, en cas d'indécision, s'en remettra à l'unification. Ce test doit être \emph{suffisamment discriminant} et \emph{correct} vis-à-vis de l'unifiabilité : s'il est négatif, alors les types ne sont effectivement pas unifiables.
 
@@ -1276,20 +1274,17 @@ Ces critères reposent sur certains traits structurels des types qui peuvent êt
 
 \section{Métriques de types}
 
-\gab{Globalement, le message est plutot bon, je pense que tu pourrais le rendre plus direct/claire: \og On veut trouver nos critères nécessaire pour éviter des unif. Pour pouvoir bien faire ca, il faut voir dans quel cas il y a plein d'unifs\fg (c'est globalement ce que tu dis, mais avec plus de détours).}
-
 Dans cette section, nous présentons trois \emph{métriques} sur les types (normalisés). Il s'agit de mettre en évidence des traits communs potentiellement discriminants. Nous en avons expérimenté plusieurs en les intégrant à la commande \texttt{stats}.
 
-L'unification permet d'instancier les types, c'est-à-dire de substituer une ou plusieurs variables. Il est donc logique d'observer la situation de ces dernières. Dans quelles quantités les trouve-t-on ? Intuitivement, plus un type compte de variables, plus il est polymorphe et plus l'unification est difficile. A l'inverse, si un nombre important de types de l'environnement en comportent peu — ce que nous constaterons —, on peut espérer arriver à un \emph{critère d'unification} fort. \reformule{Où les trouve-t-on ? Les deux critères que nous avons construits reposent sur la réponse à cette question}. Les variables en \emph{tête} — correspondant au type de retour — caractérisent les cas les plus difficiles : par l'isomorphisme \eqref{curry}, on peut « ajouter » des paramètres en substituant par un type-flèche.
-\gab{la dernière phrase n'est pas claire}
+L'unification permet d'instancier les types, c'est-à-dire de substituer une ou plusieurs variables. Il est donc logique d'observer la situation de ces dernières.
+
+Dans quelles quantités les trouve-t-on ? Intuitivement, plus un type compte de variables, plus il est polymorphe et plus l'unification est difficile. A l'inverse, si un nombre important de types de l'environnement en comportent peu — ce que nous constaterons —, on peut espérer arriver à un \emph{critère d'unification} fort.
+
+Où les trouve-t-on ? Les deux critères que nous avons construits reposent sur la réponse à cette question. Les variables en \emph{tête} — correspondant au type de retour — caractérisent les cas les plus difficiles : par l'isomorphisme \eqref{curry}, on peut élever le nombre de paramètres en substituant par un type-flèche.
 
 Insistons sur le pragmatisme de cette approche : ce qui importe, c'est qu'un critère donne de bons résultats sur l'environnement étudié, en présence de répartitions biaisées.
 
 %============================================================
-
-\gab{Dans la présentation de la suite, j'ai l'impression que tu essayes de faire 2 choses en même temps: 1. Présenter les mesures , et donner une intuition des critères qui s'en servent. Je ne suis pas convaincu qu'il faille absolument faire les 2 en même temps. Tu vas de toute façon voir les critères en détails juste après. En pratique, le petit 1 est assez clair et compréhensible, mais le petit 2 est souvent beaucoup plus confus (car tu n'as pas encore donné la vrai définition).}
-
-\gab{Globalement, dans toutes les mesures présentées, il manque des exemples}
 
 \subsection{Nombre de variables uniques}
 
@@ -1312,63 +1307,52 @@ La première métrique consiste à compter le \emph{nombre de variables uniques}
   \end{align*}
 \end{definition}
 
-\begin{definition}[nombre de variables uniques d'un type normalisé]
-  Le nombre de variables uniques d'un type normalisé est le cardinal de son ensemble de variables.
+\begin{definition}[$\mu^1$]
+  Le nombre de variables uniques d'un type normalisé $\nu$, noté $\mu^1 (\nu)$, est le cardinal de son ensemble de variables.
 \end{definition}
 
-Voyons quelle est la constitution de l'environnement à l'aune de cette mesure. Invoquons donc \dowsindex avec une requête volontairement simple :
+\begin{exemple}
+	$\mu^1 (\mset{\alpha, list (\beta), \mset{} \rightarrow \beta} \rightarrow \alpha) = 2$
+\end{exemple}
 
-\gab{il faut dire/répéter que contient la bdd qu'on utilise}
-\begin{minted}{shell}
+Voyons quelle est la constitution de l'environnement à l'aune de cette métrique. Invoquons donc \dowsindex avec une requête volontairement simple :
+
+\begin{verbatim}
 $ ./dowsindex stats "int -> int -> int" --measure unique-vars
-\end{minted}
-
-Le programme affiche un tableau de statistiques donné en table \ref{tab_meas1} — nous avons omis les dernières lignes, ne représentant que quelques individus.
+--------------------------------------------------------
+measure    total time (ms)    avg. time (µs)    # unif.
+--------------------------------------------------------
+0          28.1541            1.48948            18902
+1          108.248            15.2291            7108
+2          373.408            108.015            3457
+3          16.8808            11.8295            1427
+4          7.12752            18.4174            387
+5          4.09412            30.7829            133
+6          0.967503           14.6591            66
+7          0.668526           37.1403            18
+8          0.645638           25.8255            25
+9          0.179052           22.3815            8
+10         0.176668           22.0835            8
+11         0.143051           23.8419            6
+12         1.55115            141.014            11
+13         0.298738           42.6769            7
+14         0.279188           39.884             7
+16         0.0150204          15.0204            1
+17         5.4822             2741.1             2
+18         6.71101            1677.75            4
+19         0.173092           173.092            1
+--------------------------------------------------------
+total time (s): 0.555204
+total # unif.: 31578
+\end{verbatim}
 
 Premier constat : près de 60\% de la population ne possède pas de variable, plus de 20\% n'en possède qu'une. Deuxième constat — auquel on s'attendait — : l'unification des types polymorphes est plus difficile, c'est-à-dire en moyenne beaucoup plus coûteuse.
 
-Cette \reformule{suprématie} des types non polymorphes nous dit la chose suivante : un critère les discriminant pourrait réduire considérablement le nombre d'unifications.
-
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|l|l|l|l|}
-    \hline
-      nb. de variables &
-      temps total ($ms$) &
-      temps moyen ($\mu s$) &
-      nb. d'unifications
-    \\
-    \hline
-      0 & 30.7281 & 1.62565 & 18902
-    \\
-      1 & 112.094 & 15.7701 & 7108
-    \\
-      2 & 376.908 & 109.027 & 3457
-    \\
-      3 & 16.1607 & 11.325 & 1427
-    \\
-      4 & 6.52051 & 16.8489 & 387
-    \\
-      5 & 4.1194 & 30.9729 & 133
-    \\
-      6 & 0.938654 & 14.222 & 66
-    \\
-      7 & 0.621796 & 34.5442 & 18
-    \\
-      8 & 0.619888 & 24.7955 & 25
-    \\
-      9 & 0.22316 & 27.895 & 8
-    \\
-      10 & 0.149012 & 18.6265 & 8
-    \\
-    \hline
-  \end{tabular}
-  \caption{\label{tab_meas1}}
-\end{table}
+Cette suprématie des types non polymorphes nous dit la chose suivante : un critère les discriminant pourrait réduire considérablement le nombre d'unifications.
 
 %============================================================
 
-\subsection{Type en tête}
+\subsection{Genre de la tête}
 
 La deuxième métrique regarde le type en \emph{tête}. Nous le définissons ainsi :
 
@@ -1406,99 +1390,112 @@ De façon symétrique, on peut définir la \emph{queue} d'un type :
   \end{align*}
 \end{definition}
 
+\begin{definition}[$\mu^2$]
+	La métrique $\mu^2$ est définie par :
+	\[ \mu^2 (\nu) = [ \uparrow \nu ] \]
+\end{definition}
+
+\begin{exemple}
+	On a les mesures :
+	\begin{itemize}
+		\item $\mu^2 (\mset{} \rightarrow \alpha) = \bold{var}$ ;
+		\item $\mu^2 (\mset{int, int} \rightarrow list (\alpha)) = \bold{cons}_{list}$.
+	\end{itemize}
+\end{exemple}
+
 A nouveau, invoquons \dowsindex avec la commande suivante :
 
-\begin{minted}{shell}
+\begin{verbatim}
 $ ./dowsindex stats "int -> int -> int" --measure head
-\end{minted}
+------------------------------------------------------------
+measure        total time (ms)    avg. time (µs)    # unif.
+------------------------------------------------------------
+variable       506.137            311.086            1627
+constructor    62.705             2.45229            25570
+tuple          11.2598            2.73429            4118
+other          0.815153           3.09944            263
+------------------------------------------------------------
+total time (s): 0.580917
+total # unif.: 31578
+\end{verbatim}
 
-La réponse est donnée en table \ref{tab_meas2}. La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. {Par ailleurs, \reformule{le temps moyen d'unification sur cette sous-population est frappant} : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
-
-\reformule{C'en est assez pour concevoir un premier critère}. D'une part, si les paramètres situés dans la queue n'ont pas de position bien définie, la tête ne bouge pas. D'autre part, l'application d'une substitution en préserve la forme, c'est-à-dire le genre au sens de $\G$ — si ce n'est dans le cas d'une variable, mais nous venons de voir que cela ne concerne qu'une minorité. Nous formaliserons ce résultat dans la section suivante.
-\gab{Pas compris ce paragraph, clarifier.}
-
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|l|l|l|l|}
-    \hline
-      tête &
-      temps total ($ms$) &
-      temps moyen ($\mu s$) &
-      nb. d'unifications
-    \\
-    \hline
-      variable & 866.083 & 532.319 & 1627
-    \\
-      constructeur & 63.0536 & 2.46592 & 25570
-    \\
-      uplet & 11.2414 & 2.72983 & 4118
-    \\
-      autre & 0.707626 & 2.69059 & 263
-    \\
-    \hline
-  \end{tabular}
-  \caption{\label{tab_meas2}}
-\end{table}
+La catégorie « autre » regroupe les types que le système ne sait pas encore traiter : objets, classes, variants polymorphes\dots Y apparaît l'écrasante majorité des individus présentant un constructeur ou un uplet en tête : 94\% de la population. Alors que nous savions déjà que 40\% est dotée de polymorphisme, nous apprenons ici que 5\% seulement arbore une variable en tête. Par ailleurs, le temps moyen d'unification sur cette sous-population est cent fois plus important que sur les autres : la présence d'une variable en tête caractérise manifestement les cas pathologiques.
 
 %============================================================
 
-\subsection{Nombre de variables dans l'« échine »}
+\subsection{Nombre de variables dans la base}
 
-Symétriquement, on peut observer le nombre de variables dans la queue. Néanmoins, le plus intéressant est le nombre de variables dans l'\emph{échine}, qui tient compte de la tête et de la queue :
+Symétriquement, on peut observer le nombre de variables dans la queue. Néanmoins, le plus intéressant est le nombre de variables dans la \emph{base}, qui tient compte de la tête et de la queue :
 
-\begin{definition}[échine d'un type normalisé]
-  L'échine d'un type normalisé $\nu$, notée $\updownarrow \nu$, est définie par :
+\begin{definition}[base d'un type normalisé]
+  La base d'un type normalisé $\nu$, notée $\updownarrow \nu$, est définie par :
   \[ \updownarrow \nu =\ \downarrow \nu +^\#_\N \mset{\uparrow \nu} \]
 \end{definition}
 
-Cette troisième métrique vient naturellement après les deux précédentes. Nous savons que la majorité des types possèdent peu ou pas de variables et qu'il est rare de les trouver en tête. Où sont-elles alors ? Nous poursuivons la recherche en élargissant le champ de vision à l'échine.
+\begin{definition}[$\mu^3$]
+  La métrique $\mu^3$ est définie par :
+  \begin{align*}
+      \mu^3 (\mset{\nu_1, \dots, \nu_n} \rightarrow \nu) &=
+      \sum_{i=1}^n {\mu^3}' (\nu_i) + {\mu^3}' (\nu)
+    \\
+      \mu^3 (\alpha) &=
+      1
+    \\
+      \mu^3 (\nu) &=
+      0
+    \\
+      {\mu^3}' (\alpha) &=
+      1
+    \\
+      {\mu^3}' (\nu) &=
+      0
+  \end{align*}
+\end{definition}
 
-\begin{minted}{shell}
+\begin{exemple}
+	On a les mesures :
+	\begin{itemize}
+		\item $\mu^3 (\mset{\alpha, int}) = 0$ ;
+		\item $\mu^3 (\mset{\alpha, int, \beta} \rightarrow \alpha) = 3$ ;
+		\item $\mu^3 (\mset{\mset{\alpha} \rightarrow \alpha, \alpha} \rightarrow list (\alpha)) = 1$.
+	\end{itemize}
+\end{exemple}
+
+Cette troisième métrique vient naturellement après les deux précédentes. Nous savons que la majorité des types possèdent peu ou pas de variables et qu'il est rare de les trouver en tête. Où sont-elles alors ? Nous poursuivons la recherche en élargissant le champ de vision à la base.
+
+\begin{verbatim}
 $ ./dowsindex stats "int -> int -> int" --measure spine-vars
-\end{minted}
+--------------------------------------------------------
+measure    total time (ms)    avg. time (µs)    # unif.
+--------------------------------------------------------
+0          70.9665            2.4932             28464
+1          95.8333            44.6567            2146
+2          397.937            486.476            818
+3          5.00131            53.7775            93
+4          1.3001             43.3366            30
+5          0.28801            32.0011            9
+6          0.00905991         4.52995            2
+7          0.0109673          5.48363            2
+8          0.0100136          5.00679            2
+9          0.0100136          5.00679            2
+10         0.0150204          7.51019            2
+11         0.0143051          7.15256            2
+12         0.014782           7.39098            2
+13         0.0169277          8.46386            2
+14         0.0171661          8.58307            2
+--------------------------------------------------------
+total time (s): 0.571445
+total # unif.: 31578
+\end{verbatim}
 
-La commande ci-dessus émet un troisième tableau de statistiques — voir table \ref{tab_meas3}. Là encore, les proportions sont franches. Pas moins de 90\% de la population ne présente pas de variables à l'échine. Le cas à deux variables, très minoritaire, semble particulièrement pathologique.
-
-Cela nous a amené à un deuxième critère plus sophistiqué que le premier. Plaçons-nous tout d'abord dans le cas où les deux types à unifier n'ont pas de variables à l'échine. Il vient aisément que, non seulement leurs têtes doivent avoir le même genre, mais on doit aussi trouver dans chaque queue les genres en quantités égales. Plaçons-nous maintenant dans le cas où un seul des deux types possède cette caractéristique. Intuitivement, une variable de l'échine peut « absorber » des paramètres afin d'unifier — ce qui ne peut se produire dans un type en étant dépourvu. Ainsi, l'idée est que chaque genre non-variable représenté dans la queue d'un type quelconque doit nécessairement trouver son pareil au moins autant de fois dans la queue d'un type n'ayant pas cette capacité d'absorption. Dans le dernier cas — le moins fréquent —, on ne peut rien affirmer.
-
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|l|l|l|l|}
-    \hline
-      nb. de variables &
-      temps total ($ms$) &
-      temps moyen ($\mu s$) &
-      nb. d'unifications
-    \\
-    \hline
-      0 & 84.331 & 2.96273 & 28464
-    \\
-      1 & 109.803 & 51.1663 & 2146
-    \\
-      2 & 598.459 & 731.613 & 818
-    \\
-      3 & 5.35536 & 57.5845 & 93
-    \\
-      4 & 2.35057 & 78.3523 & 30
-    \\
-      5 & 0.712872 & 79.208 & 9
-    \\
-      6 & 0.0100136 & 5.00679 & 2
-    \\
-      7 & 0.0109673 & 5.48363 & 2
-    \\
-    \hline
-  \end{tabular}
-  \caption{\label{tab_meas3}}
-\end{table}
+Là encore, les proportions sont franches. Pas moins de 90\% de la population ne présente pas de variables à la base. Le cas à deux variables, très minoritaire, semble particulièrement pathologique.
 
 %============================================================
 %============================================================
 
 \section{Critères d'unifiabilité}
 
-Dans cette section, nous formalisons et prouvons les critères mis en évidence précédemment.\gab{Justement, pas vraiment. On a une définition pour la tête, mais pour le reste, on a seulement une vague intuition}
-Leur intérêt potentiel est fondé sur les observations réalisées à l'aide des trois métriques. Nous montrons que ces critères présentent effectivement un intérêt et comment les utiliser dans l'implémentation.
+Dans cette section, nous présentons et formalisons deux critères d'unifiabilité dont l'intérêt potentiel est fondé sur les observations réalisées à l'aide des trois métriques.
 
 Commençons par définir proprement ce qu'est un \emph{critère d'unification correct} dans des termes proches de l'implémentation.
 
@@ -1528,21 +1525,23 @@ Commençons par définir proprement ce qu'est un \emph{critère d'unification co
   Le critère d'unifiabilité trivial sur $\N$ est correct : $(\nu \mapsto \nu, (\nu_1, \nu_2) \mapsto \bold{V})$.
 \end{exemple}
 
-\gab{Ici, il faut donner l'intention: pour la plupart des types, $encode$ est appelé durant la construction de la base, et $compat$ est appelé pendant la recherche dans la base. Le but est que $compat$ soit rapide.}
+Comme nous le verrons dans la section suivante, la fonction d'encodage sert précisément à encoder les types pour les stocker dans l'index tandis que la fonction de compatibilité teste rapidement l'unifiabilité sur les codes lors de la recherche.
 
 %============================================================
 
 \subsection{Premier critère}
 
-\subsubsection{Démonstration}
+\subsubsection{Présentation}
 
-Le premier critère a été décrit plus haut. Il consiste à lier les genres des têtes des types à unifier.
-
-\gab{Il faut (re)donner encode/compat !}
+Le premier critère consiste à lier les genres des têtes des types à unifier. En effet, l'application d'une substitution préserve le genre de la tête — si ce n'est dans le cas d'une variable, mais avons vu que cela ne concerne qu'une minorité. On obtient la condition nécessaire suivante :
 
 \begin{theoreme} \label{thm_cond1}
   Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
 \end{theoreme}
+
+\begin{preuve}
+	Voir annexe.
+\end{preuve}
 
 \begin{exemple}
   Par contraposée, les types suivants ne sont pas unifiables :
@@ -1551,6 +1550,545 @@ Le premier critère a été décrit plus haut. Il consiste à lier les genres de
     \item $\mset{} \rightarrow \mset{}$ et $\mset{} \rightarrow int$.
   \end{itemize}
 \end{exemple}
+
+\subsubsection{Implémentation}
+
+Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion de critère que nous avons définie, c'est-à-dire dans les termes de l'implémentation.
+
+\begin{definition}[$\mathrm{crit}^1$]
+  On note $\mathrm{crit}^1$ le critère $(\mathrm{encode}^1, \mathrm{compat}^1)$ sur $\mathscr{D}^1 = \G$, où $\mathrm{encode}^1$ et $\mathrm{compat}^1$ sont définies par :
+  \begin{align*}
+      \mathrm{encode}^1 (\nu) &=
+      [ \nu ]
+    \\
+      \mathrm{compat}^1 (\bold{var}, {g}_2) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^1 ({g}_1, \bold{var}) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^1 (\bold{uplet}, \bold{uplet}) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^1 (\bold{fleche}, \bold{fleche}) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^1 (\bold{cons}_f, \bold{cons}_f) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^1 ({g}_1, {g}_2) &=
+      \bold{F}
+  \end{align*}
+\end{definition}
+
+De façon plus visuelle, la figure \ref{fig_crit1} expose la chose sous la forme d'un arbre de décision auquel on soumet une requête. Les types de l'environnement sont distribués dans les sous-arbres en décidant quelle branche prendre à chaque nœud selon leur code. Les nœuds foncés correspondent aux sous-arbres compatibles avec la requête.
+
+\begin{theoreme} \label{thm_crit1}
+  Le critère d'unifiabilité $\mathrm{crit}^1$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+  Par le théorème \ref{thm_cond1}.
+\end{preuve}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.13]{graphs/crit1_1}
+    \includegraphics[scale=0.13]{graphs/crit1_2}
+    \includegraphics[scale=0.13]{graphs/crit1_3}
+  \end{center}
+  \caption{\label{fig_crit1}}
+\end{figure}
+
+\subsubsection{Apport}
+
+Voyons ce qu'apporte ce premier critère en pratique. Nous avons collecté dans la table \ref{tab_apport1} les résultats de plusieurs requêtes. Les deuxième et troisième colonnes donnent le temps total d'unification sans et avec le critère ; il en est de même pour les quatrième et cinquième avec le nombre d'unifications. On peut obtenir ces données à l'aide des commandes (il n'y a pas besoin de répéter la première) :
+
+\begin{verbatim}
+$ ./dowsindex save --index index.db --features head
+$ ./dowsindex stats --index index.db --features head --with-features <type>
+\end{verbatim}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|*{5}{c|}}
+    \hline
+      type &
+      \multicolumn{2}{c|}{temps total ($s$)} &
+      \multicolumn{2}{c|}{nb. d'unifications}
+    \\
+    \cline{2-5}
+      &
+      sans critère & avec critère &
+      sans critère & avec critère
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      0.63 & 0.08 (12.1\%) &
+      31578 & 2714 (8.6\%)
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      1.08 & 0.88 (81.4\%) &
+      31578 & 2714 (8.6\%)
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      1.09 & 0.29 (26.4\%) &
+      31578 & 2945 (9.3\%)
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      0.31 & 0.17 (53.6\%) &
+      31578 & 5745 (18.2\%)
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      0.83 & 0.30 (36.4\%) &
+      31578 & 5745 (18.2\%)
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      5.77 & 5.43 (94.1\%) &
+      31578 & 31578 (100\%)
+    \\
+    \hline
+  \end{tabular}
+  \caption{\label{tab_apport1}}
+\end{table}
+
+Premier constat : le critère se comporte comme prévu. Deux types distincts mais dont les têtes ont le même genre unifient autant de fois et la requête présentant une variable en tête ne profite pas du critère.
+
+Deuxième constat : pour la plupart des requêtes, ce premier critère assez simple diminue considérablement le nombre d'unifications — entre 81.8\% et 91.4\% sont éliminées. Tant que la requête n'a pas de variable en tête, on peut tirer pleinement parti du fait que 95\% des types de l'environnement partagent cette caractéristique.
+
+Le plus satisfaisant est de noter que le potentiel estimé à l'aide de la deuxième métrique se réalise par un critère intéressant. L'approche que nous avons adoptée en est corroborée.
+
+%============================================================
+
+\subsection{Deuxième critère}
+
+\subsubsection{Présentation}
+
+Le deuxième critère est plus sophistiqué que le premier. Observons plusieurs cas.
+
+Plaçons-nous tout d'abord dans le cas où les deux types à unifier n'ont pas de variables à la base. Il vient aisément que, non seulement leurs têtes doivent avoir le même genre, mais on doit aussi trouver dans chaque queue les genres en quantités égales.
+
+Plaçons-nous maintenant dans le cas où un seul des deux types possède cette caractéristique. Intuitivement, une variable de la base peut « absorber » des paramètres afin d'unifier — ce qui ne peut se produire dans un type en étant dépourvu. Ainsi, l'idée est que chaque genre non-variable représenté dans la queue d'un type quelconque doit nécessairement trouver son pareil au moins autant de fois dans la queue d'un type n'ayant pas cette capacité d'absorption.
+
+Dans le dernier cas — le moins fréquent —, on ne peut rien affirmer.
+
+Afin de formaliser la condition nécessaire résultante, on définit la notion de \emph{multiplicité}, qui compte le nombre de types d'un genre donné dans la queue d'un type :
+
+\begin{definition}[multiplicité d'un genre dans un type normalisé]
+  La multiplicité d'un genre $g$ dans un type normalisé $\nu$, notée $\mu_g (\nu)$, est définie par :
+  \begin{align*}
+      \mu_g (\nu^\# \rightarrow \nu) &=
+      \mu_g' (\nu^\#)
+    \\
+      \mu_g (\nu) &=
+      0
+    \\
+      \mu_g' (\mset{\nu_1, \dots, \nu_n}) &=
+      \sum_{i=1}^n \mu_g'' (\nu_i)
+    \\
+      \mu_g'' (\nu) &=
+      1 &&
+      \text{si } [\nu] = g
+    \\
+      \mu_g'' (\nu) &=
+      0 &&
+      \text{sinon}
+  \end{align*}
+\end{definition}
+
+Introduisons également les \emph{types normalisés simples}. Il s'agit des types ne possédant pas de variables à la base. Nous avons vu que neuf dixièmes des types de l'environnement sont simples. A cela s'ajoute le fait que le motif du matching est toujours simple.
+
+\begin{definition}[type normalisé simple]
+  Le prédicat sur les types normalisés « est simple », noté $\bold{simple}$, est défini par :
+  \begin{mathpar}
+    \inferrule*
+      {[\nu] \notin \{ \bold{var}, \bold{fleche} \}}
+      {\nu\ \bold{simple}}
+    \and
+    \inferrule*
+      {\forall i \in \interval 1 n,\ [\nu_i] \neq \bold{var} \\ [\nu] \neq \bold{var}}
+      {\mset{\nu_1, \dots, \nu_n} \rightarrow \nu\ \bold{simple}}
+  \end{mathpar}
+\end{definition}
+
+Bien qu'intéressante dans le cadre des démonstrations, cette définition n'est pas adaptée à l'implémentation. Pour décider si un type est simple, on utilisera la métrique $\mu^3$ :
+
+\begin{lemme}
+  Un type normalisé est simple \ssi sa mesure au sens de $\mu^3$ est nulle.
+\end{lemme}
+
+\begin{preuve}
+  Les deux sens se démontrent sans difficulté.
+\end{preuve}
+
+Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde condition nécessaire :
+
+\begin{theoreme} \label{thm_cond2}
+  Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, la multiplicité de tout genre différent de $\bold{var}$ dans $\nu_1$ est supérieure ou égale à celle dans $\nu_2$.
+\end{theoreme}
+
+\begin{preuve}
+	Voir annexe.
+\end{preuve}
+
+\begin{exemple}
+  Par contraposée, les types suivants ne sont pas unifiables :
+  \begin{itemize}
+    \item $\mset{int, int} \rightarrow int$ et $\mset{int} \rightarrow float$ ;
+    \item $\mset{int} \rightarrow int$ et $\mset{int, int, \alpha} \rightarrow \alpha$ ;
+    \item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{}$ et $\mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$.
+  \end{itemize}
+\end{exemple}
+
+\subsubsection{Implémentation}
+
+Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
+
+\begin{definition}[$\mathrm{crit}^2_g$]
+  Soit un genre de types normalisés $g$ différent de $\bold{var}$ et $\bold{uplet}$. \\
+  On note $\mathrm{crit}^2_g$ le critère $(\mathrm{encode}^2_g, \mathrm{compat}^2_g)$ sur $\mathscr{D}^2_{g} = \mathbb{B} \times \mathbb{N}$, où $\mathrm{encode}^2_g$ et $\mathrm{compat}^2_g$ sont définies par :
+  \begin{align*}
+      \mathrm{encode}^2_g (\nu) &=
+      (\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
+    \\
+      \mathrm{vars\mathhyphen echine} (\nu) &=
+      \bold{F} &&
+      \text{si } \mu^3 (\nu) = 0
+    \\
+      \mathrm{vars\mathhyphen echine} (\nu) &=
+      \bold{V} &&
+      \text{sinon}
+  \end{align*}
+  \begin{align*}
+      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{V}, \mu_2)) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+      \bold{V} &&
+      \text{si } \mu_1 \leqslant \mu_2
+    \\
+      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+      \bold{F} &&
+      \text{sinon}
+    \\
+      \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+      \bold{V} &&
+      \text{si } \mu_2 \leqslant \mu_1
+    \\
+      \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+      \bold{F} &&
+      \text{sinon}
+  \end{align*}
+\end{definition}
+
+\begin{figure}[h]
+  \begin{center}
+    \includegraphics[scale=0.13]{graphs/crit2_1}
+    \includegraphics[scale=0.13]{graphs/crit2_2}
+  \end{center}
+  \caption{\label{fig_crit2}}
+\end{figure}
+
+\begin{theoreme} \label{thm_crit2g}
+  Pour tout genre $g$ différent de $\bold{var}$ et $\bold{uplet}$, le critère d'unifiabilité $\mathrm{crit}^1_g$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+  Par le théorème \ref{thm_cond2}.
+\end{preuve}
+
+Cependant, introduire autant de critères qu'il y a de constructeurs de types n'est pas une bonne idée. En fait, on peut « paralléliser » tous ces critères en travaillant sur des multi-ensembles de genres. Les inégalités ci-dessus laissent place à des inclusions entre multi-ensembles.
+
+\begin{definition}[$\mathrm{crit}^2$]
+  On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
+  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
+  \begin{align*}
+      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+      \bold{V}
+    \\
+      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+      \bold{V} &&
+      \text{si } {g}^\#_1 \subseteq^\#_\G {g}^\#_2
+    \\
+      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+      \bold{F} &&
+      \text{sinon}
+    \\
+      \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+      \bold{V} &&
+      \text{si } {g}^\#_2 \subseteq^\#_\G {g}^\#_1
+    \\
+      \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+      \bold{F} &&
+      \text{sinon}
+  \end{align*}
+\end{definition}
+
+\begin{theoreme} \label{thm_crit2}
+  Le critère d'unifiabilité $\mathrm{crit}^2$ est correct.
+\end{theoreme}
+
+\begin{preuve}
+  On interprète l'inclusion sur les multi-ensembles en termes de multiplicités. Le résultat se déduit du théorème \ref{thm_crit2g}.
+\end{preuve}
+
+\subsubsection{Apport}
+
+Allions les deux critères. Les résultats sont présentés en table \ref{tab_apport2}. Ils ont été obtenus grâce à la commande suivante :
+
+\begin{verbatim}
+$ ./dowsindex stats --with-features <type>
+\end{verbatim}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|*{5}{c|}}
+    \hline
+      type &
+      \multicolumn{2}{c|}{temps total ($s$)} &
+      \multicolumn{2}{c|}{nb. d'unifications}
+    \\
+    \cline{2-5}
+      &
+      sans critères & avec critères &
+      sans critères & avec critères
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      0.638 & 0.001 (0.23\%) &
+      31578 & 121 (0.38\%)
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      1.622 & 0.001 (0.08\%) &
+      31578 & 107 (0.34\%)
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      11.193 & 0.011 (0.93\%) &
+      31578 & 141 (0.45\%)
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      0.636 & 0.004 (0.60\%) &
+      31578 & 126 (0.40\%)
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      1.180 & 0.225 (19.06\%) &
+      31578 & 2443 (7.74\%)
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      5.097 & 1.566 (30.71\%) &
+      31578 & 3677 (11.64\%)
+    \\
+    \hline
+  \end{tabular}
+  \caption{\label{tab_apport2}}
+\end{table}
+
+Force est de constater que les critères fonctionnent très bien sur ces requêtes. Les plus simples sont traitées de façon instantanée. Il est satisfaisant de constater que l'unification sur un environnement de dizaines de millers de types se réduit dans ces cas à quelques centaines seulement.
+
+Au vu de ces faibles résidus, on peut raisonnablement affirmer avoir épuisé les cas simples. Un troisième critère devrait se confronter à des types plus retors.
+
+%============================================================
+%============================================================
+
+\section{Utilisation d'un trie}
+
+Nous avons à présent tous les éléments pour construire un \emph{index}. On est naturellement confronté au choix de la structure de données à employer. L'idée de Gabriel Radanne, inspirée par \cite{Schulz}, est d'adapter la structure de \emph{trie} aux critères.
+
+Les tries servent à stocker efficacement une table associative où les clefs sont des mots sur un alphabet donné. Ce n'est pas le cas ici. Nous travaillons plutôt sur la concaténation des codes des deux critères, dans laquelle est contenue toute l'information nécessaire aux tests de compatibilité. Ces derniers compliquent d'ailleurs la chose : plusieurs branches peuvent être compatibles avec la requête (voir les figures \ref{fig_crit1} et \ref{fig_crit2}). En somme, il faut revoir la structure.
+
+En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. On la définit ainsi :
+
+\begin{definition}[tries de types normalisés]
+  L'ensemble des tries de types normalisés, noté $\mathscr{T}$, est défini inductivement par :
+  \begin{mathpar}
+    \inferrule*
+      {N \subseteq \N}
+      {\bold{feuille} (N) \in \mathscr{T}}
+    \and
+    \inferrule*
+      {crit \in \mathscr{C}_\mathscr{D} \\ fils \in \mathscr{F} (\mathscr{D}, \mathscr{T})}
+      {\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
+  \end{mathpar}
+\end{definition}
+
+\begin{exemple}
+  Avec nos deux critères, le trie vide s'écrit : \\
+  \[ \bold{noeud}_{\mathscr{D}^1} (\mathrm{crit}^1, g \mapsto \bold{noeud}_{\mathscr{D}^2} (\mathrm{crit}^2, (b, g^\#) \mapsto \bold{feuille} (\{ \}))) \]
+\end{exemple}
+
+On les manipule à l'aide de deux fonctions. La première ajoute un type à un trie par un appel récursif sur le sous-arbre associé au code du type ajouté.
+
+\begin{definition}[$\mathrm{trie\mathhyphen ajoute}$]
+  La fonction $\mathrm{trie\mathhyphen ajoute}$ est définie récursivement par :
+  \begin{align*}
+      \mathrm{trie\mathhyphen ajoute} (\bold{feuille} (N), \nu) &=
+      \bold{feuille} (N \cup \{ \nu \})
+    \\
+      \mathrm{trie\mathhyphen ajoute} (\bold{noeud}_\mathscr{D} (crit, fils), \nu) &=
+      \bold{noeud}_\mathscr{D} (crit, d \mapsto \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' (crit, fils, \nu, d))
+  \end{align*}
+  \begin{align*}
+      \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+      \mathrm{trie\mathhyphen ajoute} (fils (d), \nu) &&
+      \text{si } d = encode (\nu)
+    \\
+      \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+      fils (d) &&
+      \text{sinon}
+  \end{align*}
+\end{definition}
+
+La seconde calcule l'ensemble des types d'un trie compatibles pour tous les critères avec une requête donnée. Elle consiste en un appel récursif sur les sous-arbres compatibles avec la requête.
+
+\begin{definition}[$\mathrm{trie\mathhyphen cherche}$]
+  La fonction $\mathrm{trie\mathhyphen cherche}$ est définie récursivement par :
+  \begin{align*}
+      \mathrm{trie\mathhyphen cherche} (\bold{feuille} (N), \nu) &=
+      N
+    \\
+      \mathrm{trie\mathhyphen cherche} (\bold{noeud}_\mathscr{D} ((encode, compat), fils), \nu) &=
+      \bigcup_{\mathclap{{d \in \mathscr{D} \mid compat (d, encode (\nu)) = \bold{T}}}} \mathrm{trie\mathhyphen cherche} (fils (d), \nu)
+  \end{align*}
+\end{definition}
+
+L'interface de implémentation OCaml correspondante est présentée ci-dessous. On y retrouve les fonctions d'encodage et de test de compatibilité des critères — \mintinline{ocaml}{compute} et \mintinline{ocaml}{compatible} — la structure arborescente avec feuilles et nœuds — \mintinline{ocaml}{Leaf} et \mintinline{ocaml}{Node} — ainsi que les fonctions d'ajout et de recherche — \mintinline{ocaml}{add} et \mintinline{ocaml}{iter_with}. La fonction \mintinline{ocaml}{compare} définit un ordre total sur les critères dont \mintinline{ocaml}{Node} a besoin pour ses structures de données. \mintinline{ocaml}{empty} est le trie vide.
+
+Sa simplicité est particulièrement appréciable. Il est aisé d'ajouter et expérimenter de nouveaux critères.
+
+\begin{minted}{ocaml}
+module type FEATURE = sig
+  type t
+  val compute : Type.t -> t
+  val compare : t -> t -> Int.t
+  val compatible : query:t -> data:t -> Bool.t
+end
+
+module type NODE = sig
+  type t
+  val empty : t
+  val add : Type.t -> t -> t
+  val iter_with : Type.t -> t -> Type.t Iter.t
+end
+
+module Leaf : NODE
+module Node (Feat : FEATURE) (Sub : NODE) : NODE
+\end{minted}
+
+%============================================================
+%============================================================
+%============================================================
+
+\chapter{\dowsindex}
+
+Dans ce dernier chapitre, nous visitons les fonctionnalités du programme \dowsindex. On pourra en trouver le code source sur le dépôt \textit{github} \href{https://github.com/Drup/dowsing}{\texttt{Drup/dowsing}}. La version actuelle est compatible avec les systèmes d'exploitation Linux et macOS.
+
+\dowsindex met en application les techniques présentées dans le chapitre précédent. Avant toute chose, il faut donc créer un \emph{index} auquel \dowsindex se référera au moment de la recherche. La commande suivante fait l'affaire :
+
+\begin{verbatim}
+$ dowsindex save
+\end{verbatim}
+
+L'index est entreposé dans un répertoire standard destiné aux données d'applications. On peut aussi indiquer explicitement où le sauvegarder :
+
+\begin{verbatim}
+$ dowsindex save --index <fichier>
+\end{verbatim}
+
+On peut également préciser quels paquets OPAM inclure dans l'index — notamment afin de réduire le temps de construction. La command suivante a cet effet, mais aussi — si l'index existe déjà — celui de charger ou recharger les paquets désignés :
+
+\begin{verbatim}
+$ dowsindex save [--index <fichier>] <paquet>...
+\end{verbatim}
+
+Ceci étant fait — et une bonne fois pour toutes —, on peut maintenant utiliser \dowsindex pour sa fin première : recherche une fonction par son type. Si l'index a été créé dans le répertoire standard, il suffit de demander :
+
+\begin{verbatim}
+$ dowsindex search <type>
+\end{verbatim}
+
+Sinon, il faut préciser le chemin de l'index :
+
+\begin{verbatim}
+$ dowsindex search --index <fichier> <type>
+\end{verbatim}
+
+Si tout se passe bien, le programme affiche la liste des fonctions retenues avec leurs types. Pour ne garder que les $n$ premières réponses, on peut employer l'option \texttt{-n} :
+
+\begin{verbatim}
+$ dowsindex search [--index <fichiers>] -n <n> <type>
+\end{verbatim}
+
+L'espace de recherche peut être limité à certains paquets — c'est d'ailleurs le scénario le plus courant — :
+
+\begin{verbatim}
+$ dowsindex search [--index <fichiers>] [-n <n>] <paquet>... <type>
+\end{verbatim}
+
+On peut par exemple rechercher une fonction de la bibliothèque standard testant l'appartenance à une liste :
+
+\begin{verbatim}
+$ ./dowsindex search stdlib "'a list * 'a -> bool"
+Parsing.is_current_lookahead : 'a -> bool
+Obj.magic : 'a -> 'b
+List.mem : 'a -> 'a list -> bool
+List.memq : 'a -> 'a list -> bool
+ListLabels.mem : 'a -> set:'a list -> bool
+ListLabels.memq : 'a -> set:'a list -> bool
+Compenv.print_version_string : unit -> 'a
+Compenv.print_standard_library : unit -> 'a
+\end{verbatim}
+
+Mentionnons une dernière fonctionnalité. Par défaut, \dowsindex fait du \emph{matching} (voir chapitre 2). Pour les requêtes non polymorphes, cela revient à unifier. Pour les requêtes polymorphes, cela signifie que les variables sont chacune remplacées avant unification par une constante fraîche — n'apparaissant pas dans l'environnement — qui leur est propre. Sous cette nouvelle apparence, elles ne sont unifiables qu'avec des variables ; autrement dit, cela force le polymorphisme. C'est généralement le comportement souhaité. Néanmoins, l'utilisateur peut formuler sa requête sous la forme plus générale d'un \emph{schéma de types}. Les variables polymorphes non instanciables y sont spécifiées avant le type, les deux étant séparés d'un point ; les autres variables libres du type seront alors instanciables. En résumé, \dowsindex accepte la syntaxe suivante :
+
+\[ \T \mid \V \dots \V \texttt{.} \T \]
+
+On peut par exemple demander :
+
+\begin{verbatim}
+$ dowsindex search "a b. ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{verbatim}
+
+Les deux variables étant explicitement liées, cela revient à :
+
+\begin{verbatim}
+$ dowsindex search "('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{verbatim}
+
+En revanche, les variables de cette requête sont instanciables car non liées :
+
+\begin{verbatim}
+$ dowsindex search ". ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
+\end{verbatim}
+
+%============================================================
+%============================================================
+%============================================================
+
+\chapter{Conclusion}
+
+Nous arrivons au terme de ce rapport. Retraçons ses grandes lignes. A partir d'une implémentation de l'\emph{unification modulo isomorphismes de types}, nous avons amené, défini et démontré deux \emph{critères d'unifiabilité}. Ces critères sont utilisés par \dowsindex dans la construction d'un \emph{index}. Ce travail permet de réduire significativement le nombre d'appels à l'unification. Les requêtes les plus simples sont traitées de façon instantanée.
+
+Il y a encore à faire : terminer les preuves, définir d'autres critères visant les cas plus difficiles, prendre en compte des types OCaml plus sophistiqués\dots Plusieurs aspects de l'indexation mériteraient qu'on s'y arrête : récupération des fonctions de l'environnement OPAM, sauvegarde et chargement de l'index (pour le moment réalisés avec le module \mintinline{ocaml}{Marshall}). \dowsindex souffre particulièrement du fait que la qualification des types par rapport au module englobant est mal assurée ; par exemple, la fonction \mintinline{ocaml}{Format.pp_print_int} est connue sous le type \mintinline{ocaml}{formatter -> int -> unit}, et non pas \mintinline{ocaml}{Format.formatter -> int -> unit}.
+
+Quoi qu'il en soit, nous espérons avoir posé de solides bases au système \dowsindex. Je remercie Gabriel Radanne et Laure Gonnord pour leur encadrement tout au long du stage. Je ne remercie pas le SARS-CoV-2 pour les conditions particulières dans lesquelles il s'est déroulé.
+
+%============================================================
+%============================================================
+%============================================================
+
+\chapter*{Annexe}
+\addcontentsline{toc}{chapter}{Annexe}
+
+Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d'unifiabilité.
+
+%============================================================
+%============================================================
+
+\section{Première condition nécessaire}
+
+\begin{theoreme} \label{thm_cond1}
+  Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+\end{theoreme}
 
 \begin{preuve}
   Par hypothèse, il existe $\theta$ dans $\Theta$ telle que :
@@ -1609,205 +2147,14 @@ Le premier critère a été décrit plus haut. Il consiste à lier les genres de
   Trivial avec la définition de la tête.
 \end{preuve}
 
-\subsubsection{Implémentation}
-
-Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion de critère que nous avons définie, c'est-à-dire dans les termes de l'implémentation.
-
-\begin{definition}[$\mathrm{crit}^1$]
-  On note $\mathrm{crit}^1$ le critère $(\mathrm{encode}^1, \mathrm{compat}^1)$ sur $\mathscr{D}^1 = \G$, où $\mathrm{encode}^1$ et $\mathrm{compat}^1$ sont définies par :
-  \begin{align*}
-      \mathrm{encode}^1 (\nu) &=
-      [ \nu ]
-    \\
-      \mathrm{compat}^1 (\bold{var}, {g}_2) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^1 ({g}_1, \bold{var}) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^1 (\bold{uplet}, \bold{uplet}) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^1 (\bold{fleche}, \bold{fleche}) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^1 (\bold{cons}_f, \bold{cons}_f) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^1 ({g}_1, {g}_2) &=
-      \bold{F}
-  \end{align*}
-\end{definition}
-
-De façon plus visuelle, la figure \ref{fig_crit1} expose la chose sous la forme d'un arbre de décision auquel on soumet une requête. Les types de l'environnement sont distribués dans les sous-arbres en décidant quelle branche prendre à chaque nœud selon leur code. Les nœuds foncés correspondent aux sous-arbres compatibles avec la requête.
-
-\begin{theoreme} \label{thm_crit1}
-  Le critère d'unifiabilité $\mathrm{crit}^1$ est correct.
-\end{theoreme}
-
-\begin{preuve}
-  Par le théorème \ref{thm_cond1}.
-\end{preuve}
-
-\begin{figure}[h]
-  \begin{center}
-    \includegraphics[scale=0.13]{graphs/crit1_1}
-    \includegraphics[scale=0.13]{graphs/crit1_2}
-    \includegraphics[scale=0.13]{graphs/crit1_3}
-  \end{center}
-  \caption{\label{fig_crit1}}
-\end{figure}
-
-\subsubsection{Apport}
-
-Voyons ce qu'apporte ce premier critère en pratique. Nous avons collecté dans la table \ref{tab_apport1} les résultats de plusieurs requêtes. Les deuxième et troisième colonnes donnent le temps total d'unification sans et avec le critère ; il en est de même pour les quatrième et cinquième avec le nombre d'unifications. On peut obtenir ces données à l'aide des commandes (il n'y a pas besoin de répéter la première) :
-
-\begin{minted}{shell}
-$ ./dowsindex save --index index.db --features head
-$ ./dowsindex stats --index index.db --features head --with-features <type>
-\end{minted}
-
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|*{5}{c|}}
-    \hline
-      type &
-      \multicolumn{2}{c|}{temps total ($s$)} &
-      \multicolumn{2}{c|}{nb. d'unifications}
-    \\
-    \cline{2-5}
-      &
-      sans critère & avec critère &
-      sans critère & avec critère
-    \\
-    \hline
-      $int \rightarrow int \rightarrow int$ &
-      0.63 & 0.08 (12.1\%) &
-      31578 & 2714 (8.6\%)
-    \\
-      $int \rightarrow int \rightarrow int \rightarrow int$ &
-      1.08 & 0.88 (81.4\%) &
-      31578 & 2714 (8.6\%)
-    \\
-      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
-      1.09 & 0.29 (26.4\%) &
-      31578 & 2945 (9.3\%)
-    \\
-      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-      0.31 & 0.17 (53.6\%) &
-      31578 & 5745 (18.2\%)
-    \\
-      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
-      0.83 & 0.30 (36.4\%) &
-      31578 & 5745 (18.2\%)
-    \\
-      $int \rightarrow int \rightarrow \alpha$ &
-      5.77 & 5.43 (94.1\%) &
-      31578 & 31578 (100\%)
-    \\
-    \hline
-  \end{tabular}
-  \caption{\label{tab_apport1}}
-\end{table}
-
-Premier constat : le critère se comporte comme prévu. Deux types distincts mais dont les têtes ont le même genre unifient autant de fois et la requête présentant une variable en tête ne profite pas du critère.
-
-Deuxième constat : pour la plupart des requêtes, ce premier critère assez simple diminue considérablement le nombre d'unifications — entre 81.8\% et 91.4\% sont éliminées. Tant que la requête n'a pas de variable en tête, on peut tirer pleinement parti du fait que 95\% des types de l'environnement partagent cette caractéristique.
-
-Le plus satisfaisant est de noter que le potentiel estimé à l'aide de la deuxième métrique se réalise par un critère intéressant. L'approche que nous avons adoptée en est corroborée.
-
+%============================================================
 %============================================================
 
-\subsection{Deuxième critère}
-
-\subsubsection{Démonstration}
-
-Le deuxième critère se formalise par la notion de \emph{multiplicité}, qui compte le nombre de types d'un genre donné dans la queue d'un type :
-
-\begin{definition}[multiplicité d'un genre dans un type normalisé]
-  La multiplicité d'un genre $g$ dans un type normalisé $\nu$, notée $\mu_g (\nu)$, est définie par :
-  \begin{align*}
-      \mu_g (\nu^\# \rightarrow \nu) &=
-      \mu_g' (\nu^\#)
-    \\
-      \mu_g (\nu) &=
-      0
-    \\
-      \mu_g' (\mset{\nu_1, \dots, \nu_n}) &=
-      \sum_{i=1}^n \mu_g'' (\nu_i)
-    \\
-      \mu_g'' (\nu) &=
-      1 &&
-      \text{si } [\nu] = g
-    \\
-      \mu_g'' (\nu) &=
-      0 &&
-      \text{sinon}
-  \end{align*}
-\end{definition}
-
-Afin d'exprimer la condition nécessaire sous-tendant ce critère, il nous faut introduire les \emph{types normalisés simples}. Il s'agit des types ne possédant pas de variables à l'échine. Nous avons vu que neuf dixièmes des types de l'environnement sont simples. A cela s'ajoute le fait que le motif du matching est toujours simple.
-
-\begin{definition}[type normalisé simple]
-  Le prédicat sur les types normalisés « est simple », noté $\bold{simple}$, est défini par :
-  \begin{mathpar}
-    \inferrule*
-      {[\nu] \notin \{ \bold{var}, \bold{fleche} \}}
-      {\nu\ \bold{simple}}
-    \and
-    \inferrule*
-      {\forall i \in \interval 1 n,\ [\nu_i] \neq \bold{var} \\ [\nu] \neq \bold{var}}
-      {\mset{\nu_1, \dots, \nu_n} \rightarrow \nu\ \bold{simple}}
-  \end{mathpar}
-\end{definition}
-
-Bien qu'intéressante dans le cadre des démonstrations, cette définition n'est pas adaptée à l'implémentation. Pour décider si un type est simple, on pourra calculer sa $\V$-\emph{multiplicité} :
-
-\begin{definition}[$\V$-multiplicité d'un type normalisé]
-  La $\V$-multiplicité d'un type normalisé $\nu$, notée $\mu_\V (\nu)$, est définie par :
-  \begin{align*}
-      \mu_\V (\nu^\# \rightarrow \nu) &=
-      \mu_\V' (\nu^\#) + \mu_\V'' (\nu)
-    \\
-      \mu_\V (\alpha) &=
-      1
-    \\
-      \mu_\V (\nu) &=
-      0
-    \\
-      \mu_\V' (\mset{\nu_1, \dots, \nu_n}) &=
-      \sum_{i=1}^n \mu_\V'' (\nu_i)
-    \\
-      \mu_\V'' (\alpha) &=
-      1
-    \\
-      \mu_\V'' (\nu) &=
-      0
-  \end{align*}
-\end{definition}
-
-\begin{lemme}
-  Un type normalisé est simple \ssi sa $\V$-multiplicité est nulle.
-\end{lemme}
-
-\begin{preuve}
-  Les deux sens se démontrent sans difficulté.
-\end{preuve}
-
-Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde condition nécessaire :
+\section{Deuxième condition nécessaire}
 
 \begin{theoreme} \label{thm_cond2}
   Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, la multiplicité de tout genre différent de $\bold{var}$ dans $\nu_1$ est supérieure ou égale à celle dans $\nu_2$.
 \end{theoreme}
-
-\begin{exemple}
-  Par contraposée, les types suivants ne sont pas unifiables :
-  \begin{itemize}
-    \item $\mset{int, int} \rightarrow int$ et $\mset{int} \rightarrow float$ ;
-    \item $\mset{int} \rightarrow int$ et $\mset{int, int, \alpha} \rightarrow \alpha$ ;
-    \item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{}$ et $\mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$.
-  \end{itemize}
-\end{exemple}
 
 \begin{preuve}
   Soit $g$ dans $\G$ différent de $\bold{var}$. \\
@@ -1922,461 +2269,6 @@ Ces définitions étant posées, nous sommes en mesure d'exprimer la seconde con
   \end{itemize}
   Dans les deux cas, le lemme \ref{pbf_implique_mug'_subst_geq_mug'} nous donne le résultat attendu.
 \end{preuve}
-
-\subsubsection{Implémentation}
-
-Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour chaque genre adéquat. De même que précédemment, on le représente visuellement par des arbres de décision en figure \ref{fig_crit2}.
-
-\begin{definition}[$\mathrm{crit}^2_g$]
-  Soit un genre de types normalisés $g$ différent de $\bold{var}$ et $\bold{uplet}$. \\
-  On note $\mathrm{crit}^2_g$ le critère $(\mathrm{encode}^2_g, \mathrm{compat}^2_g)$ sur $\mathscr{D}^2_{g} = \mathbb{B} \times \mathbb{N}$, où $\mathrm{encode}^2_g$ et $\mathrm{compat}^2_g$ sont définies par :
-  \begin{align*}
-      \mathrm{encode}^2_g (\nu) &=
-      (\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
-    \\
-      \mathrm{vars\mathhyphen echine} (\nu) &=
-      \bold{F} &&
-      \text{si } \mu_\V (\nu) = 0
-    \\
-      \mathrm{vars\mathhyphen echine} (\nu) &=
-      \bold{V} &&
-      \text{sinon}
-  \end{align*}
-  \begin{align*}
-      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{V}, \mu_2)) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
-      \bold{V} &&
-      \text{si } \mu_1 \leqslant \mu_2
-    \\
-      \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
-      \bold{F} &&
-      \text{sinon}
-    \\
-      \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
-      \bold{V} &&
-      \text{si } \mu_2 \leqslant \mu_1
-    \\
-      \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
-      \bold{F} &&
-      \text{sinon}
-  \end{align*}
-\end{definition}
-
-\begin{figure}[h]
-  \begin{center}
-    \includegraphics[scale=0.13]{graphs/crit2_1}
-    \includegraphics[scale=0.13]{graphs/crit2_2}
-  \end{center}
-  \caption{\label{fig_crit2}}
-\end{figure}
-
-\begin{theoreme} \label{thm_crit2g}
-  Pour tout genre $g$ différent de $\bold{var}$ et $\bold{uplet}$, le critère d'unifiabilité $\mathrm{crit}^1_g$ est correct.
-\end{theoreme}
-
-\begin{preuve}
-  Par le théorème \ref{thm_cond2}.
-\end{preuve}
-
-Cependant, introduire autant de critères qu'il y a de constructeurs de types n'est pas une bonne idée. En fait, on peut « paralléliser » tous ces critères en travaillant sur des multi-ensembles de genres. Les inégalités ci-dessus laissent place à des inclusions entre multi-ensembles.
-
-\begin{definition}[$\mathrm{crit}^2$]
-  On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
-  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
-  \begin{align*}
-      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-      \bold{V}
-    \\
-      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
-      \bold{V} &&
-      \text{si } {g}^\#_1 \subseteq^\#_\G {g}^\#_2
-    \\
-      \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
-      \bold{F} &&
-      \text{sinon}
-    \\
-      \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-      \bold{V} &&
-      \text{si } {g}^\#_2 \subseteq^\#_\G {g}^\#_1
-    \\
-      \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-      \bold{F} &&
-      \text{sinon}
-  \end{align*}
-\end{definition}
-
-\begin{theoreme} \label{thm_crit2}
-  Le critère d'unifiabilité $\mathrm{crit}^2$ est correct.
-\end{theoreme}
-
-\begin{preuve}
-  On interprète l'inclusion sur les multi-ensembles en termes de multiplicités. Le résultat se déduit du théorème \ref{thm_crit2g}.
-\end{preuve}
-
-\subsubsection{Apport}
-
-Allions les deux critères. Les résultats sont présentés en table \ref{tab_apport2}. Ils ont été obtenus grâce à la commande suivante :
-
-\begin{minted}{shell}
-$ ./dowsindex stats --with-features <type>
-\end{minted}
-
-\begin{table}[h]
-  \centering
-  \begin{tabular}{|*{5}{c|}}
-    \hline
-      type &
-      \multicolumn{2}{c|}{temps total ($s$)} &
-      \multicolumn{2}{c|}{nb. d'unifications}
-    \\
-    \cline{2-5}
-      &
-      sans critères & avec critères &
-      sans critères & avec critères
-    \\
-    \hline
-      $int \rightarrow int \rightarrow int$ &
-      0.638 & 0.001 (0.23\%) &
-      31578 & 121 (0.38\%)
-    \\
-      $int \rightarrow int \rightarrow int \rightarrow int$ &
-      1.622 & 0.001 (0.08\%) &
-      31578 & 107 (0.34\%)
-    \\
-      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
-      11.193 & 0.011 (0.93\%) &
-      31578 & 141 (0.45\%)
-    \\
-      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-      0.636 & 0.004 (0.60\%) &
-      31578 & 126 (0.40\%)
-    \\
-      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
-      1.180 & 0.225 (19.06\%) &
-      31578 & 2443 (7.74\%)
-    \\
-      $int \rightarrow int \rightarrow \alpha$ &
-      5.097 & 1.566 (30.71\%) &
-      31578 & 3677 (11.64\%)
-    \\
-    \hline
-  \end{tabular}
-  \caption{\label{tab_apport2}}
-\end{table}
-
-\reformule{Force est de constater que les} critères fonctionnent très bien sur ces requêtes. Les plus simples sont traitées de façon instantanée. Il est satisfaisant de constater que l'unification sur un environnement de dizaines de millers de types se réduit dans ces cas à quelques centaines seulement.
-
-Au vu de ces faibles résidus, on peut raisonnablement affirmer avoir épuisé les cas simples. Un troisième critère devrait se confronter à des types plus retors.
-
-%============================================================
-%============================================================
-
-\section{Utilisation d'un trie}
-
-Nous avons à présent tous les éléments pour construire un \emph{index}. On est naturellement confronté au choix de la structure de données à employer. L'idée de Gabriel Radanne, inspirée par \cite{Schulz}, est d'adapter la structure de \emph{trie} aux critères.
-
-Les tries servent à stocker efficacement une table associative où les clefs sont des mots sur un alphabet donné. Ce n'est pas le cas ici. Nous travaillons plutôt sur la concaténation des codes des deux critères, dans laquelle est contenue toute l'information nécessaire aux tests de compatibilité. Ces derniers compliquent d'ailleurs la chose : plusieurs branches peuvent être compatibles avec la requête (voir les figures \ref{fig_crit1} et \ref{fig_crit2}). En somme, il faut revoir la structure.
-
-En première approximation, notre structure consiste en un arbre dont les nœuds internes sont étiquetés par des critères et les feuilles par des ensembles de types. On la définit ainsi :
-
-\gab{Je pense que les définitions matheuses sont ici inutiles. Le code OCaml (ou un pseudo code équivalent) est plus clair.}
-
-\begin{definition}[tries de types normalisés]
-  L'ensemble des tries de types normalisés, noté $\mathscr{T}$, est défini inductivement par :
-  \begin{mathpar}
-    \inferrule*
-      {N \subseteq \N}
-      {\bold{feuille} (N) \in \mathscr{T}}
-    \and
-    \inferrule*
-      {crit \in \mathscr{C}_\mathscr{D} \\ fils \in \mathscr{F} (\mathscr{D}, \mathscr{T})}
-      {\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
-  \end{mathpar}
-\end{definition}
-
-\begin{exemple}
-  Avec nos deux critères, le trie vide s'écrit : \\
-  \[ \bold{noeud}_{\mathscr{D}^1} (\mathrm{crit}^1, g \mapsto \bold{noeud}_{\mathscr{D}^2} (\mathrm{crit}^2, (b, g^\#) \mapsto \bold{feuille} (\{ \}))) \]
-\end{exemple}
-
-On les manipule à l'aide de deux fonctions. La première ajoute un type à un trie par un appel récursif sur le sous-arbre associé au code du type ajouté.
-
-\begin{definition}[$\mathrm{trie\mathhyphen ajoute}$]
-  La fonction $\mathrm{trie\mathhyphen ajoute}$ est définie récursivement par :
-  \begin{align*}
-      \mathrm{trie\mathhyphen ajoute} (\bold{feuille} (N), \nu) &=
-      \bold{feuille} (N \cup \{ \nu \})
-    \\
-      \mathrm{trie\mathhyphen ajoute} (\bold{noeud}_\mathscr{D} (crit, fils), \nu) &=
-      \bold{noeud}_\mathscr{D} (crit, d \mapsto \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' (crit, fils, \nu, d))
-  \end{align*}
-  \begin{align*}
-      \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
-      \mathrm{trie\mathhyphen ajoute} (fils (d), \nu) &&
-      \text{si } d = encode (\nu)
-    \\
-      \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
-      fils (d) &&
-      \text{sinon}
-  \end{align*}
-\end{definition}
-
-La seconde calcule l'ensemble des types d'un trie compatibles pour tous les critères avec une requête donnée. Elle consiste en un appel récursif sur les sous-arbres compatibles avec la requête.
-
-\begin{definition}[$\mathrm{trie\mathhyphen cherche}$]
-  La fonction $\mathrm{trie\mathhyphen cherche}$ est définie récursivement par :
-  \begin{align*}
-      \mathrm{trie\mathhyphen cherche} (\bold{feuille} (N), \nu) &=
-      N
-    \\
-      \mathrm{trie\mathhyphen cherche} (\bold{noeud}_\mathscr{D} ((encode, compat), fils), \nu) &=
-      \bigcup_{\mathclap{{d \in \mathscr{D} \mid compat (d, encode (\nu)) = \bold{T}}}} \mathrm{trie\mathhyphen cherche} (fils (d), \nu)
-  \end{align*}
-\end{definition}
-
-L'interface de implémentation OCaml correspondante est présentée ci-dessous. On y retrouve les fonctions d'encodage et de test de compatibilité des critères — \mintinline{ocaml}{compute} et \mintinline{ocaml}{compatible} — la structure arborescente avec feuilles et nœuds — \mintinline{ocaml}{Leaf} et \mintinline{ocaml}{Node} — ainsi que les fonctions d'ajout et de recherche — \mintinline{ocaml}{add} et \mintinline{ocaml}{iter_with}. La fonction \mintinline{ocaml}{compare} définit un ordre total sur les critères dont \mintinline{ocaml}{Node} a besoin pour ses structures de données. \mintinline{ocaml}{empty} est le trie vide.
-
-Sa simplicité est particulièrement appréciable. Il est aisé d'ajouter et expérimenter de nouveaux critères.
-
-\begin{minted}{ocaml}
-module type FEATURE = sig
-  type t
-  val compute : Type.t -> t
-  val compare : t -> t -> Int.t
-  val compatible : query:t -> data:t -> Bool.t
-end
-
-module type NODE = sig
-  type t
-  val empty : t
-  val add : Type.t -> t -> t
-  val iter_with : Type.t -> t -> Type.t Iter.t
-end
-
-module Leaf : NODE
-module Node (Feat : FEATURE) (Sub : NODE) : NODE
-\end{minted}
-
-%============================================================
-%============================================================
-%============================================================
-
-\chapter{\dowsindex}
-
-Dans ce dernier chapitre, nous visitons les fonctionnalités du programme \dowsindex. On pourra en trouver le code source sur le dépôt \textit{github} \texttt{Drup/dowsing}.\gab{Un lien!} La version actuelle est compatible avec les systèmes d'exploitation Linux et macOS.
-
-\dowsindex met en application les techniques présentées dans le chapitre précédent. Avant toute chose, il faut donc créer un \emph{index} auquel \dowsindex se référera au moment de la recherche. La commande suivante fait l'affaire :
-
-\begin{minted}{shell}
-$ dowsindex save
-\end{minted}
-
-L'index est entreposé dans un répertoire standard destiné aux données d'applications. On peut aussi indiquer explicitement où le sauvegarder :
-
-\begin{minted}{shell}
-$ dowsindex save --index <fichier>
-\end{minted}
-
-\gab{\og Par default, ca prend tout les paquest, donc ... \fg}
-On peut également préciser quels paquets OPAM inclure dans l'index — notamment afin de réduire le temps de construction. La command suivante a cet effet, mais aussi — si l'index existe déjà — celui de charger ou recharger les paquets désignés :
-
-\begin{minted}{shell}
-$ dowsindex save [--index <fichier>] <paquet>...
-\end{minted}
-
-Ceci étant fait — et une bonne fois pour toutes —, on peut maintenant utiliser \dowsindex pour sa fin première : recherche une fonction par son type. Si l'index a été créé dans le répertoire standard, il suffit de demander :
-
-\begin{minted}{shell}
-$ dowsindex search <type>
-\end{minted}
-
-Sinon, il faut préciser le chemin de l'index :
-
-\begin{minted}{shell}
-$ dowsindex search --index <fichier> <type>
-\end{minted}
-
-Si tout se passe bien, le programme affiche la liste des fonctions retenues avec leurs types. Pour ne garder que les $n$ premières réponses, on peut employer l'option \texttt{-n} :
-
-\begin{minted}{shell}
-$ dowsindex search [--index <fichiers>] -n <n> <type>
-\end{minted}
-
-L'espace de recherche peut être limité à certains paquets — c'est d'ailleurs le scénario le plus courant — :
-
-\begin{minted}{shell}
-$ dowsindex search [--index <fichiers>] [-n <n>] <paquet>... <type>
-\end{minted}
-
-Mentionnons une dernière fonctionnalité. Par défaut, \dowsindex fait du \emph{matching} (voir chapitre 2). Pour les requêtes non polymorphes, cela revient à unifier. Pour les requêtes polymorphes, cela signifie que les variables sont chacune remplacées avant unification par une constante fraîche — n'apparaissant pas dans l'environnement — qui leur est propre. Sous cette nouvelle apparence, elles ne sont unifiables qu'avec des variables ; autrement dit, cela force le polymorphisme. C'est généralement le comportement souhaité. Néanmoins, l'utilisateur peut formuler sa requête sous la forme plus générale d'un \emph{schéma de types}. Les variables polymorphes non instanciables y sont spécifiées avant le type, les deux étant séparés d'un point ; les autres variables libres du type seront alors instanciables. En résumé, \dowsindex accepte la syntaxe suivante :
-
-\[ \T \mid \V \dots \V \texttt{.} \T \]
-
-On peut par exemple demander :
-
-\begin{minted}{shell}
-$ dowsindex search "a b. ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
-\end{minted}
-
-Les deux variables étant explicitement liées, cela revient à :
-
-\begin{minted}{shell}
-$ dowsindex search "('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
-\end{minted}
-
-En revanche, les variables de cette requête sont instanciables car non liées :
-
-\begin{minted}{shell}
-$ dowsindex search ". ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a"
-\end{minted}
-
-Ainsi s'achève cette présentation générale. Les sections suivantes examinent plus précisément les différentes commandes que propose \dowsindex.
-
-%============================================================
-%============================================================
-
-\section{\dowsindex \texttt{save}}
-
-Comme dit plus haut, la commande \texttt{save} sert à construire l'index avant la recherche. On l'invoque ainsi :
-
-\begin{center}
-  \begin{minted}{shell}
-  dowsindex save [<option>]... [<paquet>]...
-  \end{minted}
-\end{center}
-
-Elle admet les options suivantes :
-
-\begin{table}[h]
-  \begin{tabularx}{\textwidth}{lX}
-      \textbf{-{}-features}=\textit{critères} &
-      Utilise les critères \textit{critères} dans le trie. \textit{critères} doit être une suite de noms de critères séparés par des virgules. Deux critères sont actuellement acceptés : "head" et "tail". Par défaut : "head,tail".
-    \\
-      \textbf{-{}-index}=\textit{fichier} &
-      L'index est sauvegardé dans \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
-    \\
-      \textbf{-{}-verbose} &
-      Affiche les paquets trouvés.
-  \end{tabularx}
-\end{table}
-
-L'option \textbf{-{}-features} a été conçue pour tester un critère indépendamment des autres sans avoir à modifier le code source. Si \texttt{save} est utilisée conjointement avec \texttt{stats} avec cette option, les mêmes critères doivent être passés aux deux commandes.
-
-Par exemple, la commande suivante construit l'index \texttt{./index.db} avec le premier critère pour le paquet \texttt{containers}.
-
-\begin{minted}{shell}
-./dowsindex save --features head --index index.db containers
-\end{minted}
-
-%============================================================
-%============================================================
-
-\section{\dowsindex \texttt{stats}}
-
-La commande \texttt{stats} a été utilisée dans le chapitre précédent. Elle calcule des statistiques sur l'environnement à l'aide d'une certaine métrique.
-
-\begin{center}
-  \begin{minted}{shell}
-  dowsindex stats [<option>]... [<paquet>]... <type>
-  \end{minted}
-\end{center}
-
-Elle admet les options suivantes :
-
-\begin{table}[h]
-  \begin{tabularx}{\textwidth}{lX}
-      \textbf{-{}-features}=\textit{critères} &
-      L'index doit utiliser les critères \textit{critères}. \textit{critères} doit être une suite de noms de critères séparés par des virgules. Deux critères sont actuellement acceptés : "head" et "tail". Par défaut : "head,tail".
-    \\
-      \textbf{-{}-index}=\textit{fichier} &
-      Extrait l'index de \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
-    \\
-      \textbf{-{}-measure}=\textit{métrique} &
-      Utilise la métrique \textit{métrique}. Les métriques suivantes sont acceptées : "vars", "unique-vars", "nodes", "head", "tail-spine-vars", "tail-spine-non-vars", "spine-vars" et "tail-length". Par défaut : "head".
-    \\
-      \textbf{-{}-no-index} &
-      N'utilise pas l'index : les fonctions sont directement tirées de l'environnement OPAM.
-    \\
-      \textbf{-{}-with-features} &
-      Calcule aussi les statistiques avec les critères. Ne fonctionne qu'avec un index.
-  \end{tabularx}
-\end{table}
-
-Par exemple, à la suite de celui donné pour \texttt{save}, on peut calculer les statistiques sur l'index créé avec la métrique "vars" (comptant le nombre de variables) pour le type $int$ :
-
-\begin{minted}{shell}
-./dowsindex stats --features head --index index.db --measure vars "int"
-\end{minted}
-
-L'option \textbf{-{}-with-features} rapport les statistiques sans et avec application des critères d'unifiabilité. La sortie de l'exemple suivant est donnée en figure \ref{fig_dowsindex_save}.
-
-\begin{minted}{shell}
-./dowsindex stats --with-features "int -> int -> int"
-\end{minted}
-
-\begin{figure}[h]
-  \begin{center}
-    \includegraphics[scale=0.22]{images/dowsindex-save}
-  \end{center}
-  \caption{\label{fig_dowsindex_save}}
-\end{figure}
-
-%============================================================
-%============================================================
-
-\section{\dowsindex \texttt{search}}
-
-La commande \texttt{search} est la plus importante, puisque c'est sur elle qu'un utilisateur peut compter pour trouver une fonction. C'est aussi la plus simple.
-
-\begin{center}
-  \begin{minted}{shell}
-  dowsindex search [<option>]... [<paquet>]... <type>
-  \end{minted}
-\end{center}
-
-Elle admet les options suivantes :
-
-\begin{table}[h]
-  \begin{tabularx}{\textwidth}{lX}
-      \textbf{-{}-exhaustive} &
-      Recherche de façon exhaustive, sans appliquer les critères d'unifiabilité.
-    \\
-      \textbf{-{}-index}=\textit{fichier} &
-      Extrait l'index de \textit{fichier}. Par défaut : dans un répertoire standard destiné aux données d'applications.
-    \\
-      \textbf{-n} \textit{n} &
-      Affiche les \textit{n} premiers résultats seulement.
-  \end{tabularx}
-\end{table}
-
-L'option \textbf{-{}-exhaustive} permet de s'assurer de la correction des critères. Elle n'est pas destinée aux utilisateurs.
-
-On peut par exemple rechercher une fonction de la bibliothèque standard testant l'appartenance à une liste. Le résultat est donné en figure \ref{fig_dowsindex_search}.
-
-\begin{minted}{shell}
-./dowsindex search stdlib "'a list * 'a -> bool"
-\end{minted}
-
-\begin{figure}[h]
-  \begin{center}
-    \includegraphics[scale=0.25]{images/dowsindex-search}
-  \end{center}
-  \caption{\label{fig_dowsindex_search}}
-\end{figure}
-
-%============================================================
-%============================================================
-%============================================================
-
-\chapter{Conclusion}
-
-\reformule{Nous arrivons au terme de ce rapport. Retraçons ses grandes lignes.} A partir d'une implémentation de l'\emph{unification modulo isomorphismes de types}, nous avons amené, défini et démontré deux \emph{critères d'unifiabilité}. Ces critères sont utilisés par \dowsindex dans la construction d'un \emph{index}. Ce travail permet de réduire significativement le nombre d'appels à l'unification. Les requêtes les plus simples sont traitées de façon instantanée.
-
-Il y a encore à faire : terminer les preuves, définir d'autres critères visant les cas plus difficiles, prendre en compte des types OCaml plus sophistiqués\dots Plusieurs aspects de l'indexation mériteraient qu'on s'y arrête : récupération des fonctions de l'environnement OPAM, sauvegarde et chargement de l'index (pour le moment réalisés avec le module \mintinline{ocaml}{Marshall}). \dowsindex souffre particulièrement du fait que la qualification des types par rapport au module englobant est mal assurée ; par exemple, la fonction \mintinline{ocaml}{Format.pp_print_int} est connue sous le type \mintinline{ocaml}{formatter -> int -> unit}, et non pas \mintinline{ocaml}{Format.formatter -> int -> unit}.
-
-Quoi qu'il en soit, nous espérons avoir posé de solides bases au système \dowsindex. Je remercie Gabriel Radanne et Laure Gonnord pour leur encadrement tout au long du stage. Je ne remercie pas le SARS-CoV-2 pour les conditions particulières dans lesquelles il s'est déroulé.
 
 %============================================================
 %============================================================
