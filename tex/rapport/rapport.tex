@@ -1497,7 +1497,8 @@ Cela nous a amené à un deuxième critère plus sophistiqué que le premier. Pl
 
 \section{Critères d'unifiabilité}
 
-Dans cette section, nous formalisons et prouvons les critères mis en évidence précédemment. Leur intérêt potentiel est fondé sur les observations réalisées à l'aide des trois métriques. Nous montrons que ces critères présentent effectivement un intérêt et comment les utiliser dans l'implémentation.
+Dans cette section, nous formalisons et prouvons les critères mis en évidence précédemment.\gab{Justement, pas vraiment. On a une définition pour la tête, mais pour le reste, on a seulement une vague intuition}
+Leur intérêt potentiel est fondé sur les observations réalisées à l'aide des trois métriques. Nous montrons que ces critères présentent effectivement un intérêt et comment les utiliser dans l'implémentation.
 
 Commençons par définir proprement ce qu'est un \emph{critère d'unification correct} dans des termes proches de l'implémentation.
 
@@ -1527,6 +1528,8 @@ Commençons par définir proprement ce qu'est un \emph{critère d'unification co
   Le critère d'unifiabilité trivial sur $\N$ est correct : $(\nu \mapsto \nu, (\nu_1, \nu_2) \mapsto \bold{V})$.
 \end{exemple}
 
+\gab{Ici, il faut donner l'intention: pour la plupart des types, $encode$ est appelé durant la construction de la base, et $compat$ est appelé pendant la recherche dans la base. Le but est que $compat$ soit rapide.}
+
 %============================================================
 
 \subsection{Premier critère}
@@ -1534,6 +1537,8 @@ Commençons par définir proprement ce qu'est un \emph{critère d'unification co
 \subsubsection{Démonstration}
 
 Le premier critère a été décrit plus haut. Il consiste à lier les genres des têtes des types à unifier.
+
+\gab{Il faut (re)donner encode/compat !}
 
 \begin{theoreme} \label{thm_cond1}
   Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
