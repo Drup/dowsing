@@ -81,6 +81,7 @@
 \patchcmd{\@startsection}{\par}{\renewcommand{\theoremeprefix}{\csname the#1\endcsname.}}{}{}
 \makeatother
 
+\newcommand\laure[1]{}
 %============================================================
 
 \newcommand{\dowsindex}{\texttt{dowsindex}\xspace}
@@ -713,7 +714,8 @@ L'algorithme de Boudet a été adapté de la manière suivante :
   \item une règle supplémentaire permet de traiter l'unification des flèches que l'isomorphisme \eqref{curry} rend non triviale.
 \end{itemize}
 
-\reformule{Mentionnons un dernier trait de l'implémentation de l'unification. La puissance des quatre isomorphismes réunis — en particulier \eqref{prod_unit} — permet de réduire le nombre de paramètres d'une fonction en instanciant une ou plusieurs variables de type en $\unit$}. L'utilisateur pourrait ainsi positionner une variable « joker » potentiellement annulable en paramètre : $int \rightarrow \alpha \rightarrow list (int)$. Néanmoins, cela présente l'inconvénient de grossir les résultats de manière superflue lorsque ce n'est pas l'effet souhaité. Conformément à l'article de Rittri \cite{Rittri93}, l'instanciation d'une variable de type en $\unit$ est donc exclue. Cette objection n'est pas sans importance ; dans le chapitre qui suit, la correction du premier critère d'unifiabilité la nécessite. Formellement, il s'agit d'exiger de l'unificateur qu'il soit \emph{bien formé} :
+%\reformule{
+  Mentionnons un dernier trait de l'implémentation de l'unification. La puissance des quatre isomorphismes réunis — en particulier \eqref{prod_unit} — permet de réduire le nombre de paramètres d'une fonction en instanciant une ou plusieurs variables de type en $\unit$. L'utilisateur pourrait ainsi positionner une variable « joker » potentiellement annulable en paramètre : $int \rightarrow \alpha \rightarrow list (int)$. Néanmoins, cela présente l'inconvénient de grossir les résultats de manière superflue lorsque ce n'est pas l'effet souhaité. Conformément à l'article de Rittri \cite{Rittri93}, l'instanciation d'une variable de type en $\unit$ est donc exclue. Cette objection n'est pas sans importance ; dans le chapitre qui suit, la correction du premier critère d'unifiabilité la nécessite. Formellement, il s'agit d'exiger de l'unificateur qu'il soit \emph{bien formé} :
 
 \begin{definition}[substitution de types bien formée]
   Une substitution de types $\sigma$ est bien formée, noté $\sigma\ \bold{bf}$, \ssi :
@@ -721,18 +723,18 @@ L'algorithme de Boudet a été adapté de la manière suivante :
   On note $\Sigma^{\bold{bf}}$ l'ensemble des substitutions de types bien formées.
 \end{definition}
 
-\laure{et donc ?}
+%\laure{et donc ?}
 
 %============================================================
 
 \subsection{Normalisation des types}
-\laure{Pour ....., nous devons normaliser les types}
+%\laure{Pour ....., nous devons normaliser les types}
 %Attachons-nous à formaliser la \emph{normalisation des types}. Pour se faire,
 
 Nous définissons d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
 
 \smallskip
-Étant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.\laure{je pense qu'on s'en fiche}
+Étant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.%\laure{je pense qu'on s'en fiche}
 
 %Définissons donc les \emph{types normalisés}.
 
@@ -744,7 +746,7 @@ Un \emph{type normalisé} est soit :
   \item construit avec un symbole de la signature.
 \end{itemize}
 
-\laure{le plus important est de dire ce qu'il y a de différent avec la def d'un type 10 pages plus tôt}
+%\laure{le plus important est de dire ce qu'il y a de différent avec la def d'un type 10 pages plus tôt}
 
 \begin{definition}[type normalisé]
   L'ensemble des types normalisés, noté $\N$, est défini inductivement par :
@@ -774,10 +776,10 @@ Un \emph{type normalisé} est soit :
     \item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
     \item $\mset{list (\mset{\alpha, int})} \rightarrow \mset{\alpha, \beta}$.
     \end{itemize}
-    \laure{et un type pas normalisé}
+    %\laure{et un type pas normalisé}
 \end{exemple}
 
-Afin de désigner la forme d'un type normalisé de manière concise, introduisons par ailleurs la notion de \emph{genre}. \laure{NO WAY, utiliser un autre terme.}
+Afin de désigner la forme d'un type normalisé de manière concise, introduisons par ailleurs la notion de \emph{genre}. %\laure{NO WAY, utiliser un autre terme.}
 
 \begin{definition}[genre de types normalisés]
   L'ensemble des genres de types normalisés, noté $\G$, est défini par :
@@ -1891,11 +1893,8 @@ Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour
     \\
       \mathrm{vars\mathhyphen echine} (\nu) &=
       \bold{F} &&
-
       \text{si } \mu^3 (\nu) = 0
-
       % \text{si } \mu_\V (\nu) = 0
-
     \\
       \mathrm{vars\mathhyphen echine} (\nu) &=
       \bold{V} &&
@@ -2332,7 +2331,7 @@ Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d
   Il vient alors par définition de $\hat\theta$ :
   \[ \hat\theta (\nu^\# \rightarrow \nu) = \tilde\theta (\nu^\#) \rightarrow \hat\theta (\nu) \]
   Par définition de $\mu_g$ et $\tilde\theta$, on a :
-  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetN_bigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
+  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetNbigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
   Par simplicité et bonne formation, tous les $\nu_i$ sont de genre différent de $\bold{var}$ et $\bold{uplet}$. \\
   Par le lemme \ref{non_var_implique_subst_preserve_genre}, on a donc :
   \[ \forall i \in \interval 1 n,\ [ \hat\theta (\nu_i) ] = [ \nu_i ] \neq \bold{uplet} \]
