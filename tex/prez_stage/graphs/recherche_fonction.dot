@@ -1,0 +1,8 @@
+digraph {
+	N1 [ label = "Requête :\nspécification\nde fonction", pos = "-2.5,0!" ]
+	N2 [ label = "Environnement", shape = rectangle, pos = "0,0.8!" ]
+	N3 [ label = "Système de recherche\nde fonctions", shape = rectangle, pos = "0,0!" ]
+	N4 [ label = "Réponses :\nliste de fonctions", pos = "2.5,0!" ]
+
+	{ N1, N2 } -> N3 -> N4 ;
+}

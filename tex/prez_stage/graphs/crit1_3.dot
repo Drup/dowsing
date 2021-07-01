@@ -1,0 +1,16 @@
+digraph {
+	node [ label = "" ] ;
+	N_0 [ label = <<b>cons</b><sub><i>f</i></sub>> shape = record ] ;
+	N_1 [ label = "tête", style = filled ] ;
+	node [ shape = triangle ] ;
+	N_2_1 [ style = filled ] ;
+	N_2_2 ;
+	N_2_3 [ style = filled ] ;
+	N_2_4 [ style = invisible ] ;
+
+	N_0 -> N_1 ;
+	N_1 -> N_2_1 [ label = <<b>var</b>> ] ;
+	N_1 -> N_2_2 [ label = <<b>uplet</b>> ] ;
+	N_1 -> N_2_3 [ label = <<b>cons</b><sub><i>f</i></sub>> ] ;
+	N_1 -> N_2_4 [ color = white, arrowhead = none, label = "…"] ;
+}
