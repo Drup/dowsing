@@ -1513,7 +1513,7 @@ Commençons par définir proprement ce qu'est un \emph{critère d'unification co
 \end{definition}
 
 \begin{definition}[critère d'unifiabilité]
-  Un critère d'unifiabilité sur un domaine $\mathscr{D}$ est la donnée d'une fonction d'encodage dans $\N \rightarrow \mathscr{D}$ et une fonction de test de compatibilité dans $\mathscr{D} \times \mathscr{D} \rightarrow \mathbb{B}$. On note $\mathscr{C}_\mathscr{D}$ l'ensemble des critères sur $\mathscr{D}$.
+  Un critère d'unifiabilité sur un domaine $\mathscr{D}$ est la donnée d'une fonction d'encodage de $\N$ dans $\mathscr{D}$ et une fonction de test de compatibilité de $\mathscr{D} \times \mathscr{D}$ dans $\mathbb{B}$. On note $\mathscr{C}_\mathscr{D}$ l'ensemble des critères sur $\mathscr{D}$.
 \end{definition}
 
 \begin{definition}[critère d'unifiabilité correct]
@@ -1749,13 +1749,13 @@ Quant à l'implémentation, on peut d'abord exprimer le critère résultant pour
   On note $\mathrm{crit}^2_g$ le critère $(\mathrm{encode}^2_g, \mathrm{compat}^2_g)$ sur $\mathscr{D}^2_{g} = \mathbb{B} \times \mathbb{N}$, où $\mathrm{encode}^2_g$ et $\mathrm{compat}^2_g$ sont définies par :
   \begin{align*}
       \mathrm{encode}^2_g (\nu) &=
-      (\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
+      (\mathrm{vars\mathhyphen base} (\nu), \mu_g (\nu))
     \\
-      \mathrm{vars\mathhyphen echine} (\nu) &=
+      \mathrm{vars\mathhyphen base} (\nu) &=
       \bold{F} &&
       \text{si } \mu^3 (\nu) = 0
     \\
-      \mathrm{vars\mathhyphen echine} (\nu) &=
+      \mathrm{vars\mathhyphen base} (\nu) &=
       \bold{V} &&
       \text{sinon}
   \end{align*}
@@ -1801,7 +1801,7 @@ Cependant, introduire autant de critères qu'il y a de constructeurs de types n'
 
 \begin{definition}[$\mathrm{crit}^2$]
   On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
-  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen echine} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
+  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen base} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
   \begin{align*}
       \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
       \bold{V}
