@@ -11,10 +11,46 @@
 \usepackage{graphicx}
 \usepackage{xspace}
 \usepackage{caption}
-\usepackage{ulem}
+\usepackage{textgreek}	% textmu
+
+%============================================================
 
 \usepackage{tikz}
 \usetikzlibrary{automata,positioning}
+
+%============================================================
+
+\usepackage{listings}
+
+\makeatletter
+\newenvironment{btHighlight}[1][]
+{\begingroup\tikzset{bt@Highlight@par/.style={#1}}\begin{lrbox}{\@tempboxa}}
+{\end{lrbox}\bt@HL@box[bt@Highlight@par]{\@tempboxa}\endgroup}
+
+\newcommand\btHL[1][]{%
+  \begin{btHighlight}[#1]\bgroup\aftergroup\bt@HL@endenv%
+}
+\def\bt@HL@endenv{%
+  \end{btHighlight}%   
+  \egroup
+}
+\newcommand{\bt@HL@box}[2][]{%
+  \tikz[#1]{%
+    \pgfpathrectangle{\pgfpoint{1pt}{0pt}}{\pgfpoint{\wd #2}{\ht #2}}%
+    \pgfusepath{use as bounding box}%
+    \node[anchor=base west, fill=orange!30,outer sep=0pt,inner xsep=1pt, inner ysep=0pt, rounded corners=3pt, minimum height=\ht\strutbox+1pt,#1]{\raisebox{1pt}{\strut}\strut\usebox{#2}};
+  }%
+}
+\makeatother
+
+\lstset{
+	basicstyle=\ttfamily,
+	columns=fullflexible,
+	keepspaces=true,
+	moredelim=**[is][\btHL]{`}{`},
+	extendedchars=true,
+	literate={µ}{{\textmu}}1
+}
 
 %============================================================
 
@@ -327,22 +363,21 @@ total # unif.: 31578
 	\item $\mu^1 (\alpha \rightarrow \alpha) = 1$
 	\item $\mu^1 (\alpha \rightarrow list (\beta) \rightarrow (\unit \rightarrow \beta) \rightarrow \alpha) = 2$
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure unique-vars
 --------------------------------------------------------
 measure    total time (ms)    avg. time (µs)    # unif.
 --------------------------------------------------------
-0          28.1541            1.48948            18902
-1          108.248            15.2291            7108
-2          373.408            108.015            3457
+0          28.1541            1.48948            `18902`
+1          108.248            15.2291            `7108`
+2          373.408            `108.015`            3457
 3          16.8808            11.8295            1427
 4          7.12752            18.4174            387
-5          4.09412            30.7829            133
 ...
 --------------------------------------------------------
 total time (s): 0.555204
 total # unif.: 31578
-\end{verbatim}
+\end{lstlisting}
 \textit{Observation}. 0 variable : 60\% ; 1 variable : 20\%
 \end{frame}
 
@@ -354,20 +389,20 @@ total # unif.: 31578
 	\item $\mu^2 (\unit \rightarrow \alpha) = \bold{var}$
 	\item $\mu^2 (int \rightarrow int \rightarrow list (\alpha)) = \bold{cons}_{list}$
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure head
 ------------------------------------------------------------
 measure        total time (ms)    avg. time (µs)    # unif.
 ------------------------------------------------------------
-variable       506.137            311.086            1627
+variable       506.137            `311.086`            `1627`
 constructor    62.705             2.45229            25570
 tuple          11.2598            2.73429            4118
 other          0.815153           3.09944            263
 ------------------------------------------------------------
 total time (s): 0.580917
 total # unif.: 31578
-\end{verbatim}
-\textit{Observation}. \sout{$\bold{var}$} : 95\%
+\end{lstlisting}
+\textit{Observation}. $\bold{var}$ : 5\%
 \end{frame}
 
 %============================================================
@@ -378,12 +413,12 @@ total # unif.: 31578
 	\item $\mu^3 (\alpha \times int) = 0$
 	\item $\mu^3 ((\alpha \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\alpha)) = 1$
 \end{itemize}
-\begin{verbatim}
+\begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure spine-vars
 --------------------------------------------------------
 measure    total time (ms)    avg. time (µs)    # unif.
 --------------------------------------------------------
-0          70.9665            2.4932             28464
+0          70.9665            2.4932             `28464`
 1          95.8333            44.6567            2146
 2          397.937            486.476            818
 3          5.00131            53.7775            93
@@ -391,7 +426,7 @@ measure    total time (ms)    avg. time (µs)    # unif.
 --------------------------------------------------------
 total time (s): 0.571445
 total # unif.: 31578
-\end{verbatim}
+\end{lstlisting}
 \textit{Observation}. 0 variable : 90\%
 \end{frame}
 
