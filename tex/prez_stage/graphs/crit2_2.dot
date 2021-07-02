@@ -1,7 +1,7 @@
 digraph {
 	node [ label = "" ] ;
 	N_0 [ label = <(<b>T</b>, µ)>, shape = record ] ;
-	N_1 [ label = "vars-echine", style = filled ] ;
+	N_1 [ label = "vars-base", style = filled ] ;
 	N_2_1, N_2_2 [ label = <µ<sub><i>g</i></sub>>, style = filled ] ;
 	node [ shape = triangle ] ;
 	N_3_1 ;
