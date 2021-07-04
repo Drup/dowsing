@@ -3,7 +3,32 @@
 \usepackage[T1]{fontenc}
 \usepackage[french]{babel}
 
-\usetheme[sectionpage=progressbar]{metropolis}
+%============================================================
+
+\usetheme[sectionpage=progressbar, numbering=fraction]{metropolis}
+
+\usepackage{appendixnumberbeamer}
+
+%\AtBeginSection[]{
+%  \begin{frame}
+%  \vfill
+%  \centering
+%  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+%    \usebeamerfont{title}\insertsectionhead\par%
+%  \end{beamercolorbox}
+%  \vfill
+%  \end{frame}
+%}
+%
+%\setbeamertemplate{navigation symbols}{}
+%\addtobeamertemplate{footline}{%
+%	\hspace*{\fill}%
+%	\llap{%
+%		\insertpagenumber\,/\,\insertpresentationendpage%
+%		\hspace{5pt}%
+%	}
+%	\vskip4pt%
+%}
 
 %============================================================
 
@@ -12,6 +37,7 @@
 \usepackage{xspace}
 \usepackage{caption}
 \usepackage{textgreek}	% textmu
+\usepackage{xcolor}		% textcolor
 
 %============================================================
 
@@ -71,6 +97,7 @@
 \newcommand{\exemple}{\textit{Exemple}\xspace}
 \newcommand{\exemples}{\textit{Exemples}\xspace}
 \newcommand{\theoreme}{\textit{Théorème}\xspace}
+\newcommand{\observations}{\textit{Observations}\xspace}
 
 \newcommand{\interval}[2]{[\![#1\,;#2]\!]}
 \newcommand{\mset}[1]{\{\![#1]\!\}}
@@ -173,10 +200,10 @@ Spécification de fonction ?
 %============================================================
 
 \begin{frame}[fragile=singleslide]\frametitle{\dowsindex}
-\begin{figure}[h]
- 	\centering
- 	\includegraphics{images/sourcier}
-\end{figure}
+%\begin{figure}[h]
+% 	\centering
+% 	\includegraphics{images/sourcier}
+%\end{figure}
 \footnotesize
 \begin{verbatim}
 	$ ./dowsindex search "'a list * 'a -> bool"
@@ -196,26 +223,26 @@ Spécification de fonction ?
 
 \section{Unification modulo isomorphismes de types}
 
-%============================================================
-
-\begin{frame}[fragile=singleslide]\frametitle{Intuition}
-\small
-\[ \mintinline{ocaml}{'a list * 'a -> bool}\ \ \sim\ \ \mintinline{ocaml}{'a -> 'a list -> bool} \]
-\smallskip
-\[ \mintinline{ocaml}{'a * 'b -> 'c}\ \ \sim\ \ \mintinline{ocaml}{'a -> 'b -> 'c} \]
-\begin{minted}{ocaml}
-# let curry f a b = f (a, b) ;;
-val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c = <fun>
-# let uncurry f (a, b) = f a b ;;
-val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c = <fun>
-\end{minted}
-\bigskip
-\[ \mintinline{ocaml}{'a -> 'b -> 'c} \ \ \sim\ \ \mintinline{ocaml}{'b -> 'a -> 'c} \]
-\begin{minted}{ocaml}
-# let flip f a b = f b a ;;
-val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c = <fun>
-\end{minted}
-\end{frame}
+%%============================================================
+%
+%\begin{frame}[fragile=singleslide]\frametitle{Intuition}
+%\small
+%\[ \mintinline{ocaml}{'a list * 'a -> bool}\ \ \sim\ \ \mintinline{ocaml}{'a -> 'a list -> bool} \]
+%\smallskip
+%\[ \mintinline{ocaml}{'a * 'b -> 'c}\ \ \sim\ \ \mintinline{ocaml}{'a -> 'b -> 'c} \]
+%\begin{minted}{ocaml}
+%# let curry f a b = f (a, b) ;;
+%val curry : ('a * 'b -> 'c) -> 'a -> 'b -> 'c = <fun>
+%# let uncurry f (a, b) = f a b ;;
+%val uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c = <fun>
+%\end{minted}
+%\bigskip
+%\[ \mintinline{ocaml}{'a -> 'b -> 'c} \ \ \sim\ \ \mintinline{ocaml}{'b -> 'a -> 'c} \]
+%\begin{minted}{ocaml}
+%# let flip f a b = f b a ;;
+%val flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c = <fun>
+%\end{minted}
+%\end{frame}
 
 %============================================================
 
@@ -271,9 +298,9 @@ Deux types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} dans $\Lambda^1$ \ssi le 
 
 %============================================================
 
-\begin{frame}{Théorie équationnelle $\E$}
+\begin{frame}{Equivalence}
 \small
-Système équationnel $\E$ :
+\emph{Système équationnel} $\E$ :
 \begin{align}
 		\alpha \times \beta &\cong_\T
 		\beta \times \alpha
@@ -295,11 +322,16 @@ Système équationnel $\E$ :
 		\label{curry}
 		\tag{curry}
 \end{align}
-$\equiv_\T$ : plus petite congruence contenant toutes les instances des axiomes de $\E$.
+\emph{Théorie équationnelle} $\equiv_\T$ : plus petite congruence contenant toutes les instances des axiomes de $\E$.
+\\~\\
+\exemples :
 \begin{itemize}
-	\item $int \rightarrow float \rightarrow int \equiv_\T float \rightarrow int \rightarrow int$
-	\item $int \rightarrow \unit \rightarrow \unit \equiv_\T int \rightarrow \unit$
-	\item $int \rightarrow (int \times int) \rightarrow \unit \equiv_\T int \rightarrow int \rightarrow int \rightarrow \unit$
+	\item
+		$\textcolor{orange}{list (\alpha)} \times \textcolor{teal}{\alpha} \rightarrow \textcolor{violet}{bool} \equiv_\T$ \\
+		$\textcolor{teal}{\alpha} \rightarrow \textcolor{orange}{list (\alpha)} \rightarrow \textcolor{violet}{bool}$
+	\item
+		$\textcolor{orange}{int} \rightarrow (\textcolor{teal}{int} \times \textcolor{olive}{int}) \rightarrow \unit \rightarrow \textcolor{violet}{\unit} \equiv_\T$ \\
+		$\textcolor{orange}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{violet}{\unit}$
 \end{itemize}
 \end{frame}
 
@@ -309,17 +341,23 @@ $\equiv_\T$ : plus petite congruence contenant toutes les instances des axiomes 
 \small
 Deux types $\tau_1$ et $\tau_2$ sont \emph{unifiables}, noté $\tau_1 \sim_\T \tau_2$, \ssi ils admettent un \emph{unificateur}, c'est-à-dire une substitution $\sigma$ telle que :
 \[ \hat\sigma (\tau_1) \equiv_\T \hat\sigma (\tau_2) \]
+\exemples :
 \begin{itemize}
-	\item $int \rightarrow float \rightarrow int \sim_\T float \rightarrow \alpha$ \\ avec $\{ \alpha \mapsto int \rightarrow int \}$
-	\item $int \rightarrow \alpha \rightarrow \unit \sim_\T int \rightarrow \unit$ \\ avec $\{ \alpha \mapsto \unit \}$
-	\item $int \rightarrow \alpha \rightarrow \unit \sim_\T int \rightarrow int \rightarrow int \rightarrow \unit$ \\ avec $\{ \alpha \mapsto int \times int \}$
+	\item
+		$\textcolor{olive}{int} \rightarrow \textcolor{teal}{float} \rightarrow \textcolor{violet}{int} \sim_\T$ \\
+		$\textcolor{teal}{float} \rightarrow \textcolor{orange}{\alpha}$ \\
+		avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int} \rightarrow \textcolor{violet}{int} \}$
+	\item
+		$\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit} \sim_\T$ \\
+		$\textcolor{blue}{\beta} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit}$ \\
+		avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int}, \textcolor{blue}{\beta} \mapsto \unit \}$
 \end{itemize}
 \end{frame}
 
 %============================================================
 %============================================================
 
-\section{Indexation}
+\section{Critères d'unifiabilité}
 
 %============================================================
 
@@ -346,7 +384,7 @@ total # unif.: 31578
 
 %============================================================
 
-\begin{frame}[fragile=singleslide]\frametitle{Recherche avec mémorisation — requête plus difficile}
+\begin{frame}[fragile=singleslide]\frametitle{Recherche avec mémoïsation — requête plus difficile}
 \begin{verbatim}
 $ ./dowsindex stats "int -> int -> int -> int -> int"
 ...
@@ -359,36 +397,42 @@ total # unif.: 31578
 
 \begin{frame}[fragile=singleslide]\frametitle{Première métrique : nombre de variables uniques}
 \scriptsize
+\exemples :
 \begin{itemize}
-	\item $\mu^1 (\alpha \rightarrow \alpha) = 1$
-	\item $\mu^1 (\alpha \rightarrow list (\beta) \rightarrow (\unit \rightarrow \beta) \rightarrow \alpha) = 2$
+	\item $\mu^1 (\textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}) = 1$
+	\item $\mu^1 ((\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{\beta} \rightarrow \textcolor{orange}{\alpha}) \rightarrow \textcolor{orange}{\alpha} \rightarrow list (\textcolor{teal}{\beta}) \rightarrow \textcolor{orange}{\alpha}) = 2$
 \end{itemize}
+\bigskip
 \begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure unique-vars
 --------------------------------------------------------
 measure    total time (ms)    avg. time (µs)    # unif.
 --------------------------------------------------------
-0          28.1541            1.48948            `18902`
-1          108.248            15.2291            `7108`
+0          28.1541            `1.48948`            `18902`
+1          108.248            15.2291            7108
 2          373.408            `108.015`            3457
 3          16.8808            11.8295            1427
 4          7.12752            18.4174            387
 ...
---------------------------------------------------------
-total time (s): 0.555204
-total # unif.: 31578
 \end{lstlisting}
-\textit{Observation}. 0 variable : 60\% ; 1 variable : 20\%
+\observations :
+\begin{itemize}
+	\item 60\% sans variable
+	\item unification des types polymorphes plus difficile
+	\item cas à deux variables pathologique
+\end{itemize}
 \end{frame}
 
 %============================================================
 
-\begin{frame}[fragile=singleslide]\frametitle{Deuxième métrique : forme de la tête}
+\begin{frame}[fragile=singleslide]\frametitle{Deuxième métrique : genre de la tête}
 \scriptsize
+\exemples :
 \begin{itemize}
-	\item $\mu^2 (\unit \rightarrow \alpha) = \bold{var}$
-	\item $\mu^2 (int \rightarrow int \rightarrow list (\alpha)) = \bold{cons}_{list}$
+	\item $\mu^2 (\unit \rightarrow \textcolor{orange}{\alpha}) = \bold{var}$
+	\item $\mu^2 (int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha)) = \bold{cons}_{list}$
 \end{itemize}
+\bigskip
 \begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure head
 ------------------------------------------------------------
@@ -399,20 +443,25 @@ constructor    62.705             2.45229            25570
 tuple          11.2598            2.73429            4118
 other          0.815153           3.09944            263
 ------------------------------------------------------------
-total time (s): 0.580917
-total # unif.: 31578
+...
 \end{lstlisting}
-\textit{Observation}. $\bold{var}$ : 5\%
+\observations :
+\begin{itemize}
+	\item 95\% sans variable en tête
+	\item cas avec variable en tête pathologique
+\end{itemize}
 \end{frame}
 
 %============================================================
 
 \begin{frame}[fragile=singleslide]\frametitle{Troisième métrique : nombre de variables à la base}
 \scriptsize
+\exemples :
 \begin{itemize}
-	\item $\mu^3 (\alpha \times int) = 0$
-	\item $\mu^3 ((\alpha \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\alpha)) = 1$
+	\item $\mu^3 (\alpha \,\textcolor{orange}{\times}\, int) = 0$
+	\item $\mu^3 ((\alpha \,\textcolor{orange}{\rightarrow}\, \alpha) \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{list} (\alpha)) = 1$
 \end{itemize}
+\bigskip
 \begin{lstlisting}
 $ ./dowsindex stats "int -> int -> int" --measure spine-vars
 --------------------------------------------------------
@@ -420,26 +469,34 @@ measure    total time (ms)    avg. time (µs)    # unif.
 --------------------------------------------------------
 0          70.9665            2.4932             `28464`
 1          95.8333            44.6567            2146
-2          397.937            486.476            818
+2          397.937            `486.476`            818
 3          5.00131            53.7775            93
 ...
---------------------------------------------------------
-total time (s): 0.571445
-total # unif.: 31578
 \end{lstlisting}
-\textit{Observation}. 0 variable : 90\%
+\observations :
+\begin{itemize}
+	\item 90\% sans variable
+	\item cas à deux variables pathologique
+\end{itemize}
 \end{frame}
 
-%============================================================
-
-\begin{frame}{Conclusion métriques}
-TODO
-\end{frame}
+%%============================================================
+%
+%\begin{frame}{Métriques — conclusion}
+%\begin{itemize}
+%	\item
+%		majorité sans variable en tête et plus largement à la base \\
+%		$\Rightarrow$ discrimination à haut potentiel
+%	\item
+%		variable en tête caractéristique des cas les plus difficiles \\
+%		$\Rightarrow$ éviter ces cas autant que possible
+%\end{itemize}
+%\end{frame}
 
 %============================================================
 
 \begin{frame}{Critère d'unifiabilité correct}
-Critère d'unifiabilité correct sur $\mathscr{D}$ :
+Critère d'unifiabilité correct sur domaine $\mathscr{D}$ :
 \begin{itemize}
 	\item $encode : \T \rightarrow \mathscr{D}$
 	\item $compat : \mathscr{D} \times \mathscr{D} \rightarrow \mathbb{B}$
@@ -450,12 +507,19 @@ Critère d'unifiabilité correct sur $\mathscr{D}$ :
 %============================================================
 
 \begin{frame}{Premier critère}
-Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+Si deux types sont unifiables et que leurs têtes ne sont pas des variables, elles ont le même genre.
 \\~\\
 \exemples :
 \begin{itemize}
-	\item $\unit \rightarrow int \nsim_\T \unit \rightarrow float$
-	\item $\unit \rightarrow int \nsim_\T \unit \rightarrow int \times int$
+	\item 
+		$\dots \rightarrow \textcolor{orange}{int} \nsim_\T$ \\
+		$\dots \rightarrow \textcolor{orange}{float}$
+	\item
+		$\dots \rightarrow \textcolor{orange}{list} (\alpha) \nsim_\T$ \\
+		$\dots \rightarrow int \,\textcolor{orange}{\times}\, int$
+	\item
+		$\dots \rightarrow \textcolor{orange}{int} \stackrel{?}{\sim}_\T$ \\
+		$\dots \rightarrow \textcolor{orange}{\alpha}$
 \end{itemize}
 \end{frame}
 
@@ -493,22 +557,22 @@ $ ./dowsindex stats --index index.db --features head --with-features <type>
 		\\
 		\hline
 			$int \rightarrow int \rightarrow int$ &
-			31578 & 2714 & 91.4\%
+			31578 & 2714 & \textcolor{teal}{91.4\%}
 		\\
 			$int \rightarrow int \rightarrow int \rightarrow int$ &
-			31578 & 2714 & 91.4\%
+			31578 & 2714 & \textcolor{teal}{91.4\%}
 		\\
 			$int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
 			31578 & 2945 & 90.7\%
 		\\
 			$int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-			31578 & 5745 & 81.8\%
+			31578 & 5745 & \textcolor{violet}{81.8\%}
 		\\
 			$\alpha \rightarrow int \rightarrow \bold{unit}$ &
-			31578 & 5745 & 81.8\%
+			31578 & 5745 & \textcolor{violet}{81.8\%}
 		\\
 			$int \rightarrow int \rightarrow \alpha$ &
-			31578 & 31578 & 0\%
+			31578 & 31578 & \textcolor{orange}{0\%}
 		\\
 		\hline
 	\end{tabular}
@@ -518,19 +582,19 @@ $ ./dowsindex stats --index index.db --features head --with-features <type>
 %============================================================
 
 \begin{frame}{Deuxième critère}
-Si deux types normalisés bien formés $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ n'a pas de variables à la base, la multiplicité de tout genre différent de $\bold{var}$ dans $\tau_1$ est supérieure à celle dans $\tau_2$.
+Si deux types $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ n'a pas de variables à la base, la multiplicité de tout genre différent de $\bold{var}$ dans $\tau_1$ est supérieure à celle dans $\tau_2$.
 \\~\\
 \exemples :
 \begin{itemize}
 	\item
-		$int \rightarrow int \rightarrow int \nsim_\T$ \\
-		$int \rightarrow float$
+		$\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
+		$\textcolor{teal}{int} \rightarrow float$
 	\item
-		$int \rightarrow int \nsim_\T$ \\
-		$int \rightarrow int \rightarrow \alpha \rightarrow \alpha$
+		$\textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
+		$\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}$
 	\item
-		$int \rightarrow (\unit \rightarrow \unit) \rightarrow \unit \nsim_\T$ \\
-		$int \rightarrow (int \rightarrow float) \rightarrow int \rightarrow \alpha$
+		$\textcolor{teal}{int} \rightarrow (\unit \,\textcolor{blue}{\rightarrow}\, \unit) \rightarrow \unit \nsim_\T$ \\
+		$\textcolor{teal}{int} \rightarrow (int \,\textcolor{blue}{\rightarrow}\, float) \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha}$
 \end{itemize}
 \end{frame}
 
@@ -580,7 +644,7 @@ $ ./dowsindex stats --with-features <type>
 			31578 & 2443 & 92.26\%
 		\\
 			$int \rightarrow int \rightarrow \alpha$ &
-			31578 & 3677 & 88.36\%
+			31578 & 3677 & \textcolor{orange}{88.36\%}
 		\\
 		\hline
 	\end{tabular}
@@ -589,8 +653,13 @@ $ ./dowsindex stats --with-features <type>
 
 %============================================================
 
-\begin{frame}{Conclusion critères}
-TODO
+\begin{frame}{Conclusion}
+Les deux critères sont :
+\begin{itemize}
+	\item formalisés
+	\item prouvés corrects
+	\item implémentés efficacement dans \dowsindex (trie)
+\end{itemize}
 \end{frame}
 
 %============================================================
@@ -610,29 +679,42 @@ Compenv.print_standard_library : unit -> 'a
 \end{verbatim}
 \end{frame}
 
+%%============================================================
+%
+%\begin{frame}{Conclusion}
+%Le fruit de ce travail est :
+%\begin{itemize}
+%	\item une nouvelle technique d'indexation pour l'unifiabilité modulo isomorphismes de types qui passe à l'échelle\dots
+%	\item formalisée et implémentée\dots
+%	\item dans l'outil \dowsindex.
+%\end{itemize}
+%\end{frame}
+
+%%============================================================
+%
+%\begin{frame}[fragile=singleslide]\frametitle{La suite\dots}
+%\small
+%\begin{verbatim}
+%$ ./dowsindex search stdlib "int -> formatter -> unit" -n 3
+%Format.pp_open_box : formatter -> int -> unit
+%Format.pp_open_vbox : formatter -> int -> unit
+%Format.pp_print_int : formatter -> int -> unit
+%\end{verbatim}
+%\begin{verbatim}
+%$ ./dowsindex search stdlib "'a List.t * 'a -> bool"
+%Parsing.is_current_lookahead : 'a -> bool
+%Obj.magic : 'a -> 'b
+%Compenv.print_version_string : unit -> 'a
+%Compenv.print_standard_library : unit -> 'a
+%\end{verbatim}
+%\end{frame}
+
 %============================================================
 
-\begin{frame}{Conclusion}
-TODO
-\end{frame}
-
-%============================================================
-
-\begin{frame}[fragile=singleslide]\frametitle{\dowsindex — la suite}
-\small
-\begin{verbatim}
-$ ./dowsindex search stdlib "int -> formatter -> unit" -n 3
-Format.pp_open_box : formatter -> int -> unit
-Format.pp_open_vbox : formatter -> int -> unit
-Format.pp_print_int : formatter -> int -> unit
-\end{verbatim}
-\begin{verbatim}
-$ ./dowsindex search stdlib "'a List.t * 'a -> bool"
-Parsing.is_current_lookahead : 'a -> bool
-Obj.magic : 'a -> 'b
-Compenv.print_version_string : unit -> 'a
-Compenv.print_standard_library : unit -> 'a
-\end{verbatim}
+\begin{frame}
+\centering
+\Large
+Merci de votre attention !
 \end{frame}
 
 %============================================================
@@ -835,7 +917,7 @@ Implémentée par G. Radanne en adaptant un algorithme d'unification modulo AC \
 	\item \emph{normalisation} des types
 	\item une règle de transformation supplémentaire pour les flèches
 \end{itemize}
-\bigskip
+\smallskip
 Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold{bf}$, \ssi :
 	\[ \forall \alpha \in \V,\ \sigma (\alpha) \neq \unit \]
 \end{frame}
@@ -1053,13 +1135,13 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 
 \begin{frame}{Premier critère}
 \small
-\theoreme : Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+\theoreme : Si deux types normalisés bien formés sont unifiables et que leurs têtes ne sont pas des variables, elles ont le même genre.
 \\~\\
 \exemples :
-\begin{enumerate}
+\begin{itemize}
 	\item $\mset{} \rightarrow int \nsim_\N \mset{} \rightarrow float$
 	\item $\mset{} \rightarrow \mset{} \nsim_\N \mset{} \rightarrow int$
-\end{enumerate}
+\end{itemize}
 \end{frame}
 
 %============================================================
@@ -1068,7 +1150,7 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \footnotesize
 \begin{align*}
 		\mathrm{encode}^1 (\nu) &=
-		[ \nu ]
+		[ \uparrow \nu ]
 	\\
 		\mathrm{compat}^1 (\bold{var}, {g}_2) &=
 		\bold{V}
@@ -1132,11 +1214,11 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \theoreme : Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, on a :
 \[ \forall g \neq \bold{var},\ \mu_g (\nu_1) \geqslant \mu_g (\nu_2) \]
 \exemples :
-\begin{enumerate}
+\begin{itemize}
 	\item $\mset{int, int} \rightarrow int \nsim_\N \mset{int} \rightarrow float$
 	\item $\mset{int} \rightarrow int \nsim_\N \mset{int, int, \alpha} \rightarrow \alpha$
 	\item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{} \nsim_\N \mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$
-\end{enumerate}
+\end{itemize}
 \end{frame}
 
 %============================================================
