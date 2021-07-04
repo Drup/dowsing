@@ -1536,7 +1536,7 @@ Comme nous le verrons dans la section suivante, la fonction d'encodage sert pré
 Le premier critère consiste à lier les genres des têtes des types à unifier. En effet, l'application d'une substitution préserve le genre de la tête — si ce n'est dans le cas d'une variable, mais avons vu que cela ne concerne qu'une minorité. On obtient la condition nécessaire suivante :
 
 \begin{theoreme} \label{thm_cond1}
-  Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+  Si deux types normalisés bien formés sont unifiables et que leurs têtes ne sont pas des variables, elles ont le même genre.
 \end{theoreme}
 
 \begin{preuve}
@@ -1559,7 +1559,7 @@ Cette condition nécessaire étant établie, exprimons-la à l'aide de la notion
   On note $\mathrm{crit}^1$ le critère $(\mathrm{encode}^1, \mathrm{compat}^1)$ sur $\mathscr{D}^1 = \G$, où $\mathrm{encode}^1$ et $\mathrm{compat}^1$ sont définies par :
   \begin{align*}
       \mathrm{encode}^1 (\nu) &=
-      [ \nu ]
+      [ \uparrow \nu ]
     \\
       \mathrm{compat}^1 (\bold{var}, {g}_2) &=
       \bold{V}
@@ -2087,7 +2087,7 @@ Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d
 \section{Première condition nécessaire}
 
 \begin{theoreme} \label{thm_cond1}
-  Si deux types normalisés bien formés unifiables ne sont pas des variables, leurs têtes ont le même genre.
+  Si deux types normalisés bien formés sont unifiables et que leurs têtes ne sont pas des variables, elles ont le même genre.
 \end{theoreme}
 
 \begin{preuve}
