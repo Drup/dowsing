@@ -93,6 +93,7 @@
 \newcommand{\ssi}{\textit{ssi}\xspace}
 \newcommand{\unit}{\bold{unit}}
 \newcommand{\norm}{\mathrm{norm}}
+\newcommand{\inorm}{\mathrm{inorm}}
 
 \newcommand{\V}{\mathscr{V}}
 \newcommand{\F}{\mathscr{F}}
@@ -103,14 +104,15 @@
 
 \newcommand{\mathhyphen}{{\hbox{-}}}
 
-\DeclareMathOperator*{\msetN_bigplus}{\scalerel*{+}{\sum}^\#_\N}
-\DeclareMathOperator*{\msetG_bigplus}{\scalerel*{+}{\sum}^\#_\G}
+\DeclareMathOperator*{\msetNbigplus}{\scalerel*{+}{\sum}^\#_\N}
+\DeclareMathOperator*{\msetGbigplus}{\scalerel*{+}{\sum}^\#_\G}
+\DeclareMathOperator*{\bigtimes}{\scalerel*{\times}{\prod}}
 
 %============================================================
 
 \title{Recherche de fonctions \\ par \\ unification modulo isomorphismes de types}
 \author{Clément ALLAIN \\ Stage de M1 encadré par Gabriel RADANNE}
-\date{Juin 2021}
+\date{Juillet 2021}
 
 %============================================================
 
@@ -706,7 +708,7 @@ Mentionnons un dernier trait de l'implémentation de l'unification. La puissance
 
 \begin{definition}[substitution de types bien formée]
   Une substitution de types $\sigma$ est bien formée, noté $\sigma\ \bold{bf}$, \ssi :
-  \[ \forall \alpha \in \V,\ \sigma (\alpha) \neq \unit \]
+  \[ \forall \alpha \in \V,\ \sigma (\alpha) \not\equiv_\T \unit \]
   On note $\Sigma^{\bold{bf}}$ l'ensemble des substitutions de types bien formées.
 \end{definition}
 
@@ -716,7 +718,7 @@ Mentionnons un dernier trait de l'implémentation de l'unification. La puissance
 
 Attachons-nous à formaliser la \emph{normalisation des types}. Pour ce faire, on définit d'abord les \emph{types normalisés} — c'est-à-dire le résultat de la normalisation — puis la fonction de normalisation elle-même.
 
-Etant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$, $\cdot =^\#_A \cdot$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal, l'égalité et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.
+Etant donné un ensemble $A$, on note $A^\#$ l'ensemble des multi-ensembles finis sur $A$ et $\cdot +^\#_A \cdot$, $| \cdot |^\#_A$ et $\cdot \subseteq^\#_A \cdot$ respectivement la somme, le cardinal et l'inclusion sur $A^\#$. Nous n'explicitons pas la représentation. On suppose toutefois qu'il est licite d'écrire $\N^\# \subseteq \N$ dans la définition des \emph{types normalisés}. En Coq, on utiliserait typiquement des listes ou vecteurs.
 
 Définissons donc les \emph{types normalisés}. Un \emph{type} normalisé est soit :
 \begin{itemize}[nosep]
@@ -924,56 +926,7 @@ Comme attendu, la normalisation donne des types normalisés bien formés :
 \end{theoreme}
 
 \begin{preuve}
-  Par induction structurelle et par cas sur le type.
-  \begin{itemize}[label={\textbf{Cas}}]
-    \item
-      $\alpha$ : trivial.
-    \item
-      $\unit$ : trivial.
-    \item
-      $\tau_1 \times \tau_2$ : \\
-      Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
-      On en déduit le résultat par les lemmes \ref{bf_implique_norm'_pbf}, \ref{pbf_implique_msomme_pbf} et \ref{pbf_implique_norm''_bf}.
-    \item
-      $\tau_1 \rightarrow \tau_2$ : \\
-      Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
-      Par le lemme \ref{bf_implique_norm'_pbf}, $\norm' (\norm (\tau_1))$ est presque bien formé.
-      \begin{itemize}[label={\textbf{Si}}]
-        \item
-          $\norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2$ : \\
-          $\norm (\tau_2)$ étant bien formé, $\nu^\#_2$ est presque bien formé, $\nu_2$ est bien formé et n'est pas une flèche. \\
-          Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\norm' (\norm (\tau_1))$ et $\nu^\#_2$ est presque bien formée. \\
-          On en déduit le résultat attendu.
-        \item
-          non : trivial.
-      \end{itemize}
-    \item
-      $f (\overline \tau)$ : trivial avec l'hypothèse d'induction.
-  \end{itemize}
-\end{preuve}
-
-\begin{lemme} \label{bf_implique_norm'_pbf}
-  Si $\nu$ est bien formé, $\norm' (\nu)$ est presque bien formé.
-\end{lemme}
-
-\begin{preuve}
-  Trivial avec le lemme \ref{bf_implique_pfb}.
-\end{preuve}
-
-\begin{lemme} \label{pbf_implique_msomme_pbf}
-  La somme de deux uplets presque bien formés est presque bien formée.
-\end{lemme}
-
-\begin{preuve}
-  Trivial avec la définition de $\bold{pbf}$.
-\end{preuve}
-
-\begin{lemme} \label{pbf_implique_norm''_bf}
-  Si $\nu^\#$ dans $\N^\#$ est presque bien formé, $\norm'' (\nu^\#)$ est bien formé.
-\end{lemme}
-
-\begin{preuve}
-  Trivial avec la définition de $\norm''$.
+  Voir annexe.
 \end{preuve}
 
 Nous savons comment passer des types aux types types normalisés. Reste à lier des deux domaines. Ce à quoi nous voulons arriver est un théorème d'équivalence pour l'unification. Il s'agit donc de définir la notion d'unifiabilité pour les types normalisés. De la même manière qu'auparavant, voyons tout d'abord par la notion de \emph{substitution} :
@@ -1006,7 +959,7 @@ On définit le domaine d'une substitution de types normalisés $\theta$ comme pr
       f (\hat\theta (\nu_1), \dots, \hat\theta (\nu_{|f|_\F}))
     \\
       \tilde \theta (\mset{\nu_1, \dots, \nu_n}) &=
-      \msetN_bigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
+      \msetNbigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
   \end{align*}
 \end{definition}
 
@@ -1034,72 +987,7 @@ On montre que l'application d'une substitution bien formée préserve la bonne f
 \end{theoreme}
 
 \begin{preuve}
-  Par induction structurelle sur $\nu$.
-  \begin{itemize}[label={\textbf{Cas}}]
-    \item
-      $\alpha$ : $\hat\theta (\alpha)$ est bien formé car $\theta$ l'est.
-    \item
-      $\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
-      Par hypothèse d'induction, les $\hat\theta (\nu_i)$ sont bien formés. \\
-      Par le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont presque bien formés. \\
-      Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme l'est aussi. \\
-      Par l'absurde, supposons que cette somme est de cardinal 1. \\
-      $\nu$ étant bien formé, $n$ est différent de 1. \\
-      Il existe donc $i$ dans $\interval 1 n$ tel que, pour tout $j$ différent de $i$, $\norm' (\hat\theta (\nu_j))$ est le multi-ensemble vide. \\
-      Par les lemmes \ref{norm'_vide_implique_vide} puis \ref{bf_et_subst_vide_implique_vide}, ces derniers $\nu_j$ sont tous le multi-ensemble vide. \\
-      Absurde car $\nu$ est bien formé. \\
-      Le cardinal de la somme est donc différent de 1, ce qui permet de conclure.
-    \item
-      $\nu^\# \rightarrow \nu$ avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$ : \\
-      Par hypothèse, $\nu^\#$ est presque bien formé donc les $\nu_i$ sont bien formés. \\
-      Par hypothèse d'induction puis le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont bien formés. \\
-      Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme $\hat\theta (\nu^\#)$ est presque formée. \\
-      Par hypothèse d'induction, $\hat\theta (\nu)$ est bien formée.
-      \begin{itemize}[label={\textbf{Si}}]
-        \item
-          $\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
-          $\hat\theta (\nu^\#)$ étant bien formé, ${\nu^\#}'$ est presque bien formé, $\nu'$ est bien formé et n'est pas une flèche. \\
-          Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\hat\theta (\nu^\#)$ et ${\nu^\#}'$ est presque bien formée. \\
-          On en déduit le résultat attendu.
-        \item
-          non : trivial.
-      \end{itemize}
-    \item
-      $f (\nu_1, \dots, \nu_{|f|_\F})$ : trivial avec l'hypothèse d'induction.
-  \end{itemize}
-\end{preuve}
-
-\begin{lemme} \label{norm'_vide_implique_vide}
-  Soit $\nu$ dans $\N$. Si $\norm' (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
-\end{lemme}
-
-\begin{preuve}
-  Trivial avec la définition de $\norm'$.
-\end{preuve}
-
-\begin{lemme} \label{bf_et_subst_vide_implique_vide}
-  Soient $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$. Si $\hat\theta (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
-\end{lemme}
-
-\begin{preuve}
-  Par induction structurelle sur $\nu$.
-  \begin{itemize}[label={\textbf{Cas}}]
-    \item
-      $\alpha$ : \\
-      Par définition de $\hat\theta$ : $\hat\theta (\alpha) = \theta (\alpha) = \mset{}$. \\
-      Absurde car $\theta$ st bien formée.
-    \item
-      $\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
-      Par hypothèse, $\nu$ est bien formé donc les $\nu_i$ le sont aussi. \\
-      Leur somme étant vide, les $\norm' (\hat\theta (\nu_i))$ sont nécessairement tous vides. \\
-      Par le lemme \ref{bf_et_subst_vide_implique_vide}, les $\hat\theta (\nu_i)$ sont tous le multi-ensemble vide. \\
-      Par hypothèse d'induction, les $\nu_i$ sont donc tous le multi-ensemble vide. \\
-      Absurde car $\nu$ est bien formé.
-    \item
-      $\nu^\# \rightarrow \nu$ : absurde.
-    \item
-      $f (\overline \nu)$ : absurde.
-  \end{itemize}
+	Voir annexe.
 \end{preuve}
 
 Le dernier ingrédient pour parler d'unification est une relation d'\emph{équivalence} sur les types normalisés. Une première approche consiste à repartir de la définition de l'équivalence sur les types sans les axiomes et les règles pour le produit et en y ajoutant des règles pour les uplets :
@@ -1183,11 +1071,15 @@ Quoi qu'il en soit, nous pouvons maintenant parler d'unification pour les types 
   \end{itemize}
 \end{exemple}
 
-Le théorème fondamental assure alors l'équivalence entre unifiabilité sur les types et unifiabilité sur les types normalisés. La démonstration n'étant pas complète, nous l'admettons.
+Le théorème fondamental assure alors l'équivalence entre unifiabilité sur les types et unifiabilité sur les types normalisés.
 
-\begin{theoreme}
-  Deux types admettent un unificateur de type bien formé \ssi leurs normalisées admettent un unificateur de types normalisés bien formé.
+\begin{theoreme} \label{unifT_equiv_unifN}
+  Deux types admettent un unificateur bien formé \ssi leurs normalisées admettent un unificateur bien formé.
 \end{theoreme}
+
+\begin{preuve}
+	Voir annexe.
+\end{preuve}
 
 %============================================================
 %============================================================
@@ -1801,7 +1693,7 @@ Cependant, introduire autant de critères qu'il y a de constructeurs de types n'
 
 \begin{definition}[$\mathrm{crit}^2$]
   On note $\mathrm{crit}^2$ le critère $(\mathrm{encode}^2, \mathrm{compat}^2)$ sur $\mathscr{D}^2 = \mathbb{B} \times \G^\#$, où $\mathrm{encode}^2$ et $\mathrm{compat}^2$ sont définies par :
-  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen base} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
+  \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen base} (\nu), \msetGbigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetGbigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
   \begin{align*}
       \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
       \bold{V}
@@ -2079,12 +1971,302 @@ Quoi qu'il en soit, nous espérons avoir posé de solides bases au système \dow
 \chapter*{Annexe}
 \addcontentsline{toc}{chapter}{Annexe}
 
-Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d'unifiabilité.
+Cette annexe est dévolue aux démonstrations des théorèmes de normalisation et des deux conditions nécessaires d'unifiabilité.
 
 %============================================================
 %============================================================
 
-\section{Première condition nécessaire}
+\section{Normalisation}
+
+%============================================================
+
+\subsection{Bonne formation d'une normalisée}
+
+\begin{theoreme} \label{norm_bf}
+  La normalisée de tout type est bien formée.
+\end{theoreme}
+
+\begin{preuve}
+  Par induction structurelle et par cas sur le type.
+  \begin{itemize}[label={\textbf{Cas}}]
+    \item
+      $\alpha$ : trivial.
+    \item
+      $\unit$ : trivial.
+    \item
+      $\tau_1 \times \tau_2$ : \\
+      Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
+      On en déduit le résultat par les lemmes \ref{bf_implique_norm'_pbf}, \ref{pbf_implique_msomme_pbf} et \ref{pbf_implique_norm''_bf}.
+    \item
+      $\tau_1 \rightarrow \tau_2$ : \\
+      Par hypothèse d'induction, $\norm (\tau_1)$ et $\norm (\tau_2)$ sont bien formés. \\
+      Par le lemme \ref{bf_implique_norm'_pbf}, $\norm' (\norm (\tau_1))$ est presque bien formé.
+      \begin{itemize}[label={\textbf{Si}}]
+        \item
+          $\norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2$ : \\
+          $\norm (\tau_2)$ étant bien formé, $\nu^\#_2$ est presque bien formé, $\nu_2$ est bien formé et n'est pas une flèche. \\
+          Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\norm' (\norm (\tau_1))$ et $\nu^\#_2$ est presque bien formée. \\
+          On en déduit le résultat attendu.
+        \item
+          non : trivial.
+      \end{itemize}
+    \item
+      $f (\overline \tau)$ : trivial avec l'hypothèse d'induction.
+  \end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{bf_implique_norm'_pbf}
+  Si $\nu$ est bien formé, $\norm' (\nu)$ est presque bien formé.
+\end{lemme}
+
+\begin{preuve}
+  Trivial avec le lemme \ref{bf_implique_pfb}.
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_msomme_pbf}
+  La somme de deux uplets presque bien formés est presque bien formée.
+\end{lemme}
+
+\begin{preuve}
+  Trivial avec la définition de $\bold{pbf}$.
+\end{preuve}
+
+\begin{lemme} \label{pbf_implique_norm''_bf}
+  Si $\nu^\#$ dans $\N^\#$ est presque bien formé, $\norm'' (\nu^\#)$ est bien formé.
+\end{lemme}
+
+\begin{preuve}
+  Trivial avec la définition de $\norm''$.
+\end{preuve}
+
+%============================================================
+
+\subsection{Préservation de la bonne formation par application d'une substitution bien formée}
+
+\begin{theoreme} \label{bf_implique_subst_bf}
+  Pour tout $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$, $\hat\theta (\nu)$ est bien formé.
+\end{theoreme}
+
+\begin{preuve}
+  Par induction structurelle sur $\nu$.
+  \begin{itemize}[label={\textbf{Cas}}]
+    \item
+      $\alpha$ : $\hat\theta (\alpha)$ est bien formé car $\theta$ l'est.
+    \item
+      $\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
+      Par hypothèse d'induction, les $\hat\theta (\nu_i)$ sont bien formés. \\
+      Par le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont presque bien formés. \\
+      Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme l'est aussi. \\
+      Par l'absurde, supposons que cette somme est de cardinal 1. \\
+      $\nu$ étant bien formé, $n$ est différent de 1. \\
+      Il existe donc $i$ dans $\interval 1 n$ tel que, pour tout $j$ différent de $i$, $\norm' (\hat\theta (\nu_j))$ est le multi-ensemble vide. \\
+      Par les lemmes \ref{norm'_vide_implique_vide} puis \ref{bf_et_subst_vide_implique_vide}, ces derniers $\nu_j$ sont tous le multi-ensemble vide. \\
+      Absurde car $\nu$ est bien formé. \\
+      Le cardinal de la somme est donc différent de 1, ce qui permet de conclure.
+    \item
+      $\nu^\# \rightarrow \nu$ avec $\nu^\# = \mset{\nu_1, \dots, \nu_n}$ : \\
+      Par hypothèse, $\nu^\#$ est presque bien formé donc les $\nu_i$ sont bien formés. \\
+      Par hypothèse d'induction puis le lemme \ref{bf_implique_norm'_pbf}, les $\norm' (\hat\theta (\nu_i))$ sont bien formés. \\
+      Par le lemme \ref{pbf_implique_msomme_pbf}, leur somme $\hat\theta (\nu^\#)$ est presque formée. \\
+      Par hypothèse d'induction, $\hat\theta (\nu)$ est bien formée.
+      \begin{itemize}[label={\textbf{Si}}]
+        \item
+          $\hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'$ : \\
+          $\hat\theta (\nu^\#)$ étant bien formé, ${\nu^\#}'$ est presque bien formé, $\nu'$ est bien formé et n'est pas une flèche. \\
+          Par le lemme \ref{pbf_implique_msomme_pbf}, la somme de $\hat\theta (\nu^\#)$ et ${\nu^\#}'$ est presque bien formée. \\
+          On en déduit le résultat attendu.
+        \item
+          non : trivial.
+      \end{itemize}
+    \item
+      $f (\nu_1, \dots, \nu_{|f|_\F})$ : trivial avec l'hypothèse d'induction.
+  \end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{norm'_vide_implique_vide}
+  Soit $\nu$ dans $\N$. Si $\norm' (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
+\end{lemme}
+
+\begin{preuve}
+  Trivial avec la définition de $\norm'$.
+\end{preuve}
+
+\begin{lemme} \label{bf_et_subst_vide_implique_vide}
+  Soient $\nu$ dans $\N^{\bold{bf}}$ et $\theta$ dans $\Theta^{\bold{bf}}$. Si $\hat\theta (\nu)$ est le multi-ensemble vide, $\nu$ aussi.
+\end{lemme}
+
+\begin{preuve}
+  Par induction structurelle sur $\nu$.
+  \begin{itemize}[label={\textbf{Cas}}]
+    \item
+      $\alpha$ : \\
+      Par définition de $\hat\theta$ : $\hat\theta (\alpha) = \theta (\alpha) = \mset{}$. \\
+      Absurde car $\theta$ est bien formée.
+    \item
+      $\nu = \mset{\nu_1, \dots, \nu_n}$ : \\
+      Par hypothèse, $\nu$ est bien formé donc les $\nu_i$ le sont aussi. \\
+      Leur somme étant vide, les $\norm' (\hat\theta (\nu_i))$ sont nécessairement tous vides. \\
+      Par le lemme \ref{bf_et_subst_vide_implique_vide}, les $\hat\theta (\nu_i)$ sont tous le multi-ensemble vide. \\
+      Par hypothèse d'induction, les $\nu_i$ sont donc tous le multi-ensemble vide. \\
+      Absurde car $\nu$ est bien formé.
+    \item
+      $\nu^\# \rightarrow \nu$ : absurde.
+    \item
+      $f (\overline \nu)$ : absurde.
+  \end{itemize}
+\end{preuve}
+
+%============================================================
+
+\subsection{Equivalence des unifiabilités}
+
+\begin{theoreme} \label{unifT_equiv_unifN}
+  Deux types admettent un unificateur bien formé \ssi leurs normalisées admettent un unificateur bien formé.
+\end{theoreme}
+
+\begin{definition}[normalisée d'une substitution de types]
+	La normalisée d'une substitution de types $\sigma$, notée $\norm (\sigma)$, est la substitution de types normalisés définie par :
+	\[ \forall \alpha \in \V,\ (\norm (\sigma)) (\alpha) = \norm (\sigma (\alpha)) \]
+\end{definition}
+
+\begin{definition}[normalisée inverse d'un type normalisé]
+	La normalisée inverse d'un type normalisé $\nu$, notée $\inorm (\nu)$, est définie inductivement par :
+	\begin{align*}
+			\inorm (\alpha) &=
+			\alpha
+		\\
+			\inorm (\mset{}) &=
+			\unit
+		\\
+			\inorm (\mset{\nu_1, \dots, \nu_n}) &=
+			\bigtimes_{i=1}^n \inorm (\nu_i)
+		\\
+			\inorm (\nu^\# \rightarrow \nu) &=
+			\inorm (\nu^\#) \rightarrow \inorm (\nu)
+		\\
+			\inorm (f (\nu_1, \dots, \nu_{|f|_\F})) &=
+			f (\inorm (\nu_1), \dots, \inorm (\nu_{|f|_\F}))
+	\end{align*}
+\end{definition}
+
+\begin{definition}[normalisée inverse d'une substitution de types normalisés]
+	La normalisée inverse d'une substitution de types normalisés $\theta$, notée $\inorm (\theta)$, est la substitution de types définie par :
+	\[ \forall \alpha,\ (\inorm (\theta)) (\alpha) = \inorm (\theta (\alpha)) \]
+\end{definition}
+
+\begin{preuve}
+	\begin{itemize}[topsep=0pt]
+		\item[$(\Rightarrow)$]
+			Soient deux types $\tau_1$ et $\tau_2$ admettant un unificateur bien formé $\sigma$ :
+			\[ \hat\sigma (\tau_1) \equiv_\T \hat\sigma (\tau_2) \]
+			Par le lemme \ref{equivT_equiv_egaliteN}, on peut passer aux normalisées :
+			\[ \norm (\hat\sigma (\tau_1)) = \norm (\hat\sigma (\tau_2)) \]
+			Par le lemme \ref{norm_subst_eq_norm_subst_norm}, il vient que $\norm (\sigma)$ est un unificateur des normalisées de $\tau_1$ et $\tau_2$ :
+			\[ (\widehat\norm (\sigma)) (\norm (\tau_1)) = (\widehat\norm (\sigma)) (\norm (\tau_2)) \]
+			Par bonne formation de $\sigma$ et le lemme \ref{subst_bf_implique_norm_bf}, cet unificateur est bien formé.
+		\item[$(\Leftarrow)$]
+			Soient deux types $\tau_1$ et $\tau_2$ tels que leurs normalisées admettent un unificateur bien formé $\theta$ :
+			\[ \hat\theta (\norm (\tau_1)) = \hat\theta (\norm (\tau_2)) \]
+			Par bonne formation de $\theta$ et le lemme \ref{subst_bf_implique_subst_norm_eq_norm_inorm_subst}, il vient :
+			\[ \norm ((\widehat\inorm (\theta))(\tau_1)) = \norm ((\widehat\inorm (\theta))(\tau_2)) \]
+			Par le lemme \ref{equivT_equiv_egaliteN}, $\inorm (\theta)$ est un unificateur de $\tau_1$ et $\tau_2$ :
+			\[ (\widehat\inorm (\theta)) (\tau_1) \equiv_\T (\widehat\inorm (\theta)) (\tau_2) \]
+			Par bonne formation de $\theta$ et le lemme \ref{subst_bf_implique_inorm_bf}, cet unificateur est bien formé.
+	\end{itemize}
+\end{preuve}
+
+\begin{lemme} \label{equivT_equiv_egaliteN}
+	Deux types sont équivalents \ssi leur normalisées sont égales.
+\end{lemme}
+
+\begin{preuve}
+	Admis.
+\end{preuve}
+
+\begin{lemme} \label{norm_subst_eq_norm_subst_norm}
+	Pour tout $\sigma$ dans $\Sigma^{\bold{bf}}$, on a :
+	\[ \norm \circ \hat\sigma = \widehat\norm (\sigma) \circ \norm \]
+\end{lemme}
+
+\begin{preuve}
+	Admis.
+\end{preuve}
+
+\begin{lemme} \label{bf_implique_norm_inorm_eq_id}
+	La composée de $\inorm$ par $\norm$ est l'identité sur $\N^{\bold{bf}}$.
+\end{lemme}
+
+\begin{preuve}
+	Admis.
+\end{preuve}
+
+\begin{lemme} \label{subst_bf_implique_norm_inorm_eq_id}
+	La composée de $\inorm$ par $\norm$ est l'identité sur $\Theta^{\bold{bf}}$.
+\end{lemme}
+
+\begin{preuve}
+	Soient $\theta$ dans $\Theta^{\bold{bf}}$ et $\alpha$ dans $\V$. \\
+	Par définition de $\norm$ puis $\inorm$, il vient :
+	\[ (\norm (\inorm (\theta))) (\alpha) = \norm (\inorm (\theta (\alpha))) \]
+	Par bonne formation de $\theta$ et le lemme \ref{bf_implique_norm_inorm_eq_id}, on obtient :
+	\[ (\norm (\inorm (\theta))) (\alpha) = \theta (\alpha) \]
+	C'est bien le résultat attendu.
+\end{preuve}
+
+\begin{lemme} \label{subst_bf_implique_subst_norm_eq_norm_inorm_subst}
+	Pour tout $\theta$ dans $\Theta^{\bold{bf}}$, on a :
+	\[ \hat\theta \circ \norm = \norm \circ \widehat\inorm (\theta) \]
+\end{lemme}
+
+\begin{preuve}
+	Par le lemme \ref{subst_bf_implique_inorm_bf}, $\inorm (\theta)$ est bien formée car $\theta$ l'est. \\
+	Par le lemme \ref{norm_subst_eq_norm_subst_norm}, on a donc :
+	\[ \norm \circ \widehat\inorm (\theta) = \widehat\norm (\inorm (\theta)) \circ \norm \]
+	Le lemme \ref{subst_bf_implique_norm_inorm_eq_id} nous donne le résultat attendu :
+	\[ \norm \circ \widehat\inorm (\theta) = \hat\theta \circ \norm \]
+\end{preuve}
+
+\begin{lemme} \label{subst_bf_equiv_norm_subst_neq_norm_unit}
+	Une substitution de types $\sigma$ est bien formée \ssi :
+	\[ \forall \alpha,\ \norm (\sigma (\alpha)) \neq \mset{} \]
+\end{lemme}
+
+\begin{preuve}
+	Les deux sens se montrent aisément par l'absurde en invoquant le lemme \ref{equivT_equiv_egaliteN}.
+\end{preuve}
+
+\begin{lemme} \label{subst_bf_implique_norm_bf}
+	La normalisée de toute substitution de types bien formée est bien formée.
+\end{lemme}
+
+\begin{preuve}
+	Soient $\sigma$ dans $\Sigma^{\bold{bf}}$ et $\alpha$ dans $\V$. \\
+	Par définition de $\norm (\sigma)$, on a :
+	\[ ( \norm (\sigma) ) (\alpha) = \norm (\sigma (\alpha)) \]
+	Par le lemme \ref{norm_bf}, cette dernière quantité est bien formée. Par bonne formation de $\sigma$ et le lemme \ref{subst_bf_equiv_norm_subst_neq_norm_unit}, elle est par ailleurs différente du multi-ensemble vide. \\
+	On en déduit la bonne formation de $\norm (\sigma)$.
+\end{preuve}
+
+\begin{lemme} \label{subst_bf_implique_inorm_bf}
+	La normalisée inverse de toute substitution de types normalisés bien formée est bien formée.
+\end{lemme}
+
+\begin{preuve}
+	Soient $\theta$ dans $\Theta^{\bold{bf}}$ et $\alpha$ dans $\V$. \\
+	Par bonne formation de $\theta$ et le lemme \ref{subst_bf_implique_norm_inorm_eq_id}, on a :
+	\[ \norm ((\inorm (\theta)) (\alpha)) = \norm (\inorm (\theta (\alpha))) = \theta (\alpha) \]
+	Par bonne formation de $\theta$, cette dernière quantité est différente du multi-ensemble vide. \\
+	Le lemme \ref{subst_bf_equiv_norm_subst_neq_norm_unit} nous donne la bonne formation de $\inorm (\theta)$.
+\end{preuve}
+
+%============================================================
+%============================================================
+
+\section{Conditions nécessaires d'unifiabilité}
+
+%============================================================
+
+\subsection{Première condition nécessaire}
 
 \begin{theoreme} \label{thm_cond1}
   Si deux types normalisés bien formés sont unifiables et que leurs têtes ne sont pas des variables, elles ont le même genre.
@@ -2148,9 +2330,8 @@ Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d
 \end{preuve}
 
 %============================================================
-%============================================================
 
-\section{Deuxième condition nécessaire}
+\subsection{Deuxième condition nécessaire}
 
 \begin{theoreme} \label{thm_cond2}
   Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, la multiplicité de tout genre différent de $\bold{var}$ dans $\nu_1$ est supérieure ou égale à celle dans $\nu_2$.
@@ -2190,7 +2371,7 @@ Cette annexe est dévolue aux démonstrations des deux conditions nécessaires d
   Il vient alors par définition de $\hat\theta$ :
   \[ \hat\theta (\nu^\# \rightarrow \nu) = \tilde\theta (\nu^\#) \rightarrow \hat\theta (\nu) \]
   Par définition de $\mu_g$ et $\tilde\theta$, on a :
-  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetN_bigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
+  \[ \mu_g (\hat\theta (\nu^\# \rightarrow \nu)) = \mu_g' \left( \msetNbigplus_{i \in \interval 1 n} \norm' (\hat\theta (\nu_i)) \right) \]
   Par simplicité et bonne formation, tous les $\nu_i$ sont de genre différent de $\bold{var}$ et $\bold{uplet}$. \\
   Par le lemme \ref{non_var_implique_subst_preserve_genre}, on a donc :
   \[ \forall i \in \interval 1 n,\ [ \hat\theta (\nu_i) ] = [ \nu_i ] \neq \bold{uplet} \]
