@@ -4,7 +4,6 @@ type opts = {
   copts : copts ;
   meas_kind : Measure.Kind.t ;
   with_feats : Bool.t ;
-  feats : (module Index.Feature.S) List.t ;
   no_idx : Bool.t ;
   idx_file : Fpath.t ;
   ty : Type.t ;
@@ -130,7 +129,7 @@ let main opts =
       in
       iter_idx, iter_idx_filt
     else
-      let module Index = (val Index.make_ opts.feats) in
+      let module Index = (val opts.copts.idx) in
       let idx =
         try
           Index.load opts.idx_file
@@ -149,8 +148,8 @@ let main opts =
   in
   aux opts iter_idx iter_idx_filt
 
-let main copts meas_kind with_feats feats no_idx idx_file ty pkgs =
-  try Ok (main { copts ; meas_kind ; with_feats ; feats ; no_idx ; idx_file ; ty ; pkgs })
+let main copts meas_kind with_feats no_idx idx_file ty pkgs =
+  try Ok (main { copts ; meas_kind ; with_feats ; no_idx ; idx_file ; ty ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -166,14 +165,6 @@ let meas_kind =
 let with_feats =
   let doc = "Test features." in
   Arg.(value & flag & info [ "with-features" ] ~doc)
-
-let feats =
-  let docv = "features" in
-  let doc =
-    Fmt.str "Set used features: %s."
-      (Arg.doc_alts Index.Feature.all_names)
-  in
-  Arg.(value & opt Convs.feats Index.Feature.all & info [ "features" ] ~docv ~doc)
 
 let no_idx =
   let doc = "Do not use or compute index: retrieve functions directly from OPAM." in
@@ -194,5 +185,5 @@ let pkgs =
 
 let cmd =
   let doc = "compute index statistics" in
-  Term.(term_result (const main $ copts $ meas_kind $ with_feats $ feats $ no_idx $ idx_file $ ty $ pkgs)),
+  Term.(term_result (const main $ copts $ meas_kind $ with_feats $ no_idx $ idx_file $ ty $ pkgs)),
   Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)

@@ -10,6 +10,8 @@ type opts = {
 }
 
 let main opts =
+  let module Indexing = Index in
+  let module Index = (val opts.copts.idx) in
   let pkgs =
     if CCList.is_empty opts.pkgs
     then None
@@ -38,12 +40,12 @@ let main opts =
         <?> (Type.compare, ty1, ty2))
     )
     |> Iter.flat_map (fun (_, cell, _) ->
-      Index.Cell.iter cell
+      Indexing.Cell.iter cell
     )
   in
   let res = CCOpt.fold (CCFun.flip Iter.take) res opts.cnt in
   Fmt.pr "@[<v>%a@]@."
-    (Fmt.iter Iter.iter Index.Info.pp) res
+    (Fmt.iter Iter.iter Indexing.Info.pp) res
 
 let main copts exhaustive cnt idx_file ty pkgs =
   try Ok (main { copts ; exhaustive ; cnt ; idx_file ; ty ; pkgs })

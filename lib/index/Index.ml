@@ -3,7 +3,9 @@ module Trie = Trie
 module Info = Info
 module Cell = Cell
 
-module Make (Trie : Trie.NODE) = struct
+module type S = IndexIntf.S
+
+module Make (Trie : Trie.NODE) : S = struct
 
   type t = {
     hcons : Type.Hashcons.t ;
@@ -165,6 +167,4 @@ module Make (Trie : Trie.NODE) = struct
 
 end
 
-let make_ feats = (module Make (val Trie.make feats) : IndexIntf.S)
-
-include (val make_ Feature.all)
+let make feats = (module Make (val Trie.make feats) : S)

@@ -1,15 +1,17 @@
+let env = Type.Env.make Query
+
 open Cmdliner
 
 let typ =
   let parse str =
-    try Ok (Type.of_string Common.env str)
-    with Invalid_argument _ -> Error (`Msg "type syntax error")
+    try Ok (Type.of_string env str)
+    with Invalid_argument _ -> Error (`Msg "ill-formed type")
   in
   Arg.conv (parse, Type.pp)
 
 let scheme =
   let parse str =
-    try Ok Scheme.(to_type @@ of_string Common.env str)
+    try Ok Scheme.(to_type @@ of_string env str)
     with Invalid_argument _ -> Error (`Msg "ill-formed type")
   in
   Arg.conv (parse, Type.pp)

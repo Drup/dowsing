@@ -3,7 +3,5 @@ module Trie = Trie
 module Info = Info
 module Cell = Cell
 
-module Make (Trie : Trie.NODE) : IndexIntf.S
-val make_ : (module Feature.S) List.t -> (module IndexIntf.S)
-
-include IndexIntf.S
+module type S = IndexIntf.S
+val make : (module Feature.S) List.t -> (module S)

@@ -3,13 +3,12 @@ open Common
 type opts = {
   copts : copts ;
   verbose : Bool.t ;
-  feats : (module Index.Feature.S) List.t ;
   idx_file : Fpath.t ;
   pkgs : String.t List.t ;
 }
 
 let main opts =
-  let module Index = (val Index.make_ opts.feats) in
+  let module Index = (val opts.copts.idx) in
   Bos.OS.Dir.create ~path:true @@ Fpath.parent opts.idx_file
   |> CCResult.iter_err (fun (`Msg msg) -> error msg) ;
   let pkgs =
@@ -37,8 +36,8 @@ let main opts =
     error @@ Fmt.str "cannot write index file `%a'"
       Fpath.pp opts.idx_file
 
-let main copts verbose feats idx_file pkgs =
-  try Ok (main { copts ; verbose ; feats ; idx_file ; pkgs })
+let main copts verbose idx_file pkgs =
+  try Ok (main { copts ; verbose ; idx_file ; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -46,14 +45,6 @@ open Cmdliner
 let verbose =
   let doc = "Enable verbose output." in
   Arg.(value & flag & info [ "verbose" ] ~doc)
-
-let feats =
-  let docv = "features" in
-  let doc =
-    Fmt.str "Set used features: %s."
-      (Arg.doc_alts Index.Feature.all_names)
-  in
-  Arg.(value & opt Convs.feats Index.Feature.all & info [ "features" ] ~docv ~doc)
 
 let idx_file =
   let docv = "file" in
@@ -66,5 +57,5 @@ let pkgs =
 
 let cmd =
   let doc = "save index" in
-  Term.(term_result (const main $ copts $ verbose $ feats $ idx_file $ pkgs)),
+  Term.(term_result (const main $ copts $ verbose $ idx_file $ pkgs)),
   Term.(info "save" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
