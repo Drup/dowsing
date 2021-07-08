@@ -1,4 +1,4 @@
-subs := mlworkshop prez_unifAC proof proof2 rapport
+subs := mlworkshop prez_unifAC prez_stage rapport
 mk_sub = $(MAKE) -C $1 -f ../tex.mk TARGET=$1
 
 .PHONY : all
