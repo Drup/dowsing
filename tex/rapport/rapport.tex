@@ -2120,10 +2120,6 @@ Cette annexe est dévolue aux démonstrations des théorèmes de normalisation e
 
 \subsection{Equivalence des unifiabilités}
 
-\begin{theoreme} \label{unifT_equiv_unifN}
-  Deux types admettent un unificateur bien formé \ssi leurs normalisées admettent un unificateur bien formé.
-\end{theoreme}
-
 \begin{definition}[normalisée d'une substitution de types]
 	La normalisée d'une substitution de types $\sigma$, notée $\norm (\sigma)$, est la substitution de types normalisés définie par :
 	\[ \forall \alpha \in \V,\ (\norm (\sigma)) (\alpha) = \norm (\sigma (\alpha)) \]
@@ -2153,6 +2149,10 @@ Cette annexe est dévolue aux démonstrations des théorèmes de normalisation e
 	La normalisée inverse d'une substitution de types normalisés $\theta$, notée $\inorm (\theta)$, est la substitution de types définie par :
 	\[ \forall \alpha,\ (\inorm (\theta)) (\alpha) = \inorm (\theta (\alpha)) \]
 \end{definition}
+
+\begin{theoreme} \label{unifT_equiv_unifN}
+  Deux types admettent un unificateur bien formé \ssi leurs normalisées admettent un unificateur bien formé.
+\end{theoreme}
 
 \begin{preuve}
 	\begin{itemize}[topsep=0pt]
