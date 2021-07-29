@@ -22,12 +22,12 @@
 %
 %\setbeamertemplate{navigation symbols}{}
 %\addtobeamertemplate{footline}{%
-%	\hspace*{\fill}%
-%	\llap{%
-%		\insertpagenumber\,/\,\insertpresentationendpage%
-%		\hspace{5pt}%
-%	}
-%	\vskip4pt%
+% \hspace*{\fill}%
+% \llap{%
+%   \insertpagenumber\,/\,\insertpresentationendpage%
+%   \hspace{5pt}%
+% }
+% \vskip4pt%
 %}
 
 %============================================================
@@ -36,8 +36,8 @@
 \usepackage{graphicx}
 \usepackage{xspace}
 \usepackage{caption}
-\usepackage{textgreek}	% textmu
-\usepackage{xcolor}		% textcolor
+\usepackage{textgreek}  % textmu
+\usepackage{xcolor}   % textcolor
 
 %============================================================
 
@@ -70,21 +70,21 @@
 \makeatother
 
 \lstset{
-	basicstyle=\ttfamily,
-	columns=fullflexible,
-	keepspaces=true,
-	moredelim=**[is][\btHL]{`}{`},
-	extendedchars=true,
-	literate={µ}{{\textmu}}1
+  basicstyle=\ttfamily,
+  columns=fullflexible,
+  keepspaces=true,
+  moredelim=**[is][\btHL]{`}{`},
+  extendedchars=true,
+  literate={µ}{{\textmu}}1
 }
 
 %============================================================
 
-\usepackage{amsmath}	% align*
-\usepackage{amssymb}	% mathbb
-\usepackage{mathrsfs}	% mathscr
-\usepackage{scalerel}	% scalerel
-\usepackage{mathtools}	% mathclap
+\usepackage{amsmath}  % align*
+\usepackage{amssymb}  % mathbb
+\usepackage{mathrsfs} % mathscr
+\usepackage{scalerel} % scalerel
+\usepackage{mathtools}  % mathclap
 
 %============================================================
 
@@ -151,8 +151,8 @@
 
 \begin{frame}{Recherche de fonctions}
 \begin{figure}[h]
- 	\centering
- 	\includegraphics[scale=0.2]{graphs/recherche_fonction}
+  \centering
+  \includegraphics[scale=0.2]{graphs/recherche_fonction}
 \end{figure}
 \centering
 Spécification de fonction ?
@@ -163,58 +163,58 @@ Spécification de fonction ?
 \begin{frame}{Spécification de fonction}
 \footnotesize
 \begin{table}[h]
- 	\centering
- 	\begin{tabular}{|l|l|l|}
-	 	\hline
-	 		Langage &
-			Nom &
-			Type
-		\\
-		\hline
-			LCF ML &
-			\texttt{itlist} &
-			$(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
-		\\
-			Caml Light &
-			\texttt{list\_it} &
-			$(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
-		\\
-			Haskell &
-			\texttt{foldr} &
-			$(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$
-		\\
-			SML of New Jersey &
-			\texttt{fold} &
-			$(\alpha \times \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
-		\\
-			Edinburgh SML &
-			\texttt{fold\_right} &
-			$(\alpha \times \beta \rightarrow \beta) \rightarrow \beta \rightarrow list (\alpha) \rightarrow \beta$
-		\\
-		\hline
-	\end{tabular}
-	\caption*{Variations sur \texttt{List.fold\_left} d'OCaml dans plusieurs dialectes de Core-ML \footnote{M. Rittri : \textit{Using types as search keys in function libraries} (1991).}.}
+  \centering
+  \begin{tabular}{|l|l|l|}
+    \hline
+      Langage &
+      Nom &
+      Type
+    \\
+    \hline
+      LCF ML &
+      \texttt{itlist} &
+      $(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+    \\
+      Caml Light &
+      \texttt{list\_it} &
+      $(\alpha \rightarrow \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+    \\
+      Haskell &
+      \texttt{foldr} &
+      $(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$
+    \\
+      SML of New Jersey &
+      \texttt{fold} &
+      $(\alpha \times \beta \rightarrow \beta) \rightarrow list (\alpha) \rightarrow \beta \rightarrow \beta$
+    \\
+      Edinburgh SML &
+      \texttt{fold\_right} &
+      $(\alpha \times \beta \rightarrow \beta) \rightarrow \beta \rightarrow list (\alpha) \rightarrow \beta$
+    \\
+    \hline
+  \end{tabular}
+  \caption*{Variations sur \texttt{List.fold\_left} d'OCaml dans plusieurs dialectes de Core-ML \footnote{M. Rittri : \textit{Using types as search keys in function libraries} (1991).}.}
 \end{table}
 \end{frame}
 
 %============================================================
 
 \begin{frame}[fragile=singleslide]\frametitle{\dowsindex}
-%\begin{figure}[h]
-% 	\centering
-% 	\includegraphics{images/sourcier}
-%\end{figure}
+\begin{figure}[h]
+  \centering
+  \includegraphics{images/sourcier}
+\end{figure}
 \footnotesize
 \begin{verbatim}
-	$ ./dowsindex search "'a list * 'a -> bool"
-	...
-	List.mem : 'a -> 'a list -> bool
-	...
-	$ ./dowsindex search "'a list -> ('a * 'b -> 'b) -> 'b -> 'b"
-	...
-	List.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-	List.fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-	...
+  $ ./dowsindex search "'a list * 'a -> bool"
+  ...
+  List.mem : 'a -> 'a list -> bool
+  ...
+  $ ./dowsindex search "'a list -> ('a * 'b -> 'b) -> 'b -> 'b"
+  ...
+  List.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+  List.fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+  ...
 \end{verbatim}
 \end{frame}
 
@@ -249,30 +249,30 @@ Spécification de fonction ?
 \begin{frame}{Types}
 \begin{mathpar}
     \inferrule* 
-    	{ }
-    	{\V \subseteq \T}
+      { }
+      {\V \subseteq \T}
     \and
     \inferrule*
-    	{ }
-    	{\unit \in \T}
+      { }
+      {\unit \in \T}
     \\
     \inferrule*
-    	{\tau_1 \in \T \\ \tau_2 \in \T}
-    	{\tau_1 \times \tau_2 \in \T}
+      {\tau_1 \in \T \\ \tau_2 \in \T}
+      {\tau_1 \times \tau_2 \in \T}
     \and
-   	\inferrule*
-   		{\tau_1 \in \T \\ \tau_2 \in \T}
-   		{\tau_1 \rightarrow \tau_2 \in \T}
-   	\and
     \inferrule*
-    	{f \in \F \\ \overline\tau \in \T^{|f|_\F}}
-    	{f (\overline\tau) \in \T}
+      {\tau_1 \in \T \\ \tau_2 \in \T}
+      {\tau_1 \rightarrow \tau_2 \in \T}
+    \and
+    \inferrule*
+      {f \in \F \\ \overline\tau \in \T^{|f|_\F}}
+      {f (\overline\tau) \in \T}
 \end{mathpar}
 \exemples :
 \begin{itemize}
-	\item $\unit \rightarrow int \times float$
-	\item $int \rightarrow (int \rightarrow \alpha) \rightarrow array (\alpha)$
-	\item $(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$
+  \item $\unit \rightarrow int \times float$
+  \item $int \rightarrow (int \rightarrow \alpha) \rightarrow array (\alpha)$
+  \item $(\alpha \rightarrow \beta \rightarrow \alpha) \rightarrow \alpha \rightarrow list (\beta) \rightarrow \alpha$
 \end{itemize}
 \end{frame}
 
@@ -281,18 +281,18 @@ Spécification de fonction ?
 \begin{frame}{Isomorphismes de types dans $\Lambda^1$}
 Deux types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} dans $\Lambda^1$ \ssi le diagramme suivant commute :
 \begin{figure}[h]
- 	\centering
-	\begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
-		\node[state] (ty1) {$\tau_1$} ;
-		\node[state] (ty2) [right=of ty1] {$\tau_2$} ;
-		\path[->]
-			(ty1)
-				edge [dotted, bend left] node {$f : \tau_1 \rightarrow \tau_2$} (ty2)
-				edge [loop left] node {$\mathrm{id}_{\tau_1}$} ()
-			(ty2)
-				edge [dotted, bend left] node {$g : \tau_2 \rightarrow \tau_1$} (ty1)
-				edge [loop right] node {$\mathrm{id}_{\tau_2}$} () ;
-	\end{tikzpicture}
+  \centering
+  \begin{tikzpicture}[shorten >=1pt,node distance=2cm,on grid,auto]
+    \node[state] (ty1) {$\tau_1$} ;
+    \node[state] (ty2) [right=of ty1] {$\tau_2$} ;
+    \path[->]
+      (ty1)
+        edge [dotted, bend left] node {$f : \tau_1 \rightarrow \tau_2$} (ty2)
+        edge [loop left] node {$\mathrm{id}_{\tau_1}$} ()
+      (ty2)
+        edge [dotted, bend left] node {$g : \tau_2 \rightarrow \tau_1$} (ty1)
+        edge [loop right] node {$\mathrm{id}_{\tau_2}$} () ;
+  \end{tikzpicture}
 \end{figure}
 \end{frame}
 
@@ -302,36 +302,36 @@ Deux types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} dans $\Lambda^1$ \ssi le 
 \small
 \emph{Système équationnel} $\E$ :
 \begin{align}
-		\alpha \times \beta &\cong_\T
-		\beta \times \alpha
-		\label{prod_comm}
-		\tag{$\times$-comm}
-	\\
-		\alpha \times (\beta \times \gamma) &\cong_\T
-		(\alpha \times \beta) \times \gamma
-		\label{prod_assoc}
-		\tag{$\times$-assoc}
-	\\
-		\unit \times \alpha &\cong_\T
-		\alpha
-		\label{prod_unit}
-		\tag{$\times$-$\unit$}
-	\\
-		(\alpha \times \beta) \rightarrow \gamma &\cong_\T
-		\alpha \rightarrow (\beta \rightarrow \gamma)
-		\label{curry}
-		\tag{curry}
+    \alpha \times \beta &\cong_\T
+    \beta \times \alpha
+    \label{prod_comm}
+    \tag{$\times$-comm}
+  \\
+    \alpha \times (\beta \times \gamma) &\cong_\T
+    (\alpha \times \beta) \times \gamma
+    \label{prod_assoc}
+    \tag{$\times$-assoc}
+  \\
+    \unit \times \alpha &\cong_\T
+    \alpha
+    \label{prod_unit}
+    \tag{$\times$-$\unit$}
+  \\
+    (\alpha \times \beta) \rightarrow \gamma &\cong_\T
+    \alpha \rightarrow (\beta \rightarrow \gamma)
+    \label{curry}
+    \tag{curry}
 \end{align}
 \emph{Théorie équationnelle} $\equiv_\T$ : plus petite congruence contenant toutes les instances des axiomes de $\E$.
 \\~\\
 \exemples :
 \begin{itemize}
-	\item
-		$\textcolor{orange}{list (\alpha)} \times \textcolor{teal}{\alpha} \rightarrow \textcolor{violet}{bool} \equiv_\T$ \\
-		$\textcolor{teal}{\alpha} \rightarrow \textcolor{orange}{list (\alpha)} \rightarrow \textcolor{violet}{bool}$
-	\item
-		$\textcolor{orange}{int} \rightarrow (\textcolor{teal}{int} \times \textcolor{olive}{int}) \rightarrow \unit \rightarrow \textcolor{violet}{\unit} \equiv_\T$ \\
-		$\textcolor{orange}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{violet}{\unit}$
+  \item
+    $\textcolor{orange}{list (\alpha)} \times \textcolor{teal}{\alpha} \rightarrow \textcolor{violet}{bool} \equiv_\T$ \\
+    $\textcolor{teal}{\alpha} \rightarrow \textcolor{orange}{list (\alpha)} \rightarrow \textcolor{violet}{bool}$
+  \item
+    $\textcolor{orange}{int} \rightarrow (\textcolor{teal}{int} \times \textcolor{olive}{int}) \rightarrow \unit \rightarrow \textcolor{violet}{\unit} \equiv_\T$ \\
+    $\textcolor{orange}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{violet}{\unit}$
 \end{itemize}
 \end{frame}
 
@@ -343,14 +343,14 @@ Deux types $\tau_1$ et $\tau_2$ sont \emph{unifiables}, noté $\tau_1 \sim_\T \t
 \[ \hat\sigma (\tau_1) \equiv_\T \hat\sigma (\tau_2) \]
 \exemples :
 \begin{itemize}
-	\item
-		$\textcolor{olive}{int} \rightarrow \textcolor{teal}{float} \rightarrow \textcolor{violet}{int} \sim_\T$ \\
-		$\textcolor{teal}{float} \rightarrow \textcolor{orange}{\alpha}$ \\
-		avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int} \rightarrow \textcolor{violet}{int} \}$
-	\item
-		$\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit} \sim_\T$ \\
-		$\textcolor{blue}{\beta} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit}$ \\
-		avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int}, \textcolor{blue}{\beta} \mapsto \unit \}$
+  \item
+    $\textcolor{olive}{int} \rightarrow \textcolor{teal}{float} \rightarrow \textcolor{violet}{int} \sim_\T$ \\
+    $\textcolor{teal}{float} \rightarrow \textcolor{orange}{\alpha}$ \\
+    avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int} \rightarrow \textcolor{violet}{int} \}$
+  \item
+    $\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit} \sim_\T$ \\
+    $\textcolor{blue}{\beta} \rightarrow \textcolor{olive}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{violet}{\unit}$ \\
+    avec $\{ \textcolor{orange}{\alpha} \mapsto \textcolor{olive}{int}, \textcolor{blue}{\beta} \mapsto \unit \}$
 \end{itemize}
 \end{frame}
 
@@ -399,8 +399,8 @@ total # unif.: 31578
 \scriptsize
 \exemples :
 \begin{itemize}
-	\item $\mu^1 (\textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}) = 1$
-	\item $\mu^1 ((\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{\beta} \rightarrow \textcolor{orange}{\alpha}) \rightarrow \textcolor{orange}{\alpha} \rightarrow list (\textcolor{teal}{\beta}) \rightarrow \textcolor{orange}{\alpha}) = 2$
+  \item $\mu^1 (\textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}) = 1$
+  \item $\mu^1 ((\textcolor{orange}{\alpha} \rightarrow \textcolor{teal}{\beta} \rightarrow \textcolor{orange}{\alpha}) \rightarrow \textcolor{orange}{\alpha} \rightarrow list (\textcolor{teal}{\beta}) \rightarrow \textcolor{orange}{\alpha}) = 2$
 \end{itemize}
 \bigskip
 \begin{lstlisting}
@@ -417,9 +417,9 @@ measure    total time (ms)    avg. time (µs)    # unif.
 \end{lstlisting}
 \observations :
 \begin{itemize}
-	\item 60\% sans variable
-	\item unification des types polymorphes plus difficile
-	\item cas à deux variables pathologique
+  \item 60\% sans variable
+  \item unification des types polymorphes plus difficile
+  \item cas à deux variables pathologique
 \end{itemize}
 \end{frame}
 
@@ -429,8 +429,8 @@ measure    total time (ms)    avg. time (µs)    # unif.
 \scriptsize
 \exemples :
 \begin{itemize}
-	\item $\mu^2 (\unit \rightarrow \textcolor{orange}{\alpha}) = \bold{var}$
-	\item $\mu^2 (int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha)) = \bold{cons}_{list}$
+  \item $\mu^2 (\unit \rightarrow \textcolor{orange}{\alpha}) = \bold{var}$
+  \item $\mu^2 (int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha)) = \bold{cons}_{list}$
 \end{itemize}
 \bigskip
 \begin{lstlisting}
@@ -447,8 +447,8 @@ other          0.815153           3.09944            263
 \end{lstlisting}
 \observations :
 \begin{itemize}
-	\item 95\% sans variable en tête
-	\item cas avec variable en tête pathologique
+  \item 95\% sans variable en tête
+  \item cas avec variable en tête pathologique
 \end{itemize}
 \end{frame}
 
@@ -458,8 +458,8 @@ other          0.815153           3.09944            263
 \scriptsize
 \exemples :
 \begin{itemize}
-	\item $\mu^3 (\alpha \,\textcolor{orange}{\times}\, int) = 0$
-	\item $\mu^3 ((\alpha \,\textcolor{orange}{\rightarrow}\, \alpha) \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{list} (\alpha)) = 1$
+  \item $\mu^3 (\alpha \,\textcolor{orange}{\times}\, int) = 0$
+  \item $\mu^3 ((\alpha \,\textcolor{orange}{\rightarrow}\, \alpha) \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{list} (\alpha)) = 1$
 \end{itemize}
 \bigskip
 \begin{lstlisting}
@@ -475,8 +475,8 @@ measure    total time (ms)    avg. time (µs)    # unif.
 \end{lstlisting}
 \observations :
 \begin{itemize}
-	\item 90\% sans variable
-	\item cas à deux variables pathologique
+  \item 90\% sans variable
+  \item cas à deux variables pathologique
 \end{itemize}
 \end{frame}
 
@@ -484,12 +484,12 @@ measure    total time (ms)    avg. time (µs)    # unif.
 %
 %\begin{frame}{Métriques — conclusion}
 %\begin{itemize}
-%	\item
-%		majorité sans variable en tête et plus largement à la base \\
-%		$\Rightarrow$ discrimination à haut potentiel
-%	\item
-%		variable en tête caractéristique des cas les plus difficiles \\
-%		$\Rightarrow$ éviter ces cas autant que possible
+% \item
+%   majorité sans variable en tête et plus largement à la base \\
+%   $\Rightarrow$ discrimination à haut potentiel
+% \item
+%   variable en tête caractéristique des cas les plus difficiles \\
+%   $\Rightarrow$ éviter ces cas autant que possible
 %\end{itemize}
 %\end{frame}
 
@@ -498,9 +498,9 @@ measure    total time (ms)    avg. time (µs)    # unif.
 \begin{frame}{Critère d'unifiabilité correct}
 Critère d'unifiabilité correct sur domaine $\mathscr{D}$ :
 \begin{itemize}
-	\item $encode : \T \rightarrow \mathscr{D}$
-	\item $compat : \mathscr{D} \times \mathscr{D} \rightarrow \mathbb{B}$
-	\item $compat (encode (\tau_1), encode (\tau_2)) = \bold{F} \implies \tau_1 \nsim_\T \tau_2$
+  \item $encode : \T \rightarrow \mathscr{D}$
+  \item $compat : \mathscr{D} \times \mathscr{D} \rightarrow \mathbb{B}$
+  \item $compat (encode (\tau_1), encode (\tau_2)) = \bold{F} \implies \tau_1 \nsim_\T \tau_2$
 \end{itemize}
 \end{frame}
 
@@ -511,15 +511,15 @@ Si deux types sont unifiables et que leurs têtes ne sont pas des variables, ell
 \\~\\
 \exemples :
 \begin{itemize}
-	\item 
-		$\dots \rightarrow \textcolor{orange}{int} \nsim_\T$ \\
-		$\dots \rightarrow \textcolor{orange}{float}$
-	\item
-		$\dots \rightarrow \textcolor{orange}{list} (\alpha) \nsim_\T$ \\
-		$\dots \rightarrow int \,\textcolor{orange}{\times}\, int$
-	\item
-		$\dots \rightarrow \textcolor{orange}{int} \stackrel{?}{\sim}_\T$ \\
-		$\dots \rightarrow \textcolor{orange}{\alpha}$
+  \item 
+    $\dots \rightarrow \textcolor{orange}{int} \nsim_\T$ \\
+    $\dots \rightarrow \textcolor{orange}{float}$
+  \item
+    $\dots \rightarrow \textcolor{orange}{list} (\alpha) \nsim_\T$ \\
+    $\dots \rightarrow int \,\textcolor{orange}{\times}\, int$
+  \item
+    $\dots \rightarrow \textcolor{orange}{int} \stackrel{?}{\sim}_\T$ \\
+    $\dots \rightarrow \textcolor{orange}{\alpha}$
 \end{itemize}
 \end{frame}
 
@@ -527,10 +527,10 @@ Si deux types sont unifiables et que leurs têtes ne sont pas des variables, ell
 
 \begin{frame}{Premier critère — implémentation}
 \begin{figure}[h]
-	\centering
-	\includegraphics[scale=0.12]{graphs/crit1_1}
-	\includegraphics[scale=0.12]{graphs/crit1_2}
-	\includegraphics[scale=0.12]{graphs/crit1_3}
+  \centering
+  \includegraphics[scale=0.12]{graphs/crit1_1}
+  \includegraphics[scale=0.12]{graphs/crit1_2}
+  \includegraphics[scale=0.12]{graphs/crit1_3}
 \end{figure}
 \end{frame}
 
@@ -544,38 +544,38 @@ $ ./dowsindex stats --index index.db --features head --with-features <type>
 \end{verbatim}
 \small
 \begin{table}[h]
-	\centering
-	\begin{tabular}{|*{4}{c|}}
-		\hline
-			Type &
-			\multicolumn{2}{c|}{Nombre d'unifications\dots} &
-			Gain
-		\\
-		\cline{2-3}
-      		&
-			sans critère & avec critère &
-		\\
-		\hline
-			$int \rightarrow int \rightarrow int$ &
-			31578 & 2714 & \textcolor{teal}{91.4\%}
-		\\
-			$int \rightarrow int \rightarrow int \rightarrow int$ &
-			31578 & 2714 & \textcolor{teal}{91.4\%}
-		\\
-			$int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
-			31578 & 2945 & 90.7\%
-		\\
-			$int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-			31578 & 5745 & \textcolor{violet}{81.8\%}
-		\\
-			$\alpha \rightarrow int \rightarrow \bold{unit}$ &
-			31578 & 5745 & \textcolor{violet}{81.8\%}
-		\\
-			$int \rightarrow int \rightarrow \alpha$ &
-			31578 & 31578 & \textcolor{orange}{0\%}
-		\\
-		\hline
-	\end{tabular}
+  \centering
+  \begin{tabular}{|*{4}{c|}}
+    \hline
+      Type &
+      \multicolumn{2}{c|}{Nombre d'unifications\dots} &
+      Gain
+    \\
+    \cline{2-3}
+          &
+      sans critère & avec critère &
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      31578 & 2714 & \textcolor{teal}{91.4\%}
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      31578 & 2714 & \textcolor{teal}{91.4\%}
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      31578 & 2945 & 90.7\%
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      31578 & 5745 & \textcolor{violet}{81.8\%}
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      31578 & 5745 & \textcolor{violet}{81.8\%}
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      31578 & 31578 & \textcolor{orange}{0\%}
+    \\
+    \hline
+  \end{tabular}
 \end{table}
 \end{frame}
 
@@ -586,15 +586,15 @@ Si deux types $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ n'a pas de variab
 \\~\\
 \exemples :
 \begin{itemize}
-	\item
-		$\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
-		$\textcolor{teal}{int} \rightarrow float$
-	\item
-		$\textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
-		$\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}$
-	\item
-		$\textcolor{teal}{int} \rightarrow (\unit \,\textcolor{blue}{\rightarrow}\, \unit) \rightarrow \unit \nsim_\T$ \\
-		$\textcolor{teal}{int} \rightarrow (int \,\textcolor{blue}{\rightarrow}\, float) \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha}$
+  \item
+    $\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
+    $\textcolor{teal}{int} \rightarrow float$
+  \item
+    $\textcolor{teal}{int} \rightarrow int \nsim_\T$ \\
+    $\textcolor{teal}{int} \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha} \rightarrow \textcolor{orange}{\alpha}$
+  \item
+    $\textcolor{teal}{int} \rightarrow (\unit \,\textcolor{blue}{\rightarrow}\, \unit) \rightarrow \unit \nsim_\T$ \\
+    $\textcolor{teal}{int} \rightarrow (int \,\textcolor{blue}{\rightarrow}\, float) \rightarrow \textcolor{teal}{int} \rightarrow \textcolor{orange}{\alpha}$
 \end{itemize}
 \end{frame}
 
@@ -602,9 +602,9 @@ Si deux types $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ n'a pas de variab
 
 \begin{frame}{Deuxième critère — implémentation}
 \begin{figure}[h]
-	\centering
-	\includegraphics[scale=0.12]{graphs/crit2_1}
-	\includegraphics[scale=0.12]{graphs/crit2_2}
+  \centering
+  \includegraphics[scale=0.12]{graphs/crit2_1}
+  \includegraphics[scale=0.12]{graphs/crit2_2}
 \end{figure}
 \end{frame}
 
@@ -616,38 +616,38 @@ Si deux types $\tau_1$ et $\tau_2$ sont unifiables et $\tau_1$ n'a pas de variab
 $ ./dowsindex stats --with-features <type>
 \end{verbatim}
 \begin{table}[h]
-	\centering
-	\begin{tabular}{|*{4}{c|}}
-		\hline
-			Type &
-			\multicolumn{2}{c|}{Nombre d'unifications\dots} &
-			Gain
-		\\
-		\cline{2-3}
-			&
-			sans critères & avec critères &
-		\\
-		\hline
-			$int \rightarrow int \rightarrow int$ &
-			31578 & 121 & 99.62\%
-		\\
-			$int \rightarrow int \rightarrow int \rightarrow int$ &
-			31578 & 107 & 99.66\%
-		\\
-			$int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
-			31578 & 141 & 99.55\%
-		\\
-			$int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-			31578 & 126 & 99.6\%
-		\\
-			$\alpha \rightarrow int \rightarrow \bold{unit}$ &
-			31578 & 2443 & 92.26\%
-		\\
-			$int \rightarrow int \rightarrow \alpha$ &
-			31578 & 3677 & \textcolor{orange}{88.36\%}
-		\\
-		\hline
-	\end{tabular}
+  \centering
+  \begin{tabular}{|*{4}{c|}}
+    \hline
+      Type &
+      \multicolumn{2}{c|}{Nombre d'unifications\dots} &
+      Gain
+    \\
+    \cline{2-3}
+      &
+      sans critères & avec critères &
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      31578 & 121 & 99.62\%
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      31578 & 107 & 99.66\%
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      31578 & 141 & 99.55\%
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      31578 & 126 & 99.6\%
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      31578 & 2443 & 92.26\%
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      31578 & 3677 & \textcolor{orange}{88.36\%}
+    \\
+    \hline
+  \end{tabular}
 \end{table}
 \end{frame}
 
@@ -656,9 +656,9 @@ $ ./dowsindex stats --with-features <type>
 \begin{frame}{Conclusion}
 Les deux critères sont :
 \begin{itemize}
-	\item formalisés
-	\item prouvés corrects
-	\item implémentés efficacement dans \dowsindex (trie)
+  \item formalisés
+  \item prouvés corrects
+  \item implémentés efficacement dans \dowsindex (trie)
 \end{itemize}
 \end{frame}
 
@@ -684,9 +684,9 @@ Compenv.print_standard_library : unit -> 'a
 %\begin{frame}{Conclusion}
 %Le fruit de ce travail est :
 %\begin{itemize}
-%	\item une nouvelle technique d'indexation pour l'unifiabilité modulo isomorphismes de types qui passe à l'échelle\dots
-%	\item formalisée et implémentée\dots
-%	\item dans l'outil \dowsindex.
+% \item une nouvelle technique d'indexation pour l'unifiabilité modulo isomorphismes de types qui passe à l'échelle\dots
+% \item formalisée et implémentée\dots
+% \item dans l'outil \dowsindex.
 %\end{itemize}
 %\end{frame}
 
@@ -728,26 +728,26 @@ Merci de votre attention !
 \small
 Soit $\sigma$ une \emph{substitution} dans $\Sigma = \mathscr{F} (\V, \T)$. Son \emph{extension}, notée $\hat\sigma$, est définie inductivement par :
 \begin{align*}
-		\hat\sigma (\alpha) &=
-		\sigma (\alpha)
-	\\
-		\hat\sigma (\unit) &=
-		\unit
-	\\
-		\hat\sigma (\tau_1 \times \tau_2) &=
-		\hat\sigma (\tau_1) \times \hat\sigma (\tau_2)
-	\\
-		\hat\sigma (\tau_1 \rightarrow \tau_2) &=
-		\hat\sigma (\tau_1) \rightarrow \hat\sigma (\tau_2)
-	\\
-		\hat\sigma (f (\tau_1, \dots, \tau_{|f|_\F})) &=
-		f (\hat\sigma (\tau_1), \dots, \hat\sigma (\tau_{|f|_\F}))
+    \hat\sigma (\alpha) &=
+    \sigma (\alpha)
+  \\
+    \hat\sigma (\unit) &=
+    \unit
+  \\
+    \hat\sigma (\tau_1 \times \tau_2) &=
+    \hat\sigma (\tau_1) \times \hat\sigma (\tau_2)
+  \\
+    \hat\sigma (\tau_1 \rightarrow \tau_2) &=
+    \hat\sigma (\tau_1) \rightarrow \hat\sigma (\tau_2)
+  \\
+    \hat\sigma (f (\tau_1, \dots, \tau_{|f|_\F})) &=
+    f (\hat\sigma (\tau_1), \dots, \hat\sigma (\tau_{|f|_\F}))
 \end{align*}
 \exemples avec $\sigma = \{ \alpha \mapsto int, \beta \mapsto \alpha \}$ :
 \begin{itemize}
-	\item $\hat\sigma (int \times int) = int \times int$
-	\item $\hat\sigma (\alpha \rightarrow \beta) = int \rightarrow \alpha$
-	\item $\hat\sigma (\alpha \rightarrow list (\alpha) \rightarrow \unit) = int \rightarrow list (int) \rightarrow \unit$
+  \item $\hat\sigma (int \times int) = int \times int$
+  \item $\hat\sigma (\alpha \rightarrow \beta) = int \rightarrow \alpha$
+  \item $\hat\sigma (\alpha \rightarrow list (\alpha) \rightarrow \unit) = int \rightarrow list (int) \rightarrow \unit$
 \end{itemize}
 \end{frame}
 
@@ -756,50 +756,50 @@ Soit $\sigma$ une \emph{substitution} dans $\Sigma = \mathscr{F} (\V, \T)$. Son 
 \begin{frame}{Théorie équationnelle, $\E$-équivalence}
 \small
 \begin{mathpar}
-	\inferrule*
-		[right = ($\equiv_\T^\E$-ax)]
-		{\tau_1 \cong_\T \tau_2 \in \E}
-		{\hat\sigma (\tau_1) \equiv_\T^\E \hat\sigma (\tau_2)}
-	\and
-	\inferrule*
-		[right = ($\equiv_\T^\E$-refl)]
-		{ }
-		{\tau \equiv_\T^\E \tau}
-	\\
-	\inferrule*
-		[right = ($\equiv_\T^\E$-trans)]
-		{\tau_1 \equiv_\T^\E \tau_2 \\ \tau_2 \equiv_\T^\E \tau_3}
-		{\tau_1 \equiv_\T^\E \tau_3}
-	\and
-	\inferrule*
-		[right = ($\equiv_\T^\E$-sym)]
-		{\tau_1 \equiv_\T^\E \tau_2}
-		{\tau_2 \equiv_\T^\E \tau_1}
-	\\
-	\inferrule*
-		[right = ($\equiv_\T^\E$-$\times_1$)]
-		{\tau_1 \equiv_\T^\E \tau_1'}
-		{\tau_1 \times \tau_2 \equiv_\T^\E \tau_1' \times \tau_2}
-	\and
-	\inferrule*
-		[right = ($\equiv_\T^\E$-$\times_2$)]
-		{\tau_2 \equiv_\T^\E \tau_2'}
-		{\tau_1 \times \tau_2 \equiv_\T^\E \tau_1 \times \tau_2'}
-	\\
-	\inferrule*
-		[right = ($\equiv_\T^\E$-$\rightarrow_1$)]
-		{\tau_1 \equiv_\T^\E \tau_1'}
-		{\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1' \rightarrow \tau_2}
-	\and
-	\inferrule*
-		[right = ($\equiv_\T^\E$-$\rightarrow_2$)]
-		{\tau_2 \equiv_\T^\E \tau_2'}
-		{\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1 \rightarrow \tau_2'}
-	\\
-	\inferrule*
-		[right = ($\equiv_\T^\E$-$\F$)]
-		{f \in \F \\ i \in \interval 1 {|f|_\F} \\ \tau_i \equiv_\T^\E \tau_i'}
-		{f (\tau_1, \dots, \tau_i, \dots, \tau_{|f|_\F}) \equiv_\T^\E f (\tau_1, \dots, \tau_i', \dots, \tau_{|f|_\F})}
+  \inferrule*
+    [right = ($\equiv_\T^\E$-ax)]
+    {\tau_1 \cong_\T \tau_2 \in \E}
+    {\hat\sigma (\tau_1) \equiv_\T^\E \hat\sigma (\tau_2)}
+  \and
+  \inferrule*
+    [right = ($\equiv_\T^\E$-refl)]
+    { }
+    {\tau \equiv_\T^\E \tau}
+  \\
+  \inferrule*
+    [right = ($\equiv_\T^\E$-trans)]
+    {\tau_1 \equiv_\T^\E \tau_2 \\ \tau_2 \equiv_\T^\E \tau_3}
+    {\tau_1 \equiv_\T^\E \tau_3}
+  \and
+  \inferrule*
+    [right = ($\equiv_\T^\E$-sym)]
+    {\tau_1 \equiv_\T^\E \tau_2}
+    {\tau_2 \equiv_\T^\E \tau_1}
+  \\
+  \inferrule*
+    [right = ($\equiv_\T^\E$-$\times_1$)]
+    {\tau_1 \equiv_\T^\E \tau_1'}
+    {\tau_1 \times \tau_2 \equiv_\T^\E \tau_1' \times \tau_2}
+  \and
+  \inferrule*
+    [right = ($\equiv_\T^\E$-$\times_2$)]
+    {\tau_2 \equiv_\T^\E \tau_2'}
+    {\tau_1 \times \tau_2 \equiv_\T^\E \tau_1 \times \tau_2'}
+  \\
+  \inferrule*
+    [right = ($\equiv_\T^\E$-$\rightarrow_1$)]
+    {\tau_1 \equiv_\T^\E \tau_1'}
+    {\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1' \rightarrow \tau_2}
+  \and
+  \inferrule*
+    [right = ($\equiv_\T^\E$-$\rightarrow_2$)]
+    {\tau_2 \equiv_\T^\E \tau_2'}
+    {\tau_1 \rightarrow \tau_2 \equiv_\T^\E \tau_1 \rightarrow \tau_2'}
+  \\
+  \inferrule*
+    [right = ($\equiv_\T^\E$-$\F$)]
+    {f \in \F \\ i \in \interval 1 {|f|_\F} \\ \tau_i \equiv_\T^\E \tau_i'}
+    {f (\tau_1, \dots, \tau_i, \dots, \tau_{|f|_\F}) \equiv_\T^\E f (\tau_1, \dots, \tau_i', \dots, \tau_{|f|_\F})}
 \end{mathpar}
 \end{frame}
 
@@ -811,40 +811,40 @@ Deux types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} dans $\Lambda^1$ \ssi :
 \[ \exists f : \tau_1 \rightarrow \tau_2,\ \exists g : \tau_2 \rightarrow \tau_1,\ f \circ g =_{\Lambda^1} \mathrm{id}_{\tau_2} \ \wedge\ g \circ f =_{\Lambda^1} \mathrm{id}_{\tau_1} \]
 Axiomatisation correcte et complète \footnote{G. Longo, K. Bruce, R. Di Cosmo : \textit{Provable isomorphisms of types} (1992).} \footnote{S. Soloviev : \textit{The category of finite sets and Cartesian closed categories} (1983).} :
 \begin{align}
-		\alpha \times \beta &\cong_\T
-		\beta \times \alpha
-		\label{prod_comm}
-		\tag{$\times$-comm}
-	\\
-		\alpha \times (\beta \times \gamma) &\cong_\T
-		(\alpha \times \beta) \times \gamma
-		\label{prod_assoc}
-		\tag{$\times$-assoc}
-	\\
-		\unit \times \alpha &\cong_\T
-		\alpha
-		\label{prod_unit}
-		\tag{$\times$-$\unit$}
-	\\
-		(\alpha \times \beta) \rightarrow \gamma &\cong_\T
-		\alpha \rightarrow (\beta \rightarrow \gamma)
-		\label{curry}
-		\tag{curry}
-	\\
-		\unit \rightarrow \alpha &\cong_\T
-		\alpha
-		\label{curry_unit}
-		\tag{curry-$\unit$}
-	\\
-		\alpha \rightarrow (\beta \times \gamma) &\cong_\T
-		(\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)
-		\label{dist}
-		\tag{dist}
-	\\
-		\alpha \rightarrow \unit &\cong_\T
-		\unit
-		\label{dist_unit}
-		\tag{dist-$\unit$}
+    \alpha \times \beta &\cong_\T
+    \beta \times \alpha
+    \label{prod_comm}
+    \tag{$\times$-comm}
+  \\
+    \alpha \times (\beta \times \gamma) &\cong_\T
+    (\alpha \times \beta) \times \gamma
+    \label{prod_assoc}
+    \tag{$\times$-assoc}
+  \\
+    \unit \times \alpha &\cong_\T
+    \alpha
+    \label{prod_unit}
+    \tag{$\times$-$\unit$}
+  \\
+    (\alpha \times \beta) \rightarrow \gamma &\cong_\T
+    \alpha \rightarrow (\beta \rightarrow \gamma)
+    \label{curry}
+    \tag{curry}
+  \\
+    \unit \rightarrow \alpha &\cong_\T
+    \alpha
+    \label{curry_unit}
+    \tag{curry-$\unit$}
+  \\
+    \alpha \rightarrow (\beta \times \gamma) &\cong_\T
+    (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)
+    \label{dist}
+    \tag{dist}
+  \\
+    \alpha \rightarrow \unit &\cong_\T
+    \unit
+    \label{dist_unit}
+    \tag{dist-$\unit$}
 \end{align}
 \end{frame}
 
@@ -854,55 +854,55 @@ Axiomatisation correcte et complète \footnote{G. Longo, K. Bruce, R. Di Cosmo :
 \small
 Deux types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} via $f$ et $g$ dans le contexte $\Gamma$ \ssi :
 \begin{align*}
-		\forall h,\ &
-		\Gamma \vdash h : \tau_1 \implies \Gamma \vdash f h : \tau_2 \ &
-		\wedge\ &&
-		\Gamma \vdash g (f h) = h : \tau_1
-	\\
-		\forall h,\ &
-		\Gamma \vdash h : \tau_2 \implies \Gamma \vdash g h : \tau_1 \ &
-		\wedge\ &&
-		\Gamma \vdash f (g h) = h : \tau_2
+    \forall h,\ &
+    \Gamma \vdash h : \tau_1 \implies \Gamma \vdash f h : \tau_2 \ &
+    \wedge\ &&
+    \Gamma \vdash g (f h) = h : \tau_1
+  \\
+    \forall h,\ &
+    \Gamma \vdash h : \tau_2 \implies \Gamma \vdash g h : \tau_1 \ &
+    \wedge\ &&
+    \Gamma \vdash f (g h) = h : \tau_2
 \end{align*}
 Dans types $\tau_1$ et $\tau_2$ sont \emph{isomorphes} via $f$ et $g$ \ssi ils le sont dans tout contexte. \\
 Axiomatisation correcte et complète \footnote{R. Di Cosmo : \textit{Type Isomorphisms in a Type-Assignment Framework} (1992).} :
 \begin{align*}
-		\alpha \times \beta &\cong_\T
-		\beta \times \alpha
-		\label{prod_comm}
-		\tag{$\times$-comm}
-	\\
-		\alpha \times (\beta \times \gamma) &\cong_\T
-		(\alpha \times \beta) \times \gamma
-		\label{prod_assoc}
-		\tag{$\times$-assoc}
-	\\
-		\unit \times \alpha &\cong_\T
-		\alpha
-		\label{prod_unit}
-		\tag{$\times$-$\unit$}
-	\\
-		(\alpha \times \beta) \rightarrow \gamma &\cong_\T
-		\alpha \rightarrow (\beta \rightarrow \gamma)
-		\label{curry}
-		\tag{curry}
-	\\
-		\unit \rightarrow \alpha &\cong_\T
-		\alpha
-		\label{curry_unit}
-		\tag{curry-$\unit$}
-	\\
-		\alpha \rightarrow (\beta \times \gamma) &\cong_\T
-		(\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)
-		\label{dist}
-		\tag{dist}
-	\\
-		\alpha \rightarrow \unit &\cong_\T
-		\unit
-		\label{dist_unit}
-		\tag{dist-$\unit$}
-	\\
-		&\dots
+    \alpha \times \beta &\cong_\T
+    \beta \times \alpha
+    \label{prod_comm}
+    \tag{$\times$-comm}
+  \\
+    \alpha \times (\beta \times \gamma) &\cong_\T
+    (\alpha \times \beta) \times \gamma
+    \label{prod_assoc}
+    \tag{$\times$-assoc}
+  \\
+    \unit \times \alpha &\cong_\T
+    \alpha
+    \label{prod_unit}
+    \tag{$\times$-$\unit$}
+  \\
+    (\alpha \times \beta) \rightarrow \gamma &\cong_\T
+    \alpha \rightarrow (\beta \rightarrow \gamma)
+    \label{curry}
+    \tag{curry}
+  \\
+    \unit \rightarrow \alpha &\cong_\T
+    \alpha
+    \label{curry_unit}
+    \tag{curry-$\unit$}
+  \\
+    \alpha \rightarrow (\beta \times \gamma) &\cong_\T
+    (\alpha \rightarrow \beta) \times (\alpha \rightarrow \gamma)
+    \label{dist}
+    \tag{dist}
+  \\
+    \alpha \rightarrow \unit &\cong_\T
+    \unit
+    \label{dist_unit}
+    \tag{dist-$\unit$}
+  \\
+    &\dots
 \end{align*}
 \end{frame}
 
@@ -914,12 +914,12 @@ L'unifiabilité est \emph{décidable} \footnote{P. Narendran, F. Pfenning et R. 
 \\~\\
 Implémentée par G. Radanne en adaptant un algorithme d'unification modulo AC \footnote{A. Boudet : \textit{Competing for the AC-Unification Race} (2004).} avec :
 \begin{itemize}
-	\item \emph{normalisation} des types
-	\item une règle de transformation supplémentaire pour les flèches
+  \item \emph{normalisation} des types
+  \item une règle de transformation supplémentaire pour les flèches
 \end{itemize}
 \smallskip
 Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold{bf}$, \ssi :
-	\[ \forall \alpha \in \V,\ \sigma (\alpha) \neq \unit \]
+  \[ \forall \alpha \in \V,\ \sigma (\alpha) \neq \unit \]
 \end{frame}
 
 %============================================================
@@ -927,26 +927,26 @@ Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold
 \begin{frame}{Types normalisés}
 \begin{mathpar}
     \inferrule* 
-    	{ }
-    	{\V \subseteq \N}
+      { }
+      {\V \subseteq \N}
     \and
     \inferrule*
-    	{ }
-    	{\N^\# \subseteq \N}
+      { }
+      {\N^\# \subseteq \N}
     \\
     \inferrule*
-    	{\nu^\# \in \N^\# \\ \nu \in \N}
-    	{\nu^\# \rightarrow \nu \in \N}
+      {\nu^\# \in \N^\# \\ \nu \in \N}
+      {\nu^\# \rightarrow \nu \in \N}
     \and
     \inferrule*
-    	{f \in \F \\ \overline\nu \in \N^{|f|_\F}}
-    	{f (\overline\nu) \in \N}
+      {f \in \F \\ \overline\nu \in \N^{|f|_\F}}
+      {f (\overline\nu) \in \N}
 \end{mathpar}
 \exemples :
 \begin{itemize}
-	\item $\mset{int, \mset{}, \alpha}$ ;
-	\item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
-	\item $\mset{list (\mset{\alpha, int})} \rightarrow \mset{\alpha, \beta}$.
+  \item $\mset{int, \mset{}, \alpha}$ ;
+  \item $\mset{} \rightarrow \mset{} \rightarrow \mset{}$ ;
+  \item $\mset{list (\mset{\alpha, int})} \rightarrow \mset{\alpha, \beta}$.
 \end{itemize}
 \end{frame}
 
@@ -955,30 +955,30 @@ Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold
 \begin{frame}{Genre d'un type normalisé}
 \small
 \begin{mathpar}
-	\inferrule*
-		{ }
-		{\bold{var} \in \G}
-	\and
-	\inferrule*
-		{ }
-		{\bold{uplet} \in \G}
-	\and
-	\inferrule*
-		{ }
-		{\bold{fleche} \in \G}
-	\and
-	\inferrule*
-		{f \in \F}
-		{\bold{cons}_f \in \G}
+  \inferrule*
+    { }
+    {\bold{var} \in \G}
+  \and
+  \inferrule*
+    { }
+    {\bold{uplet} \in \G}
+  \and
+  \inferrule*
+    { }
+    {\bold{fleche} \in \G}
+  \and
+  \inferrule*
+    {f \in \F}
+    {\bold{cons}_f \in \G}
 \end{mathpar}
 \begin{align*}
-		[ \alpha ] &= \bold{var}
-	\\
-		[ \mset{\nu_1, \dots, \nu_n} ] &= \bold{uplet}
-	\\
-		[ \nu^\# \rightarrow \nu ] &= \bold{fleche}
-	\\
-		[ f (\overline \nu) ] &= \bold{cons}_f
+    [ \alpha ] &= \bold{var}
+  \\
+    [ \mset{\nu_1, \dots, \nu_n} ] &= \bold{uplet}
+  \\
+    [ \nu^\# \rightarrow \nu ] &= \bold{fleche}
+  \\
+    [ f (\overline \nu) ] &= \bold{cons}_f
 \end{align*}
 \end{frame}
 
@@ -987,37 +987,37 @@ Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold
 \begin{frame}{Type normalisé bien formé}
 \footnotesize
 \begin{mathpar}
-	\inferrule*
-		{ }
-		{\alpha\ \bold{bf}}
-	\and
-	\inferrule*
-		{\nu^\#\ \bold{pbf} \\ | \nu^\# |^\#_\N \neq 1}
-		{\nu^\#\ \bold{bf}}
-	\\
-	\inferrule*
-		{\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
-		{\nu^\# \rightarrow \nu\ \bold{bf}}
-	\and
-	\inferrule*
-		{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
-		{f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{bf}}
-	\\
-	\inferrule*
-		{ }
-		{\alpha\ \bold{pbf}}
-	\and
-	\inferrule*
-		{\forall i \in \interval 1 n,\ \nu_i\ \bold{bf} \wedge [\nu_i] \neq \bold{tuple}}
-		{\mset{\nu_1, \dots, \nu_n}\ \bold{pbf}}
-	\\
-	\inferrule*
-		{\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
-		{\nu^\# \rightarrow \nu\ \bold{pbf}}
-	\and
-	\inferrule*
-		{f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
-		{f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{pbf}}
+  \inferrule*
+    { }
+    {\alpha\ \bold{bf}}
+  \and
+  \inferrule*
+    {\nu^\#\ \bold{pbf} \\ | \nu^\# |^\#_\N \neq 1}
+    {\nu^\#\ \bold{bf}}
+  \\
+  \inferrule*
+    {\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
+    {\nu^\# \rightarrow \nu\ \bold{bf}}
+  \and
+  \inferrule*
+    {f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
+    {f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{bf}}
+  \\
+  \inferrule*
+    { }
+    {\alpha\ \bold{pbf}}
+  \and
+  \inferrule*
+    {\forall i \in \interval 1 n,\ \nu_i\ \bold{bf} \wedge [\nu_i] \neq \bold{tuple}}
+    {\mset{\nu_1, \dots, \nu_n}\ \bold{pbf}}
+  \\
+  \inferrule*
+    {\nu^\#\ \bold{pbf} \\ \nu\ \bold{bf} \\ [\nu] \neq \bold{fleche}}
+    {\nu^\# \rightarrow \nu\ \bold{pbf}}
+  \and
+  \inferrule*
+    {f \in \F \\ \forall i \in \interval 1 {|f|_\F},\ \nu_i\ \bold{bf}}
+    {f (\nu_1, \dots, \nu_{|f|_\F})\ \bold{pbf}}
 \end{mathpar}
 \end{frame}
 
@@ -1026,46 +1026,46 @@ Une substitution de types $\sigma$ est \emph{bien formée}, noté $\sigma\ \bold
 \begin{frame}{Normalisation}
 \tiny
 \begin{align*}
-		\norm (\alpha) &=
-		\alpha
-	\\
-		\norm (\unit) &=
-		\mset{}
-	\\
-		\norm (\tau_1 \times \tau_2) &=
-		\norm'' (\norm' (\norm (\tau_1)) +^\#_\N \norm' (\norm (\tau_2)))
-	\\
-		\norm (\tau_1 \rightarrow \tau_2) &=
-		(\norm' (\norm (\tau_1)) +^\#_\N \nu^\#_2) \rightarrow \nu_2 &&
-		\text{si } \norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2
-	\\
-		\norm (\tau_1 \rightarrow \tau_2) &=
-		\norm' (\norm (\tau_1)) \rightarrow \norm (\tau_2) &&
-		\text{sinon}
-	\\
-		\norm (f (\tau_1, \dots, \tau_{|f|_\F})) &=
-		f (\norm (\tau_1), \dots, \norm (\tau_{|f|_\F}))
-	\\
-		\norm' (\nu) &=
-		\nu &&
-		\text{si } \nu \in \N^\#
-	\\
-		\norm' (\nu) &=
-		\mset{\nu} &&
-		\text{sinon}
-	\\
-		\norm'' (\mset{\nu}) &=
-		\nu
-	\\
-		\norm'' (\nu^\#) &=
-		\nu^\#
+    \norm (\alpha) &=
+    \alpha
+  \\
+    \norm (\unit) &=
+    \mset{}
+  \\
+    \norm (\tau_1 \times \tau_2) &=
+    \norm'' (\norm' (\norm (\tau_1)) +^\#_\N \norm' (\norm (\tau_2)))
+  \\
+    \norm (\tau_1 \rightarrow \tau_2) &=
+    (\norm' (\norm (\tau_1)) +^\#_\N \nu^\#_2) \rightarrow \nu_2 &&
+    \text{si } \norm (\tau_2) = \nu^\#_2 \rightarrow \nu_2
+  \\
+    \norm (\tau_1 \rightarrow \tau_2) &=
+    \norm' (\norm (\tau_1)) \rightarrow \norm (\tau_2) &&
+    \text{sinon}
+  \\
+    \norm (f (\tau_1, \dots, \tau_{|f|_\F})) &=
+    f (\norm (\tau_1), \dots, \norm (\tau_{|f|_\F}))
+  \\
+    \norm' (\nu) &=
+    \nu &&
+    \text{si } \nu \in \N^\#
+  \\
+    \norm' (\nu) &=
+    \mset{\nu} &&
+    \text{sinon}
+  \\
+    \norm'' (\mset{\nu}) &=
+    \nu
+  \\
+    \norm'' (\nu^\#) &=
+    \nu^\#
 \end{align*}
 \exemples :
 \begin{itemize}
-	\item $\norm (int \times float \times bool \times int) = \mset{int, int, float, bool}$
-	\item $\norm (\unit \times int) = int$
-	\item $\norm (\unit \times int \times \alpha) = \mset{int, \alpha}$
-	\item $\norm (\alpha \times int \rightarrow \beta \rightarrow \gamma) = \mset{\alpha, int, \beta} \rightarrow \gamma$
+  \item $\norm (int \times float \times bool \times int) = \mset{int, int, float, bool}$
+  \item $\norm (\unit \times int) = int$
+  \item $\norm (\unit \times int \times \alpha) = \mset{int, \alpha}$
+  \item $\norm (\alpha \times int \rightarrow \beta \rightarrow \gamma) = \mset{\alpha, int, \beta} \rightarrow \gamma$
 \end{itemize}
 \bigskip
 \theoreme :
@@ -1078,30 +1078,30 @@ La normalisée de tout type est bien formée.
 \footnotesize
 Soit $\theta$ une \emph{substitution de types normalisés} dans $\Theta = \mathscr{F} (\V, \N)$. Son \emph{extension}, notée $\hat\theta$, est définie inductivement par :
 \begin{align*}
-		\hat\theta (\alpha) &=
-		\theta (\alpha)
-	\\
-		\hat\theta (\nu^\#) &=
-		\tilde \theta (\nu^\#)
-	\\
-		\hat\theta (\nu^\# \rightarrow \nu) &=
-		(\tilde \theta (\nu^\#) +^\#_N {\nu^\#}') \rightarrow \nu' &&
-		\text{si } \hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'
-	\\
-		\hat\theta (\nu^\# \rightarrow \nu) &=
-		\tilde \theta (\nu^\#) \rightarrow \hat\theta (\nu) &&
-		\text{sinon}
-	\\
-		\hat\theta (f (\nu_1, \dots, \nu_{|f|_\F})) &=
-		f (\hat\theta (\nu_1), \dots, \hat\theta (\nu_{|f|_\F}))
-	\\
-		\tilde \theta (\mset{\nu_1, \dots, \nu_n}) &=
-		\msetN_bigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
+    \hat\theta (\alpha) &=
+    \theta (\alpha)
+  \\
+    \hat\theta (\nu^\#) &=
+    \tilde \theta (\nu^\#)
+  \\
+    \hat\theta (\nu^\# \rightarrow \nu) &=
+    (\tilde \theta (\nu^\#) +^\#_N {\nu^\#}') \rightarrow \nu' &&
+    \text{si } \hat\theta (\nu) = {\nu^\#}' \rightarrow \nu'
+  \\
+    \hat\theta (\nu^\# \rightarrow \nu) &=
+    \tilde \theta (\nu^\#) \rightarrow \hat\theta (\nu) &&
+    \text{sinon}
+  \\
+    \hat\theta (f (\nu_1, \dots, \nu_{|f|_\F})) &=
+    f (\hat\theta (\nu_1), \dots, \hat\theta (\nu_{|f|_\F}))
+  \\
+    \tilde \theta (\mset{\nu_1, \dots, \nu_n}) &=
+    \msetN_bigplus_{i=1}^n \norm' (\hat\theta (\nu_i))
 \end{align*}
 \exemples avec $\sigma = \{ \alpha \mapsto \mset{int, int}, \beta \mapsto \mset{float} \rightarrow \mset{} \}$ :
 \begin{itemize}
-	\item $\hat\sigma (\mset{\alpha, bool} \rightarrow \beta) = \mset{int, int, bool, float} \rightarrow \mset{}$
-	\item $\hat\sigma (\mset{\beta} \rightarrow \alpha) = \mset{\mset{float} \rightarrow \mset{}} \rightarrow \mset{int, int}$
+  \item $\hat\sigma (\mset{\alpha, bool} \rightarrow \beta) = \mset{int, int, bool, float} \rightarrow \mset{}$
+  \item $\hat\sigma (\mset{\beta} \rightarrow \alpha) = \mset{\mset{float} \rightarrow \mset{}} \rightarrow \mset{int, int}$
 \end{itemize}
 \end{frame}
 
@@ -1123,9 +1123,9 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \[ \hat\theta (\nu_1) = \hat\theta (\nu_2) \]
 \exemples :
 \begin{itemize}
-	\item $\mset{int, float} \rightarrow int \sim_\N \mset{float} \rightarrow \alpha$ \\ avec $\{ \alpha \mapsto \mset{int} \rightarrow int \}$ ;
-	\item $\mset{int, \alpha} \rightarrow \mset{} \sim_\N \mset{int, int, int} \rightarrow \mset{}$ \\ avec $\{ \alpha \mapsto \mset{int, int} \}$ ;
-	\item $\mset{\mset{\alpha, \beta} \rightarrow \alpha, \alpha, list (\beta)} \rightarrow \alpha \sim_\N \mset{list (\gamma), \delta, \mset{\gamma, \delta} \rightarrow \delta} \rightarrow \delta$ \\ avec $\{ \gamma \mapsto \beta, \delta \mapsto \alpha \}$.
+  \item $\mset{int, float} \rightarrow int \sim_\N \mset{float} \rightarrow \alpha$ \\ avec $\{ \alpha \mapsto \mset{int} \rightarrow int \}$ ;
+  \item $\mset{int, \alpha} \rightarrow \mset{} \sim_\N \mset{int, int, int} \rightarrow \mset{}$ \\ avec $\{ \alpha \mapsto \mset{int, int} \}$ ;
+  \item $\mset{\mset{\alpha, \beta} \rightarrow \alpha, \alpha, list (\beta)} \rightarrow \alpha \sim_\N \mset{list (\gamma), \delta, \mset{\gamma, \delta} \rightarrow \delta} \rightarrow \delta$ \\ avec $\{ \gamma \mapsto \beta, \delta \mapsto \alpha \}$.
 \end{itemize}
 \bigskip
 \theoreme : Deux types admettent un unificateur de type bien formé \ssi leurs normalisées admettent un unificateur de types normalisés bien formé.
@@ -1139,8 +1139,8 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \\~\\
 \exemples :
 \begin{itemize}
-	\item $\mset{} \rightarrow int \nsim_\N \mset{} \rightarrow float$
-	\item $\mset{} \rightarrow \mset{} \nsim_\N \mset{} \rightarrow int$
+  \item $\mset{} \rightarrow int \nsim_\N \mset{} \rightarrow float$
+  \item $\mset{} \rightarrow \mset{} \nsim_\N \mset{} \rightarrow int$
 \end{itemize}
 \end{frame}
 
@@ -1149,32 +1149,32 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \begin{frame}{Premier critère — implémentation}
 \footnotesize
 \begin{align*}
-		\mathrm{encode}^1 (\nu) &=
-		[ \uparrow \nu ]
-	\\
-		\mathrm{compat}^1 (\bold{var}, {g}_2) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^1 ({g}_1, \bold{var}) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^1 (\bold{uplet}, \bold{uplet}) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^1 (\bold{fleche}, \bold{fleche}) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^1 (\bold{cons}_f, \bold{cons}_f) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^1 ({g}_1, {g}_2) &=
-		\bold{F}
+    \mathrm{encode}^1 (\nu) &=
+    [ \uparrow \nu ]
+  \\
+    \mathrm{compat}^1 (\bold{var}, {g}_2) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^1 ({g}_1, \bold{var}) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^1 (\bold{uplet}, \bold{uplet}) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^1 (\bold{fleche}, \bold{fleche}) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^1 (\bold{cons}_f, \bold{cons}_f) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^1 ({g}_1, {g}_2) &=
+    \bold{F}
 \end{align*}
 \begin{figure}[h]
-	\centering
-	\includegraphics[scale=0.12]{graphs/crit1_1}
-	\includegraphics[scale=0.12]{graphs/crit1_2}
-	\includegraphics[scale=0.12]{graphs/crit1_3}
+  \centering
+  \includegraphics[scale=0.12]{graphs/crit1_1}
+  \includegraphics[scale=0.12]{graphs/crit1_2}
+  \includegraphics[scale=0.12]{graphs/crit1_3}
 \end{figure}
 \end{frame}
 
@@ -1183,41 +1183,41 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \begin{frame}{Deuxième critère}
 \scriptsize
 \begin{align*}
-		\mu_g (\nu^\# \rightarrow \nu) &=
-		\mu_g' (\nu^\#)
-	\\
-		\mu_g (\nu) &=
-		0
-	\\
-		\mu_g' (\mset{\nu_1, \dots, \nu_n}) &=
-		\sum_{i=1}^n \mu_g'' (\nu_i)
-	\\
-		\mu_g'' (\nu) &=
-		1 &&
-		\text{si } [\nu] = g
-	\\
-		\mu_g'' (\nu) &=
-		0 &&
-		\text{sinon}
+    \mu_g (\nu^\# \rightarrow \nu) &=
+    \mu_g' (\nu^\#)
+  \\
+    \mu_g (\nu) &=
+    0
+  \\
+    \mu_g' (\mset{\nu_1, \dots, \nu_n}) &=
+    \sum_{i=1}^n \mu_g'' (\nu_i)
+  \\
+    \mu_g'' (\nu) &=
+    1 &&
+    \text{si } [\nu] = g
+  \\
+    \mu_g'' (\nu) &=
+    0 &&
+    \text{sinon}
 \end{align*}
 \medskip
 \begin{mathpar}
-	\inferrule*
-		{[\nu] \notin \{ \bold{var}, \bold{fleche} \}}
-		{\nu\ \bold{simple}}
-	\and
-	\inferrule*
-		{\forall i \in \interval 1 n,\ [\nu_i] \neq \bold{var} \\ [\nu] \neq \bold{var}}
-		{\mset{\nu_1, \dots, \nu_n} \rightarrow \nu\ \bold{simple}}
+  \inferrule*
+    {[\nu] \notin \{ \bold{var}, \bold{fleche} \}}
+    {\nu\ \bold{simple}}
+  \and
+  \inferrule*
+    {\forall i \in \interval 1 n,\ [\nu_i] \neq \bold{var} \\ [\nu] \neq \bold{var}}
+    {\mset{\nu_1, \dots, \nu_n} \rightarrow \nu\ \bold{simple}}
 \end{mathpar}
 \\
 \theoreme : Si deux types normalisés bien formés $\nu_1$ et $\nu_2$ sont unifiables et $\nu_1$ simple, on a :
 \[ \forall g \neq \bold{var},\ \mu_g (\nu_1) \geqslant \mu_g (\nu_2) \]
 \exemples :
 \begin{itemize}
-	\item $\mset{int, int} \rightarrow int \nsim_\N \mset{int} \rightarrow float$
-	\item $\mset{int} \rightarrow int \nsim_\N \mset{int, int, \alpha} \rightarrow \alpha$
-	\item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{} \nsim_\N \mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$
+  \item $\mset{int, int} \rightarrow int \nsim_\N \mset{int} \rightarrow float$
+  \item $\mset{int} \rightarrow int \nsim_\N \mset{int, int, \alpha} \rightarrow \alpha$
+  \item $\mset{int, \mset{} \rightarrow \mset{}} \rightarrow \mset{} \nsim_\N \mset{int, \mset{int} \rightarrow float, int} \rightarrow \alpha$
 \end{itemize}
 \end{frame}
 
@@ -1226,41 +1226,41 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \begin{frame}{Deuxième critère — implémentation}
 \tiny
 \begin{align*}
-		\mathrm{encode}^2_g (\nu) &=
-		(\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
-	\\
-		\mathrm{vars\mathhyphen echine} (\nu) &=
-		\bold{F} &&
-		\text{si } \mu^3 (\nu) = 0
-	\\
-		\mathrm{vars\mathhyphen echine} (\nu) &=
-		\bold{V} &&
-		\text{sinon}
+    \mathrm{encode}^2_g (\nu) &=
+    (\mathrm{vars\mathhyphen echine} (\nu), \mu_g (\nu))
+  \\
+    \mathrm{vars\mathhyphen echine} (\nu) &=
+    \bold{F} &&
+    \text{si } \mu^3 (\nu) = 0
+  \\
+    \mathrm{vars\mathhyphen echine} (\nu) &=
+    \bold{V} &&
+    \text{sinon}
 \end{align*}
 \begin{align*}
-		\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{V}, \mu_2)) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
-		\bold{V} &&
-		\text{si } \mu_1 \leqslant \mu_2
-	\\
-		\mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
-		\bold{F} &&
-		\text{sinon}
-	\\
-		\mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
-		\bold{V} &&
-		\text{si } \mu_2 \leqslant \mu_1
-	\\
-		\mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
-		\bold{F} &&
-		\text{sinon}
+    \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{V}, \mu_2)) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+    \bold{V} &&
+    \text{si } \mu_1 \leqslant \mu_2
+  \\
+    \mathrm{compat}^2_g ((\bold{V}, \mu_1), (\bold{F}, \mu_2)) &=
+    \bold{F} &&
+    \text{sinon}
+  \\
+    \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+    \bold{V} &&
+    \text{si } \mu_2 \leqslant \mu_1
+  \\
+    \mathrm{compat}^2_g ((\bold{F}, \mu_1), (\bold{V}, \mu_2)) &=
+    \bold{F} &&
+    \text{sinon}
 \end{align*}
 \begin{figure}[h]
-	\centering
-	\includegraphics[scale=0.09]{graphs/crit2_1}
-	\includegraphics[scale=0.09]{graphs/crit2_2}
+  \centering
+  \includegraphics[scale=0.09]{graphs/crit2_1}
+  \includegraphics[scale=0.09]{graphs/crit2_2}
 \end{figure}
 \end{frame}
 
@@ -1270,24 +1270,24 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \footnotesize
 \[ \mathrm{encode}^2 (\nu) = \left( \mathrm{vars\mathhyphen base} (\nu), \msetG_bigplus_{g \notin \{ \bold{var}, \bold{uplet} \}} \msetG_bigplus_{\interval 1 {\mu_g (\nu)}} \mset{g} \right) \]
 \begin{align*}
-		\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-		\bold{V}
-	\\
-		\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
-		\bold{V} &&
-		\text{si } {g}^\#_1 \subseteq^\#_\G {g}^\#_2
-	\\
-		\mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
-		\bold{F} &&
-		\text{sinon}
-	\\
-		\mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-		\bold{V} &&
-		\text{si } {g}^\#_2 \subseteq^\#_\G {g}^\#_1
-	\\
-		\mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
-		\bold{F} &&
-		\text{sinon}
+    \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+    \bold{V}
+  \\
+    \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+    \bold{V} &&
+    \text{si } {g}^\#_1 \subseteq^\#_\G {g}^\#_2
+  \\
+    \mathrm{compat}^2 ((\bold{V}, {g}^\#_1), (\bold{F}, {g}^\#_2)) &=
+    \bold{F} &&
+    \text{sinon}
+  \\
+    \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+    \bold{V} &&
+    \text{si } {g}^\#_2 \subseteq^\#_\G {g}^\#_1
+  \\
+    \mathrm{compat}^2 ((\bold{F}, {g}^\#_1), (\bold{V}, {g}^\#_2)) &=
+    \bold{F} &&
+    \text{sinon}
 \end{align*}
 \end{frame}
 
@@ -1296,13 +1296,13 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \begin{frame}{Trie}
 \small
 \begin{mathpar}
-	\inferrule*
-		{N \subseteq \N}
-		{\bold{feuille} (N) \in \mathscr{T}}
-	\and
-	\inferrule*
-		{crit \in \mathscr{C}_\mathscr{D} \\ fils \in \mathscr{F} (\mathscr{D}, \mathscr{T})}
-		{\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
+  \inferrule*
+    {N \subseteq \N}
+    {\bold{feuille} (N) \in \mathscr{T}}
+  \and
+  \inferrule*
+    {crit \in \mathscr{C}_\mathscr{D} \\ fils \in \mathscr{F} (\mathscr{D}, \mathscr{T})}
+    {\bold{noeud}_\mathscr{D} (crit, fils) \in \mathscr{T}}
 \end{mathpar}
 \\~\\
 \exemple : $\bold{noeud}_{\mathscr{D}^1} (\mathrm{crit}^1, g \mapsto \bold{noeud}_{\mathscr{D}^2} (\mathrm{crit}^2, (b, g^\#) \mapsto \bold{feuille} (\{ \})))$
@@ -1313,27 +1313,27 @@ Deux types normalisés $\nu_1$ et $\nu_2$ sont \emph{unifiables}, noté $\nu_1 \
 \begin{frame}{Trie — ajout et recherche}
 \scriptsize
 \begin{align*}
-		\mathrm{trie\mathhyphen ajoute} (\bold{feuille} (N), \nu) &=
-		\bold{feuille} (N \cup \{ \nu \})
-	\\
-		\mathrm{trie\mathhyphen ajoute} (\bold{noeud}_\mathscr{D} (crit, fils), \nu) &=
-		\bold{noeud}_\mathscr{D} (crit, d \mapsto \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' (crit, fils, \nu, d))
+    \mathrm{trie\mathhyphen ajoute} (\bold{feuille} (N), \nu) &=
+    \bold{feuille} (N \cup \{ \nu \})
+  \\
+    \mathrm{trie\mathhyphen ajoute} (\bold{noeud}_\mathscr{D} (crit, fils), \nu) &=
+    \bold{noeud}_\mathscr{D} (crit, d \mapsto \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' (crit, fils, \nu, d))
 \end{align*}
 \begin{align*}
-		\mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
-		\mathrm{trie\mathhyphen ajoute} (fils (d), \nu) &&
-		\text{si } d = encode (\nu)
-	\\
-		\mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
-		fils (d) &&
-		\text{sinon}
+    \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+    \mathrm{trie\mathhyphen ajoute} (fils (d), \nu) &&
+    \text{si } d = encode (\nu)
+  \\
+    \mathrm{trie\mathhyphen ajoute}_\mathscr{D}' ((encode, \_), fils, \nu, d) &=
+    fils (d) &&
+    \text{sinon}
 \end{align*}
 \begin{align*}
-		\mathrm{trie\mathhyphen cherche} (\bold{feuille} (N), \nu) &=
-		N
-	\\
-		\mathrm{trie\mathhyphen cherche} (\bold{noeud}_\mathscr{D} ((encode, compat), fils), \nu) &=
-		\bigcup_{\mathclap{{d \in \mathscr{D} \mid compat (d, encode (\nu)) = \bold{T}}}} \mathrm{trie\mathhyphen cherche} (fils (d), \nu)
+    \mathrm{trie\mathhyphen cherche} (\bold{feuille} (N), \nu) &=
+    N
+  \\
+    \mathrm{trie\mathhyphen cherche} (\bold{noeud}_\mathscr{D} ((encode, compat), fils), \nu) &=
+    \bigcup_{\mathclap{{d \in \mathscr{D} \mid compat (d, encode (\nu)) = \bold{T}}}} \mathrm{trie\mathhyphen cherche} (fils (d), \nu)
 \end{align*}
 \end{frame}
 
@@ -1364,3 +1364,8 @@ module Node (Feat : FEATURE) (Sub : NODE) : NODE
 %============================================================
 
 \end{document}
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% TeX-command-extra-options: "-shell-escape"
+%%% End:
