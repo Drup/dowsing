@@ -115,7 +115,8 @@
   \end{quotation}
 
   Often there is an ``intuitive'' approach: I want a function
-  on dates, I look in the @Date@ module. This does not always work.
+  on dates, I look in the {\color{orange}\tt Date} module.
+  This does not always work (in case of auxiliary module, notably).
 
   \pause
   $\Rightarrow$ We can search functions using a very familiar abstraction: their types!
@@ -148,9 +149,9 @@ List.fold_right :
   \vfill
   
 \begin{itemize}
-\item Find types ``up to'' order of arguments, instantiation of variables, \dots
-\item Know about packages/libraries
-\item Scale to modern ecosystems (for instance, opam)
+\item Finds types ``up to'' order of arguments, instantiation of variables, \dots
+\item Knows about packages/libraries
+\item Scales to modern ecosystems (for instance, opam)
 \end{itemize}
 \pause
 How does it all work ?
@@ -162,12 +163,12 @@ How does it all work ?
   {\large Search by type modulo isomorphism}:
   \begin{itemize}
   \item Sound and complete \Y
-  \item Very computationally intensive \N
+  \item Computationally intensive \N
   \end{itemize}
 
   \vfill
 
-  {\large Hoogle}:
+  {\large Hoogle} (\url{https://hoogle.haskell.org/}):
   \begin{itemize}
   \item Neither sound nor complete (more like ``text search in types'') \N
   \item Scales well \Y
@@ -177,9 +178,9 @@ How does it all work ?
 \begin{frame}
   \frametitle{Search by type modulo isomorphism}
 
-  Given a type $\tau$, finds all values in the libraries with types which are equivalent/match/unify to $\tau$ up to some set of ``simplifications''.
+  Given a type $\tau$, finds all functions in the libraries with types which are equivalent/match/unify to $\tau$ up to some set of ``simplifications''.
 
-  We consider the following simplifications (i.e., isomorphism):
+  We consider the following simplifications (i.e., isomorphisms):
 \begin{align}
     a \times b &\equiv_T
     b \times a
@@ -202,7 +203,7 @@ How does it all work ?
     \tag{curry}
 \end{align}
   
-  Problem: Unification/Matching modulo isomorphism is \emph{expansive}.
+  {\color{red} Problem}: Unification/Matching modulo isomorphism is \emph{expensive}.
 \end{frame}
 
 \begin{frame}
@@ -219,10 +220,9 @@ How does it all work ?
   
   Battle plan:
   \begin{enumerate}
-  \item Measure to identify types taking lots of time
-  \item Introduces ``shortcuts'' (aka, indices in database-speech), to
-    skip unification for these expansive types
-  \item Pre-process the database to compute as much of the indices in advance
+  \item Experimentally measure to identify types taking lots of time
+  \item Introduces ``shortcuts'', to skip unification for these expansive types
+  \item Pre-process the database of types to compute shortcuts in advance
   \item Rinse and repeat
   \end{enumerate}
   
@@ -232,8 +232,8 @@ How does it all work ?
   \frametitle{Example of metric: The head}
 Exemples:
 \begin{itemize}
-  \item $unit \rightarrow \textcolor{orange}{\alpha} \Longrightarrow \bold{var}$
-  \item $int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha) \Longrightarrow \bold{cons}_{list}$
+  \item $head(unit \rightarrow \textcolor{orange}{\alpha}) = \bold{var}$
+  \item $head(int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha)) = \bold{cons}_{list}$
 \end{itemize}
 \bigskip
 \begin{lstlisting}
