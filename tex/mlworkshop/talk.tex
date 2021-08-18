@@ -26,14 +26,10 @@
 \usepackage{natbib}% Good citations and bibliography
 \usepackage{mathpartir} % Syntax trees
 \usepackage{colortbl}
-\usepackage{hhline}
 \usepackage{multicol}%multicolumn lists
-\usepackage{pifont}%% check mark
 \usepackage{minted}
 \setminted{encoding=utf-8}
-\usepackage{wasysym}
-\usepackage[normalem]{ulem}% Strike out
-\usepackage{multirow}
+\usepackage{pifont}
 
 % \usepackage{mathptmx}
 % \usepackage[scaled=0.9]{helvet}
@@ -52,6 +48,39 @@
   numbering=fraction,
   progressbar=foot,
 }
+
+\makeatletter
+\newenvironment{btHighlight}[1][]
+{\begingroup\tikzset{bt@Highlight@par/.style={#1}}\begin{lrbox}{\@tempboxa}}
+{\end{lrbox}\bt@HL@box[bt@Highlight@par]{\@tempboxa}\endgroup}
+
+\newcommand\btHL[1][]{%
+  \begin{btHighlight}[#1]\bgroup\aftergroup\bt@HL@endenv%
+}
+\def\bt@HL@endenv{%
+  \end{btHighlight}%   
+  \egroup
+}
+\newcommand{\bt@HL@box}[2][]{%
+  \tikz[#1]{%
+    \pgfpathrectangle{\pgfpoint{1pt}{0pt}}{\pgfpoint{\wd #2}{\ht #2}}%
+    \pgfusepath{use as bounding box}%
+    \node[anchor=base west, fill=orange!30,outer sep=0pt,inner xsep=1pt, inner ysep=0pt, rounded corners=3pt, minimum height=\ht\strutbox+1pt,#1]{\raisebox{1pt}{\strut}\strut\usebox{#2}};
+  }%
+}
+\makeatother
+\lstset{
+  basicstyle=\ttfamily,
+  columns=fullflexible,
+  keepspaces=true,
+  moredelim=**[is][\btHL]{`}{`},
+  extendedchars=true,
+  literate={µ}{{\textmu}}1
+}
+
+\newcommand\Y{{\color{Green}{\ding{52}}}\xspace}
+\newcommand\N{{\color{Red}{\ding{56}}}\xspace}
+\newcommand\M{{\color{Orange}{\textasciitilde}}\xspace} % "Meh"
 
 \def\HUGE{\fontsize{35pt}{15pt}\selectfont}
 
@@ -76,49 +105,330 @@
   \titlepage
 \end{frame}
 
-\begin{frame}
+\begin{frame}[fragile]
   \frametitle{Problem}
+
+  Every programmer has encountered this problem once:
+
+  \begin{quotation}
+    I'm looking for a function that does X, where to find it?
+  \end{quotation}
+
+  Often there is an ``intuitive'' approach: I want a function
+  on dates, I look in the @Date@ module. This does not always work.
+
+  \pause
+  $\Rightarrow$ We can search functions using a very familiar abstraction: their types!
   
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Our tool: Dowsing!}
+  \begin{columns}
+    \column{0.6\textwidth}
+    \footnotesize
+\begin{verbatim}
+$ search "'a list * 'a -> bool"
+...
+List.mem : 'a -> 'a list -> bool
+...
+
+$ search "'a list -> ('a * 'b -> 'b) -> 'b -> 'b"
+...
+List.fold_left :
+  ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
+List.fold_right :
+  ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
+...
+\end{verbatim}
+    \column{0.4\textwidth}
+    \includegraphics{sourcier}
+  \end{columns}
+
+  \vfill
+  
+\begin{itemize}
+\item Find types ``up to'' order of arguments, instantiation of variables, \dots
+\item Know about packages/libraries
+\item Scale to modern ecosystems (for instance, opam)
+\end{itemize}
+\pause
+How does it all work ?
 \end{frame}
 
 \begin{frame}
   \frametitle{Existing approaches}
-  
+
+  {\large Search by type modulo isomorphism}:
+  \begin{itemize}
+  \item Sound and complete \Y
+  \item Very computationally intensive \N
+  \end{itemize}
+
+  \vfill
+
+  {\large Hoogle}:
+  \begin{itemize}
+  \item Neither sound nor complete (more like ``text search in types'') \N
+  \item Scales well \Y
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Dowsing!}
+  \frametitle{Search by type modulo isomorphism}
+
+  Given a type $\tau$, finds all values in the libraries with types which are equivalent/match/unify to $\tau$ up to some set of ``simplifications''.
+
+  We consider the following simplifications (i.e., isomorphism):
+\begin{align}
+    a \times b &\equiv_T
+    b \times a
+    \label{prod_comm}
+    \tag{$\times$-comm}
+  \\
+    a \times (b \times c) &\equiv_T
+    (a \times b) \times c
+    \label{prod_assoc}
+    \tag{$\times$-assoc}
+  \\
+    \texttt{unit} \times a &\equiv_T
+    a
+    \label{prod_unit}
+    \tag{$\times$-$\texttt{unit}$}
+  \\
+    (a \times b) \rightarrow c &\equiv_T
+    a \rightarrow (b \rightarrow c)
+    \label{curry}
+    \tag{curry}
+\end{align}
   
+  Problem: Unification/Matching modulo isomorphism is \emph{expansive}.
 \end{frame}
 
 \begin{frame}
-  \frametitle{Rappel unif}
+  \frametitle{Smart indexing}
+
+  Some remarks:
+  \begin{itemize}
+  \item When searching, many types do not match
+  \item Even when failing, unification is expansive
+  \item Performance of unification highly depends on the types (more than $*1000$ variance)
+  \end{itemize}
+  \pause
+  \vfill
   
+  Battle plan:
+  \begin{enumerate}
+  \item Measure to identify types taking lots of time
+  \item Introduces ``shortcuts'' (aka, indices in database-speech), to
+    skip unification for these expansive types
+  \item Pre-process the database to compute as much of the indices in advance
+  \item Rinse and repeat
+  \end{enumerate}
+  
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example of metric: The head}
+Exemples:
+\begin{itemize}
+  \item $unit \rightarrow \textcolor{orange}{\alpha} \Longrightarrow \bold{var}$
+  \item $int \rightarrow int \rightarrow \textcolor{orange}{list} (\alpha) \Longrightarrow \bold{cons}_{list}$
+\end{itemize}
+\bigskip
+\begin{lstlisting}
+$ stats "int -> int -> int" --measure head
+measure        total time (ms)    avg. time (µs)    # unif.
+------------------------------------------------------------
+variable       506.137            `311.086`            `1627`
+constructor    62.705             2.45229            25570
+tuple          11.2598            2.73429            4118
+other          0.815153           3.09944            263
+\end{lstlisting}
+Observations:
+\begin{itemize}
+  \item 95\% without variables at the head
+  \item Case with variable head are pathological
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Example of shortcut: Head matching}
+
+  If two types have incompatible heads, they can never unify:
+\begin{itemize}
+  \item 
+    $\dots \rightarrow \textcolor{orange}{int} \equiv_T$ 
+    $\dots \rightarrow \textcolor{orange}{float}$
+  \item
+    $\dots \rightarrow \textcolor{orange}{list} (\alpha) \equiv_T$ 
+    $\dots \rightarrow int \,\textcolor{orange}{\times}\, int$
+  \item
+    $\dots \rightarrow \textcolor{orange}{int} \stackrel{?}{\equiv}_T$ 
+    $\dots \rightarrow \textcolor{orange}{\alpha}$
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+  \frametitle{Example of shortcut: Head matching -- benchmarking}
+\small
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|*{4}{c|}}
+    \hline
+      Type &
+      \multicolumn{2}{c|}{Nb unifications\dots} &
+      Gain
+    \\
+    \cline{2-3}
+          &
+      without shortcut & with shortcut &
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      31578 & 2714 & \textcolor{teal}{91.4\%}
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      31578 & 2714 & \textcolor{teal}{91.4\%}
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      31578 & 2945 & 90.7\%
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      31578 & 5745 & \textcolor{violet}{81.8\%}
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      31578 & 5745 & \textcolor{violet}{81.8\%}
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      31578 & 31578 & \textcolor{orange}{0\%}
+    \\
+    \hline
+  \end{tabular}
+\end{table}
+
+\begin{itemize}
+\item We correctly avoided many unifications
+\item We need to work more for polymorphic queries
+\end{itemize}
 \end{frame}
 
 \begin{frame}
-  \frametitle{Naive results}
-  
+  \frametitle{More shortcuts and combinations}
+
+  We introduced more shortcuts (and plan to investigate more):
+  \begin{itemize}
+  \item Number of variables at the tail
+  \item Relative positions of variables
+  \end{itemize}
+
+  \vfill
+
+  \begin{columns}
+    \column{0.6\textwidth}
+    {\Large How to combine them?}\\
+    We use a trie-like structure of ``features''.\\
+    Given a query (here, a constructor $f$), we select all sub-tries
+    with potentially valid types.
+    \column{0.4\textwidth}
+    \includegraphics[width=\textwidth]{crit1_3}
+  \end{columns}
+
 \end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Final benchmark}
+
+  Benchmark on database containing containers, batteries and base ($\sim 10000$ functions)
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|*{4}{c|}}
+    \hline
+      Type &
+      Nb unifications &
+      Time (ms)
+    \\
+    \hline
+      $int \rightarrow int \rightarrow int$ &
+      50 & 0.368ms 
+    \\
+      $int \rightarrow int \rightarrow int \rightarrow int$ &
+      45 & 0.649ms 
+    \\
+      $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
+      67 & 0.415ms 
+    \\
+      $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
+      62 & 1.26ms 
+    \\
+      $\alpha \rightarrow int \rightarrow \bold{unit}$ &
+      62 & 0.592ms 
+    \\
+      $int \rightarrow int \rightarrow \alpha$ &
+      29 & 0.393ms 
+    \\
+      $list(\alpha) \rightarrow \_ \rightarrow \alpha$ &
+      642 & 391ms 
+    \\
+    \hline
+  \end{tabular}
+
+\end{table}
+  $\Rightarrow$ Instant in practice for many queries. Still work to do on very
+  polymorphic queries
+\end{frame}
+
 
 \begin{frame}
-  \frametitle{Metrics}
-  
-\end{frame}
+  \frametitle{Conclusion}
 
-\begin{frame}
-  \frametitle{Indexation}
+  We presented \emph{Dowsing}, a new approach to search in libraries by types:
+  \begin{itemize}
+  \item Sound and complete
+  \item Scales well to medium ecosystem (and beyond?)
+  \item Good methodological approach to improve it further
+  \end{itemize}
   
+  Our technique is formalized and implemented: \url{https://github.com/Drup/dowsing/}
 \end{frame}
-
-\begin{frame}
-  \frametitle{Benchmarks}
-  
-\end{frame}
-
 
 \begin{frame}
   \frametitle{Ongoing work}
+
+  \begin{columns}
+    \begin{column}{0.6\textwidth}
+      
+    Lot's of work to do to make this practical!
+
+    \vspace{1em}
+    Indexing:
+    \begin{itemize}
+    \item Add more feature
+    \item Invent new kinds of shortcuts
+    \end{itemize}
+    \vspace{1em}
+
+    Type system:\\
+    \begin{itemize}
+    \item Add more OCaml features
+    \end{itemize}
+
+    \vspace{1em}
+    
+    Software development:
+    \begin{itemize}
+    \item Plug this into opam CI
+    \item Develop a web-based frontend
+    \end{itemize}
+    \end{column}
+        
+    \column{0.28\textwidth}
+    \includegraphics[width=\textwidth]{weneedyou.jpg}
+    
+  \end{columns}
   
 \end{frame}
 
