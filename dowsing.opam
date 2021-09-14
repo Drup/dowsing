@@ -16,8 +16,8 @@ depends: [
   "dune" { >= "2.7" }
   "odoc" {with-doc}
   "zarith"
-  "containers" { = "3.4" }
-  "containers-data" { = "3.4" }
+  "containers" { >= "3.4" }
+  "containers-data" { >= "3.4" }
   "iter"
   "fmt"
   "base-unix"
@@ -28,4 +28,6 @@ depends: [
   "fpath"
   "bos"
   "alcotest" {with-test}
+  "containers" {with-test & = "3.4"}
+  "containers-data" {with-test & = "3.4"}
 ]
