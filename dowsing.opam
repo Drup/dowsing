@@ -28,4 +28,6 @@ depends: [
   "fpath"
   "bos"
   "alcotest" {with-test}
+  "containers" {with-test & = "3.4"}
+  "containers-data" {with-test & = "3.4"}
 ]
