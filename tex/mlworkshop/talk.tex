@@ -85,7 +85,7 @@
 \def\HUGE{\fontsize{35pt}{15pt}\selectfont}
 
 \title{Isomorphisms are back!}
-\subtitle{Smart indexing for function retrieval by unification modulo type isomorphisms}
+\subtitle{Smart indexing for search by types in libraries}
 \author{
   Clément \textsc{Allain}
   \and
@@ -115,16 +115,21 @@
   \end{quotation}
 
   Often there is an ``intuitive'' approach: I want a function
-  on dates, I look in the {\color{orange}\tt Date} module.
-  This does not always work (in case of auxiliary module, notably).
+  on time, I look in the {\color{orange}\tt Time} module.
+  This does not always work (auxiliary modules \dots).
 
-  \pause
   $\Rightarrow$ We can search functions using a very familiar abstraction: their types!
   
 \end{frame}
 
 \begin{frame}[fragile]
   \frametitle{Our tool: Dowsing!}
+\begin{itemize}
+\item Finds types ``up to'' order of arguments, instantiation, \dots
+\item Knows about packages/libraries
+\item Scales to modern ecosystems (for instance, opam)
+\end{itemize}
+  \vfill
   \begin{columns}
     \column{0.6\textwidth}
     \footnotesize
@@ -145,14 +150,6 @@ List.fold_right :
     \column{0.4\textwidth}
     \includegraphics{sourcier}
   \end{columns}
-
-  \vfill
-  
-\begin{itemize}
-\item Finds types ``up to'' order of arguments, instantiation of variables, \dots
-\item Knows about packages/libraries
-\item Scales to modern ecosystems (for instance, opam)
-\end{itemize}
 \pause
 How does it all work ?
 \end{frame}
@@ -178,7 +175,9 @@ How does it all work ?
 \begin{frame}
   \frametitle{Search by type modulo isomorphism}
 
-  Given a type $\tau$, finds all functions in the libraries with types which are equivalent/match/unify to $\tau$ up to some set of ``simplifications''.
+  Given a type $\tau$, finds all functions in the libraries with types \\
+  which are equivalent/match/unify to $\tau$ up to some set\\
+  of ``simplifications''.
 
   We consider the following simplifications (i.e., isomorphisms):
 \begin{align}
@@ -212,7 +211,7 @@ How does it all work ?
   Some remarks:
   \begin{itemize}
   \item When searching, many types do not match
-  \item Even when failing, unification is expansive
+  \item Even when failing, unification is expensive
   \item Performance of unification highly depends on the types (more than $*1000$ variance)
   \end{itemize}
   \pause
@@ -221,7 +220,7 @@ How does it all work ?
   Battle plan:
   \begin{enumerate}
   \item Experimentally measure to identify types taking lots of time
-  \item Introduces ``shortcuts'', to skip unification for these expansive types
+  \item Introduces ``shortcuts'', to skip unification for these expensive types
   \item Pre-process the database of types to compute shortcuts in advance
   \item Rinse and repeat
   \end{enumerate}
@@ -268,49 +267,49 @@ Observations:
   \item
     $\dots \rightarrow \textcolor{orange}{int} \stackrel{?}{\equiv}_T$ 
     $\dots \rightarrow \textcolor{orange}{\alpha}$
-\end{itemize}
+  \end{itemize}
+
+  We precompute the heads for all types in the database and store them compactly
 \end{frame}
 
 \begin{frame}[fragile]
   \frametitle{Example of shortcut: Head matching -- benchmarking}
-\small
+  Searching in a local install of opam:\\
+  $\sim 250$ packages, $31578$ functions
 \begin{table}[h]
+  \small
   \centering
-  \begin{tabular}{|*{4}{c|}}
+  \begin{tabular}{|*{3}{c|}}
     \hline
       Type &
-      \multicolumn{2}{c|}{Nb unifications\dots} &
+      Nb unif. w shortcut &
       Gain
-    \\
-    \cline{2-3}
-          &
-      without shortcut & with shortcut &
     \\
     \hline
       $int \rightarrow int \rightarrow int$ &
-      31578 & 2714 & \textcolor{teal}{91.4\%}
+      2714 & \textcolor{teal}{91.4\%}
     \\
       $int \rightarrow int \rightarrow int \rightarrow int$ &
-      31578 & 2714 & \textcolor{teal}{91.4\%}
+      2714 & \textcolor{teal}{91.4\%}
     \\
       $int \rightarrow (int \rightarrow int) \rightarrow list (\alpha)$ &
-      31578 & 2945 & 90.7\%
+      2945 & 90.7\%
     \\
       $int \rightarrow float \rightarrow bool \rightarrow \bold{unit}$ &
-      31578 & 5745 & \textcolor{violet}{81.8\%}
+      5745 & \textcolor{violet}{81.8\%}
     \\
       $\alpha \rightarrow int \rightarrow \bold{unit}$ &
-      31578 & 5745 & \textcolor{violet}{81.8\%}
+      5745 & \textcolor{violet}{81.8\%}
     \\
       $int \rightarrow int \rightarrow \alpha$ &
-      31578 & 31578 & \textcolor{orange}{0\%}
+      31578 & \textcolor{orange}{0\%}
     \\
     \hline
   \end{tabular}
 \end{table}
 
 \begin{itemize}
-\item We correctly avoided many unifications
+\item We correctly avoid many unifications
 \item We need to work more for polymorphic queries
 \end{itemize}
 \end{frame}
@@ -342,13 +341,14 @@ Observations:
 \begin{frame}[fragile]
   \frametitle{Final benchmark}
 
-  Benchmark on database containing containers, batteries and base ($\sim 10000$ functions)
+  Benchmark on database containing containers, batteries and base:\\
+  $\sim 10000$ functions
 \begin{table}[h]
   \centering
   \begin{tabular}{|*{4}{c|}}
     \hline
       Type &
-      Nb unifications &
+      Nb unif. w shortcuts &
       Time (ms)
     \\
     \hline
@@ -399,7 +399,8 @@ Observations:
   \frametitle{Ongoing work}
 
   \begin{columns}
-    \begin{column}{0.6\textwidth}
+    \raggedleft
+    \begin{column}{0.4\textwidth}
       
     Lot's of work to do to make this practical!
 
@@ -427,6 +428,7 @@ Observations:
         
     \column{0.28\textwidth}
     \includegraphics[width=\textwidth]{weneedyou.jpg}
+    \column{0.3\textwidth}
     
   \end{columns}
   
