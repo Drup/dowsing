@@ -20,7 +20,7 @@ List.fold_right :
 ## Resources
 
 - [video](https://www.youtube.com/watch?v=rxUb-1eKEJM)
-- [paper](https://hal.archives-ouvertes.fr/view/index/docid/3414616)
+- [paper](https://hal.archives-ouvertes.fr/hal-03355381)
 
 ## Install and Use
 
