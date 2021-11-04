@@ -17,6 +17,11 @@ List.fold_right :
 ...
 ```
 
+## Resources
+
+- [video](https://www.youtube.com/watch?v=rxUb-1eKEJM)
+- [paper](https://hal.archives-ouvertes.fr/view/index/docid/3414616)
+
 ## Install and Use
 
 ```
