@@ -98,8 +98,9 @@ module Constructors : S = struct
     t
 
   let compare t1 t2 =
-    CCOrd.(Bool.compare t1.has_var t2.has_var
-      <?> (compare, t1.constrs, t2.constrs))
+    let open CCOrd.Infix in
+    Bool.compare t1.has_var t2.has_var
+      <?> (compare, t1.constrs, t2.constrs)
 
   let compatible =
     let aux t1 t2 =

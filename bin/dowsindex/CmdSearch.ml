@@ -43,7 +43,7 @@ let main opts =
       Indexing.Cell.iter cell
     )
   in
-  let res = CCOpt.fold (CCFun.flip Iter.take) res opts.cnt in
+  let res = CCOption.fold (CCFun.flip Iter.take) res opts.cnt in
   Fmt.pr "@[<v>%a@]@."
     (Fmt.iter Iter.iter Indexing.Info.pp) res
 

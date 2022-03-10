@@ -85,12 +85,12 @@ let aux opts ?stats0 iter_idx =
   let total_time = !total_time in
   let total_cnt = !total_cnt in
   Fmt.pr "@,total time (s): %g" total_time ;
-  stats0 |> CCOpt.iter (fun (total_time', _) ->
+  stats0 |> CCOption.iter (fun (total_time', _) ->
     Fmt.pr " (%g %%)" @@ total_time /. total_time' *. 100.
   ) ;
   Fmt.pr "@,total # unif.: %i" total_cnt ;
   let total_cnt = CCFloat.of_int total_cnt in
-  stats0 |> CCOpt.iter (fun (_, total_cnt') ->
+  stats0 |> CCOption.iter (fun (_, total_cnt') ->
     Fmt.pr " (%g %%)" @@ total_cnt /. total_cnt' *. 100.
   ) ;
   total_time, total_cnt
@@ -116,7 +116,7 @@ let main opts =
       let hcons = Type.Hashcons.make () in
       let iter_idx () =
         pkgs
-        |> CCOpt.map_lazy Package.find_all Package.find
+        |> CCOption.map_lazy Package.find_all Package.find
         |> CCList.map snd
         |> Package.iter
         |> Iter.map @@ fun Package.{ out_ty ; _ } ->

@@ -150,16 +150,17 @@ end = struct
   let rec compare t1 t2 =
     if t1 == t2 then 0
     else
+      let open CCOrd.Infix in
       match t1, t2 with
       | Var var1, Var var2 ->
           Variable.compare var1 var2
       | Constr (lid1, params1), Constr (lid2, params2) ->
-          CCOrd.(LongIdent.compare lid1 lid2
-            <?> (CCArray.compare compare, params1, params2))
+          LongIdent.compare lid1 lid2
+            <?> (CCArray.compare compare, params1, params2)
       | Arrow (param1, ret1), Arrow (param2, ret2) ->
           let cmp = compare in
-          CCOrd.(cmp ret1 ret2
-            <?> (NSet.compare, param1, param2))
+          cmp ret1 ret2
+            <?> (NSet.compare, param1, param2)
       | Tuple elts1, Tuple elts2 ->
           NSet.compare elts1 elts2
       | Other i1, Other i2 ->

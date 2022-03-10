@@ -31,7 +31,7 @@ end = struct
   }
 
   let pp ppf {system; _} =
-    Fmt.(vbox (array ~sep:cut @@ array ~sep:(unit ", ") int)) ppf system
+    Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) ppf system
 
   (* Replace variables by their representative/a constant *)
   let simplify_problem env {ACTerm. left ; right} =

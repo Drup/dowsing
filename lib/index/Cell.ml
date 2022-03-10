@@ -5,7 +5,7 @@ module Class = struct
   let representative t =
     t
     |> find_first_opt @@ CCFun.negate Info.is_internal
-    |> CCOpt.get_lazy @@ fun () -> min_elt t
+    |> CCOption.get_lazy @@ fun () -> min_elt t
 
 end
 

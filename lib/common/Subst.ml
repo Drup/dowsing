@@ -8,7 +8,7 @@ let rec apply t =
   fun (ty : Type.t) ->
     match ty with
     | Var var ->
-        CCOpt.get_or ~default:ty @@ Variable.Map.get var t
+        CCOption.get_or ~default:ty @@ Variable.Map.get var t
     | Constr (lid, params) ->
         Type.constr lid @@ CCArray.map substitute params
     | Arrow (params, ret) ->

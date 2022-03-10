@@ -21,9 +21,9 @@ let pp ppf t =
   match t with
   | [|x|] -> Pure.pp ppf x
   | t ->
-    Fmt.pf ppf "@[<h>(%a)@]" Fmt.(array ~sep:(unit ",@ ") Pure.pp) t
+    Fmt.pf ppf "@[<h>(%a)@]" Fmt.(array ~sep:(any ",@ ") Pure.pp) t
 
 let pp_problem ppf {left ; right} =
   Fmt.pf ppf "%a = %a"
-    Fmt.(array ~sep:(unit ",") Pure.pp) left
-    Fmt.(array ~sep:(unit ",") Pure.pp) right
+    Fmt.(array ~sep:(any ",") Pure.pp) left
+    Fmt.(array ~sep:(any ",") Pure.pp) right

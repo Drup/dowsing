@@ -45,7 +45,7 @@ module Make (Trie : Trie.NODE) : S = struct
       let ty = Type.of_outcometree env out_ty in
       let info = Info.{ lid ; out_ty } in
       t.trie <- Trie.add ty t.trie ;
-      Type.Map.update ty (CCFun.compose (Cell.update orig_lid info) CCOpt.return) cells
+      Type.Map.update ty (CCFun.compose (Cell.update orig_lid info) CCOption.return) cells
     in
     fun t pkg pkg_dir ->
       if String.HMap.mem t.pkgs_dirs pkg then
@@ -68,7 +68,7 @@ module Make (Trie : Trie.NODE) : S = struct
       iter t ty
       |> Iter.filter_map @@ fun ty' ->
         Unification.unify env ty ty'
-        |> CCOpt.map @@ CCPair.make ty'
+        |> CCOption.map @@ CCPair.make ty'
     in
     aux (fun t _ -> iter t), aux iter_with
 
@@ -80,7 +80,7 @@ module Make (Trie : Trie.NODE) : S = struct
       |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
         if pkg_filt pkg_dir then
           Type.Map.get ty cells
-          |> CCOpt.map @@ merge elt
+          |> CCOption.map @@ merge elt
         else None
       )
     )
@@ -95,7 +95,7 @@ module Make (Trie : Trie.NODE) : S = struct
 
   let iter, iter_with =
     let aux ?pkgs t iter =
-      let pkg_filt = CCOpt.map (pkg_filt t) pkgs in
+      let pkg_filt = CCOption.map (pkg_filt t) pkgs in
       wrap t iter ~to_type:CCFun.id ~merge:CCPair.make ?pkg_filt
     in
     (fun ?pkgs t -> aux ?pkgs t @@ iter t),
@@ -103,7 +103,7 @@ module Make (Trie : Trie.NODE) : S = struct
 
   let find, find_with =
     let aux find ?pkgs t env ty =
-      let pkg_filt = CCOpt.map (pkg_filt t) pkgs in
+      let pkg_filt = CCOption.map (pkg_filt t) pkgs in
       find t env ty
       |> wrap t ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif) ?pkg_filt
     in

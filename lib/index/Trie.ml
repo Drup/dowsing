@@ -32,7 +32,7 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
 
   let add ty t =
     t |> FeatMap.update (Feat.compute ty) @@ fun sub ->
-      let sub = CCOpt.get_or ~default:Sub.empty sub in
+      let sub = CCOption.get_or ~default:Sub.empty sub in
       Some (Sub.add ty sub)
 
   let remove ty t =

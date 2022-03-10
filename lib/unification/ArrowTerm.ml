@@ -13,7 +13,7 @@ let make_problem left right = {left; right}
 
 let pp_problem ppf self =
   Fmt.pf ppf "%a -> %a = %a -> %a"
-    Fmt.(array ~sep:(unit " * ") Pure.pp) self.left.args
+    Fmt.(array ~sep:(any " * ") Pure.pp) self.left.args
     Type.pp self.left.ret
-    Fmt.(array ~sep:(unit " * ") Pure.pp) self.right.args
+    Fmt.(array ~sep:(any " * ") Pure.pp) self.right.args
     Type.pp self.right.ret
