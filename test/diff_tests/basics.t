@@ -131,6 +131,7 @@ Some initial basic tests.
   Containers.Hashtbl.seeded_hash : int -> 'a -> int
   ContainersLabels.Hashtbl.seeded_hash : int -> 'a -> int
   CCOpt.pure : 'a -> 'a t
+  CCOpt.some : 'a -> 'a t
   CCSeq.pure : 'a -> 'a t
   CCList.pure : 'a -> 'a t
   CCOpt.return : 'a -> 'a t
@@ -138,8 +139,11 @@ Some initial basic tests.
   CCRef.create : 'a -> 'a t
   CCSeq.return : 'a -> 'a t
   CCList.return : 'a -> 'a t
+  CCOption.pure : 'a -> 'a t
+  CCOption.some : 'a -> 'a t
   CCRandom.pure : 'a -> 'a t
   CCParse.return : 'a -> 'a t
+  CCOption.return : 'a -> 'a t
   CCRandom.return : 'a -> 'a t
   CCSeq.singleton : 'a -> 'a t
   CCListLabels.pure : 'a -> 'a t
@@ -205,6 +209,7 @@ Some initial basic tests.
   Containers.Hashtbl.seeded_hash_param : int -> int -> int -> 'a -> int
   ContainersLabels.Hashtbl.seeded_hash_param : int -> int -> int -> 'a -> int
   CCOpt.return_if : bool -> 'a -> 'a t
+  CCOption.return_if : bool -> 'a -> 'a t
   CCMap.S.singleton : key -> 'a -> 'a t
   CCMap.Make.singleton : key -> 'a -> 'a t
   CCArray.sub : 'a array -> int -> int -> 'a array
@@ -234,6 +239,8 @@ Some initial basic tests.
   CCHeap.Make_from_compare.fold : ('a -> elt -> 'a) -> 'a -> t -> 'a
   CCOpt.value : 'a t -> default:'a -> 'a
   CCOpt.get_or : default:'a -> 'a t -> 'a
+  CCOption.value : 'a t -> default:'a -> 'a
+  CCOption.get_or : default:'a -> 'a t -> 'a
   CCResult.get_or : ('a, 'b) t -> default:'a -> 'a
   CCFun.tap : ('a -> 'b) -> 'a -> 'a
   CCList.assq : 'a -> ('a * 'b) list -> 'b
@@ -278,6 +285,7 @@ Some initial basic tests.
   CCShimsList_.remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
   CCShimsList_.remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
   CCOpt.if_ : ('a -> bool) -> 'a -> 'a option
+  CCOption.if_ : ('a -> bool) -> 'a -> 'a option
   CCShimsList_.assq_opt : 'a -> ('a * 'b) list -> 'b option
   CCShimsList_.assoc_opt : 'a -> ('a * 'b) list -> 'b option
   Containers.Hashtbl.find_opt : ('a, 'b) t -> 'a -> 'b option
@@ -290,6 +298,7 @@ Some initial basic tests.
   ContainersLabels.Hashtbl.get : ('a, 'b) Hashtbl.t -> 'a -> 'b option
   CCFormat.const : 'a printer -> 'a -> unit printer
   CCOpt.to_result : 'e -> 'a t -> ('a, 'e) result
+  CCOption.to_result : 'e -> 'a t -> ('a, 'e) result
   CCFormat.to_string : 'a printer -> 'a -> string
   CCFormat.Dump.to_string : 'a t -> 'a -> string
   CCList.set_at_idx : int -> 'a -> 'a t -> 'a t
@@ -304,6 +313,23 @@ Some initial basic tests.
   CCListLabels.cons' : 'a t -> 'a -> 'a t
   CCSeq.unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
   CCResult.wrap1 : ('a -> 'b) -> 'a -> ('b, exn) t
+  CCParse.chars_fold :
+  f:('acc ->
+     char ->
+     [ `Consume_and_stop of 'acc
+     | `Continue of 'acc
+     | `Fail of string
+     | `Stop of 'acc ]) ->
+  'acc -> ('acc * slice) t
+  CCParse.chars_fold_transduce :
+  f:('acc ->
+     char ->
+     [ `Consume_and_stop
+     | `Continue of 'acc
+     | `Fail of string
+     | `Stop
+     | `Yield of 'acc * char ]) ->
+  'acc -> ('acc * string) t
   CCArray.set : 'a array -> int -> 'a -> unit
   CCArrayLabels.set : 'a array -> int -> 'a -> unit
   CCShimsArray_.set : 'a array -> int -> 'a -> unit
@@ -414,6 +440,7 @@ Some initial basic tests.
   CCOpt.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCSeq.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCArray.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
+  CCOption.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCSeq.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCList.fold_right : ('a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   CCArrayLabels.fold : f:('a -> 'b -> 'a) -> init:'a -> 'b t -> 'a
@@ -439,6 +466,7 @@ Some initial basic tests.
   ContainersLabels.Hashtbl.MakeSeeded.fold :
   (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   CCOpt.map_or : default:'b -> ('a -> 'b) -> 'a t -> 'b
+  CCOption.map_or : default:'b -> ('a -> 'b) -> 'a t -> 'b
   CCList.fold_while :
   ('a -> 'b -> 'a * [ `Continue | `Stop ]) -> 'a -> 'b t -> 'a
   CCArray.fold_while :
@@ -470,6 +498,8 @@ Some initial basic tests.
   CCFun.compose : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
   CCFun.Infix.(%) : ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
   CCFun.Infix.(%>) : ('a -> 'b) -> ('b -> 'c) -> 'a -> 'c
+  CCList.sorted_mem : cmp:('a -> 'a -> int) -> 'a -> 'a list -> bool
+  CCListLabels.sorted_mem : cmp:('a -> 'a -> int) -> 'a -> 'a list -> bool
   CCList.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
   CCArray.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
   CCListLabels.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
@@ -485,8 +515,12 @@ Some initial basic tests.
   CCArrayLabels.lookup_exn : cmp:'a ord -> key:'a -> 'a t -> int
   CCList.sorted_insert :
   cmp:('a -> 'a -> int) -> ?uniq:bool -> 'a -> 'a list -> 'a list
+  CCList.sorted_remove :
+  cmp:('a -> 'a -> int) -> ?all:bool -> 'a -> 'a list -> 'a list
   CCListLabels.sorted_insert :
   cmp:('a -> 'a -> int) -> ?uniq:bool -> 'a -> 'a list -> 'a list
+  CCListLabels.sorted_remove :
+  cmp:('a -> 'a -> int) -> ?all:bool -> 'a -> 'a list -> 'a list
   CCList.scan_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc list
   CCListLabels.scan_left :
   f:('acc -> 'a -> 'acc) -> init:'acc -> 'a list -> 'acc list
@@ -497,6 +531,7 @@ Some initial basic tests.
   CCListLabels.assoc_opt :
   eq:('a -> 'a -> bool) -> 'a -> ('a * 'b) t -> 'b option
   CCOpt.wrap : ?handler:(exn -> bool) -> ('a -> 'b) -> 'a -> 'b option
+  CCOption.wrap : ?handler:(exn -> bool) -> ('a -> 'b) -> 'a -> 'b option
   CCArray.lookup : cmp:'a ord -> 'a -> 'a t -> int option
   CCArrayLabels.lookup : cmp:'a ord -> key:'a -> 'a t -> int option
   CCList.remove : eq:('a -> 'a -> bool) -> key:'a -> 'a t -> 'a t
@@ -590,6 +625,8 @@ Some initial basic tests.
   CCPair.compare :
   ('a -> 'a -> int) -> ('b -> 'b -> int) -> 'a * 'b -> 'a * 'b -> int
   CCOpt.wrap2 :
+  ?handler:(exn -> bool) -> ('a -> 'b -> 'c) -> 'a -> 'b -> 'c option
+  CCOption.wrap2 :
   ?handler:(exn -> bool) -> ('a -> 'b -> 'c) -> 'a -> 'b -> 'c option
   CCPair.to_string :
   ?sep:string -> ('a -> string) -> ('b -> string) -> 'a * 'b -> string
