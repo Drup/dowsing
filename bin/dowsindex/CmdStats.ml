@@ -153,6 +153,7 @@ let main copts meas_kind with_feats no_idx idx_file ty pkgs =
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
+open Cmd
 
 let meas_kind =
   let docv = "measure" in
@@ -186,4 +187,4 @@ let pkgs =
 let cmd =
   let doc = "compute index statistics" in
   Term.(term_result (const main $ copts $ meas_kind $ with_feats $ no_idx $ idx_file $ ty $ pkgs)),
-  Term.(info "stats" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
+  info "stats" ~sdocs:Manpage.s_common_options ~doc

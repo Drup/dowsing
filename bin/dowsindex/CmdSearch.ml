@@ -52,6 +52,7 @@ let main copts exhaustive cnt idx_file ty pkgs =
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
+open Cmd
 
 let exhaustive =
   let doc = "Use exhaustive search (slow)." in
@@ -78,4 +79,4 @@ let pkgs =
 let cmd =
   let doc = "search index" in
   Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty $ pkgs)),
-  Term.(info "search" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
+  info "search" ~sdocs:Manpage.s_common_options ~doc

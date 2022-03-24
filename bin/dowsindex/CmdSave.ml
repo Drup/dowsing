@@ -41,6 +41,7 @@ let main copts verbose idx_file pkgs =
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
+open Cmd
 
 let verbose =
   let doc = "Enable verbose output." in
@@ -58,4 +59,4 @@ let pkgs =
 let cmd =
   let doc = "save index" in
   Term.(term_result (const main $ copts $ verbose $ idx_file $ pkgs)),
-  Term.(info "save" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
+  info "save" ~sdocs:Manpage.s_common_options ~doc

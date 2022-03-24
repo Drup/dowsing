@@ -29,6 +29,7 @@ let main copts all_unifs ty1 ty2 =
   main { copts ; all_unifs ; ty1 ; ty2 }
 
 open Cmdliner
+open Cmd
 
 let all_unifs =
   let doc = "Report all unifiers." in
@@ -45,4 +46,4 @@ let ty2 =
 let cmd =
   let doc = "unify two types" in
   Term.(const main $ copts $ all_unifs $ ty1 $ ty2),
-  Term.(info "unify" ~exits:default_exits ~sdocs:Manpage.s_common_options ~doc)
+  info "unify" ~sdocs:Manpage.s_common_options ~doc
