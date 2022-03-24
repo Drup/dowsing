@@ -186,5 +186,7 @@ let pkgs =
 
 let cmd =
   let doc = "compute index statistics" in
-  Term.(term_result (const main $ copts $ meas_kind $ with_feats $ no_idx $ idx_file $ ty $ pkgs)),
-  info "stats" ~sdocs:Manpage.s_common_options ~doc
+  Cmd.v
+    (info "stats" ~sdocs:Manpage.s_common_options ~doc)
+    Term.(term_result (const main $ copts $ meas_kind $ with_feats $ no_idx $ idx_file $ ty $ pkgs))
+  

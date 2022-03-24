@@ -78,5 +78,7 @@ let pkgs =
 
 let cmd =
   let doc = "search index" in
-  Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty $ pkgs)),
-  info "search" ~sdocs:Manpage.s_common_options ~doc
+  Cmd.v
+    (info "search" ~sdocs:Manpage.s_common_options ~doc)
+    Term.(term_result (const main $ copts $ exhaustive $ cnt $ idx_file $ ty $ pkgs))
+  
