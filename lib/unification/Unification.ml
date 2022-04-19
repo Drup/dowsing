@@ -383,3 +383,18 @@ let unify (env : Type.Env.t) t1 t2 =
 
 let unifiable (env : Type.Env.t) t1 t2 =
   not @@ Iter.is_empty @@ unifiers env t1 t2
+
+  type ord = 
+  | Uncomparable
+  | Smaller
+  | Bigger
+  | Equal
+  
+  let compare env t1 t2 = 
+    let b1 = unifiable env (Type.freeze_variables t1) t2 
+    and b2 = unifiable env t1 (Type.freeze_variables t2)
+    in match b1, b2 with
+      | true , true -> Equal
+      | false , false -> Uncomparable
+      | true , false -> Smaller
+      | false , true -> Bigger

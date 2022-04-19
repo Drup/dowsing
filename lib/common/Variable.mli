@@ -1,6 +1,7 @@
 type t [@@ocaml.immediate]
 type var = t
 
+val as_int : t -> int 
 val equal : t CCEqual.t
 val compare : t CCOrd.t
 

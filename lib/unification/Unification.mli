@@ -20,3 +20,13 @@ val unify : Type.Env.t -> Type.t -> Type.t -> Subst.t Option.t
 (** [unifiable tyenv t1 t2] is as {!unifiers} but returns [true] if there exists
     a unifier, and [false] otherwise. *)
 val unifiable : Type.Env.t -> Type.t -> Type.t -> Bool.t
+
+
+
+type ord =
+  | Uncomparable
+  | Smaller
+  | Bigger
+  | Equal
+
+val compare : Type.Env.t -> Type.t -> Type.t -> ord

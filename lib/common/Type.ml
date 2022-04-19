@@ -329,7 +329,23 @@ let tuple elts =
 let other x =
   Other (CCHash.poly x)
 
-(* importation functions *)
+
+(* freezing *)
+
+let rec freeze_variables_internal hc (t : t) = let t' = match t with
+  | Var v -> 
+    let lid = LongIdent.Lident ("frozen_variable"^string_of_int (Variable.as_int v)) in 
+    constr lid [||]
+  | Constr (lid, t) -> constr lid (Array.map (freeze_variables_internal hc) t)
+  | Arrow (args, t) -> Arrow (NSet.map (freeze_variables_internal hc) args, freeze_variables_internal hc t)
+  | Tuple ts -> tuple (NSet.map (freeze_variables_internal hc) ts)
+  | Other _ -> t
+  in Hashcons.hashcons hc t'
+
+  let freeze_variables t = freeze_variables_internal (Hashcons.make ()) t
+
+
+(* import functions *)
 
 let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
   match out_ty with

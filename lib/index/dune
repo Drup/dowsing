@@ -1,4 +1,4 @@
 (library
   (name index)
-  (libraries utils common package unification)
+  (libraries utils common package unification ocamlgraph)
   (flags (:standard -open Utils -open Common)))

@@ -1,6 +1,7 @@
 type t = Int.t
 type var = t
 
+let as_int v = v
 let compare = CCInt.compare
 let equal = CCInt.equal
 

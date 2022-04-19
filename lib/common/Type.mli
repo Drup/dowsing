@@ -123,6 +123,10 @@ val constr : LongIdent.t -> t Array.t -> t
 val arrow : t -> t -> t
 val tuple : NSet.t -> t
 
+(* freeze *)
+
+val freeze_variables : t -> t
+
 (* importation functions *)
 
 val of_outcometree : Env.t -> Outcometree.out_type -> t

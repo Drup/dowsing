@@ -168,3 +168,5 @@ module Make (Trie : Trie.NODE) : S = struct
 end
 
 let make feats = (module Make (val Trie.make feats) : S)
+
+module Poset = Poset 
