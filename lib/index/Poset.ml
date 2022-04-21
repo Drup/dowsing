@@ -1,21 +1,20 @@
 open Graph
 
+module Label = struct 
+    type t = Type.t
+end
+
 
 module type POSET = sig
 
     type t
-    type elt
     
-    val init : unit -> t
-    val add : t -> elt -> unit
-    val iter_succ : t -> elt -> (elt -> unit) -> unit
-    val iter_pred : t -> elt -> (elt -> unit) -> unit
+    val init : Type.Env.t -> t
+    val add : t -> Label.t -> unit
+    (*val iter_succ : t -> G.V.t -> (G.V.t -> unit) -> unit*)
+    (*val iter_pred : t -> G.V.t -> (G.V.t -> unit) -> unit*)
 end
 
-
-module Label = struct 
-    type t = Type.t
-end
 
 
 module Poset = struct
@@ -24,6 +23,7 @@ module Poset = struct
     module Edge_set = Set.Make (G.E)
     
     type t = {env : Type.Env.t; graph : G.t; lowest : G.V.t}
+
     let init env = let g = G.create() in 
         let t = Type.of_string env "'a" in
         let node = G.V.create t in
@@ -32,6 +32,8 @@ module Poset = struct
     type to_do = 
         | Replace of G.E.t
         | Add of G.E.t
+
+    exception Type_already_present
 
     let add {env ; graph; lowest} elt_0 = 
         let node_0 = G.V.create elt_0 in
@@ -56,7 +58,7 @@ module Poset = struct
         let to_visit = Queue.create () in 
         let rec visit already_seen edge = 
             match Unification.compare env elt_0 (G.V.label (G.E.dst edge)) with
-            | Equal -> invalid_arg "Type already present"
+            | Equal -> raise Type_already_present
             | Bigger -> (Replace edge)::(visit_next already_seen)
             | Smaller -> let push elt = Queue.push elt to_visit in
                 let l = G.succ_e graph (G.E.dst edge) in 
@@ -78,7 +80,10 @@ module Poset = struct
               else
                 let already_seen = Edge_set.add edge already_seen in
                 visit already_seen edge
-        in insert_edges (visit already_seen (G.E.create lowest () lowest))
+        in try 
+            insert_edges (visit already_seen (G.E.create lowest () lowest))
+        with 
+            Type_already_present -> ()
 
 
     let iter_succ t elt f = 
@@ -97,7 +102,7 @@ module Poset = struct
         let pp_edge fmt e = 
             let s = G.V.label @@ G.E.src e 
             and d = G.V.label @@ G.E.dst e in
-            Fmt.pf fmt "%a -> %a" Type.pp s Type.pp d
+            Fmt.pf fmt "%a -> %a" Type.pp_parens s Type.pp_parens d
         in
         Format.fprintf fmt "@[<v>%a@]@."
             (Fmt.iter G.iter_edges_e pp_edge) graph
