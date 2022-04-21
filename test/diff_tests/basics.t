@@ -3,31 +3,18 @@ Some initial basic tests.
   $ dowsindex search --index index.db containers "int -> int -> int"
   Containers.max : int -> int -> int
   Containers.min : int -> int -> int
-  CCShimsInt_.add : int -> int -> int
-  CCShimsInt_.div : int -> int -> int
-  CCShimsInt_.mul : int -> int -> int
-  CCShimsInt_.rem : int -> int -> int
-  CCShimsInt_.sub : int -> int -> int
   CCMonomorphic.max : int -> int -> int
   CCMonomorphic.min : int -> int -> int
-  CCShimsInt_.logor : int -> int -> int
-  CCShimsInt_.logand : int -> int -> int
-  CCShimsInt_.logxor : int -> int -> int
   Containers.compare : int -> int -> int
-  CCShimsInt_.compare : int -> int -> int
   ContainersLabels.max : int -> int -> int
   ContainersLabels.min : int -> int -> int
   CCMonomorphic.compare : int -> int -> int
-  CCShimsInt_.shift_left : int -> int -> int
-  CCShimsInt_.shift_right : int -> int -> int
   ContainersLabels.compare : int -> int -> int
-  CCShimsInt_.shift_right_logical : int -> int -> int
   Containers.Hashtbl.hash : 'a -> int
   ContainersLabels.Hashtbl.hash : 'a -> int
   Containers.Hashtbl.seeded_hash : int -> 'a -> int
   ContainersLabels.Hashtbl.seeded_hash : int -> 'a -> int
   CCFun.const : 'a -> 'b -> 'a
-  CCShimsFun_.const : 'a -> 'b -> 'a
 
   $ dowsindex search --index index.db containers "int -> int -> int -> int"
   Containers.Hashtbl.hash : 'a -> int
@@ -37,7 +24,6 @@ Some initial basic tests.
   Containers.Hashtbl.hash_param : int -> int -> 'a -> int
   ContainersLabels.Hashtbl.hash_param : int -> int -> 'a -> int
   CCFun.const : 'a -> 'b -> 'a
-  CCShimsFun_.const : 'a -> 'b -> 'a
 
   $ dowsindex search --index index.db containers ". int -> int -> 'a"
   CCOrd.equiv : int -> int -> bool
@@ -50,7 +36,6 @@ Some initial basic tests.
   CCMonomorphic.(<) : int -> int -> bool
   CCMonomorphic.(=) : int -> int -> bool
   CCMonomorphic.(>) : int -> int -> bool
-  CCShimsInt_.equal : int -> int -> bool
   CCMonomorphic.(<=) : int -> int -> bool
   CCMonomorphic.(<>) : int -> int -> bool
   CCMonomorphic.(>=) : int -> int -> bool
@@ -62,25 +47,13 @@ Some initial basic tests.
   ContainersLabels.(>=) : int -> int -> bool
   Containers.max : int -> int -> int
   Containers.min : int -> int -> int
-  CCShimsInt_.add : int -> int -> int
-  CCShimsInt_.div : int -> int -> int
-  CCShimsInt_.mul : int -> int -> int
-  CCShimsInt_.rem : int -> int -> int
-  CCShimsInt_.sub : int -> int -> int
   CCMonomorphic.max : int -> int -> int
   CCMonomorphic.min : int -> int -> int
-  CCShimsInt_.logor : int -> int -> int
-  CCShimsInt_.logand : int -> int -> int
-  CCShimsInt_.logxor : int -> int -> int
   Containers.compare : int -> int -> int
-  CCShimsInt_.compare : int -> int -> int
   ContainersLabels.max : int -> int -> int
   ContainersLabels.min : int -> int -> int
   CCMonomorphic.compare : int -> int -> int
-  CCShimsInt_.shift_left : int -> int -> int
-  CCShimsInt_.shift_right : int -> int -> int
   ContainersLabels.compare : int -> int -> int
-  CCShimsInt_.shift_right_logical : int -> int -> int
   CCInt.random_range : int -> int -> t random_gen
   CCSeq.(--) : int -> int -> int t
   CCList.(--) : int -> int -> int t
@@ -93,39 +66,34 @@ Some initial basic tests.
   CCList.range' : int -> int -> int t
   CCSeq.Infix.(--) : int -> int -> int t
   CCList.Infix.(--) : int -> int -> int t
-  CCListLabels.(--) : int -> int -> int t
   CCSeq.Infix.(--^) : int -> int -> int t
   CCArray.Infix.(--) : int -> int -> int t
   CCArrayLabels.(--) : int -> int -> int t
   CCList.Infix.(--^) : int -> int -> int t
-  CCListLabels.(--^) : int -> int -> int t
   CCListLabels.range : int -> int -> int t
   CCRandom.int_range : int -> int -> int t
   CCArray.Infix.(--^) : int -> int -> int t
   CCArrayLabels.(--^) : int -> int -> int t
   CCListLabels.range' : int -> int -> int t
-  CCListLabels.Infix.(--) : int -> int -> int t
   CCArrayLabels.Infix.(--) : int -> int -> int t
-  CCListLabels.Infix.(--^) : int -> int -> int t
   CCArrayLabels.Infix.(--^) : int -> int -> int t
   CCVector.(--) : int -> int -> (int, 'mut) t
   CCVector.(--^) : int -> int -> (int, 'mut) t
   CCRandom.split_list : int -> len:int -> int list option t
+  CCListLabels.(--) : int -> int -> int CCList.t
+  CCListLabels.(--^) : int -> int -> int CCList.t
+  CCListLabels.Infix.(--) : int -> int -> int CCList.t
+  CCListLabels.Infix.(--^) : int -> int -> int CCList.t
   CCFormat.print_break : int -> int -> unit
   CCFormat.print_tbreak : int -> int -> unit
   CCFormat.set_geometry : max_indent:int -> margin:int -> unit
   CCFormat.safe_set_geometry : max_indent:int -> margin:int -> unit
   CCFun.id : 'a -> 'a
-  CCShimsFun_.id : 'a -> 'a
   CCFun.opaque_identity : 'a -> 'a
   CCArray.make : int -> 'a -> 'a array
   CCArray.create : int -> 'a -> 'a array
   CCArrayLabels.make : int -> 'a -> 'a array
-  CCShimsArray_.make : int -> 'a -> 'a array
   CCArrayLabels.create : int -> 'a -> 'a array
-  CCShimsArray_.create : int -> 'a -> 'a array
-  CCShimsArrayLabels_.make : int -> 'a -> 'a array
-  CCShimsArrayLabels_.create : int -> 'a -> 'a array
   Containers.Hashtbl.hash : 'a -> int
   ContainersLabels.Hashtbl.hash : 'a -> int
   Containers.Hashtbl.seeded_hash : int -> 'a -> int
@@ -138,6 +106,7 @@ Some initial basic tests.
   CCParse.pure : 'a -> 'a t
   CCRef.create : 'a -> 'a t
   CCSeq.return : 'a -> 'a t
+  CCAtomic.make : 'a -> 'a t
   CCList.return : 'a -> 'a t
   CCOption.pure : 'a -> 'a t
   CCOption.some : 'a -> 'a t
@@ -166,7 +135,6 @@ Some initial basic tests.
   CCVector.create_with : ?capacity:int -> 'a -> ('a, rw) t
   CCPair.dup : 'a -> 'a * 'a
   CCFun.const : 'a -> 'b -> 'a
-  CCShimsFun_.const : 'a -> 'b -> 'a
   CCString.is_sub : sub:string -> int -> string -> int -> sub_len:int -> bool
   CCStringLabels.is_sub :
   sub:string -> sub_pos:int -> string -> pos:int -> sub_len:int -> bool
@@ -182,6 +150,7 @@ Some initial basic tests.
   CCString.unsafe_blit : string -> int -> bytes -> int -> int -> unit
   CCStringLabels.unsafe_blit :
   src:string -> src_pos:int -> dst:bytes -> dst_pos:int -> len:int -> unit
+  CCByte_buffer.append_subbytes : t -> bytes -> int -> int -> unit
   CCFormat.pp_print_break : formatter -> int -> int -> unit
   CCFormat.pp_print_tbreak : formatter -> int -> int -> unit
   CCFormat.pp_set_geometry : formatter -> max_indent:int -> margin:int -> unit
@@ -193,17 +162,12 @@ Some initial basic tests.
   CCString.blit : t -> int -> Bytes.t -> int -> int -> unit
   CCStringLabels.blit :
   src:t -> src_pos:int -> dst:Bytes.t -> dst_pos:int -> len:int -> unit
+  CCByte_buffer.append_substring : t -> string -> int -> int -> unit
   CCPair.swap : 'a * 'b -> 'b * 'a
   CCArray.make_matrix : int -> int -> 'a -> 'a array array
   CCArray.create_matrix : int -> int -> 'a -> 'a array array
   CCArrayLabels.make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-  CCShimsArray_.make_matrix : int -> int -> 'a -> 'a array array
   CCArrayLabels.create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-  CCShimsArray_.create_matrix : int -> int -> 'a -> 'a array array
-  CCShimsArrayLabels_.make_matrix :
-  dimx:int -> dimy:int -> 'a -> 'a array array
-  CCShimsArrayLabels_.create_matrix :
-  dimx:int -> dimy:int -> 'a -> 'a array array
   Containers.Hashtbl.hash_param : int -> int -> 'a -> int
   ContainersLabels.Hashtbl.hash_param : int -> int -> 'a -> int
   Containers.Hashtbl.seeded_hash_param : int -> int -> int -> 'a -> int
@@ -214,8 +178,6 @@ Some initial basic tests.
   CCMap.Make.singleton : key -> 'a -> 'a t
   CCArray.sub : 'a array -> int -> int -> 'a array
   CCArrayLabels.sub : 'a array -> pos:int -> len:int -> 'a array
-  CCShimsArray_.sub : 'a array -> int -> int -> 'a array
-  CCShimsArrayLabels_.sub : 'a array -> pos:int -> len:int -> 'a array
   CCVector.slice_iter : ('a, 'b) t -> int -> int -> 'a iter
   CCArray.swap : 'a t -> int -> int -> unit
   CCArrayLabels.swap : 'a t -> int -> int -> unit
@@ -230,6 +192,7 @@ Some initial basic tests.
   f:('a -> char -> char -> 'a) -> init:'a -> string -> string -> 'a
   CCString.fold : ('a -> char -> 'a) -> 'a -> t -> 'a
   CCStringLabels.fold : f:('a -> char -> 'a) -> init:'a -> t -> 'a
+  CCByte_buffer.fold_left : ('a -> char -> 'a) -> 'a -> t -> 'a
   CCString.foldi : ('a -> int -> char -> 'a) -> 'a -> t -> 'a
   CCStringLabels.foldi : f:('a -> int -> char -> 'a) -> 'a -> t -> 'a
   CCSet.S.fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
@@ -241,53 +204,39 @@ Some initial basic tests.
   CCOpt.get_or : default:'a -> 'a t -> 'a
   CCOption.value : 'a t -> default:'a -> 'a
   CCOption.get_or : default:'a -> 'a t -> 'a
+  CCAtomic.exchange : 'a t -> 'a -> 'a
   CCResult.get_or : ('a, 'b) t -> default:'a -> 'a
   CCFun.tap : ('a -> 'b) -> 'a -> 'a
   CCList.assq : 'a -> ('a * 'b) list -> 'b
   CCListLabels.assq : 'a -> ('a * 'b) list -> 'b
-  CCShimsList_.assq : 'a -> ('a * 'b) list -> 'b
-  CCShimsList_.assoc : 'a -> ('a * 'b) list -> 'b
   Containers.Hashtbl.find : ('a, 'b) t -> 'a -> 'b
   ContainersLabels.Hashtbl.find : ('a, 'b) t -> 'a -> 'b
   CCFun.(@@) : ('a -> 'b) -> 'a -> 'b
   CCFun.(|>) : 'a -> ('a -> 'b) -> 'b
   CCFun.Infix.(@@) : ('a -> 'b) -> 'a -> 'b
   CCFun.Infix.(|>) : 'a -> ('a -> 'b) -> 'b
+  CCAtomic.compare_and_set : 'a t -> 'a -> 'a -> bool
   CCArray.memq : 'a -> 'a array -> bool
-  CCShimsArray_.mem : 'a -> 'a array -> bool
   CCArrayLabels.memq : 'a -> set:'a array -> bool
-  CCShimsArray_.memq : 'a -> 'a array -> bool
-  CCShimsArrayLabels_.mem : 'a -> set:'a array -> bool
-  CCShimsArrayLabels_.memq : 'a -> set:'a array -> bool
   CCList.memq : 'a -> 'a list -> bool
-  CCShimsList_.mem : 'a -> 'a list -> bool
   CCListLabels.memq : 'a -> set:'a list -> bool
-  CCShimsList_.memq : 'a -> 'a list -> bool
   CCList.mem_assq : 'a -> ('a * 'b) list -> bool
   CCListLabels.mem_assq : 'a -> map:('a * 'b) list -> bool
-  CCShimsList_.mem_assq : 'a -> ('a * 'b) list -> bool
-  CCShimsList_.mem_assoc : 'a -> ('a * 'b) list -> bool
   Containers.Hashtbl.mem : ('a, 'b) t -> 'a -> bool
   ContainersLabels.Hashtbl.mem : ('a, 'b) t -> 'a -> bool
   CCFun.negate : ('a -> bool) -> 'a -> bool
-  CCShimsFun_.negate : ('a -> bool) -> 'a -> bool
   CCHash.combine : 'a t -> hash -> 'a -> hash
   CCOrd.(<?>) : int -> 'a t * 'a * 'a -> int
   CCOrd.Infix.(<?>) : int -> 'a t * 'a * 'a -> int
   CCList.cons : 'a -> 'a list -> 'a list
-  CCShimsList_.cons : 'a -> 'a list -> 'a list
   CCList.intersperse : 'a -> 'a list -> 'a list
   CCListLabels.intersperse : x:'a -> 'a list -> 'a list
   Containers.Hashtbl.find_all : ('a, 'b) t -> 'a -> 'b list
   ContainersLabels.Hashtbl.find_all : ('a, 'b) t -> 'a -> 'b list
   CCList.remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
   CCListLabels.remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
-  CCShimsList_.remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
-  CCShimsList_.remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
   CCOpt.if_ : ('a -> bool) -> 'a -> 'a option
   CCOption.if_ : ('a -> bool) -> 'a -> 'a option
-  CCShimsList_.assq_opt : 'a -> ('a * 'b) list -> 'b option
-  CCShimsList_.assoc_opt : 'a -> ('a * 'b) list -> 'b option
   Containers.Hashtbl.find_opt : ('a, 'b) t -> 'a -> 'b option
   ContainersLabels.Hashtbl.find_opt : ('a, 'b) t -> 'a -> 'b option
   CCList.assq_opt : 'a -> ('a * 'b) t -> 'b option
@@ -332,18 +281,14 @@ Some initial basic tests.
   'acc -> ('acc * string) t
   CCArray.set : 'a array -> int -> 'a -> unit
   CCArrayLabels.set : 'a array -> int -> 'a -> unit
-  CCShimsArray_.set : 'a array -> int -> 'a -> unit
   CCArray.unsafe_set : 'a array -> int -> 'a -> unit
-  CCShimsArrayLabels_.set : 'a array -> int -> 'a -> unit
   CCArrayLabels.unsafe_set : 'a array -> int -> 'a -> unit
-  CCShimsArray_.unsafe_set : 'a array -> int -> 'a -> unit
-  CCShimsArrayLabels_.unsafe_set : 'a array -> int -> 'a -> unit
   CCArray.fill : 'a array -> int -> int -> 'a -> unit
   CCArrayLabels.fill : 'a array -> pos:int -> len:int -> 'a -> unit
-  CCShimsArray_.fill : 'a array -> int -> int -> 'a -> unit
-  CCShimsArrayLabels_.fill : 'a array -> pos:int -> len:int -> 'a -> unit
   CCVector.set : ('a, rw) t -> int -> 'a -> unit
+  CCVector.insert : ('a, rw) t -> int -> 'a -> unit
   CCVector.ensure_with : init:'a -> ('a, rw) t -> int -> unit
+  CCVector.resize_with_init : ('a, rw) t -> init:'a -> int -> unit
   CCHashtbl.decr : ?by:int -> ('a, int) Hashtbl.t -> 'a -> unit
   CCHashtbl.incr : ?by:int -> ('a, int) Hashtbl.t -> 'a -> unit
   CCHashtbl.Poly.decr : ?by:int -> ('a, int) Hashtbl.t -> 'a -> unit
@@ -375,6 +320,7 @@ Some initial basic tests.
   CCHashtbl.S.add_list : 'a list t -> key -> 'a -> unit
   CCHashtbl.Make.add_list : 'a list t -> key -> 'a -> unit
   CCFormat.output : t -> 'a printer -> 'a -> unit
+  CCAtomic.set : 'a t -> 'a -> unit
   CCList.Ref.push : 'a t -> 'a -> unit
   CCListLabels.Ref.push : 'a t -> 'a -> unit
   Containers.Hashtbl.remove : ('a, 'b) t -> 'a -> unit
@@ -393,7 +339,6 @@ Some initial basic tests.
   CCPair.fold : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
   CCPair.merge : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
   CCFun.uncurry : ('a -> 'b -> 'c) -> 'a * 'b -> 'c
-  CCShimsFun_.flip : ('a -> 'b -> 'c) -> 'b -> 'a -> 'c
   CCPair.snd_map : ('a -> 'b) -> 'c * 'a -> 'b
   CCList.sublists_of_len :
   ?last:('a list -> 'a list option) ->
@@ -415,9 +360,6 @@ Some initial basic tests.
   CCArray.blit : 'a array -> int -> 'a array -> int -> int -> unit
   CCArrayLabels.blit :
   src:'a array -> src_pos:int -> dst:'a array -> dst_pos:int -> len:int -> unit
-  CCShimsArray_.blit : 'a array -> int -> 'a array -> int -> int -> unit
-  CCShimsArrayLabels_.blit :
-  src:'a array -> src_pos:int -> dst:'a array -> dst_pos:int -> len:int -> unit
   CCPair.map_same2 : ('a -> 'b -> 'c) -> 'a * 'a -> 'b * 'b -> 'c * 'c
   CCPair.(>>>) : ('a -> 'b) -> 'c * 'a -> 'c * 'b
   CCPair.map_snd : ('a -> 'b) -> 'c * 'a -> 'c * 'b
@@ -426,17 +368,9 @@ Some initial basic tests.
   CCArray.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   CCArray.fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
   CCArrayLabels.fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b array -> 'a
-  CCShimsArray_.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   CCArrayLabels.fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
-  CCShimsArray_.fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
-  CCShimsArrayLabels_.fold_left :
-  f:('a -> 'b -> 'a) -> init:'a -> 'b array -> 'a
-  CCShimsArrayLabels_.fold_right :
-  f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
   CCList.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
   CCListLabels.fold_left : f:('a -> 'b -> 'a) -> init:'a -> 'b list -> 'a
-  CCShimsList_.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b list -> 'a
-  CCShimsList_.fold_right : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
   CCOpt.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCSeq.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCArray.fold : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
@@ -582,8 +516,6 @@ Some initial basic tests.
   f:('acc -> 'a -> 'acc * 'b) -> init:'acc -> 'a list -> 'acc * 'b list
   CCListLabels.fold_left_map :
   f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b list -> 'a * 'c list
-  CCShimsList_.fold_left_map :
-  ('a -> 'b -> 'a * 'c) -> 'a -> 'b list -> 'a * 'c list
   CCList.fold_map_i :
   ('acc -> int -> 'a -> 'acc * 'b) -> 'acc -> 'a list -> 'acc * 'b list
   CCListLabels.fold_map_i :
@@ -640,12 +572,8 @@ Some initial basic tests.
   CCList.fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
   CCListLabels.fold_left2 :
   f:('a -> 'b -> 'c -> 'a) -> init:'a -> 'b list -> 'c list -> 'a
-  CCShimsList_.fold_left2 :
-  ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   CCListLabels.fold_right2 :
   f:('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> init:'c -> 'c
-  CCShimsList_.fold_right2 :
-  ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
   CCList.fold_on_map :
   f:('a -> 'b) -> reduce:('acc -> 'b -> 'acc) -> 'acc -> 'a list -> 'acc
   CCListLabels.fold_on_map :

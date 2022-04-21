@@ -5,6 +5,7 @@ type t = {
   mutable arrows : ArrowTerm.problem list ;
 }
 
+
 let make (tyenv : Type.Env.t) = {
   tyenv ;
   vars = Subst.empty ;
@@ -16,6 +17,7 @@ let copy { tyenv ; vars ; tuples ; arrows } =
   { tyenv ; vars ; tuples ; arrows }
 
 let vars e = e.vars
+let tyenv t = t.tyenv
 let gen e = Variable.Gen.gen e.tyenv.var_gen
 let add e v ty = e.vars <- Subst.add v ty e.vars
 

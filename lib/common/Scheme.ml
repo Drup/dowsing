@@ -28,15 +28,15 @@ let of_string env str =
   let vars = CCList.sort_uniq ~cmp:Variable.compare vars in
   { vars ; ty }
 
-let to_type t =
+let to_type env t =
   let subst =
     t.vars
     |> CCList.map (fun var ->
       var,
-      Type.constr (LongIdent.of_list [ Fmt.to_to_string Variable.pp' var ]) [||])
+      Type.constr env (LongIdent.of_list [ Variable.to_string var ]) [||])
     |> Variable.Map.of_list
   in
-  Subst.apply subst t.ty
+  Subst.apply env subst t.ty
 
 let pp ppf t =
   Fmt.pf ppf "@[<2>%a.@ %a@]"

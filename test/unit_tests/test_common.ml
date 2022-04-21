@@ -7,9 +7,9 @@ let test_cnt = ref 0
 let add_tests name tests =
   all_tests := ! all_tests @ [ name, tests ]
 
-let int = Type.constr (LongIdent.Lident "int") [||]
-let (-->) = Type.arrow
-let tuple tys = Type.(tuple @@ NSet.of_list tys)
+let int = Type.constr env (LongIdent.Lident "int") [||]
+let (-->) = Type.arrow env
+let tuple tys = Type.(tuple env @@ NSet.of_list tys)
 
 (* Type.of_string *)
 

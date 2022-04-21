@@ -53,7 +53,7 @@ let to_string =
     in
     aux
   in
-  fun ?(pref = true) var ->
+  fun var ->
     let start_chr =
       match Namespace.get var with
       | Data -> 'a'
@@ -64,7 +64,6 @@ let to_string =
       |> base_26 start_chr
       |> String.of_list
     in
-    if pref then "'" ^ str else str
+    str
 
-let pp  = Fmt.of_to_string @@ to_string ~pref:false
-let pp' = Fmt.of_to_string @@ to_string ~pref:true
+let pp  = Fmt.of_to_string @@ to_string

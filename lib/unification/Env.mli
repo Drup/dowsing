@@ -7,6 +7,8 @@ val copy : t -> t
 val gen : t -> Variable.t
 val vars : t -> Subst.t
 
+val tyenv : t -> Type.Env.t
+
 type representative =
   | V of Variable.t
   | E of Variable.t * Type.t

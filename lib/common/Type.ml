@@ -109,6 +109,7 @@ module rec Base : sig
 
   type t =
     | Var of Variable.t
+    | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     | Arrow of NSet.t * t
     | Tuple of NSet.t
@@ -125,20 +126,21 @@ end = struct
 
   type t =
     | Var of Variable.t
+    | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     | Arrow of NSet.t * t
     | Tuple of NSet.t
     | Other of Int.t
 
   let kind : t -> Kind.t = function
-    | Var _ -> Var
+    | Var _ | FrozenVar _ -> Var
     | Constr _ -> Constr
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
     | Other _ -> Other
 
   let kind' : t -> Kind'.t = function
-    | Var _ -> Var
+    | Var _ | FrozenVar _ -> Var
     | Constr (lid, _) -> Constr lid
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
@@ -297,16 +299,26 @@ module Env = struct
 
 end
 
+let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
+
 (* smart constructors *)
 
-let var v = Var v
+let var env v = hashcons env @@ Var v
 
-let constr lid = function
+let constr env lid params =
+  hashcons env @@ match params with
   | [||] when lid = LongIdent.unit -> Tuple NSet.empty
   | params -> Constr (lid, params)
 
-let arrow param ret =
-  match param, ret with
+let arrows env params ret =
+  hashcons env @@ match ret with
+  | Arrow (params', ret) ->
+    Arrow (NSet.union params params', ret)
+  | _->
+    Arrow (params, ret)
+
+let arrow env param ret =
+  hashcons env @@ match param, ret with
   | Tuple elts, Arrow (params, ret) ->
       Arrow (NSet.union elts params, ret)
   | _, Arrow (params, ret) ->
@@ -316,38 +328,37 @@ let arrow param ret =
   | _, _ ->
       Arrow (NSet.singleton param, ret)
 
-let tuple elts =
+let tuple env elts =
   let aux = function
     | Tuple elts -> elts
     | elt -> NSet.singleton elt
   in
   let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
-  match NSet.is_singleton elts with
+  hashcons env @@ match NSet.is_singleton elts with
   | Some elt -> elt
   | None -> Tuple elts
 
-let other x =
-  Other (CCHash.poly x)
+let other env x =
+  hashcons env @@ Other (CCHash.poly x)
 
 
 (* freezing *)
 
-let rec freeze_variables_internal hc (t : t) = let t' = match t with
-  | Var v -> 
-    let lid = LongIdent.Lident ("frozen_variable"^string_of_int (Variable.as_int v)) in 
-    constr lid [||]
-  | Constr (lid, t) -> constr lid (Array.map (freeze_variables_internal hc) t)
-  | Arrow (args, t) -> Arrow (NSet.map (freeze_variables_internal hc) args, freeze_variables_internal hc t)
-  | Tuple ts -> tuple (NSet.map (freeze_variables_internal hc) ts)
-  | Other _ -> t
-  in Hashcons.hashcons hc t'
-
-  let freeze_variables t = freeze_variables_internal (Hashcons.make ()) t
-
+let rec freeze_variables env (t : t) = match t with
+  | Var v -> FrozenVar v
+  | Constr (lid, t) -> constr env lid (Array.map (freeze_variables env) t)
+  | Arrow (args, t) ->
+    arrows env
+      (NSet.map (freeze_variables env) args)
+      (freeze_variables env t)
+  | Tuple ts ->
+    tuple env (NSet.map (freeze_variables env) ts)
+  | Other _ | FrozenVar _ ->
+    hashcons env t
 
 (* import functions *)
 
-let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
+let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
   match out_ty with
   | Otyp_var (_, name) ->
       var @@ Some name
@@ -356,15 +367,15 @@ let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> Iter.to_array
-      |> constr @@ LongIdent.of_outcometree id
+      |> constr env @@ LongIdent.of_outcometree id
   | Otyp_arrow (_, param, ret) ->
-      arrow (of_outcometree param) (of_outcometree ret)
+      arrow env (of_outcometree param) (of_outcometree ret)
   | Otyp_tuple elts ->
       elts
       |> Iter.of_list
       |> Iter.map of_outcometree
       |> NSet.of_iter
-      |> tuple
+      |> tuple env
   | Otyp_alias (out_ty, _) ->
       of_outcometree out_ty
   (* not handled *)
@@ -381,9 +392,9 @@ let of_outcometree of_outcometree var (out_ty : Outcometree.out_type) =
   | Otyp_manifest _
   | Otyp_record _
   | Otyp_sum _ ->
-      other out_ty
+      other env out_ty
 
-let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
+let of_parsetree of_parsetree env var (parse_ty : Parsetree.core_type) =
   match parse_ty.ptyp_desc with
   | Ptyp_any ->
       var None
@@ -394,15 +405,15 @@ let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
       |> Iter.of_list
       |> Iter.map of_parsetree
       |> Iter.to_array
-      |> constr id.txt
+      |> constr env id.txt
   | Ptyp_arrow (_, param, ret) ->
-      arrow (of_parsetree param) (of_parsetree ret)
+      arrow env (of_parsetree param) (of_parsetree ret)
   | Ptyp_tuple elts ->
       elts
       |> Iter.of_list
       |> Iter.map of_parsetree
       |> NSet.of_iter
-      |> tuple
+      |> tuple env
   | Ptyp_alias (parse_ty, _)
   | Ptyp_poly (_, parse_ty) ->
       of_parsetree parse_ty
@@ -412,28 +423,26 @@ let of_parsetree of_parsetree var (parse_ty : Parsetree.core_type) =
   | Ptyp_variant _
   | Ptyp_package _
   | Ptyp_extension _ ->
-      other parse_ty
+      other env parse_ty
 
 let var' bdgs (env : Env.t) = function
   | None ->
-      var @@ Variable.Gen.gen env.var_gen
+      var env @@ Variable.Gen.gen env.var_gen
   | Some name ->
       match String.HMap.get bdgs name with
       | Some v ->
-          var v
+          var env v
       | None ->
           let v = Variable.Gen.gen env.var_gen in
           String.HMap.add bdgs name v ;
-          var v
+          var env v
 
 let of_outcometree', of_parsetree' =
   let wrap fn (env : Env.t) x =
     let bdgs = String.HMap.create 17 in
     let var = var' bdgs env in
     let rec fn' x =
-      x
-      |> fn fn' var
-      |> Hashcons.hashcons env.hcons
+      fn fn' env var x
     in
     bdgs, fn' x
   in
@@ -493,7 +502,7 @@ let rec iter_vars t k =
   match t with
   | Other _ ->
       ()
-  | Var var ->
+  | Var var | FrozenVar var ->
       k var
   | Constr (_, params) ->
       CCArray.iter (fun t -> iter_vars t k) params
@@ -507,7 +516,9 @@ let rec iter_vars t k =
 
 let rec pp ppf = function
   | Var var ->
-      Variable.pp' ppf var
+    Fmt.pf ppf "'%a" Variable.pp var
+  | FrozenVar var ->
+    Fmt.pf ppf "^%a" Variable.pp var
   | Constr (lid, [||]) ->
       LongIdent.pp ppf lid
   | Constr (lid, params) ->
@@ -526,7 +537,7 @@ let rec pp ppf = function
 
 and pp_parens ppf ty =
   match ty with
-  | Var _ | Other _ | Constr _ ->
+  | Var _ | FrozenVar _ | Other _ | Constr _ ->
       pp ppf ty
   | Arrow _ ->
       Fmt.parens pp ppf ty

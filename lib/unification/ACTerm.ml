@@ -10,12 +10,12 @@ type problem = {left : t ; right : t }
 
 let make_problem left right = {left;right}
 
-let as_tuple t : Type.t =
+let as_tuple env t : Type.t =
   match t with
-  | [|x|] -> Pure.as_typexpr x
+  | [|x|] -> Pure.as_typexpr env x
   | t ->
-    Type.tuple
-      (t |> Iter.of_array |> Iter.map Pure.as_typexpr |> Type.NSet.of_iter)
+    Type.tuple env
+      (t |> Iter.of_array |> Iter.map (Pure.as_typexpr env) |> Type.NSet.of_iter)
 
 let pp ppf t =
   match t with
