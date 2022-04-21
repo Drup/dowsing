@@ -49,6 +49,7 @@ module rec Base : sig
 
   type t = private
     | Var of Variable.t
+    | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     | Arrow of NSet.t * t
     | Tuple of NSet.t
@@ -118,14 +119,15 @@ end
 
 (* smart constructors *)
 
-val var : Variable.t -> t
-val constr : LongIdent.t -> t Array.t -> t
-val arrow : t -> t -> t
-val tuple : NSet.t -> t
+val var : Env.t -> Variable.t -> t
+val constr : Env.t -> LongIdent.t -> t Array.t -> t
+val arrow : Env.t -> t -> t -> t
+val arrows : Env.t -> NSet.t -> t -> t
+val tuple : Env.t -> NSet.t -> t
 
 (* freeze *)
 
-val freeze_variables : t -> t
+val freeze_variables : Env.t -> t -> t
 
 (* importation functions *)
 

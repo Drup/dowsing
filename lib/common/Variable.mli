@@ -29,5 +29,5 @@ module Gen : sig
 
 end
 
+val to_string : t -> string
 val pp : t Fmt.t [@@ocaml.toplevel_printer]
-val pp' : t Fmt.t

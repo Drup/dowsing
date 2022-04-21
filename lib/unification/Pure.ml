@@ -9,9 +9,9 @@ let var x = Var x
 let constant p = Constant p
 
 let pp ppf = function
-  | Var i -> Variable.pp' ppf i
+  | Var i -> Variable.pp ppf i
   | Constant p -> LongIdent.pp ppf p
 
-let as_typexpr = function
-  | Var v -> Type.var v
-  | Constant c -> Type.constr c [||]
+let as_typexpr (env : Type.Env.t) = function
+  | Var v -> Type.var env v
+  | Constant c -> Type.constr env c [||]

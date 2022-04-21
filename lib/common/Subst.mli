@@ -3,7 +3,7 @@ type t = Type.t Variable.Map.t
 val empty : t
 val add : Variable.t -> Type.t -> t -> t
 
-val apply : t -> Type.t -> Type.t
+val apply : Type.Env.t -> t -> Type.t -> Type.t
 val simplify : Variable.Set.t -> t -> t
 
 val size : t -> Int.t

@@ -11,7 +11,7 @@ let typ =
 
 let scheme =
   let parse str =
-    try Ok Scheme.(to_type @@ of_string env str)
+    try Ok Scheme.(to_type env @@ of_string env str)
     with Invalid_argument _ -> Error (`Msg "ill-formed type")
   in
   Arg.conv (parse, Type.pp)

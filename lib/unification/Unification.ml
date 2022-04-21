@@ -128,6 +128,8 @@ let rec process_stack env (stack:Stack.t) : return =
 
 and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   match t1, t2 with
+  | _ when t1 == t2 ->
+    process_stack env stack    
   (* Decomposition rule
      (s₁,...,sₙ) p ≡ (t₁,...,tₙ) p  --> ∀i, sᵢ ≡ tᵢ
      when p is a type constructor.
@@ -166,8 +168,8 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
      Terms are incompatible
   *)
   | Constr _, Constr _  (* if same constructor, already checked above *)
-  | (Constr _ | Tuple _ | Arrow _ | Other _),
-    (Constr _ | Tuple _ | Arrow _ | Other _)
+  | (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
+    (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _)
     ->
     FailUnif (t1, t2)
 
@@ -199,7 +201,7 @@ and variable_abstraction env stack t =
   | Var i -> stack, Pure.var i
   | Constr (p, [||]) -> stack, Pure.constant p
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ ->
+  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ ->
     let var = Env.gen env in
     let stack = Stack.push_quasi_solved stack var t in
     stack, Pure.var var
@@ -207,7 +209,8 @@ and variable_abstraction env stack t =
 and insert_var env stack x s =
   match s with
   | Type.Constr (_, [||])
-  | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _ ->
+  | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _ | Type.FrozenVar _
+    ->
     quasi_solved env stack x s
   | Type.Var y ->
     non_proper env stack x y
@@ -241,15 +244,15 @@ and non_proper env stack (x:Variable.t) (y:Variable.t) =
     process_stack env stack
   | V x', (E (y',_) | V y')
   | E (y',_), V x' ->
-    let* () = attach env x' (Type.var y') in
+    let* () = attach env x' (Type.var (Env.tyenv env) y') in
     process_stack env stack
   | E (x', s), E (y', t) ->
     if Measure.make NodeCount s < Measure.make NodeCount t then begin
-      let* () = attach env y' (Type.var x') in
+      let* () = attach env y' (Type.var (Env.tyenv env) x') in
       insert_rec env stack s t
     end
     else begin
-      let* () = attach env x' (Type.var y') in
+      let* () = attach env x' (Type.var (Env.tyenv env) y') in
       insert_rec env stack t s
     end
 
@@ -266,7 +269,7 @@ let insert_tuple_solution env sol =
   let exception Bail of return in
   try
     let f (k,v) =
-      match insert_var env k (ACTerm.as_tuple v) with
+      match insert_var env k (ACTerm.as_tuple (Env.tyenv env) v) with
       | Done -> ()
       | r -> raise (Bail r)
     in
@@ -298,7 +301,9 @@ and solve_arrow_problem env0 {ArrowTerm. left; right } =
          (ACTerm.add left.args (Pure.var var_arg_left)) right.args;
        let* () =
          insert env left.ret
-           (Type.arrow (Type.var var_arg_left) (Type.var var_ret_left))
+           (Type.arrow (Env.tyenv env)
+              (Type.var (Env.tyenv env) var_arg_left)
+              (Type.var (Env.tyenv env) var_ret_left))
        in
        insert_var env var_ret_left right.ret);
     (fun env () -> 
@@ -307,7 +312,9 @@ and solve_arrow_problem env0 {ArrowTerm. left; right } =
           left.args (ACTerm.add right.args (Pure.var var_arg_right));
        let* () =
          insert env right.ret
-           (Type.arrow (Type.var var_arg_right) (Type.var var_ret_right))
+           (Type.arrow (Env.tyenv env)
+              (Type.var (Env.tyenv env) var_arg_right)
+              (Type.var (Env.tyenv env) var_ret_right))
        in
        insert_var env var_ret_right left.ret);
     (fun env () -> 
@@ -318,12 +325,20 @@ and solve_arrow_problem env0 {ArrowTerm. left; right } =
        Env.push_tuple env
          left.args (ACTerm.add left.args (Pure.var var_arg_right));
        let* () =
-         insert env left.ret Type.(arrow (var var_arg_left) (var var_ret_left))
+         insert env left.ret
+           (Type.arrow (Env.tyenv env)
+              (Type.var (Env.tyenv env) var_arg_left)
+              (Type.var (Env.tyenv env) var_ret_left))
        in
        let* () =
-         insert env right.ret Type.(arrow (var var_arg_right) (var var_ret_right))
+         insert env right.ret
+           (Type.arrow (Env.tyenv env)
+              (Type.var (Env.tyenv env) var_arg_right)
+              (Type.var (Env.tyenv env) var_ret_right))
        in
-       insert env (Type.var var_ret_left) (Type.var var_ret_right));
+       insert env
+         (Type.var (Env.tyenv env) var_ret_left)
+         (Type.var (Env.tyenv env) var_ret_right));
   ]
   in
   potentials
@@ -384,17 +399,17 @@ let unify (env : Type.Env.t) t1 t2 =
 let unifiable (env : Type.Env.t) t1 t2 =
   not @@ Iter.is_empty @@ unifiers env t1 t2
 
-  type ord = 
+type ord = 
   | Uncomparable
   | Smaller
   | Bigger
   | Equal
-  
-  let compare env t1 t2 = 
-    let b1 = unifiable env (Type.freeze_variables t1) t2 
-    and b2 = unifiable env t1 (Type.freeze_variables t2)
-    in match b1, b2 with
-      | true , true -> Equal
-      | false , false -> Uncomparable
-      | true , false -> Smaller
-      | false , true -> Bigger
+
+let compare env t1 t2 = 
+  let b1 = unifiable env (Type.freeze_variables env t1) t2 
+  and b2 = unifiable env t1 (Type.freeze_variables env t2)
+  in match b1, b2 with
+  | true , true -> Equal
+  | false , false -> Uncomparable
+  | true , false -> Smaller
+  | false , true -> Bigger
