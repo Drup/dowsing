@@ -1,5 +1,3 @@
-let env = Type.Env.make Query
-
 let all_tests = ref []
 let test_cnt = ref 0
 let add_tests name tests =
@@ -72,27 +70,41 @@ let neg_tests = [
   "'a f * a", "'x g * a" ;
   "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   "'a -> 'a -> a", "'x * b -> 'x" ;
+  "'a * float * 'a", "int * 'a * 'a" ;
   (* require occur check *)
   "'X -> 'X", "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t" ;
   "'a -> 'a list -> 'a", "'x -> 'x -> 'x" ;
 ]
 
+let slow_tests = [
+  "'A * int list -> unit",
+  "anchor * bitmap * bool * bool * color * color * color * color * color * color * color * color * cursor *  int * int * int * int * int * int * int * int * justification * relief * state * string * string * string -> 'a"
+]
+  
+
 let tests =
-  let make_test res (str1, str2) =
+  let make_test speed res (str1, str2) =
+    let env_query = Type.Env.make Query in
+    let env  = Type.Env.make Data in
     let test () =
-      let ty1 = Type.of_string env str1 in
+      let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Unification.unifiable env ty1 ty2
     in
     incr test_cnt ;
-    Alcotest.test_case (CCInt.to_string ! test_cnt) `Quick test
+    Alcotest.test_case (CCInt.to_string ! test_cnt) speed test
   in
-  CCList.map (make_test true) pos_tests @
-  CCList.map (make_test false) neg_tests
+  CCList.map (make_test `Quick true) pos_tests @
+  CCList.map (make_test `Quick false) neg_tests @
+  CCList.map (make_test `Slow true) slow_tests
 
 let () = add_tests "Unification.unifiable" tests
 
 (* do test *)
 
-let () = Alcotest.run "unification" ! all_tests
+let () = Alcotest.run
+    ~quick_only:true (* Change for slow tests *)
+    ~argv:Sys.argv
+    "unification"
+    !all_tests

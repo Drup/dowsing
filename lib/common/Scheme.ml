@@ -31,9 +31,7 @@ let of_string env str =
 let to_type env t =
   let subst =
     t.vars
-    |> CCList.map (fun var ->
-      var,
-      Type.constr env (LongIdent.of_list [ Variable.to_string var ]) [||])
+    |> CCList.map (fun var -> var, Type.frozen_var env var)
     |> Variable.Map.of_list
   in
   Subst.apply env subst t.ty

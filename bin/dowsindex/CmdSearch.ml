@@ -31,7 +31,7 @@ let main opts =
       else Index.find_with
     in
     let iter_idx =
-      try find idx env opts.ty ?pkgs
+      try find idx env_query opts.ty ?pkgs
       with Not_found -> error "unknown package"
     in
     iter_idx
@@ -70,7 +70,8 @@ let idx_file =
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos ~rev:true 0 (some Convs.scheme) None & info [] ~docv)
+  Arg.(required &
+       pos ~rev:true 0 (some @@ Convs.scheme env_query) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in

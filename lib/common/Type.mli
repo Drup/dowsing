@@ -120,6 +120,7 @@ end
 (* smart constructors *)
 
 val var : Env.t -> Variable.t -> t
+val frozen_var : Env.t -> Variable.t -> t
 val constr : Env.t -> LongIdent.t -> t Array.t -> t
 val arrow : Env.t -> t -> t -> t
 val arrows : Env.t -> NSet.t -> t -> t
