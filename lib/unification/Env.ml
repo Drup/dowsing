@@ -3,18 +3,20 @@ type t = {
   mutable vars : Subst.t ;
   mutable tuples : ACTerm.problem list ;
   mutable arrows : ArrowTerm.problem list ;
+  orig_vars : Variable.Set.t ;
 }
 
 
-let make (tyenv : Type.Env.t) = {
+let make ~(tyenv : Type.Env.t) ~orig_vars = {
   tyenv ;
   vars = Subst.empty ;
   tuples = [] ;
   arrows = [] ;
+  orig_vars ;
 }
 
-let copy { tyenv ; vars ; tuples ; arrows } =
-  { tyenv ; vars ; tuples ; arrows }
+let copy { tyenv ; vars ; tuples ; arrows ; orig_vars } =
+  { tyenv ; vars ; tuples ; arrows ; orig_vars }
 
 let vars e = e.vars
 let tyenv t = t.tyenv
@@ -55,7 +57,7 @@ let is_solved env =
   if CCList.is_empty env.tuples
   && CCList.is_empty env.arrows
   then
-    Some (Subst.simplify Variable.Set.empty env.vars)
+    Some (Subst.simplify env.tyenv env.orig_vars env.vars)
   else
     None
 

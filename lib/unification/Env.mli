@@ -2,7 +2,7 @@
 
 type t
 
-val make : Type.Env.t -> t
+val make : tyenv:Type.Env.t -> orig_vars:Variable.Set.t -> t
 val copy : t -> t
 val gen : t -> Variable.t
 val vars : t -> Subst.t
