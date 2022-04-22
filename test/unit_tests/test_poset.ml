@@ -9,23 +9,21 @@ let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
 (* Tests on graph pp *)
 
+let t s = P.G.V.create @@ Type.of_string e s
+let (-->) n n' = (n,n')
+
 let types_and_results =
-  let string_types =
-    [
-      "'a";
-      "int -> int"
-      (*"int -> 'a" ; "'a -> 'b"; "int * float -> 'a"; "'c -> int"*);
-    ]
-  in
-  let types = CCList.map (Type.of_string e) string_types in
-  let res =
-    [
-      "\n";
-      "'b -> (int -> int)\n"
+  let n1 = t"'a"
+  and n2 = t"int -> int"
+  (* ... *)
+  in 
+  let types = [ n1 ; n2 ] in
+  let expected_edges =
+    [ n1 --> n2 ;
       (*"'a -> (int -> 'c)\n (int -> 'c) -> (int -> int)\n"*);
     ]
   in
-  (types, res)
+  (types, expected_edges)
 
 let string_graph_tests =
   let x = P.init e in
@@ -39,7 +37,7 @@ let string_graph_tests =
   in
   aux types_and_results []
 
-let _string_tests =
+let string_tests =
   let make_test (g, str) =
     let check_graph () =
       let s = Format.asprintf "%a" P.pp g in
@@ -50,7 +48,7 @@ let _string_tests =
   in
   CCList.map make_test string_graph_tests
 
-(*let () = add_tests "String representation" string_tests*)
+let () = add_tests "String representation" string_tests
 
 (* Tests on graph struct *)
 
