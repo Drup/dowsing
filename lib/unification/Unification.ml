@@ -380,7 +380,12 @@ and solve_loop env k =
     end
 
 let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
-  let env0 = Env.make tyenv in
+  let orig_vars =
+    Variable.Set.(union
+                    (of_iter @@ Type.iter_vars t1)
+                    (of_iter @@ Type.iter_vars t2))
+  in
+  let env0 = Env.make ~tyenv ~orig_vars in
   debug (fun m ->
       m {|@[<v>Unify:@ "%a"@ "%a"@]|}
         Type.pp t1

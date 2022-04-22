@@ -57,7 +57,7 @@ let aux opts ?stats0 iter_idx =
   let tbl = ref Measure.Map.empty in
   iter_idx (fun ty ->
     Timer.start timer ;
-    ignore @@ Unification.unifiable env opts.ty ty ;
+    ignore @@ Unification.unifiable env_query opts.ty ty ;
     Timer.stop timer ;
     let time = Timer.get timer in
     let meas = Measure.make opts.meas_kind ty in
@@ -125,7 +125,7 @@ let main opts =
       in
       let iter_idx_filt () =
         iter_idx ()
-        |> Iter.filter @@ Unification.unifiable env opts.ty
+        |> Iter.filter @@ Unification.unifiable env_query opts.ty
       in
       iter_idx, iter_idx_filt
     else
@@ -178,7 +178,8 @@ let idx_file =
 
 let ty =
   let docv = "type" in
-  Arg.(required & pos ~rev:true 0 (some Convs.scheme) None & info [] ~docv)
+  Arg.(required &
+       pos ~rev:true 0 (some @@ Convs.scheme env_query) None & info [] ~docv)
 
 let pkgs =
   let docv = "package" in

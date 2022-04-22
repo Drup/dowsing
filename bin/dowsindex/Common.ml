@@ -1,7 +1,8 @@
 exception Error of String.t
 let error msg = raise @@ Error msg
 
-let env = Convs.env
+let env_query = Type.Env.make Query
+let env_data = Type.Env.make Data
 
 open Cmdliner
 

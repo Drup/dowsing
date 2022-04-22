@@ -28,7 +28,7 @@ module Poset = struct
 
   type to_do = Replace of G.E.t | Add of G.E.t
 
-  exception Type_already_present
+  exception Type_already_present of G.V.t
 
   let add { env; graph; lowest } elt_0 =
     let node_0 = G.V.create elt_0 in
@@ -45,7 +45,7 @@ module Poset = struct
           insert_edges rest
     in
     let already_seen = Edge_set.empty in
-    let get_couples edge =
+    let extend_edges edge =
       let rec aux acc l =
         match l with
         | [] -> acc
@@ -55,8 +55,9 @@ module Poset = struct
     in
     let to_visit = Queue.create () in
     let rec visit already_seen edge =
-      match Unification.compare env elt_0 (G.V.label (G.E.dst edge)) with
-      | Equal -> raise Type_already_present
+      let dst = G.E.dst edge in
+      match Unification.compare env elt_0 (G.V.label dst) with
+      | Equal -> raise (Type_already_present dst)
       | Bigger -> Replace edge :: visit_next already_seen
       | Smaller ->
           let push elt = Queue.push elt to_visit in
@@ -70,10 +71,15 @@ module Poset = struct
           in
           new_edges @ visit_next already_seen
       | Uncomparable ->
-          let push elt = Queue.push elt to_visit in
-          let l = get_couples edge in
-          List.iter push l;
-          visit_next already_seen
+        let l = extend_edges edge in
+        let new_edges = match l with
+            | [] -> [ Add (G.E.create (G.E.src edge) () node_0) ]
+            | _ ->
+              let push elt = Queue.push elt to_visit in
+              List.iter push l;
+              []
+        in
+        new_edges @ visit_next already_seen
     and visit_next already_seen =
       match Queue.take_opt to_visit with
       | None -> []
@@ -86,7 +92,7 @@ module Poset = struct
     try
       insert_edges (visit already_seen (G.E.create lowest () lowest));
       node_0
-    with Type_already_present -> node_0
+    with Type_already_present node -> node
 
   let iter_succ t elt f =
     let rec aux l =
@@ -113,9 +119,15 @@ module Poset = struct
   let copy t = { env = t.env; graph = G.copy t.graph; lowest = t.lowest }
 
   let pp fmt { graph; _ } =
+    let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e) in
     let pp_edge fmt e =
       let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
-      Fmt.pf fmt "%a -> %a" Type.pp_parens s Type.pp_parens d
+      Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
     in
-    Format.fprintf fmt "@[<v>%a@]@." (Fmt.iter G.iter_edges_e pp_edge) graph
+    if G.nb_vertex graph = 0 then
+      Format.fprintf fmt "empty"
+    else
+      Format.fprintf fmt "@[<v 2>Vertices: %a@]@.@[<v2>Edges: %a@]@."
+        (Fmt.iter G.iter_vertex pp_vertex) graph
+        (Fmt.iter G.iter_edges_e pp_edge) graph
 end

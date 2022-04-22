@@ -304,6 +304,7 @@ let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
 (* smart constructors *)
 
 let var env v = hashcons env @@ Var v
+let frozen_var env v = hashcons env @@ FrozenVar v
 
 let constr env lid params =
   hashcons env @@ match params with
@@ -500,9 +501,9 @@ let iter =
 
 let rec iter_vars t k =
   match t with
-  | Other _ ->
+  | Other _ | FrozenVar _ ->
       ()
-  | Var var | FrozenVar var ->
+  | Var var ->
       k var
   | Constr (_, params) ->
       CCArray.iter (fun t -> iter_vars t k) params
