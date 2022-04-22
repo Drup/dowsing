@@ -3,7 +3,6 @@ module Index = (val Index.(make Feature.all))
 
 let e = Common.Type.Env.make Data
 
-(* let idx = Index.load @@ Fpath.v "fmt.idx" *)
 let all_tests = ref []
 let test_cnt = ref 0
 let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
@@ -55,54 +54,63 @@ let _string_tests =
 
 (* Tests on graph struct *)
 
-let types =
+let base_types =
+  let string_types =
+    [
+      (* "'a"; *)
+      "int";
+      "float";
+    ]
+  in
+  CCList.map (Type.of_string e) string_types
+    
+let arrow_types =
   let string_types =
     [
       "'a";
       "int -> int";
-      "int -> 'a" (*; "'a -> 'b"; "int * float -> 'a"; "'c -> int"*);
+      "int -> 'a";
+      "'a -> 'b";
+      "int * float -> 'a";
+      "'c -> int";
     ]
   in
   CCList.map (Type.of_string e) string_types
 
-let mem_graph_tests =
-  let x = P.init e in
-  let rec aux tl res_list acc =
+let mem_graph_tests types =
+  let x0 = P.init e in
+  let check_graph x elt () =
+    let b = P.G.mem_vertex x.P.graph elt in
+    Format.eprintf "%a" P.pp x;
+    let s = Fmt.str "Searching for %a" Type.pp (P.G.V.label elt) in
+    Alcotest.(check bool) s true b
+  in
+  let rec aux i tl =
     match tl with
-    | [] -> acc
+    | [] -> []
     | t :: q ->
-        let node = P.add x t in
-        aux q (node :: res_list) ((P.copy x, res_list) :: acc)
+      let node = P.add x0 t in
+      Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 node) ::
+      aux (i+1) q
   in
-  aux types [] []
+  aux 0 types
 
-let struct_tests =
-  let make_test res (g, l_elt) =
-    let test_atom () =
-      let check_graph elt =
-        let b = P.G.mem_vertex g.P.graph elt in
-        Format.eprintf "%a" P.pp g;
-        Alcotest.(check bool) "Vertex present" res b
-      in
-      CCList.iter check_graph l_elt
-    in
-    incr test_cnt;
-    Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test_atom
-  in
-  CCList.map (make_test true) mem_graph_tests
-
-let () = add_tests "Vertex struct" struct_tests
+let () =
+  add_tests "Base types" @@ mem_graph_tests base_types;
+  add_tests "Arrow types" @@ mem_graph_tests arrow_types;
+  ()
 
 (* do test *)
 
 let () = Alcotest.run "Adding in poset" !all_tests
 
-(* let add i (t, _) =
-     try
-       Format.printf "%i: %a@." i Common.Type.pp t;
-       P.add x t
-     with _ -> ()
-
-   let () =
-      Index.iter idx |> Iter.iteri add;
-      Format.printf "%a" P.pp x *)
+(* let x = P.init e
+ * 
+ * let add i (t, _) =
+ *   Format.printf "%i: %a@." i Common.Type.pp t;
+ *   ignore @@ P.add x t
+ * 
+ * let () =
+ *   let idx = Index.load @@ Fpath.v "fmt.idx" in
+ *   Index.iter idx |> Iter.iteri add;
+ *   Format.printf "%a@." P.pp x *)
