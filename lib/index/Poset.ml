@@ -122,7 +122,7 @@ module Poset = struct
     let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e) in
     let pp_edge fmt e =
       let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
-      Fmt.pf fmt "@[%a -> %a@]" Type.pp_parens s Type.pp_parens d
+      Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
     in
     if G.nb_vertex graph = 0 then
       Format.fprintf fmt "empty"
