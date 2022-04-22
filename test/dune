@@ -1,0 +1,5 @@
+(executable
+ (name populate_partial_order)
+  (libraries alcotest common unification index)
+  (flags (:standard -open Common)))
+

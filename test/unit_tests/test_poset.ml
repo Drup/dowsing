@@ -103,14 +103,3 @@ let () =
 (* do test *)
 
 let () = Alcotest.run "Adding in poset" !all_tests
-
-(* let x = P.init e
- * 
- * let add i (t, _) =
- *   Format.printf "%i: %a@." i Common.Type.pp t;
- *   ignore @@ P.add x t
- * 
- * let () =
- *   let idx = Index.load @@ Fpath.v "fmt.idx" in
- *   Index.iter idx |> Iter.iteri add;
- *   Format.printf "%a@." P.pp x *)
