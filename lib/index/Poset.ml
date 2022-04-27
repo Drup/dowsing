@@ -17,6 +17,8 @@ module Poset = struct
   module G = Imperative.Digraph.Abstract (Label)
   module Edge_set = Set.Make (G.E)
 
+  let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e)
+
   type t = { env : Type.Env.t; graph : G.t; lowest : G.V.t }
 
   let init env =
@@ -40,13 +42,13 @@ module Poset = struct
       match l with
       | [] -> ()
       | Replace edge :: rest ->
-          Format.eprintf "Je remplace l'arête %a @." pp_edge edge;
+          Format.eprintf "Replace Edge %a @," pp_edge edge;
           G.remove_edge_e graph edge;
           G.add_edge graph (G.E.src edge) node_0;
           G.add_edge graph node_0 (G.E.dst edge);
           insert_edges rest
       | Add edge :: rest ->
-          Format.eprintf "J'ajoute l'arête %a @." pp_edge edge;
+          Format.eprintf "Add Edge %a @," pp_edge edge;
           G.add_edge_e graph edge;
           insert_edges rest
     in
@@ -97,11 +99,17 @@ module Poset = struct
             visit already_seen edge
     in
     try
-      let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e) in
-      Format.eprintf "J'ajoute le noeud %a dans le graphe @." pp_vertex node_0;
+      Format.eprintf "@[<v 2>Node %a@," pp_vertex node_0;
       insert_edges (visit already_seen (G.E.create lowest () lowest));
+      Format.eprintf "@]@.";
       node_0
-    with Type_already_present node -> node
+    with
+    | Type_already_present node ->
+      Format.eprintf "Found the same type %a!@]@." pp_vertex node ;
+      node
+    | err ->
+      Format.eprintf "error!@]@.";
+      raise err
 
   let iter_succ t elt f =
     let rec aux l =
@@ -128,7 +136,6 @@ module Poset = struct
   let copy t = { env = t.env; graph = G.copy t.graph; lowest = t.lowest }
 
   let pp fmt { graph; _ } =
-    let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e) in
     let pp_edge fmt e =
       let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
       Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
@@ -140,4 +147,22 @@ module Poset = struct
         graph
         (Fmt.iter G.iter_edges_e pp_edge)
         graph
+
+  module D = Graphviz.Dot(struct
+      include G
+      let graph_attributes _ = []
+      let default_vertex_attributes _ = []
+      let vertex_name v = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
+      let vertex_attributes _ = [`Shape `Box]
+      let get_subgraph _ = None
+      let default_edge_attributes _ = []
+      let edge_attributes _ = []
+    end)
+
+  let xdot e =
+    let s = Filename.temp_file "dowsing_" ".dot" in
+    let fmt = Format.formatter_of_out_channel @@ open_out s in
+    Fmt.pf fmt "%a@." D.fprint_graph e.graph;
+    let _ = Unix.system @@ Fmt.str "xdot %s" @@ Filename.quote s in
+    ()
 end

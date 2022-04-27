@@ -55,7 +55,7 @@ let base_types =
 let arrow_types =
   let string_types =
     [
-      "'a";
+      (* "'a"; *)
       "int -> int";
       "int -> 'a";
       "'a -> 'b";
@@ -82,7 +82,9 @@ let mem_vertex_tests types =
         Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 node)
         :: aux (i + 1) q
   in
-  aux 0 types
+  let l = aux 0 types in
+  P.xdot x0;
+  l
 
 let () =
   add_tests "Base types" @@ mem_vertex_tests base_types;
