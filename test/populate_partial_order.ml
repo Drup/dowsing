@@ -18,22 +18,24 @@ let _from_list string_types =
     match tl with
     | [] -> ()
     | t :: q ->
-      let _node = P.add x t in
-      P.xdot x;
-      aux q
+        let _node = P.add x t in
+        P.xdot x;
+        aux q
   in
   aux types
 
 let () =
-  let () = _from_list [
-      (* "'a"; *)
-      "int";
-      "float";
-      "int -> int";
-      "int -> 'a";
-      "'a -> 'b";
-      "int * float -> 'a";
-      "'c -> int";
-    ]
+  let () =
+    _from_list
+      [
+        (* "'a"; *)
+        "int";
+        "float";
+        "int -> int";
+        "int -> 'a";
+        "'a -> 'b";
+        "int * float -> 'a";
+        "'c -> int";
+      ]
   in
   P.xdot x
