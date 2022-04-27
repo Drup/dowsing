@@ -2,66 +2,56 @@ module P = Index__Poset.Poset
 module Index = (val Index.(make Feature.all))
 
 let e = Common.Type.Env.make Data
-
 let all_tests = ref []
-let test_cnt = ref 0
 let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
-(* Tests on graph pp *)
+(* Edge tests *)
 
 let t s = P.G.V.create @@ Type.of_string e s
-let (-->) n n' = (n,n')
+let ( --> ) n n' = (n, n')
 
-let types_and_results =
-  let n1 = t"'a"
-  and n2 = t"int -> int"
-  (* ... *)
-  in 
-  let types = [ n1 ; n2 ] in
+let _types_and_edges =
+  let n1 = t "'a" and n2 = t "int -> int" and n3 = t "int -> 'b" (* ... *) in
+  let types = [ n1; n2; n3 ] in
   let expected_edges =
-    [ n1 --> n2 ;
-      (*"'a -> (int -> 'c)\n (int -> 'c) -> (int -> int)\n"*);
+    [
+      n1 --> n3;
+      n3 --> n2 (*"'a -> (int -> 'c)\n (int -> 'c) -> (int -> int)\n"*);
     ]
   in
   (types, expected_edges)
 
-let string_graph_tests =
-  let x = P.init e in
-  let rec aux trl acc =
-    match trl with
-    | [], [] -> acc
-    | t :: q1, r :: q2 ->
-        let _ = P.add x t in
-        aux (q1, q2) ((x, r) :: acc)
-    | _ -> invalid_arg "The lists are not of the same size"
-  in
-  aux types_and_results []
-
-let string_tests =
-  let make_test (g, str) =
-    let check_graph () =
-      let s = Format.asprintf "%a" P.pp g in
-      Alcotest.(check string) "Same string repr" s str
+let _mem_edge_tests type_edge =
+  let types, edges = type_edge in
+  let x0 = P.init e in
+  let check_graph x edg () =
+    let s, d = edg in
+    let b = P.G.mem_edge x.P.graph s d in
+    Format.eprintf "%a" P.pp x;
+    let s =
+      Fmt.str "Searching for edge between %a and %a" Type.pp (P.G.V.label s)
+        Type.pp (P.G.V.label d)
     in
-    incr test_cnt;
-    Alcotest.test_case (CCInt.to_string !test_cnt) `Quick check_graph
+    Alcotest.(check bool) s true b
   in
-  CCList.map make_test string_graph_tests
+  let rec aux i el =
+    match el with
+    | [] -> []
+    | e :: q ->
+        Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 e)
+        :: aux (i + 1) q
+  in
+  let _ = CCList.map (P.add x0) types in
+  aux 0 edges
 
-let () = add_tests "String representation" string_tests
+(*let () = add_tests "Edges present" @@ mem_edge_tests types_and_edges*)
 
-(* Tests on graph struct *)
+(* Vertex tests *)
 
 let base_types =
-  let string_types =
-    [
-      (* "'a"; *)
-      "int";
-      "float";
-    ]
-  in
+  let string_types = [ (* "'a"; *) "int"; "float" ] in
   CCList.map (Type.of_string e) string_types
-    
+
 let arrow_types =
   let string_types =
     [
@@ -75,7 +65,7 @@ let arrow_types =
   in
   CCList.map (Type.of_string e) string_types
 
-let mem_graph_tests types =
+let mem_vertex_tests types =
   let x0 = P.init e in
   let check_graph x elt () =
     let b = P.G.mem_vertex x.P.graph elt in
@@ -87,15 +77,20 @@ let mem_graph_tests types =
     match tl with
     | [] -> []
     | t :: q ->
-      let node = P.add x0 t in
-      Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 node) ::
-      aux (i+1) q
+        let node = P.add x0 t in
+        Format.printf "%a" P.pp x0;
+        Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 node)
+        :: aux (i + 1) q
   in
   aux 0 types
 
 let () =
-  add_tests "Base types" @@ mem_graph_tests base_types;
-  add_tests "Arrow types" @@ mem_graph_tests arrow_types;
+  add_tests "Base types" @@ mem_vertex_tests base_types;
+  add_tests "Arrow types" @@ mem_vertex_tests arrow_types;
+  add_tests "Arrow then base types"
+  @@ mem_vertex_tests (arrow_types @ base_types);
+  add_tests "Base then arrow types"
+  @@ mem_vertex_tests (base_types @ arrow_types);
   ()
 
 (* do test *)

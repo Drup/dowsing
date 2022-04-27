@@ -33,14 +33,20 @@ module Poset = struct
   let add { env; graph; lowest } elt_0 =
     let node_0 = G.V.create elt_0 in
     let rec insert_edges l =
+      let pp_edge fmt e =
+        let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
+        Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
+      in
       match l with
       | [] -> ()
       | Replace edge :: rest ->
+          Format.eprintf "Je remplace l'arête %a @." pp_edge edge;
           G.remove_edge_e graph edge;
           G.add_edge graph (G.E.src edge) node_0;
           G.add_edge graph node_0 (G.E.dst edge);
           insert_edges rest
       | Add edge :: rest ->
+          Format.eprintf "J'ajoute l'arête %a @." pp_edge edge;
           G.add_edge_e graph edge;
           insert_edges rest
     in
@@ -71,15 +77,16 @@ module Poset = struct
           in
           new_edges @ visit_next already_seen
       | Uncomparable ->
-        let l = extend_edges edge in
-        let new_edges = match l with
+          let l = extend_edges edge in
+          let new_edges =
+            match l with
             | [] -> [ Add (G.E.create (G.E.src edge) () node_0) ]
             | _ ->
-              let push elt = Queue.push elt to_visit in
-              List.iter push l;
-              []
-        in
-        new_edges @ visit_next already_seen
+                let push elt = Queue.push elt to_visit in
+                List.iter push l;
+                []
+          in
+          new_edges @ visit_next already_seen
     and visit_next already_seen =
       match Queue.take_opt to_visit with
       | None -> []
@@ -90,6 +97,8 @@ module Poset = struct
             visit already_seen edge
     in
     try
+      let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e) in
+      Format.eprintf "J'ajoute le noeud %a dans le graphe @." pp_vertex node_0;
       insert_edges (visit already_seen (G.E.create lowest () lowest));
       node_0
     with Type_already_present node -> node
@@ -124,10 +133,11 @@ module Poset = struct
       let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
       Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
     in
-    if G.nb_vertex graph = 0 then
-      Format.fprintf fmt "empty"
+    if G.nb_vertex graph = 0 then Format.fprintf fmt "empty"
     else
       Format.fprintf fmt "@[<v 2>Vertices: %a@]@.@[<v2>Edges: %a@]@."
-        (Fmt.iter G.iter_vertex pp_vertex) graph
-        (Fmt.iter G.iter_edges_e pp_edge) graph
+        (Fmt.iter G.iter_vertex pp_vertex)
+        graph
+        (Fmt.iter G.iter_edges_e pp_edge)
+        graph
 end
