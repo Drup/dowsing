@@ -155,7 +155,8 @@ module Make (Trie : Trie.NODE) : S = struct
     let unselect t =
       if Stack.length t.its = 1 then
         error () ;
-      ignore @@ Stack.pop t.its
+      let _iter = Stack.pop t.its in
+      ()
 
     let pp ppf t =
       let sz = Iter.length @@ iter t in
