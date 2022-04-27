@@ -16,6 +16,7 @@ end
 module Poset = struct
   module G = Imperative.Digraph.Abstract (Label)
   module Edge_set = Set.Make (G.E)
+  module Vertex_set = Set.Make (G.V)
 
   let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e)
 
@@ -28,12 +29,16 @@ module Poset = struct
     G.add_vertex g node;
     { env; graph = g; lowest = node }
 
-  type to_do = Replace of G.E.t | Add of G.E.t
+  type to_do =
+    | Replace of G.E.t
+    | Add_smaller of G.E.t
+    | Add_uncomparable of G.E.t
 
   exception Type_already_present of G.V.t
 
   let add { env; graph; lowest } elt_0 =
     let node_0 = G.V.create elt_0 in
+    let last_comparables = ref Vertex_set.empty in
     let rec insert_edges l =
       let pp_edge fmt e =
         let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
@@ -47,11 +52,17 @@ module Poset = struct
           G.add_edge graph (G.E.src edge) node_0;
           G.add_edge graph node_0 (G.E.dst edge);
           insert_edges rest
-      | Add edge :: rest ->
+      | Add_smaller edge :: rest ->
           Format.eprintf "Add Edge %a @," pp_edge edge;
           G.add_edge_e graph edge;
           insert_edges rest
+      | Add_uncomparable edge :: rest ->
+          if Vertex_set.mem (G.E.src edge) !last_comparables then (
+            Format.eprintf "Add Edge %a @," pp_edge edge;
+            G.add_edge_e graph edge);
+          insert_edges rest
     in
+
     let already_seen = Edge_set.empty in
     let extend_edges edge =
       let rec aux acc l =
@@ -66,23 +77,28 @@ module Poset = struct
       let dst = G.E.dst edge in
       match Unification.compare env elt_0 (G.V.label dst) with
       | Equal -> raise (Type_already_present dst)
-      | Bigger -> Replace edge :: visit_next already_seen
+      | Bigger ->
+          last_comparables := Vertex_set.remove (G.E.src edge) !last_comparables;
+          last_comparables := Vertex_set.add (G.E.dst edge) !last_comparables;
+          Replace edge :: visit_next already_seen
       | Smaller ->
           let push elt = Queue.push elt to_visit in
           let l = G.succ_e graph (G.E.dst edge) in
           let new_edges =
             match l with
-            | [] -> [ Add (G.E.create (G.E.dst edge) () node_0) ]
+            | [] -> [ Add_smaller (G.E.create (G.E.dst edge) () node_0) ]
             | _ ->
                 List.iter push l;
                 []
           in
+          last_comparables := Vertex_set.remove (G.E.src edge) !last_comparables;
+          last_comparables := Vertex_set.add (G.E.dst edge) !last_comparables;
           new_edges @ visit_next already_seen
       | Uncomparable ->
           let l = extend_edges edge in
           let new_edges =
             match l with
-            | [] -> [ Add (G.E.create (G.E.src edge) () node_0) ]
+            | [] -> [ Add_uncomparable (G.E.create (G.E.src edge) () node_0) ]
             | _ ->
                 let push elt = Queue.push elt to_visit in
                 List.iter push l;
@@ -105,11 +121,11 @@ module Poset = struct
       node_0
     with
     | Type_already_present node ->
-      Format.eprintf "Found the same type %a!@]@." pp_vertex node ;
-      node
+        Format.eprintf "Found the same type %a!@]@." pp_vertex node;
+        node
     | err ->
-      Format.eprintf "error!@]@.";
-      raise err
+        Format.eprintf "error!@]@.";
+        raise err
 
   let iter_succ t elt f =
     let rec aux l =
@@ -148,16 +164,17 @@ module Poset = struct
         (Fmt.iter G.iter_edges_e pp_edge)
         graph
 
-  module D = Graphviz.Dot(struct
-      include G
-      let graph_attributes _ = []
-      let default_vertex_attributes _ = []
-      let vertex_name v = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
-      let vertex_attributes _ = [`Shape `Box]
-      let get_subgraph _ = None
-      let default_edge_attributes _ = []
-      let edge_attributes _ = []
-    end)
+  module D = Graphviz.Dot (struct
+    include G
+
+    let graph_attributes _ = []
+    let default_vertex_attributes _ = []
+    let vertex_name v = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
+    let vertex_attributes _ = [ `Shape `Box ]
+    let get_subgraph _ = None
+    let default_edge_attributes _ = []
+    let edge_attributes _ = []
+  end)
 
   let xdot e =
     let s = Filename.temp_file "dowsing_" ".dot" in
