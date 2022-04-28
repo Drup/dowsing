@@ -20,6 +20,10 @@ module Poset = struct
 
   let pp_vertex fmt e = Fmt.box Type.pp fmt (G.V.label e)
 
+  let pp_edge fmt e =
+    let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
+    Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
+
   type t = { env : Type.Env.t; graph : G.t; lowest : G.V.t }
 
   let init env =
@@ -40,10 +44,6 @@ module Poset = struct
     let node_0 = G.V.create elt_0 in
     let last_comparables = ref Vertex_set.empty in
     let rec insert_edges l =
-      let pp_edge fmt e =
-        let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
-        Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
-      in
       match l with
       | [] -> ()
       | Replace edge :: rest ->
@@ -53,12 +53,12 @@ module Poset = struct
           G.add_edge graph node_0 (G.E.dst edge);
           insert_edges rest
       | Add_smaller edge :: rest ->
-          Format.eprintf "Add Edge %a @," pp_edge edge;
+          Format.eprintf "Add_smaller Edge %a @," pp_edge edge;
           G.add_edge_e graph edge;
           insert_edges rest
       | Add_uncomparable edge :: rest ->
           if Vertex_set.mem (G.E.src edge) !last_comparables then (
-            Format.eprintf "Add Edge %a @," pp_edge edge;
+            Format.eprintf "Add_uncomparable Edge %a @," pp_edge edge;
             G.add_edge_e graph edge);
           insert_edges rest
     in
@@ -74,6 +74,7 @@ module Poset = struct
     in
     let to_visit = Queue.create () in
     let rec visit already_seen edge =
+      Format.eprintf "Visiting Edge %a @." pp_edge edge;
       let dst = G.E.dst edge in
       match Unification.compare env elt_0 (G.V.label dst) with
       | Equal -> raise (Type_already_present dst)
@@ -152,10 +153,6 @@ module Poset = struct
   let copy t = { env = t.env; graph = G.copy t.graph; lowest = t.lowest }
 
   let pp fmt { graph; _ } =
-    let pp_edge fmt e =
-      let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
-      Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
-    in
     if G.nb_vertex graph = 0 then Format.fprintf fmt "empty"
     else
       Format.fprintf fmt "@[<v 2>Vertices: %a@]@.@[<v2>Edges: %a@]@."

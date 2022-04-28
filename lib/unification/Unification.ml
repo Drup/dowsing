@@ -361,8 +361,9 @@ let pp_ord fmt c =
   | Equal -> Format.fprintf fmt "Equal"
 
 let compare env t1 t2 =
-  let b1 = unifiable env (Type.freeze_variables env t1) t2
-  and b2 = unifiable env t1 (Type.freeze_variables env t2) in
+  let t1f = Type.freeze_variables env t1 in
+  let t2f = Type.freeze_variables env t2 in
+  let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
   match (b1, b2) with
   | true, true -> Equal
   | false, false -> Uncomparable
