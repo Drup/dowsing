@@ -7,10 +7,11 @@ let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
 (* Edge tests *)
 
-let t s = P.G.V.create @@ Type.of_string e s
-let ( --> ) n n' = (n, n')
+let ( --> ) n n' = P.G.E.create n () n'
 
-let _types_and_edges =
+let types_and_edges =
+  let x0 = P.init e in
+  let t s = P.add x0 @@ Type.of_string e s in
   let n1 = t "'a" and n2 = t "int -> int" and n3 = t "int -> 'b" (* ... *) in
   let types = [ n1; n2; n3 ] in
   let expected_edges =
@@ -19,18 +20,17 @@ let _types_and_edges =
       n3 --> n2 (*"'a -> (int -> 'c)\n (int -> 'c) -> (int -> int)\n"*);
     ]
   in
-  (types, expected_edges)
+  (x0, types, expected_edges)
 
-let _mem_edge_tests type_edge =
-  let types, edges = type_edge in
-  let x0 = P.init e in
-  let check_graph x edg () =
-    let s, d = edg in
-    let b = P.G.mem_edge x.P.graph s d in
+let mem_edge_tests type_edge =
+  let x0, _types, edges = type_edge in
+  let check_graph x edge () =
+    let b = P.G.mem_edge_e x.P.graph edge in
     Format.eprintf "%a" P.pp x;
     let s =
-      Fmt.str "Searching for edge between %a and %a" Type.pp (P.G.V.label s)
-        Type.pp (P.G.V.label d)
+      Fmt.str "Searching for edge between %a and %a"
+        Type.pp (P.G.V.label @@ P.G.E.src edge)
+        Type.pp (P.G.V.label @@ P.G.E.dst edge)
     in
     Alcotest.(check bool) s true b
   in
@@ -41,10 +41,9 @@ let _mem_edge_tests type_edge =
         Alcotest.test_case (CCInt.to_string i) `Quick (check_graph x0 e)
         :: aux (i + 1) q
   in
-  let _ = CCList.map (P.add x0) types in
   aux 0 edges
 
-(*let () = add_tests "Edges present" @@ mem_edge_tests types_and_edges*)
+let () = add_tests "Edges present" @@ mem_edge_tests types_and_edges
 
 (* Vertex tests *)
 
