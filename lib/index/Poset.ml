@@ -33,6 +33,14 @@ module Poset = struct
     G.add_vertex g node;
     { env; graph = g; lowest = node }
 
+  let size env =
+    G.nb_vertex env.graph
+
+  let nb_tops env =
+    (fun f -> G.iter_vertex f env.graph)
+    |> Iter.filter (fun v -> G.out_degree env.graph v = 0)
+    |> Iter.length
+
   type to_do =
     | Replace of G.E.t
     | Add_smaller of G.E.t
@@ -88,21 +96,25 @@ module Poset = struct
       aux [] (G.succ graph (G.E.dst edge))
     in
     let to_visit = Queue.create () in
+    let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
     let rec visit already_seen edge =
       Format.eprintf "Visiting Edge %a @." pp_edge edge;
       let dst = G.E.dst edge in
       match Unification.compare env elt_0 (G.V.label dst) with
       | Equal -> raise (Type_already_present dst)
       | Bigger ->
+          incr bigger;
           add_upper_bound ch dst ;
           ch.remove_edges <- Edge_set.add edge ch.remove_edges;
           visit_next already_seen
       | Smaller ->
+          incr smaller;
           let l = G.succ_e graph (G.E.dst edge) in
           List.iter (fun elt -> Queue.push elt to_visit) l;
           add_lower_bound ch edge;
           visit_next already_seen
       | Uncomparable ->
+          incr uncomparable;
           let l = extend_edges edge in
           begin match l with
             | [] -> ()
@@ -125,6 +137,8 @@ module Poset = struct
       visit already_seen (G.E.create lowest () lowest);
       apply_changes graph ch node_0;
       Format.eprintf "@]@.";
+      Format.eprintf "@[<v 2>Explored:@ %i smaller@ %i bigger@ %i uncomparable@]@."
+        !smaller !bigger !uncomparable;
       node_0
     with
     | Type_already_present node ->

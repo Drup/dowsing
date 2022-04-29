@@ -25,17 +25,23 @@ let _from_list string_types =
   aux types
 
 let () =
-  let () =
-    _from_list
-      [
-        (* "'a"; *)
-        "int";
-        "float";
-        "int -> int";
-        "int -> 'a";
-        "'a -> 'b";
-        "int * float -> 'a";
-        "'c -> int";
-      ]
-  in
+  _from_index ();
+  Format.printf "Size: %i@." (P.size x);
+  Format.printf "Tops: %i@." (P.nb_tops x);
   P.xdot x
+
+(* let () =
+ *   let () =
+ *     _from_list
+ *       [
+ *         (\* "'a"; *\)
+ *         "int";
+ *         "float";
+ *         "int -> int";
+ *         "int -> 'a";
+ *         "'a -> 'b";
+ *         "int * float -> 'a";
+ *         "'c -> int";
+ *       ]
+ *   in
+ *   P.xdot x *)
