@@ -40,29 +40,44 @@ module Poset = struct
 
   exception Type_already_present of G.V.t
 
+  type changes = {
+    mutable remove_edges : Edge_set.t ;
+    mutable lower_bounds : Vertex_set.t ;
+    mutable upper_bounds : Vertex_set.t ;
+  }
+
+  let empty_changes () = {
+    upper_bounds = Vertex_set.empty ;
+    remove_edges = Edge_set.empty ;
+    lower_bounds = Vertex_set.empty ;
+  }
+
+  let add_lower_bound ch edge =
+    ch.lower_bounds <- Vertex_set.remove (G.E.src edge) ch.lower_bounds;
+    ch.lower_bounds <- Vertex_set.add (G.E.dst edge) ch.lower_bounds
+  let add_upper_bound ch v =
+    ch.upper_bounds <- Vertex_set.add v ch.upper_bounds
+
+  let apply_changes graph ch node_0 =
+    Edge_set.iter (fun edge -> 
+        Format.eprintf "Remove Edge %a @," pp_edge edge;
+        G.remove_edge_e graph edge;
+      ) ch.remove_edges;
+    Vertex_set.iter (fun dst -> 
+        let edge = G.E.create node_0 () dst in
+        Format.eprintf "Add Edge %a @," pp_edge edge;
+        G.add_edge_e graph edge
+      ) ch.upper_bounds;
+    Vertex_set.iter (fun src ->
+        let edge = G.E.create src () node_0 in
+        Format.eprintf "Add Edge %a @," pp_edge edge;
+        G.add_edge_e graph edge
+      ) ch.lower_bounds ;
+    ()
+  
   let add { env; graph; lowest } elt_0 =
     let node_0 = G.V.create elt_0 in
-    let last_comparables = ref Vertex_set.empty in
-    let rec insert_edges l =
-      match l with
-      | [] -> ()
-      | Replace edge :: rest ->
-          Format.eprintf "Replace Edge %a @," pp_edge edge;
-          G.remove_edge_e graph edge;
-          G.add_edge graph (G.E.src edge) node_0;
-          G.add_edge graph node_0 (G.E.dst edge);
-          insert_edges rest
-      | Add_smaller edge :: rest ->
-          Format.eprintf "Add_smaller Edge %a @," pp_edge edge;
-          G.add_edge_e graph edge;
-          insert_edges rest
-      | Add_uncomparable edge :: rest ->
-          if Vertex_set.mem (G.E.src edge) !last_comparables then (
-            Format.eprintf "Add_uncomparable Edge %a @," pp_edge edge;
-            G.add_edge_e graph edge);
-          insert_edges rest
-    in
-
+    let ch = empty_changes () in
     let already_seen = Edge_set.empty in
     let extend_edges edge =
       let rec aux acc l =
@@ -79,36 +94,26 @@ module Poset = struct
       match Unification.compare env elt_0 (G.V.label dst) with
       | Equal -> raise (Type_already_present dst)
       | Bigger ->
-          last_comparables := Vertex_set.remove (G.E.src edge) !last_comparables;
-          last_comparables := Vertex_set.add (G.E.dst edge) !last_comparables;
-          Replace edge :: visit_next already_seen
+          add_upper_bound ch dst ;
+          ch.remove_edges <- Edge_set.add edge ch.remove_edges;
+          visit_next already_seen
       | Smaller ->
-          let push elt = Queue.push elt to_visit in
           let l = G.succ_e graph (G.E.dst edge) in
-          let new_edges =
-            match l with
-            | [] -> [ Add_smaller (G.E.create (G.E.dst edge) () node_0) ]
-            | _ ->
-                List.iter push l;
-                []
-          in
-          last_comparables := Vertex_set.remove (G.E.src edge) !last_comparables;
-          last_comparables := Vertex_set.add (G.E.dst edge) !last_comparables;
-          new_edges @ visit_next already_seen
+          List.iter (fun elt -> Queue.push elt to_visit) l;
+          add_lower_bound ch edge;
+          visit_next already_seen
       | Uncomparable ->
           let l = extend_edges edge in
-          let new_edges =
-            match l with
-            | [] -> [ Add_uncomparable (G.E.create (G.E.src edge) () node_0) ]
+          begin match l with
+            | [] -> ()
             | _ ->
                 let push elt = Queue.push elt to_visit in
-                List.iter push l;
-                []
-          in
-          new_edges @ visit_next already_seen
+                List.iter push l
+          end;
+          visit_next already_seen
     and visit_next already_seen =
       match Queue.take_opt to_visit with
-      | None -> []
+      | None -> ()
       | Some edge ->
           if Edge_set.mem edge already_seen then visit_next already_seen
           else
@@ -117,16 +122,14 @@ module Poset = struct
     in
     try
       Format.eprintf "@[<v 2>Node %a@," pp_vertex node_0;
-      insert_edges (visit already_seen (G.E.create lowest () lowest));
+      visit already_seen (G.E.create lowest () lowest);
+      apply_changes graph ch node_0;
       Format.eprintf "@]@.";
       node_0
     with
     | Type_already_present node ->
         Format.eprintf "Found the same type %a!@]@." pp_vertex node;
         node
-    | err ->
-        Format.eprintf "error!@]@.";
-        raise err
 
   let iter_succ t elt f =
     let rec aux l =
