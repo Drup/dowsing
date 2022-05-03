@@ -161,11 +161,6 @@ module Poset = struct
       let dst = G.E.dst edge in
       match Unification.compare env (G.V.label dst) elt_0 with
       | Equal -> raise (Type_already_present dst)
-      | Smaller ->
-          incr smaller;
-          add_lower_bound ch dst;
-          ch.remove_edges <- Edge_set.add edge ch.remove_edges;
-          visit_next already_seen
       | Bigger ->
           incr bigger;
           let l = G.succ_e graph (G.E.dst edge) in
@@ -180,6 +175,11 @@ module Poset = struct
           | _ ->
               let push elt = Queue.push elt to_visit in
               List.iter push l);
+          visit_next already_seen
+      | Smaller ->
+          incr smaller;
+          add_lower_bound ch dst;
+          ch.remove_edges <- Edge_set.add edge ch.remove_edges;
           visit_next already_seen
     and visit_next already_seen =
       match Queue.take_opt to_visit with

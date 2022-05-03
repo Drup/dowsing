@@ -142,8 +142,8 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
      Terms are incompatible
   *)
   | Constr _, Constr _ (* if same constructor, already checked above *)
-  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
-      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
+  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _ | Empty),
+      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _ | Empty) ) ->
       FailUnif (t1, t2)
 
 (* Repeated application of VA on an array of subexpressions. *)
@@ -174,7 +174,7 @@ and variable_abstraction env stack t =
   | Var i -> (stack, Pure.var i)
   | Constr (p, [||]) -> (stack, Pure.constant p)
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ ->
+  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ | Empty ->
       let var = Env.gen env in
       let stack = Stack.push_quasi_solved stack var t in
       (stack, Pure.var var)
@@ -183,7 +183,7 @@ and insert_var env stack x s =
   match s with
   | Type.Constr (_, [||])
   | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _
-  | Type.FrozenVar _ ->
+  | Type.FrozenVar _ | Type.Empty ->
       quasi_solved env stack x s
   | Type.Var y -> non_proper env stack x y
 
