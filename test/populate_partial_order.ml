@@ -6,7 +6,7 @@ let x = P.init e
 
 let add i (t, _) =
   Format.printf "%i: %a@." i Common.Type.pp t;
-  ignore @@ P.add x t
+  ignore @@ P.bidirect_add x t
 
 let _from_index () =
   let idx = Index.load @@ Fpath.v Sys.argv.(1) in
@@ -18,30 +18,33 @@ let _from_list string_types =
     match tl with
     | [] -> ()
     | t :: q ->
-        let _node = P.add x t in
+        let _node = P.bidirect_add x t in
         P.xdot x;
         aux q
   in
   aux types
 
-let () =
-  _from_index ();
-  Format.printf "Size: %i@." (P.size x);
-  Format.printf "Tops: %i@." (P.nb_tops x);
-  P.xdot x
-
 (* let () =
- *   let () =
- *     _from_list
- *       [
- *         (\* "'a"; *\)
- *         "int";
- *         "float";
- *         "int -> int";
- *         "int -> 'a";
- *         "'a -> 'b";
- *         "int * float -> 'a";
- *         "'c -> int";
- *       ]
- *   in
- *   P.xdot x *)
+   _from_index ();
+   Format.printf "Size: %i@." (P.size x);
+   Format.printf "Tops: %i@." (P.nb_tops x);
+   P.xdot x *)
+
+let () =
+  let () =
+    _from_list
+      [
+        "'a";
+        "int";
+        "float";
+        "int -> int";
+        "int -> 'a";
+        "'a -> 'b";
+        "int * float -> 'a";
+        "'c -> int";
+        "float -> 'a";
+        "int -> ('a -> unit) -> 'a list -> unit";
+        "unit";
+      ]
+  in
+  P.xdot x

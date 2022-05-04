@@ -360,12 +360,17 @@ let pp_ord fmt c =
   | Bigger -> Format.fprintf fmt "Bigger"
   | Equal -> Format.fprintf fmt "Equal"
 
-let compare env t1 t2 =
-  let t1f = Type.freeze_variables env t1 in
-  let t2f = Type.freeze_variables env t2 in
-  let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
-  match (b1, b2) with
-  | true, true -> Equal
-  | false, false -> Uncomparable
-  | true, false -> Smaller
-  | false, true -> Bigger
+let compare env (t1 : Type.t) (t2 : Type.t) =
+  match (t1, t2) with
+  | Empty, Empty -> Equal
+  | Empty, _ -> Smaller
+  | _, Empty -> Bigger
+  | _, _ -> (
+      let t1f = Type.freeze_variables env t1 in
+      let t2f = Type.freeze_variables env t2 in
+      let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
+      match (b1, b2) with
+      | true, true -> Equal
+      | false, false -> Uncomparable
+      | true, false -> Smaller
+      | false, true -> Bigger)

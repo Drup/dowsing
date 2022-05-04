@@ -24,29 +24,18 @@ module Poset = struct
     let s = G.V.label @@ G.E.src e and d = G.V.label @@ G.E.dst e in
     Fmt.pf fmt "@[%a ==> %a@]" Type.pp s Type.pp d
 
-  type t = {
-    env : Type.Env.t;
-    graph : G.t;
-    top : G.V.t; (*bottoms : Vertex_set.t;*)
-  }
+  type t = { env : Type.Env.t; graph : G.t; top : G.V.t; bottom : G.V.t }
 
   let init env =
     let g = G.create () in
     let t = Type.of_string env "'a" in
-    let node = G.V.create t in
-    G.add_vertex g node;
-    {
-      env;
-      graph = g;
-      top =
-        node
-        (*bottoms =
-          (let ept = Vertex_set.empty in
-           Vertex_set.add node ept);*);
-    }
+    let node_a = G.V.create t and node_e = G.V.create @@ Type.empty env in
+    G.add_vertex g node_a;
+    G.add_vertex g node_e;
+    G.add_edge g node_a node_e;
+    { env; graph = g; top = node_a; bottom = node_e }
 
   let size env = G.nb_vertex env.graph
-  (*let nb_bottom env = Vertex_set.cardinal env.bottoms*)
 
   exception Type_already_present of G.V.t
 
@@ -67,7 +56,9 @@ module Poset = struct
     ch.upper_bounds <- Vertex_set.remove (G.E.src edge) ch.upper_bounds;
     ch.upper_bounds <- Vertex_set.add (G.E.dst edge) ch.upper_bounds
 
-  let add_lower_bound ch v = ch.lower_bounds <- Vertex_set.add v ch.lower_bounds
+  let add_lower_bound ch edge =
+    ch.lower_bounds <- Vertex_set.remove (G.E.dst edge) ch.lower_bounds;
+    ch.lower_bounds <- Vertex_set.add (G.E.src edge) ch.lower_bounds
 
   let apply_changes graph ch node_0 =
     Edge_set.iter
@@ -89,60 +80,71 @@ module Poset = struct
       ch.upper_bounds;
     ()
 
-  (* let bidirect_add { env; graph; lowest; biggest } elt_0 =
-     let node_0 = G.V.create elt_0 in
-     let ch = empty_changes () in
-     let already_seen = Edge_set.empty in
-     let to_visit = Queue.create () in
-     let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
-     let rec visit_down already_seen vertex =
-       Format.eprintf "Visiting Vertex %a @." pp_vertex vertex;
-       match Unification.compare env elt_0 (G.V.label vertex) with
-       | Equal -> raise (Type_already_present vertex)
-       | Bigger ->
-           incr bigger;
-           add_upper_bound ch dst;
-           ch.remove_edges <- Edge_set.add edge ch.remove_edges;
-           visit_next already_seen
-       | Smaller ->
-           incr smaller;
-           let l = G.succ_e graph (G.E.dst edge) in
-           List.iter (fun elt -> Queue.push elt to_visit) l;
-           add_lower_bound ch edge;
-           visit_next already_seen
-       | Uncomparable ->
-           incr uncomparable;
-           let l = extend_edges edge in
-           (match l with
-           | [] -> ()
-           | _ ->
-               let push elt = Queue.push elt to_visit in
-               List.iter push l);
-           visit_next already_seen
-     and visit_next already_seen =
-       match Queue.take_opt to_visit with
-       | None -> ()
-       | Some edge ->
-           if Edge_set.mem edge already_seen then visit_next already_seen
-           else
-             let already_seen = Edge_set.add edge already_seen in
-             visit already_seen edge
-     in
-     try
-       Format.eprintf "@[<v 2>Node %a@," pp_vertex node_0;
-       visit already_seen (G.E.create lowest () lowest);
-       apply_changes graph ch node_0;
-       Format.eprintf "@]@.";
-       Format.eprintf
-         "@[<v 2>Explored:@ %i smaller@ %i bigger@ %i uncomparable@]@." !smaller
-         !bigger !uncomparable;
-       node_0
-     with Type_already_present node ->
-       Format.eprintf "Found the same type %a!@]@." pp_vertex node;
-       node
-  *)
+  let bidirect_add { env; graph; top; bottom } elt_0 =
+    let node_0 = G.V.create elt_0 in
+    let ch = empty_changes () in
+    let already_seen = Edge_set.empty in
+    let to_visit = Queue.create () in
+    let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
+    let rec visit_down already_seen edge =
+      Format.eprintf "Visiting Edge %a @." pp_edge edge;
+      let dst = G.E.dst edge in
+      match Unification.compare env (G.V.label dst) elt_0 with
+      | Equal -> raise (Type_already_present dst)
+      | Bigger ->
+          incr bigger;
+          let l = G.succ_e graph (G.E.dst edge) in
+          List.iter (fun elt -> Queue.push elt to_visit) l;
+          add_upper_bound ch edge;
+          visit_next visit_down already_seen
+      | Uncomparable ->
+          incr uncomparable;
+          visit_next visit_down already_seen
+      | Smaller ->
+          incr smaller;
+          ch.remove_edges <- Edge_set.add edge ch.remove_edges;
+          visit_next visit_down already_seen
+    and visit_up already_seen edge =
+      Format.eprintf "Visiting Edge %a @." pp_edge edge;
+      let src = G.E.src edge in
+      match Unification.compare env (G.V.label src) elt_0 with
+      | Equal -> raise (Type_already_present src)
+      | Bigger ->
+          incr bigger;
+          visit_next visit_up already_seen
+      | Uncomparable ->
+          incr uncomparable;
+          visit_next visit_up already_seen
+      | Smaller ->
+          incr smaller;
+          let l = G.pred_e graph (G.E.src edge) in
+          List.iter (fun elt -> Queue.push elt to_visit) l;
+          add_lower_bound ch edge;
+          visit_next visit_up already_seen
+    and visit_next f already_seen =
+      match Queue.take_opt to_visit with
+      | None -> ()
+      | Some edge ->
+          if Edge_set.mem edge already_seen then visit_next f already_seen
+          else
+            let already_seen = Edge_set.add edge already_seen in
+            f already_seen edge
+    in
+    try
+      Format.eprintf "@[<v 2>Node %a@," pp_vertex node_0;
+      visit_down already_seen (G.E.create top () top);
+      visit_up already_seen (G.E.create bottom () bottom);
+      apply_changes graph ch node_0;
+      Format.eprintf "@]@.";
+      Format.eprintf
+        "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@." !bigger
+        !uncomparable !smaller;
+      node_0
+    with Type_already_present node ->
+      Format.eprintf "Found the same type %a!@]@." pp_vertex node;
+      node
 
-  let add { env; graph; top } elt_0 =
+  let add { env; graph; top; _ } elt_0 =
     let node_0 = G.V.create elt_0 in
     let ch = empty_changes () in
     let already_seen = Edge_set.empty in
@@ -178,7 +180,7 @@ module Poset = struct
           visit_next already_seen
       | Smaller ->
           incr smaller;
-          add_lower_bound ch dst;
+          add_lower_bound ch (G.E.create dst () dst);
           ch.remove_edges <- Edge_set.add edge ch.remove_edges;
           visit_next already_seen
     and visit_next already_seen =
@@ -225,7 +227,8 @@ module Poset = struct
     in
     aux [ elt ]
 
-  let copy t = { env = t.env; graph = G.copy t.graph; top = t.top }
+  let copy t =
+    { env = t.env; graph = G.copy t.graph; top = t.top; bottom = t.bottom }
 
   let pp fmt { graph; _ } =
     if G.nb_vertex graph = 0 then Format.fprintf fmt "empty"

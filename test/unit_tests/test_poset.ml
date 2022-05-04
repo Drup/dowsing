@@ -11,8 +11,8 @@ let ( --> ) n n' = P.G.E.create n () n'
 
 let vertices_and_edges =
   let x0 = P.init e in
-  let t s = P.add x0 @@ Type.of_string e s in
-  let b1 = t "'a" and b2 = t "int" and b3 = t "float" in
+  let t s = P.bidirect_add x0 @@ Type.of_string e s in
+  let top = x0.top and b1 = t "'a" and b2 = t "int" and b3 = t "float" in
   let a1 = t "int -> int"
   and a2 = t "int -> 'b"
   and a3 = t "'a -> 'b"
@@ -21,6 +21,7 @@ let vertices_and_edges =
   let base_types = [ b1; b2; b3 ] and arrow_types = [ a1; a2; a3; a4; a5 ] in
   let expected_edges =
     [
+      top --> a3;
       b1 --> a3;
       b1 --> b2;
       b1 --> b3;
