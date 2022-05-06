@@ -35,7 +35,7 @@ module Poset = struct
     G.add_edge g node_a node_e;
     { env; graph = g; top = node_a; bottom = node_e }
 
-  let size env = G.nb_vertex env.graph
+  let size poset = G.nb_vertex poset.graph
 
   exception Type_already_present of G.V.t
 
@@ -80,6 +80,20 @@ module Poset = struct
       ch.upper_bounds;
     ()
 
+  let compat (t1 : Type.t) (t2 : Type.t) =
+    let rec aux (fl : (module Feature.S) list) =
+      match fl with
+      | [] -> true
+      | (module Feat) :: q ->
+          Feat.compatible ~query:(Feat.compute t1) ~data:(Feat.compute t2)
+          && aux q
+    in
+    aux Feature.all
+
+  let compare env t1 t2 =
+    if not (compat t1 t2) then Unification.Uncomparable
+    else Unification.compare env t1 t2
+
   let bidirect_add { env; graph; top; bottom } elt_0 =
     let node_0 = G.V.create elt_0 in
     let ch = empty_changes () in
@@ -89,7 +103,7 @@ module Poset = struct
     let rec visit_down already_seen edge =
       Format.eprintf "Visiting Edge %a @." pp_edge edge;
       let dst = G.E.dst edge in
-      match Unification.compare env (G.V.label dst) elt_0 with
+      match compare env (G.V.label dst) elt_0 with
       | Equal -> raise (Type_already_present dst)
       | Bigger ->
           incr bigger;
