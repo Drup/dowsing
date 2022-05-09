@@ -91,19 +91,26 @@ module Poset = struct
     aux Feature.all
 
   let compare env t1 t2 =
-    if not (compat t1 t2) then Unification.Uncomparable
+    if not (compat t1 t2) then
+      match (t1, t2) with
+      | Empty, Empty -> Unification.Equal
+      | Empty, _ -> Unification.Smaller
+      | _, Empty -> Unification.Bigger
+      | _, _ -> Unification.Uncomparable
     else Unification.compare env t1 t2
 
   let bidirect_add { env; graph; top; bottom } elt_0 =
     let node_0 = G.V.create elt_0 in
     let ch = empty_changes () in
-    let already_seen0 = Vertex_set.empty in
+    let already_seen_0 = Vertex_set.empty in
     let to_visit = Queue.create () in
     let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
     let rec visit_down already_seen edge =
-      Format.eprintf "Visiting Edge %a @." pp_edge edge;
+      Format.eprintf "Visiting Edge down %a @." pp_edge edge;
       let dst = G.E.dst edge in
-      match compare env (G.V.label dst) elt_0 with
+      let comp = compare env (G.V.label dst) elt_0 in
+      Format.eprintf "%a @." Unification.pp_ord comp;
+      match comp with
       | Equal -> raise (Type_already_present dst)
       | Bigger ->
           incr bigger;
@@ -117,11 +124,14 @@ module Poset = struct
       | Smaller ->
           incr smaller;
           ch.remove_edges <- Edge_set.add edge ch.remove_edges;
+          let already_seen = Vertex_set.remove dst already_seen in
           visit_next `down already_seen
     and visit_up already_seen edge =
-      Format.eprintf "Visiting Edge %a @." pp_edge edge;
+      Format.eprintf "Visiting Edge up %a @." pp_edge edge;
       let src = G.E.src edge in
-      match Unification.compare env (G.V.label src) elt_0 with
+      let comp = compare env (G.V.label src) elt_0 in
+      Format.eprintf "%a @." Unification.pp_ord comp;
+      match comp with
       | Equal -> raise (Type_already_present src)
       | Bigger ->
           incr bigger;
@@ -137,21 +147,22 @@ module Poset = struct
           visit_next `up already_seen
     and visit_next dir already_seen =
       match Queue.take_opt to_visit with
-      | None -> ()
+      | None -> already_seen
       | Some edge ->
-        let vertex, next = match dir with
-          | `up -> G.E.src edge, visit_up
-          | `down -> G.E.dst edge, visit_down
-        in
-        if Vertex_set.mem vertex already_seen then visit_next dir already_seen
-        else
-          let already_seen = Vertex_set.add vertex already_seen in
-          next already_seen edge
+          let vertex, next =
+            match dir with
+            | `up -> (G.E.src edge, visit_up)
+            | `down -> (G.E.dst edge, visit_down)
+          in
+          if Vertex_set.mem vertex already_seen then visit_next dir already_seen
+          else
+            let already_seen = Vertex_set.add vertex already_seen in
+            next already_seen edge
     in
     try
       Format.eprintf "@[<v 2>Node %a@," pp_vertex node_0;
-      visit_down already_seen0 (G.E.create top () top);
-      visit_up already_seen0 (G.E.create bottom () bottom);
+      let already_seen = visit_down already_seen_0 (G.E.create top () top) in
+      let _as = visit_up already_seen (G.E.create bottom () bottom) in
       apply_changes graph ch node_0;
       Format.eprintf "@]@.";
       Format.eprintf
