@@ -5,21 +5,31 @@ module type NODE = sig
   val empty : t
   val add : Type.t -> t -> t
   val remove : Type.t -> t -> t
-  val iter : t -> Type.t Iter.t
-  val iter_with : Type.t -> t -> Type.t Iter.t
-
+  val iter : t -> Range.t * Type.t Iter.t
+  val iter_with : Type.t -> t -> Range.t * Type.t Iter.t
+  val refresh : start:int -> t -> int
+  
 end
 
 module Leaf : NODE = struct
 
-  type t = Type.MSet.t
+  type t = {
+    mutable range : Range.t ;
+    types : Type.Set.t ;
+  }
 
-  let empty = Type.MSet.empty
-  let add ty t = Type.MSet.add t ty
-  let remove ty t = Type.MSet.remove t ty
-  let iter t = Type.MSet.to_iter_mult t |> Iter.map fst
+  let empty = { range = Range.singleton 0 1 ; types = Type.Set.empty }
+  let add ty t =
+    { t with types = Type.Set.add ty t.types }
+  let remove ty t =
+    { t with types = Type.Set.remove ty t.types }
+  let iter t = t.range, Type.Set.to_iter t.types
   let iter_with _ = iter
 
+  let refresh ~start t =
+    let stop = start + Type.Set.cardinal t.types in
+    t.range <- Range.singleton start stop ;
+    stop
 end
 
 module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
@@ -40,10 +50,21 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
       | None -> None
       | Some sub -> Some (Sub.remove ty sub)
 
+  let squash_ranges f it =
+    let r = ref Range.empty in
+    let it' =
+      Iter.map (fun x ->
+          let range, it2 = f x in
+          r := Range.union range !r;
+          it2) it
+    in
+    it' @@ ignore ;
+    !r, Iter.flatten it'
+  
   let iter t =
-    t
-    |> FeatMap.values
-    |> Iter.flat_map Sub.iter
+    let it = FeatMap.values t in 
+    let it' = squash_ranges Sub.iter it in
+    it'
 
   (*
      TODO: this should be more clever to avoid having
@@ -55,12 +76,15 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
   let iter_with ty t =
     t
     |> FeatMap.to_iter
-    |> Iter.flat_map (fun (feat, sub) ->
+    |> squash_ranges (fun (feat, sub) ->
       if Feat.compatible ~query:(Feat.compute ty) ~data:feat then
         Sub.iter_with ty sub
       else
-        Iter.empty
-    )
+        Range.empty, Iter.empty
+      )
+
+  let refresh ~start t =
+    FeatMap.fold (fun _  t start -> Sub.refresh ~start t) t start
 
 end
 

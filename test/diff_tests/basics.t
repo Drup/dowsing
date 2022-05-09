@@ -403,6 +403,10 @@ Some initial basic tests.
   CCPair.map2 :
   ('a1 -> 'b1 -> 'c1) ->
   ('a2 -> 'b2 -> 'c2) -> 'a1 * 'a2 -> 'b1 * 'b2 -> 'c1 * 'c2
+  CCString.fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+  CCString.fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+  CCStringLabels.fold_left : f:('a -> char -> 'a) -> init:'a -> string -> 'a
+  CCStringLabels.fold_right : f:(char -> 'a -> 'a) -> string -> init:'a -> 'a
   CCString.fold : ('a -> char -> 'a) -> 'a -> t -> 'a
   CCStringLabels.fold : f:('a -> char -> 'a) -> init:'a -> t -> 'a
   CCByte_buffer.fold_left : ('a -> char -> 'a) -> 'a -> t -> 'a
@@ -521,6 +525,10 @@ Some initial basic tests.
   CCListLabels.remove_one : eq:('a -> 'a -> bool) -> 'a -> 'a t -> 'a t
   CCResult.Traverse.fold_m :
   ('b -> 'a -> 'b M.t) -> 'b -> ('a, 'err) t -> 'b M.t
+  CCArray.fold_left_map :
+  ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  CCArrayLabels.fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b array -> 'a * 'c array
   CCList.fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   CCList.fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
   CCListLabels.fold_left2 :

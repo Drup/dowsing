@@ -1,5 +1,5 @@
 (library
  (name unification)
- (libraries logs zarith common)
+ (libraries logs zarith common diet)
  (flags
   (:standard -open Common)))
