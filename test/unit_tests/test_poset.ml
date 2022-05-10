@@ -1,4 +1,4 @@
-module P = Index__Poset.Poset
+module P = Index__Poset
 module Index = (val Index.(make Feature.all))
 
 let e = Common.Type.Env.make Data
@@ -11,8 +11,12 @@ let ( --> ) n n' = P.G.E.create n () n'
 
 let vertices_and_edges =
   let x0 = P.init e in
-  let t s = P.bidirect_add x0 @@ Type.of_string e s in
-  let top = x0.top and b1 = t "'a" and b2 = t "int" and b3 = t "float" in
+  let t =
+    let r = ref 0 in
+    fun s ->
+      P.add x0 @@ TypeId.mk (CCRef.get_then_incr r) (Type.of_string e s)
+  in
+  let b1 = t "'a" and b2 = t "int" and b3 = t "float" in
   let a1 = t "int -> int"
   and a2 = t "int -> 'b"
   and a3 = t "'a -> 'b"
@@ -21,7 +25,6 @@ let vertices_and_edges =
   let base_types = [ b1; b2; b3 ] and arrow_types = [ a1; a2; a3; a4; a5 ] in
   let expected_edges =
     [
-      top --> a3;
       b1 --> a3;
       b1 --> b2;
       b1 --> b3;
@@ -38,15 +41,15 @@ let mem_tests vertices_and_edges =
   let x0, vertices, edges = vertices_and_edges in
   let check_vertex x elt () =
     let b = P.G.mem_vertex x.P.graph elt in
-    let s = Fmt.str "Searching for %a" Type.pp (P.G.V.label elt) in
+    let s = Fmt.str "Searching for %a" TypeId.pp elt in
     Alcotest.(check bool) s true b
   and check_edge x edge () =
     let b = P.G.mem_edge_e x.P.graph edge in
     let s =
-      Fmt.str "Searching for edge between %a and %a" Type.pp
-        (P.G.V.label @@ P.G.E.src edge)
-        Type.pp
-        (P.G.V.label @@ P.G.E.dst edge)
+      Fmt.str "Searching for edge between %a and %a" TypeId.pp
+        (P.G.E.src edge)
+        TypeId.pp
+        (P.G.E.dst edge)
     in
     Alcotest.(check bool) s true b
   in

@@ -65,8 +65,8 @@ module Make (Trie : Trie.NODE) : S = struct
 
   let find, find_with =
     let aux iter t env ty =
-      let range, it = iter t ty in
-      Fmt.pr "%a@." Range.pp range;
+      let _range, it = iter t ty in
+      (* Fmt.pr "%a@." TypeId.Range.pp range; *)
       it
       |> Iter.filter_map @@ fun ty' ->
         Unification.unify env ty ty'
@@ -96,8 +96,8 @@ module Make (Trie : Trie.NODE) : S = struct
     fun pkg -> Fpath.Set.mem pkg !set
 
   let iter, iter_with =
-    let aux ?pkgs t (range, iter) =
-      Fmt.pr "%a@." Range.pp range;
+    let aux ?pkgs t (_range, iter) =
+      (* Fmt.pr "%a@." TypeId.Range.pp range; *)
       let pkg_filt = CCOption.map (pkg_filt t) pkgs in
       wrap t iter ~to_type:CCFun.id ~merge:CCPair.make ?pkg_filt
     in

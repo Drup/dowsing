@@ -5,8 +5,10 @@ module type NODE = sig
   val empty : t
   val add : Type.t -> t -> t
   val remove : Type.t -> t -> t
-  val iter : t -> Range.t * Type.t Iter.t
-  val iter_with : Type.t -> t -> Range.t * Type.t Iter.t
+  val iter : t -> TypeId.Range.t * Type.t Iter.t
+  val iter_with : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
+
+  val iterid : t -> TypeId.t Iter.t
   val refresh : start:int -> t -> int
   
 end
@@ -14,11 +16,11 @@ end
 module Leaf : NODE = struct
 
   type t = {
-    mutable range : Range.t ;
+    mutable range : TypeId.Range.t ;
     types : Type.Set.t ;
   }
 
-  let empty = { range = Range.singleton 0 1 ; types = Type.Set.empty }
+  let empty = { range = TypeId.Range.singleton 0 1 ; types = Type.Set.empty }
   let add ty t =
     { t with types = Type.Set.add ty t.types }
   let remove ty t =
@@ -26,9 +28,12 @@ module Leaf : NODE = struct
   let iter t = t.range, Type.Set.to_iter t.types
   let iter_with _ = iter
 
+  let iterid t =
+    Type.Set.to_iter t.types |> Iter.mapi TypeId.mk
+
   let refresh ~start t =
     let stop = start + Type.Set.cardinal t.types in
-    t.range <- Range.singleton start stop ;
+    t.range <- TypeId.Range.singleton start stop ;
     stop
 end
 
@@ -51,11 +56,11 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
       | Some sub -> Some (Sub.remove ty sub)
 
   let squash_ranges f it =
-    let r = ref Range.empty in
+    let r = ref TypeId.Range.empty in
     let it' =
       Iter.map (fun x ->
           let range, it2 = f x in
-          r := Range.union range !r;
+          r := TypeId.Range.union range !r;
           it2) it
     in
     it' @@ ignore ;
@@ -80,8 +85,13 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
       if Feat.compatible ~query:(Feat.compute ty) ~data:feat then
         Sub.iter_with ty sub
       else
-        Range.empty, Iter.empty
+        TypeId.Range.empty, Iter.empty
       )
+
+  let iterid t =
+    let it = FeatMap.values t in 
+    let it' = Iter.flat_map Sub.iterid it in
+    it'
 
   let refresh ~start t =
     FeatMap.fold (fun _  t start -> Sub.refresh ~start t) t start
