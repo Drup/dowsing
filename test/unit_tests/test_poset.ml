@@ -14,10 +14,14 @@ let vertices_and_edges =
   let t =
     let r = ref 0 in
     fun s ->
-      P.add x0 @@ TypeId.mk (CCRef.get_then_incr r) (Type.of_string e s)
+      let n = TypeId.mk (CCRef.get_then_incr r) (Type.of_string e s) in
+      P.add x0 n;
+      n
   in
-  let b1 = t "'a" and b2 = t "int" and b3 = t "float" in
-  let a1 = t "int -> int"
+  let b1 = t "'a"
+  and b2 = t "int"
+  and b3 = t "float"
+  and a1 = t "int -> int"
   and a2 = t "int -> 'b"
   and a3 = t "'a -> 'b"
   and a4 = t "int * float -> 'a"

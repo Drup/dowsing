@@ -1,11 +1,20 @@
 module type S = sig
+  module T : Trie.NODE
 
-  type t
+  type t = private {
+    hcons : Type.Hashcons.t ;
+    mutable trie : T.t ;
+    pkgs_dirs : Fpath.t String.HMap.t ;
+    (** Cells containing the package info. 
+        Ref-counted, to ensure proper dependencies *)
+    mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t ;
+    mutable poset : Poset.t ;
+  }
 
   type iter = (Type.t * Cell.t) Iter.t
   type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
 
-  val make : unit -> t
+  val make : Type.Env.t -> t
 
   (** [import t l] adds all the package pairs [pkg, pkg_dir] in [l]
       to the index [t].

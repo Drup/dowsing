@@ -2,28 +2,32 @@ module Feature = Feature
 module Trie = Trie
 module Info = Info
 module Cell = Cell
+module Poset = Poset
 
 module type S = IndexIntf.S
 
-module Make (Trie : Trie.NODE) : S = struct
+module Make (T : Trie.NODE) : S = struct
+  module T = T
 
   type t = {
     hcons : Type.Hashcons.t ;
-    mutable trie : Trie.t ;
+    mutable trie : T.t ;
     pkgs_dirs : Fpath.t String.HMap.t ;
     (** Cells containing the package info. 
         Ref-counted, to ensure proper dependencies *)
     mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t ;
+    mutable poset : Poset.t ;
   }
 
   type iter = (Type.t * Cell.t) Iter.t
   type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
 
-  let make () = {
+  let make env = {
     hcons = Type.Hashcons.make () ;
-    trie = Trie.empty ;
+    trie = T.empty ;
     pkgs_dirs = String.HMap.create 17 ;
     cells = Fpath.Map.empty ;
+    poset = Poset.init env ;
   }
 
   (** [remove pkg] removes the package [pkg].
@@ -35,7 +39,7 @@ module Make (Trie : Trie.NODE) : S = struct
     t.cells
     |> Fpath.Map.get pkg_dir
     |> snd
-    |> Type.Map.iter (fun ty _ -> t.trie <- Trie.remove ty t.trie) ;
+    |> Type.Map.iter (fun ty _ -> t.trie <- T.remove ty t.trie) ;
     String.HMap.remove t.pkgs_dirs pkg ;
     t.cells <-
       t.cells |> Fpath.Map.update pkg_dir @@ function
@@ -54,7 +58,7 @@ module Make (Trie : Trie.NODE) : S = struct
       let env = Type.Env.make Data ~hcons:t.hcons in
       let ty = Type.of_outcometree env out_ty in
       let info = Info.{ lid ; out_ty } in
-      t.trie <- Trie.add ty t.trie ;
+      t.trie <- T.add ty t.trie ;
       Type.Map.update ty
         (CCFun.compose (Cell.update orig_lid info) CCOption.return) cells
     in
@@ -72,12 +76,23 @@ module Make (Trie : Trie.NODE) : S = struct
           | Some (cnt, _) -> Some (cnt + 1, cells)
 
   let refresh t =
-    let _ = Trie.refresh ~start:0 t.trie in
+    let _ = T.refresh ~start:0 t.trie in
     ()
 
+  let regenerate_poset t =
+    let e = Type.Env.make ~hcons:t.hcons Data in
+    let p = Poset.init e in
+    T.iterid t.trie
+    (* Do not eta-reduce (Not sure why) *)
+    |> Iter.iter (fun ty -> Poset.add p ty);
+    t.poset <- p;
+    Poset.xdot p;
+    ()
+  
   let import t l =
     List.iter (add t) l;
-    refresh t
+    refresh t;
+    regenerate_poset t
 
   (** Iterators *)
 
@@ -115,21 +130,21 @@ module Make (Trie : Trie.NODE) : S = struct
       ) it
 
   let iter ?pkgs t =
-    Trie.iter t.trie
+    T.iter t.trie
     |> filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make
 
   let iter_compatible ?pkgs t ty =
-    let _range, it = Trie.iter_compatible ty t.trie in
+    let _range, it = T.iter_compatible ty t.trie in
     filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make it
   
   let find_exhaustive ?pkgs t env ty = 
-    Trie.iter t.trie
+    T.iter t.trie
     |> filter_with_unification env ty
     |> filter_with_pkgs t ?pkgs
       ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif)
 
   let find ?pkgs t env ty =
-    let _range, it = Trie.iter_compatible ty t.trie in
+    let _range, it = T.iter_compatible ty t.trie in
     it
     |> filter_with_unification env ty
     |> filter_with_pkgs t ?pkgs
@@ -196,5 +211,3 @@ module Make (Trie : Trie.NODE) : S = struct
 end
 
 let make feats = (module Make (val Trie.make feats) : S)
-
-module Poset = Poset 

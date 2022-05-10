@@ -27,7 +27,7 @@ let main opts =
       Fmt.(list ~sep:sp @@ using snd Fpath.pp) pkgs ;
   let idx =
     try Index.load opts.idx_file
-    with Sys_error _ -> Index.make ()
+    with Sys_error _ -> Index.make env_data
   in
   Index.import idx pkgs;
   try

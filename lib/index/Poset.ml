@@ -1,5 +1,11 @@
 open Graph
 
+
+module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
+
+let info = Logs.info
+let debug = Logs.debug
+
 module G = Imperative.Digraph.ConcreteBidirectional(TypeId)
 module Edge_set = Set.Make (G.E)
 
@@ -22,6 +28,11 @@ let init env =
   { env; graph = g; tops; bottoms }
 
 let size poset = G.nb_vertex poset.graph
+
+let clear poset =
+  poset.tops <- TypeId.Set.empty;
+  poset.bottoms <- TypeId.Set.empty;
+  G.clear poset.graph
 
 module Changes = struct
 
@@ -62,20 +73,20 @@ module Changes = struct
     G.add_vertex poset.graph vertex_0;
     Edge_set.iter
       (fun edge ->
-         Format.eprintf "Remove Edge %a @," pp_edge edge;
+         info (fun m -> m "Remove Edge %a @," pp_edge edge);
          G.remove_edge_e poset.graph edge)
       ch.remove_edges;
     TypeId.Set.iter
       (fun dst ->
          let edge = G.E.create vertex_0 () dst in
-         Format.eprintf "Add Edge %a @," pp_edge edge;
+         info (fun m -> m "Add Edge %a @," pp_edge edge);
          poset.tops <- TypeId.Set.remove dst poset.tops;
          G.add_edge_e poset.graph edge)
       ch.lower_bounds;
     TypeId.Set.iter
       (fun src ->
          let edge = G.E.create src () vertex_0 in
-         Format.eprintf "Add Edge %a @," pp_edge edge;
+         info (fun m -> m "Add Edge %a @," pp_edge edge);
          poset.bottoms <- TypeId.Set.remove src poset.bottoms;
          G.add_edge_e poset.graph edge)
       ch.upper_bounds;
@@ -115,10 +126,10 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
   let rec visit_down already_seen ~prev ~current =
-    Format.eprintf "Visiting Edge down %a → %a @,"
-      (Fmt.option ~none:(Fmt.any "⊤") pp_vertex) prev pp_vertex current;
+    info (fun m -> m "Visiting Edge down %a → %a@,"
+      (Fmt.option ~none:(Fmt.any "⊤") pp_vertex) prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    Format.eprintf "%a @," Unification.pp_ord comp;
+    info (fun m -> m "%a@," Unification.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -136,10 +147,10 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
       let already_seen = TypeId.Set.remove current already_seen in
       visit_next already_seen
   and visit_up already_seen ~prev ~current =
-    Format.eprintf "Visiting Edge up %a → %a @,"
-      (Fmt.option ~none:(Fmt.any "⊥") pp_vertex) prev pp_vertex current;
+    info (fun m -> m "Visiting Edge up %a → %a@,"
+      (Fmt.option ~none:(Fmt.any "⊥") pp_vertex) prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    Format.eprintf "%a @," Unification.pp_ord comp;
+    info (fun m -> m "%a@," Unification.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -159,7 +170,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
     | None -> already_seen
     | Some (dir, prev, current) ->
       if TypeId.Set.mem current already_seen then (
-        Fmt.epr "Already visited node %a@," TypeId.pp current;
+        info (fun m -> m "Already visited node %a@," TypeId.pp current);
         visit_next already_seen
       ) else
         let next =
@@ -171,24 +182,23 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
         next already_seen ~prev ~current
   in
   try
-    Format.eprintf "@[<v 2>Node %a@," pp_vertex vertex_0;
+    info (fun m -> m "@[<v 2>Node %a@," pp_vertex vertex_0);
     TypeId.Set.iter (fun v -> Queue.push (`down, None, v) to_visit) tops;
     let already_seen_0 = visit_next already_seen_0 in
     TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
     let _already_seen_0 = visit_next already_seen_0 in
     Changes.apply poset ch vertex_0;
-    Format.eprintf "@]";
-    Format.eprintf
-      "@[New tops: %a@]@.@[New bots: %a @]@."
-      (TypeId.Set.pp TypeId.pp) poset.tops
-      (TypeId.Set.pp TypeId.pp) poset.bottoms;
-    Format.eprintf
-      "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@." !bigger
-      !uncomparable !smaller;
-    vertex_0
+    info (fun m -> m "@]");
+    debug (fun m ->
+        m "@[New tops: %a@]@.@[New bots: %a @]@."
+          (TypeId.Set.pp TypeId.pp) poset.tops
+          (TypeId.Set.pp TypeId.pp) poset.bottoms);
+    info (fun m ->
+        m "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@."
+          !bigger !uncomparable !smaller);
+    ()
   with Type_already_present node ->
-    Format.eprintf "Found the same type %a!@]@." pp_vertex node;
-    node
+    info (fun m -> m "Found the same type %a!@." pp_vertex node)
 
 let iter_succ t elt f =
   let rec aux l =

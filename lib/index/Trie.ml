@@ -16,24 +16,28 @@ end
 module Leaf : NODE = struct
 
   type t = {
-    mutable range : TypeId.Range.t ;
+    mutable range : TypeId.Range.interval;
     types : Type.Set.t ;
   }
 
-  let empty = { range = TypeId.Range.singleton 0 1 ; types = Type.Set.empty }
+  let empty = { range = TypeId.Range.Interval.make 0 1 ; types = Type.Set.empty }
   let add ty t =
     { t with types = Type.Set.add ty t.types }
   let remove ty t =
     { t with types = Type.Set.remove ty t.types }
   let iter t = Type.Set.to_iter t.types
-  let iter_compatible _ t = t.range, Type.Set.to_iter t.types
+  let iter_compatible _ t =
+    let rg = TypeId.Range.add t.range TypeId.Range.empty in
+    rg, Type.Set.to_iter t.types
 
   let iterid t =
-    Type.Set.to_iter t.types |> Iter.mapi TypeId.mk
+    let start = TypeId.Range.Interval.x t.range in
+    Type.Set.to_iter t.types
+    |> Iter.mapi (fun i ty -> TypeId.mk (start+i) ty)
 
   let refresh ~start t =
     let stop = start + Type.Set.cardinal t.types in
-    t.range <- TypeId.Range.singleton start stop ;
+    t.range <- TypeId.Range.Interval.make start stop ;
     stop
 end
 

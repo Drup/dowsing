@@ -23,4 +23,4 @@ end
 
 let check x rg = Range.mem x.id rg
 
-let pp fmt { id ; ty } = Fmt.pf fmt "%a[%i]" Type.pp ty id
+let pp fmt { id ; ty } = Fmt.pf fmt "@[%a[%i]@]" Type.pp ty id
