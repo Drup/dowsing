@@ -23,67 +23,71 @@ let init env =
 
 let size poset = G.nb_vertex poset.graph
 
-exception Type_already_present of G.V.t
+module Changes = struct
 
-type changes = {
-  mutable remove_edges : Edge_set.t;
-  mutable lower_bounds : TypeId.Set.t;
-  mutable upper_bounds : TypeId.Set.t;
-}
-
-let empty_changes () =
-  {
-    upper_bounds = TypeId.Set.empty;
-    remove_edges = Edge_set.empty;
-    lower_bounds = TypeId.Set.empty;
+  type t = {
+    mutable remove_edges : Edge_set.t;
+    mutable lower_bounds : TypeId.Set.t;
+    mutable upper_bounds : TypeId.Set.t;
   }
 
-let rm_and_add set (prev_v, new_v) = 
-  match prev_v with
-  | None ->
-    TypeId.Set.add new_v set
-  | Some ty ->
-    set
-    |> TypeId.Set.remove ty
-    |> TypeId.Set.add new_v
+  let empty () =
+    {
+      upper_bounds = TypeId.Set.empty;
+      remove_edges = Edge_set.empty;
+      lower_bounds = TypeId.Set.empty;
+    }
 
-let add_upper_bound ch (previous_top, new_top) =
-  ch.upper_bounds <- rm_and_add ch.upper_bounds (previous_top, new_top)
-let add_lower_bound ch (new_bot, previous_bot) =
-  ch.lower_bounds <- rm_and_add ch.lower_bounds (previous_bot, new_bot)
-let remove_edge ch dir (prev, current) =
-  match prev with
-  | None -> ()
-  | Some ty ->
-    let edge = match dir with `down -> (ty, current) | `up -> (current, ty) in
-    ch.remove_edges <- Edge_set.add edge ch.remove_edges
+  let rm_and_add set (prev_v, new_v) = 
+    match prev_v with
+    | None ->
+      TypeId.Set.add new_v set
+    | Some ty ->
+      set
+      |> TypeId.Set.remove ty
+      |> TypeId.Set.add new_v
 
-let apply_changes poset ch vertex_0 =
-  G.add_vertex poset.graph vertex_0;
-  Edge_set.iter
-    (fun edge ->
-       Format.eprintf "Remove Edge %a @," pp_edge edge;
-       G.remove_edge_e poset.graph edge)
-    ch.remove_edges;
-  TypeId.Set.iter
-    (fun dst ->
-       let edge = G.E.create vertex_0 () dst in
-       Format.eprintf "Add Edge %a @," pp_edge edge;
-       poset.tops <- TypeId.Set.remove dst poset.tops;
-       G.add_edge_e poset.graph edge)
-    ch.lower_bounds;
-  TypeId.Set.iter
-    (fun src ->
-       let edge = G.E.create src () vertex_0 in
-       Format.eprintf "Add Edge %a @," pp_edge edge;
-       poset.bottoms <- TypeId.Set.remove src poset.bottoms;
-       G.add_edge_e poset.graph edge)
-    ch.upper_bounds;
-  if TypeId.Set.is_empty ch.upper_bounds then
-    poset.tops <- TypeId.Set.add vertex_0 poset.tops;
-  if TypeId.Set.is_empty ch.lower_bounds then
-    poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
-  ()
+  let add_upper_bound ch (previous_top, new_top) =
+    ch.upper_bounds <- rm_and_add ch.upper_bounds (previous_top, new_top)
+  let add_lower_bound ch (new_bot, previous_bot) =
+    ch.lower_bounds <- rm_and_add ch.lower_bounds (previous_bot, new_bot)
+  let remove_edge ch dir (prev, current) =
+    match prev with
+    | None -> ()
+    | Some ty ->
+      let edge = match dir with `down -> (ty, current) | `up -> (current, ty) in
+      ch.remove_edges <- Edge_set.add edge ch.remove_edges
+
+  let apply poset ch vertex_0 =
+    G.add_vertex poset.graph vertex_0;
+    Edge_set.iter
+      (fun edge ->
+         Format.eprintf "Remove Edge %a @," pp_edge edge;
+         G.remove_edge_e poset.graph edge)
+      ch.remove_edges;
+    TypeId.Set.iter
+      (fun dst ->
+         let edge = G.E.create vertex_0 () dst in
+         Format.eprintf "Add Edge %a @," pp_edge edge;
+         poset.tops <- TypeId.Set.remove dst poset.tops;
+         G.add_edge_e poset.graph edge)
+      ch.lower_bounds;
+    TypeId.Set.iter
+      (fun src ->
+         let edge = G.E.create src () vertex_0 in
+         Format.eprintf "Add Edge %a @," pp_edge edge;
+         poset.bottoms <- TypeId.Set.remove src poset.bottoms;
+         G.add_edge_e poset.graph edge)
+      ch.upper_bounds;
+    if TypeId.Set.is_empty ch.upper_bounds then
+      poset.tops <- TypeId.Set.add vertex_0 poset.tops;
+    if TypeId.Set.is_empty ch.lower_bounds then
+      poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
+    ()
+
+end
+
+exception Type_already_present of G.V.t
 
 let compat (t1 : Type.t) (t2 : Type.t) =
   let rec aux (fl : (module Feature.S) list) =
@@ -106,7 +110,7 @@ let compare env t1 t2 =
 
 let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let ty_0 = TypeId.ty vertex_0 in
-  let ch = empty_changes () in
+  let ch = Changes.empty () in
   let already_seen_0 = TypeId.Set.empty in
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
@@ -121,14 +125,14 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
       incr bigger;
       let l = G.succ graph current in
       List.iter (fun next -> Queue.push (`down, Some current, next) to_visit) l;
-      add_upper_bound ch (prev, current);
+      Changes.add_upper_bound ch (prev, current);
       visit_next already_seen
     | Uncomparable ->
       incr uncomparable;
       visit_next already_seen
     | Smaller ->
       incr smaller;
-      remove_edge ch `down (prev, current);
+      Changes.remove_edge ch `down (prev, current);
       let already_seen = TypeId.Set.remove current already_seen in
       visit_next already_seen
   and visit_up already_seen ~prev ~current =
@@ -148,7 +152,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
       incr smaller;
       let l = G.pred graph current in
       List.iter (fun next -> Queue.push (`up, Some current, next) to_visit) l;
-      add_lower_bound ch (current, prev);
+      Changes.add_lower_bound ch (current, prev);
       visit_next already_seen
   and visit_next already_seen =
     match Queue.take_opt to_visit with
@@ -172,7 +176,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
     let already_seen_0 = visit_next already_seen_0 in
     TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
     let _already_seen_0 = visit_next already_seen_0 in
-    apply_changes poset ch vertex_0;
+    Changes.apply poset ch vertex_0;
     Format.eprintf "@]";
     Format.eprintf
       "@[New tops: %a@]@.@[New bots: %a @]@."
