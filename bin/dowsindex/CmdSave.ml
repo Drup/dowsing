@@ -29,8 +29,7 @@ let main opts =
     try Index.load opts.idx_file
     with Sys_error _ -> Index.make ()
   in
-  pkgs |> CCList.iter @@ CCFun.uncurry @@ Index.add idx ;
-  Index.refresh idx ;
+  Index.import idx pkgs;
   try
     Index.save idx opts.idx_file
   with Sys_error _ ->

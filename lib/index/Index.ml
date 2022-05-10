@@ -11,6 +11,8 @@ module Make (Trie : Trie.NODE) : S = struct
     hcons : Type.Hashcons.t ;
     mutable trie : Trie.t ;
     pkgs_dirs : Fpath.t String.HMap.t ;
+    (** Cells containing the package info. 
+        Ref-counted, to ensure proper dependencies *)
     mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t ;
   }
 
@@ -24,6 +26,10 @@ module Make (Trie : Trie.NODE) : S = struct
     cells = Fpath.Map.empty ;
   }
 
+  (** [remove pkg] removes the package [pkg].
+
+      Only completely removes the entries if there are no more dependencies.
+  *)
   let remove t pkg =
     let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
     t.cells
@@ -39,6 +45,10 @@ module Make (Trie : Trie.NODE) : S = struct
             then None
             else Some (cnt - 1, cells)
 
+  (** [add pkg pkg_dir] adds the package [pkg] available in path [pkg_dir].
+
+      Removes the old content of [pkg] if present.
+  *)
   let add =
     let aux t cells Package.{ orig_lid ; lid ; out_ty } =
       let env = Type.Env.make Data ~hcons:t.hcons in
@@ -48,7 +58,7 @@ module Make (Trie : Trie.NODE) : S = struct
       Type.Map.update ty
         (CCFun.compose (Cell.update orig_lid info) CCOption.return) cells
     in
-    fun t pkg pkg_dir ->
+    fun t (pkg, pkg_dir) ->
       if String.HMap.mem t.pkgs_dirs pkg then
         remove t pkg ;
       let cells =
@@ -60,6 +70,14 @@ module Make (Trie : Trie.NODE) : S = struct
         t.cells |> Fpath.Map.update pkg_dir @@ function
           | None -> Some (1, cells)
           | Some (cnt, _) -> Some (cnt + 1, cells)
+
+  let refresh t =
+    let _ = Trie.refresh ~start:0 t.trie in
+    ()
+
+  let import t l =
+    List.iter (add t) l;
+    refresh t
 
   (** Iterators *)
 
@@ -134,9 +152,6 @@ module Make (Trie : Trie.NODE) : S = struct
 
   let load file = Archive.(to_index @@ load file)
   let save t = Archive.(save @@ of_index t)
-  let refresh t =
-    let _ = Trie.refresh ~start:0 t.trie in
-    ()
   
   module Explorer = struct
 
