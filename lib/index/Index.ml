@@ -45,7 +45,8 @@ module Make (Trie : Trie.NODE) : S = struct
       let ty = Type.of_outcometree env out_ty in
       let info = Info.{ lid ; out_ty } in
       t.trie <- Trie.add ty t.trie ;
-      Type.Map.update ty (CCFun.compose (Cell.update orig_lid info) CCOption.return) cells
+      Type.Map.update ty
+        (CCFun.compose (Cell.update orig_lid info) CCOption.return) cells
     in
     fun t pkg pkg_dir ->
       if String.HMap.mem t.pkgs_dirs pkg then
@@ -60,57 +61,62 @@ module Make (Trie : Trie.NODE) : S = struct
           | None -> Some (1, cells)
           | Some (cnt, _) -> Some (cnt + 1, cells)
 
-  let iter t = Trie.iter t.trie
-  let iter_with t ty = Trie.iter_with ty t.trie
+  (** Iterators *)
 
-  let find, find_with =
-    let aux iter t env ty =
-      let _range, it = iter t ty in
-      (* Fmt.pr "%a@." TypeId.Range.pp range; *)
-      it
-      |> Iter.filter_map @@ fun ty' ->
-        Unification.unify env ty ty'
-        |> CCOption.map @@ CCPair.make ty'
-    in
-    aux (fun t _ -> iter t), aux iter_with
+  let mem_pkgs t pkgs =
+    match pkgs with
+    | None ->
+      fun _ -> true
+    | Some pkgs -> 
+      let set = CCList.fold_left (fun set pkg ->
+          let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
+          Fpath.Set.add pkg_dir set
+        ) Fpath.Set.empty pkgs
+      in
+      fun pkg -> Fpath.Set.mem pkg set
 
-  let wrap ~to_type ~merge ?(pkg_filt = CCFun.const true) t iter =
+  let filter_with_pkgs ~to_type ~merge ?pkgs t iter =
+    let pkg_filt = mem_pkgs t pkgs in
     iter
     |> Iter.flat_map (fun elt ->
-      let ty = to_type elt in
-      (fun fn -> Fpath.Map.iter (CCFun.curry fn) t.cells)
-      |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
-        if pkg_filt pkg_dir then
-          Type.Map.get ty cells
-          |> CCOption.map @@ merge elt
-        else None
+        let ty = to_type elt in
+        let it k = Fpath.Map.iter (fun p c -> k (p, c)) t.cells in
+        it 
+        |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
+            if pkg_filt pkg_dir then
+              Type.Map.get ty cells
+              |> CCOption.map @@ merge elt
+            else None
+          )
       )
-    )
 
-  let pkg_filt t pkgs =
-    let set = ref Fpath.Set.empty in
-    pkgs |> CCList.iter (fun pkg ->
-      let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
-      set := Fpath.Set.add pkg_dir !set
-    ) ;
-    fun pkg -> Fpath.Set.mem pkg !set
+  let filter_with_unification env ty it =
+    Iter.filter_map (fun ty' ->
+        Unification.unify env ty ty'
+        |> CCOption.map @@ CCPair.make ty'
+      ) it
 
-  let iter, iter_with =
-    let aux ?pkgs t (_range, iter) =
-      (* Fmt.pr "%a@." TypeId.Range.pp range; *)
-      let pkg_filt = CCOption.map (pkg_filt t) pkgs in
-      wrap t iter ~to_type:CCFun.id ~merge:CCPair.make ?pkg_filt
-    in
-    (fun ?pkgs t -> aux ?pkgs t @@ iter t),
-    (fun ?pkgs t ty -> aux ?pkgs t @@ iter_with t ty)
+  let iter ?pkgs t =
+    Trie.iter t.trie
+    |> filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make
 
-  let find, find_with =
-    let aux find ?pkgs t env ty =
-      let pkg_filt = CCOption.map (pkg_filt t) pkgs in
-      find t env ty
-      |> wrap t ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif) ?pkg_filt
-    in
-    aux find, aux find_with
+  let iter_compatible ?pkgs t ty =
+    let _range, it = Trie.iter_compatible ty t.trie in
+    filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make it
+  
+  let find_exhaustive ?pkgs t env ty = 
+    Trie.iter t.trie
+    |> filter_with_unification env ty
+    |> filter_with_pkgs t ?pkgs
+      ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif)
+
+  let find ?pkgs t env ty =
+    let _range, it = Trie.iter_compatible ty t.trie in
+    it
+    |> filter_with_unification env ty
+    |> filter_with_pkgs t ?pkgs
+      ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif)
+
 
   module Archive = struct
 

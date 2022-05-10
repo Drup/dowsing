@@ -142,7 +142,7 @@ let main opts =
         |> Iter.map fst
       ),
       (fun () ->
-        Index.iter_with idx opts.ty ?pkgs
+        Index.iter_compatible idx opts.ty ?pkgs
         |> Iter.map fst
       )
   in

@@ -5,8 +5,8 @@ module type NODE = sig
   val empty : t
   val add : Type.t -> t -> t
   val remove : Type.t -> t -> t
-  val iter : t -> TypeId.Range.t * Type.t Iter.t
-  val iter_with : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
+  val iter : t -> Type.t Iter.t
+  val iter_compatible : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
 
   val iterid : t -> TypeId.t Iter.t
   val refresh : start:int -> t -> int

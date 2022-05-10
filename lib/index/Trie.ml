@@ -5,8 +5,8 @@ module type NODE = sig
   val empty : t
   val add : Type.t -> t -> t
   val remove : Type.t -> t -> t
-  val iter : t -> TypeId.Range.t * Type.t Iter.t
-  val iter_with : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
+  val iter : t -> Type.t Iter.t
+  val iter_compatible : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
 
   val iterid : t -> TypeId.t Iter.t
   val refresh : start:int -> t -> int
@@ -25,8 +25,8 @@ module Leaf : NODE = struct
     { t with types = Type.Set.add ty t.types }
   let remove ty t =
     { t with types = Type.Set.remove ty t.types }
-  let iter t = t.range, Type.Set.to_iter t.types
-  let iter_with _ = iter
+  let iter t = Type.Set.to_iter t.types
+  let iter_compatible _ t = t.range, Type.Set.to_iter t.types
 
   let iterid t =
     Type.Set.to_iter t.types |> Iter.mapi TypeId.mk
@@ -67,9 +67,8 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
     !r, Iter.flatten it'
   
   let iter t =
-    let it = FeatMap.values t in 
-    let it' = squash_ranges Sub.iter it in
-    it'
+    FeatMap.values t
+    |> Iter.flat_map Sub.iter
 
   (*
      TODO: this should be more clever to avoid having
@@ -78,12 +77,12 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
      ... compatible, so that we can make a range query.
   *)
 
-  let iter_with ty t =
+  let iter_compatible ty t =
     t
     |> FeatMap.to_iter
     |> squash_ranges (fun (feat, sub) ->
       if Feat.compatible ~query:(Feat.compute ty) ~data:feat then
-        Sub.iter_with ty sub
+        Sub.iter_compatible ty sub
       else
         TypeId.Range.empty, Iter.empty
       )

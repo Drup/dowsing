@@ -10,10 +10,10 @@ module type S = sig
   val add : t -> String.t -> Fpath.t -> unit
 
   val iter : ?pkgs:(String.t List.t) -> t -> iter
-  val iter_with : ?pkgs:(String.t List.t) -> t -> Type.t -> iter
+  val iter_compatible : ?pkgs:(String.t List.t) -> t -> Type.t -> iter
 
   val find : ?pkgs:(String.t List.t) -> t -> Type.Env.t -> Type.t -> iter_with_unifier
-  val find_with : ?pkgs:(String.t List.t) -> t -> Type.Env.t -> Type.t -> iter_with_unifier
+  val find_exhaustive : ?pkgs:(String.t List.t) -> t -> Type.Env.t -> Type.t -> iter_with_unifier
 
   val load : Fpath.t -> t
   val save : t -> Fpath.t -> Unit.t

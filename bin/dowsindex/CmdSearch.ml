@@ -27,8 +27,8 @@ let main opts =
   let res =
     let find =
       if opts.exhaustive
-      then Index.find
-      else Index.find_with
+      then Index.find_exhaustive
+      else Index.find
     in
     let iter_idx =
       try find idx env_query opts.ty ?pkgs
