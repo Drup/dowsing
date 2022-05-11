@@ -59,20 +59,19 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
       | None -> None
       | Some sub -> Some (Sub.remove ty sub)
 
-  let squash_ranges f it =
-    let r = ref TypeId.Range.empty in
-    let it' =
-      Iter.map (fun x ->
-          let range, it2 = f x in
-          r := TypeId.Range.union range !r;
-          it2) it
-    in
-    it' @@ ignore ;
-    !r, Iter.flatten it'
-  
   let iter t =
     FeatMap.values t
     |> Iter.flat_map Sub.iter
+
+  let squash_ranges f l =
+    let r = ref TypeId.Range.empty in
+    let iters =
+      List.map (fun x ->
+          let range, it2 = f x in
+          r := TypeId.Range.union range !r;
+          it2) l
+    in
+    !r, Iter.append_l iters
 
   (*
      TODO: this should be more clever to avoid having
@@ -80,10 +79,9 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
      In theory, we should be able to make `compare` and `compatible`
      ... compatible, so that we can make a range query.
   *)
-
   let iter_compatible ty t =
     t
-    |> FeatMap.to_iter
+    |> FeatMap.to_list
     |> squash_ranges (fun (feat, sub) ->
       if Feat.compatible ~query:(Feat.compute ty) ~data:feat then
         Sub.iter_compatible ty sub
@@ -92,9 +90,9 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
       )
 
   let iterid t =
-    let it = FeatMap.values t in 
-    let it' = Iter.flat_map Sub.iterid it in
-    it'
+    t
+    |> FeatMap.values
+    |> Iter.flat_map Sub.iterid
 
   let refresh ~start t =
     FeatMap.fold (fun _  t start -> Sub.refresh ~start t) t start
