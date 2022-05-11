@@ -42,6 +42,8 @@ module type S = sig
 
   val load : Fpath.t -> t
   val save : t -> Fpath.t -> unit
+
+  val pp_metrics : t Fmt.t
   
   module Explorer : sig
 

@@ -150,6 +150,13 @@ module Make (T : Trie.NODE) : S = struct
     |> filter_with_pkgs t ?pkgs
       ~to_type:fst ~merge:(fun (ty, unif) cell -> ty, cell, unif)
 
+  let pp_metrics fmt t =
+    Fmt.pf fmt "@[<v>Entries: %i@,Size: %iko@,Trie size: %iko@,Poset size: %iko@,Metadata: %iko"
+      (Poset.size t.poset)
+      (Obj.reachable_words (Obj.repr t) / 1024)
+      (Obj.reachable_words (Obj.repr t.trie) / 1024)
+      (Obj.reachable_words (Obj.repr t.poset) / 1024)
+      (Obj.reachable_words (Obj.repr t.cells) / 1024)
 
   module Archive = struct
 
