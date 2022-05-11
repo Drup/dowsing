@@ -117,6 +117,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   *)
   | Type.Constr (p1, args1), Type.Constr (p2, args2)
     when LongIdent.compare p1 p2 = 0 ->
+      assert (Array.length args1 = Array.length args2); 
       let stack = Stack.push_array2 args1 args2 stack in
       process_stack env stack
   (* Two arrows, we apply VA repeatedly
