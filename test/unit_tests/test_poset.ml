@@ -22,7 +22,7 @@ let make_checker s =
     let b = P.G.mem_vertex x.P.graph elt in
     let s = Fmt.str "Searching for %a" TypeId.pp elt in
     Alcotest.(check bool) s true b
-  and check_edge x edge () =
+  and check_edge x expected edge () =
     let b = P.G.mem_edge_e x.P.graph edge in
     let s =
       Fmt.str "Searching for edge between %a and %a" TypeId.pp
@@ -30,7 +30,7 @@ let make_checker s =
         TypeId.pp
         (P.G.E.dst edge)
     in
-    Alcotest.(check bool) s true b
+    Alcotest.(check bool) s expected b
   in
   let add_vertex _ v =
     let s = Fmt.str "@[%a@]" TypeId.pp v in
@@ -38,11 +38,16 @@ let make_checker s =
   in
   let add_edge _ (t,b) =
     let s = Fmt.str "@[(%a) → (%a)@]" TypeId.pp t TypeId.pp b in
-    Alcotest.test_case s `Quick (check_edge x0 (t,b))
+    Alcotest.test_case s `Quick (check_edge x0 true (t,b))
   in
-  let test edges = [
+  let add_forbidden_edge _ (t,b) =
+    let s = Fmt.str "@[(%a) → (%a)@]" TypeId.pp t TypeId.pp b in
+    Alcotest.test_case s `Quick (check_edge x0 false (t,b))
+  in
+  let test edges forbidden_edges = [
     (s^" Vertex", List.mapi add_vertex !type_list);
     (s^" Edge", List.mapi add_edge edges);
+    (s^" Forbidden Edge", List.mapi add_forbidden_edge forbidden_edges);
   ]
   in
   mk, test
@@ -57,8 +62,7 @@ let base =
   and a3 = t "'a -> 'b"
   and a4 = t "int * float -> 'a"
   and a5 = t "'c -> int" in
-  let expected_edges =
-    [
+  let expected_edges = [
       b1 --> a3;
       b1 --> b2;
       b1 --> b3;
@@ -68,8 +72,12 @@ let base =
       a2 --> a4;
       a5 --> a1;
     ]
+  and forbidden_edges = [
+    b1 --> a1;
+    b3 --> a2;
+  ]
   in
-  test expected_edges
+  test expected_edges forbidden_edges
 
 (* do test *)
 
