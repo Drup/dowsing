@@ -6,10 +6,10 @@
 *)
 
 type id = int
-type t = private { id : id ; ty : Type.t }
+type t = private { id : id; ty : Type.t }
 
-(** [mk id ty] creates a typeid. Should be used very carefully to ensure unicity. *)
 val mk : int -> Type.t -> t
+(** [mk id ty] creates a typeid. Should be used very carefully to ensure unicity. *)
 
 (** {2 Accessors} *)
 
@@ -22,11 +22,13 @@ val equal : t -> t -> bool
 val hash : t -> int
 
 module Set : CCSet.S with type elt = t
+module Map : CCMap.S with type key = t
+
 module Range : sig
   include Diet.INTERVAL_SET with type elt = id
+
   val singleton : elt -> elt -> t
 end
 
 val check : t -> Range.t -> bool
-
 val pp : t Fmt.t
