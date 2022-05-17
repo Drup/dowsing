@@ -22,9 +22,11 @@ let main opts =
   let idx =
     try Index.load opts.idx_file with Sys_error _ -> Index.make env_data
   in
-  Index.import idx pkgs;
-  Fmt.pr "@[<2>Create an index:@,%a@]@." Index.pp_metrics idx;
-  try Index.save idx opts.idx_file
+  Index.import_package idx pkgs;
+  Fmt.pr "@[<2>Create an index:@,%a@]@."
+    Index.pp_metrics idx;
+  try
+    Index.save idx opts.idx_file
   with Sys_error _ ->
     error @@ Fmt.str "cannot write index file `%a'" Fpath.pp opts.idx_file
 

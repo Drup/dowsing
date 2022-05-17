@@ -66,10 +66,12 @@ module Make (T : Trie.NODE) : S = struct
         (CCFun.compose (Cell.update orig_lid info) CCOption.return)
         cells
     in
-    fun t (pkg, pkg_dir) ->
-      if String.HMap.mem t.pkgs_dirs pkg then remove t pkg;
+    fun t (pkg, pkg_dir, it) ->
+      if String.HMap.mem t.pkgs_dirs pkg then
+        remove t pkg ;
       let cells =
-        Package.iter [ pkg_dir ] |> Iter.fold (aux t) Type.Map.empty
+        it
+        |> Iter.fold (aux t) Type.Map.empty
       in
       String.HMap.add t.pkgs_dirs pkg pkg_dir;
       t.cells <-
@@ -96,6 +98,12 @@ module Make (T : Trie.NODE) : S = struct
     refresh t;
     regenerate_poset t
 
+  let import_package t l =
+    List.map
+      (fun (pkg, pkg_dir) -> pkg, pkg_dir, Package.iter [ pkg_dir ])
+      l
+    |> import t
+  
   (** Iterators *)
 
   let mem_pkgs t pkgs =
