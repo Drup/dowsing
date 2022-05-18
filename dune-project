@@ -5,22 +5,15 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (github Drup/dowsing))
 
-(authors "Author Name")
+(authors "Gabriel Radanne")
 
-(maintainers "Maintainer Name")
+(maintainers "Gabriel Radanne")
 
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(license MIT)
 
 (package
  (name dowsing)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune)
- (tags
-  (topics "to describe" your project)))
-
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
+ (synopsis "Dowsing is a type of divination employed in attempts to locate functions by giving a type")
+ (depends ocaml dune fmt containers iter diet ocp-index ocamlgraph bos zarith))
