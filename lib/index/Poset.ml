@@ -1,14 +1,11 @@
 open Graph
 module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 
-let info = Logs.info
+let _info = Logs.info
 let debug = Logs.debug
 
 module G = Imperative.Digraph.ConcreteBidirectional (TypeId)
 module Edge_set = Set.Make (G.E)
-
-let pp_vertex fmt e = Fmt.box TypeId.pp fmt e
-let pp_edge fmt (s, d) = Fmt.pf fmt "@[%a ==> %a@]" TypeId.pp s TypeId.pp d
 
 type t = {
   env : Type.Env.t;
@@ -16,6 +13,68 @@ type t = {
   mutable tops : TypeId.Set.t;
   mutable bottoms : TypeId.Set.t;
 }
+
+(*Printers*)
+
+let pp_vertex fmt e = Fmt.box TypeId.pp fmt e
+let pp_edge fmt (s, d) = Fmt.pf fmt "@[%a ==> %a@]" TypeId.pp s TypeId.pp d
+
+let pp fmt { graph; _ } =
+  if G.nb_vertex graph = 0 then Format.fprintf fmt "empty"
+  else
+    Format.fprintf fmt "@[<v 2>Vertices: %a@]@.@[<v2>Edges: %a@]@."
+      (Fmt.iter G.iter_vertex pp_vertex)
+      graph
+      (Fmt.iter G.iter_edges_e pp_edge)
+      graph
+
+module D = Graphviz.Dot (struct
+  type t = G.t * TypeId.Range.t
+
+  module V = struct
+    type t = TypeId.t * bool
+  end
+
+  module E = struct
+    type t = V.t * V.t
+
+    let src = fst
+    let dst = snd
+  end
+
+  let annotate_vertex (_g, range) v = (v, TypeId.check v range)
+
+  let iter_vertex f (g, range) =
+    let f' v = f @@ annotate_vertex (g, range) v in
+    G.iter_vertex f' g
+
+  let iter_edges_e f (g, range) =
+    let f' (src, dst) =
+      f @@ (annotate_vertex (g, range) src, annotate_vertex (g, range) dst)
+    in
+    G.iter_edges_e f' g
+
+  let graph_attributes _ = []
+  let default_vertex_attributes _ = []
+  let vertex_name (v, _) = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
+
+  let vertex_attributes (_, b) =
+    let color_attr = if b then `Color 0x005F00 else `Color 0x5F0000 in
+    [ color_attr; `Shape `Box; `Style `Filled ]
+
+  let get_subgraph _ = None
+  let default_edge_attributes _ = []
+  let edge_attributes _ = []
+end)
+
+let xdot ?(range = TypeId.Range.empty) e =
+  let s = Filename.temp_file "dowsing_" ".dot" in
+  let fmt = Format.formatter_of_out_channel @@ open_out s in
+  Fmt.pf fmt "%a@." D.fprint_graph (e.graph, range);
+  let _ = Unix.system @@ Fmt.str "xdot %s" @@ Filename.quote s in
+  ()
+
+(*Initialization and transformations*)
 
 let init env =
   let g = G.create () in
@@ -68,20 +127,20 @@ module Changes = struct
     G.add_vertex poset.graph vertex_0;
     Edge_set.iter
       (fun edge ->
-        info (fun m -> m "Remove Edge %a @," pp_edge edge);
+        debug (fun m -> m "Remove Edge %a @," pp_edge edge);
         G.remove_edge_e poset.graph edge)
       ch.remove_edges;
     TypeId.Set.iter
       (fun dst ->
         let edge = G.E.create vertex_0 () dst in
-        info (fun m -> m "Add Edge %a @," pp_edge edge);
+        debug (fun m -> m "Add Edge %a @," pp_edge edge);
         poset.tops <- TypeId.Set.remove dst poset.tops;
         G.add_edge_e poset.graph edge)
       ch.lower_bounds;
     TypeId.Set.iter
       (fun src ->
         let edge = G.E.create src () vertex_0 in
-        info (fun m -> m "Add Edge %a @," pp_edge edge);
+        debug (fun m -> m "Add Edge %a @," pp_edge edge);
         poset.bottoms <- TypeId.Set.remove src poset.bottoms;
         G.add_edge_e poset.graph edge)
       ch.upper_bounds;
@@ -91,6 +150,8 @@ module Changes = struct
       poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
     ()
 end
+
+(*Adding in poset*)
 
 exception Type_already_present of G.V.t
 
@@ -120,12 +181,12 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
   let rec visit_down already_seen ~prev ~current =
-    info (fun m ->
+    debug (fun m ->
         m "Visiting Edge down %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    info (fun m -> m "%a@," Unification.pp_ord comp);
+    debug (fun m -> m "%a@," Unification.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -145,12 +206,12 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
         let already_seen = TypeId.Set.remove current already_seen in
         visit_next already_seen
   and visit_up already_seen ~prev ~current =
-    info (fun m ->
+    debug (fun m ->
         m "Visiting Edge up %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊥") pp_vertex)
           prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    info (fun m -> m "%a@," Unification.pp_ord comp);
+    debug (fun m -> m "%a@," Unification.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -170,7 +231,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
     | None -> already_seen
     | Some (dir, prev, current) ->
         if TypeId.Set.mem current already_seen then (
-          info (fun m -> m "Already visited node %a@," TypeId.pp current);
+          debug (fun m -> m "Already visited node %a@," TypeId.pp current);
           visit_next already_seen)
         else
           let next = match dir with `down -> visit_down | `up -> visit_up in
@@ -178,22 +239,24 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
           next already_seen ~prev ~current
   in
   try
-    info (fun m -> m "@[<v 2>Node %a@," pp_vertex vertex_0);
+    debug (fun m -> m "@[<v 2>Node %a@," pp_vertex vertex_0);
     TypeId.Set.iter (fun v -> Queue.push (`down, None, v) to_visit) tops;
     let already_seen_0 = visit_next already_seen_0 in
     TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
     let _already_seen_0 = visit_next already_seen_0 in
     Changes.apply poset ch vertex_0;
-    info (fun m -> m "@]");
+    debug (fun m -> m "@]");
     debug (fun m ->
         m "@[New tops: %a@]@.@[New bots: %a @]@." (TypeId.Set.pp TypeId.pp)
           poset.tops (TypeId.Set.pp TypeId.pp) poset.bottoms);
-    info (fun m ->
+    debug (fun m ->
         m "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@."
           !bigger !uncomparable !smaller);
     ()
   with Type_already_present node ->
-    info (fun m -> m "Found the same type %a!@." pp_vertex node)
+    debug (fun m -> m "Found the same type %a!@." pp_vertex node)
+
+(*Operating on poset*)
 
 let iter_succ t elt f =
   let rec aux l =
@@ -251,7 +314,8 @@ let check poset env ~query:ty ~range =
   in
   let to_visit = Queue.create () in
   let rec visit_down node =
-    info (fun m -> m "Visiting Node %a @," pp_vertex node);
+    debug (fun m -> m "Visiting Node %a @," pp_vertex node);
+    (* xdot poset ~range:!range; *)
     if Tmap.mem node !unif_opt then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;
@@ -279,58 +343,3 @@ let check poset env ~query:ty ~range =
 
 let copy t =
   { env = t.env; graph = G.copy t.graph; tops = t.tops; bottoms = t.bottoms }
-
-let pp fmt { graph; _ } =
-  if G.nb_vertex graph = 0 then Format.fprintf fmt "empty"
-  else
-    Format.fprintf fmt "@[<v 2>Vertices: %a@]@.@[<v2>Edges: %a@]@."
-      (Fmt.iter G.iter_vertex pp_vertex)
-      graph
-      (Fmt.iter G.iter_edges_e pp_edge)
-      graph
-
-module D = Graphviz.Dot (struct
-  type t = G.t * TypeId.Range.t
-
-  module V = struct
-    type t = TypeId.t * bool
-  end
-
-  module E = struct
-    type t = V.t * V.t
-
-    let src = fst
-    let dst = snd
-  end
-
-  let annotate_vertex (_g, range) v = (v, TypeId.check v range)
-
-  let iter_vertex f (g, range) =
-    let f' v = f @@ annotate_vertex (g, range) v in
-    G.iter_vertex f' g
-
-  let iter_edges_e f (g, range) =
-    let f' (src, dst) =
-      f @@ (annotate_vertex (g, range) src, annotate_vertex (g, range) dst)
-    in
-    G.iter_edges_e f' g
-
-  let graph_attributes _ = []
-  let default_vertex_attributes _ = []
-  let vertex_name (v, _) = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
-
-  let vertex_attributes (_, b) =
-    let color_attr = if b then `Color 0x005F00 else `Color 0x5F0000 in
-    [ color_attr; `Shape `Box; `Style `Filled ]
-
-  let get_subgraph _ = None
-  let default_edge_attributes _ = []
-  let edge_attributes _ = []
-end)
-
-let xdot ?(range = TypeId.Range.empty) e =
-  let s = Filename.temp_file "dowsing_" ".dot" in
-  let fmt = Format.formatter_of_out_channel @@ open_out s in
-  Fmt.pf fmt "%a@." D.fprint_graph (e.graph, range);
-  let _ = Unix.system @@ Fmt.str "xdot %s" @@ Filename.quote s in
-  ()
