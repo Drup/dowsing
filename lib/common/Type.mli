@@ -112,6 +112,7 @@ val of_outcometree' :
 val of_parsetree' : Env.t -> Parsetree.core_type -> Variable.t String.HMap.t * t
 val of_lexing' : Env.t -> Lexing.lexbuf -> Variable.t String.HMap.t * t
 val of_string' : Env.t -> String.t -> Variable.t String.HMap.t * t
+val outcome_of_string : String.t -> Outcometree.out_type
 
 (* utility functions *)
 

@@ -340,6 +340,45 @@ let of_parsetree of_parsetree env var (parse_ty : Parsetree.core_type) =
   | Ptyp_extension _ ->
       other env parse_ty
 
+let rec parse_to_outcome (parse_ty : Parsetree.core_type) =
+  match parse_ty.ptyp_desc with
+  | Ptyp_var name -> Outcometree.Otyp_var (false, name)
+  | Ptyp_constr (id, params) ->
+      let rec make_out_id lid =
+        match lid with
+        | Longident.Lident s ->
+            let out_name = { Outcometree.printed_name = s } in
+            Outcometree.Oide_ident out_name
+        | LongIdent.Ldot (id, s) -> Outcometree.Oide_dot (make_out_id id, s)
+        | LongIdent.Lapply (id1, id2) ->
+            Outcometree.Oide_apply (make_out_id id1, make_out_id id2)
+      in
+      let id = make_out_id id.txt in
+      let params = params |> CCList.map parse_to_outcome in
+      Outcometree.Otyp_constr (id, params)
+  | Ptyp_arrow (lbl, param, ret) ->
+      let str =
+        match lbl with Nolabel -> "" | Labelled s -> s | Optional s -> s
+      in
+      Outcometree.Otyp_arrow (str, parse_to_outcome param, parse_to_outcome ret)
+  | Ptyp_tuple elts -> Outcometree.Otyp_tuple (CCList.map parse_to_outcome elts)
+  | Ptyp_alias (parse_ty, str) ->
+      Outcometree.Otyp_alias (parse_to_outcome parse_ty, str)
+  | Ptyp_poly (s, parse_ty) ->
+      let f (str : string Location.loc) = str.txt in
+      let str = CCList.map f s in
+      Outcometree.Otyp_poly (str, parse_to_outcome parse_ty)
+  | Ptyp_object _ | Ptyp_class _ | Ptyp_variant _ | Ptyp_package _
+  | Ptyp_extension _ | Ptyp_any ->
+      Outcometree.Otyp_abstract
+
+let outcome_of_string (str : String.t) =
+  let (parse_ty : Parsetree.core_type) =
+    try Parse.core_type @@ Lexing.from_string str
+    with Syntaxerr.Error _ -> invalid_arg "Type.outcome_of_string"
+  in
+  parse_to_outcome parse_ty
+
 let var' bdgs (env : Env.t) = function
   | None -> var env @@ Variable.Gen.gen env.var_gen
   | Some name -> (

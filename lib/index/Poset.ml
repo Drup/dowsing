@@ -28,11 +28,15 @@ let pp fmt { graph; _ } =
       (Fmt.iter G.iter_edges_e pp_edge)
       graph
 
+module Unif_state = struct
+  type t = Unknown | False | True of Subst.t
+end
+
 module D = Graphviz.Dot (struct
-  type t = G.t * TypeId.Range.t
+  type t = G.t * TypeId.Range.t * Subst.t TypeId.Map.t
 
   module V = struct
-    type t = TypeId.t * bool
+    type t = TypeId.t * Unif_state.t
   end
 
   module E = struct
@@ -42,15 +46,21 @@ module D = Graphviz.Dot (struct
     let dst = snd
   end
 
-  let annotate_vertex (_g, range) v = (v, TypeId.check v range)
+  let annotate_vertex (_g, range, unifs) v =
+    match (TypeId.Map.find_opt v unifs, TypeId.check v range) with
+    | None, true -> (v, Unif_state.Unknown)
+    | None, false -> (v, Unif_state.False)
+    | Some sub, _ -> (v, Unif_state.True sub)
 
-  let iter_vertex f (g, range) =
-    let f' v = f @@ annotate_vertex (g, range) v in
+  let iter_vertex f (g, range, unifs) =
+    let f' v = f @@ annotate_vertex (g, range, unifs) v in
     G.iter_vertex f' g
 
-  let iter_edges_e f (g, range) =
+  let iter_edges_e f (g, range, unifs) =
     let f' (src, dst) =
-      f @@ (annotate_vertex (g, range) src, annotate_vertex (g, range) dst)
+      f
+      @@ ( annotate_vertex (g, range, unifs) src,
+           annotate_vertex (g, range, unifs) dst )
     in
     G.iter_edges_e f' g
 
@@ -58,19 +68,28 @@ module D = Graphviz.Dot (struct
   let default_vertex_attributes _ = []
   let vertex_name (v, _) = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
 
-  let vertex_attributes (_, b) =
-    let color_attr = if b then `Color 0x005F00 else `Color 0x5F0000 in
-    [ color_attr; `Shape `Box; `Style `Filled ]
+  let vertex_attributes (_, state) =
+    let color_attr, unif =
+      match state with
+      | Unif_state.Unknown -> (`Color 0x5F5F00, None)
+      | Unif_state.False -> (`Color 0x5F0000, None)
+      | Unif_state.True u -> (`Color 0x005F00, Some u)
+    in
+    match unif with
+    | None -> [ color_attr; `Shape `Box; `Style `Filled ]
+    | Some u ->
+        let str = Fmt.str "%a" Subst.pp u in
+        [ color_attr; `Shape `Box; `Style `Filled; `Label str ]
 
   let get_subgraph _ = None
   let default_edge_attributes _ = []
   let edge_attributes _ = []
 end)
 
-let xdot ?(range = TypeId.Range.empty) e =
+let xdot ?(range = TypeId.Range.empty) ?(unifs = TypeId.Map.empty) e =
   let s = Filename.temp_file "dowsing_" ".dot" in
   let fmt = Format.formatter_of_out_channel @@ open_out s in
-  Fmt.pf fmt "%a@." D.fprint_graph (e.graph, range);
+  Fmt.pf fmt "%a@." D.fprint_graph (e.graph, range, unifs);
   let _ = Unix.system @@ Fmt.str "xdot %s" @@ Filename.quote s in
   ()
 
@@ -304,7 +323,7 @@ let fold_pred t elt f res_0 =
 
 let check poset env ~query:ty ~range =
   let module Tmap = TypeId.Map in
-  let unif_opt = ref Tmap.empty in
+  let unifs = ref Tmap.empty in
   let range = ref range in
   let update_no_unif node =
     range :=
@@ -315,15 +334,15 @@ let check poset env ~query:ty ~range =
   let to_visit = Queue.create () in
   let rec visit_down node =
     debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    (* xdot poset ~range:!range; *)
-    if Tmap.mem node !unif_opt then visit_next ()
+    (* xdot poset ~range:!range ~unifs:!unifs; *)
+    if Tmap.mem node !unifs then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;
       visit_next ())
     else
       match Unification.unify env ty node.ty with
       | Some vm ->
-          unif_opt := Tmap.add node vm !unif_opt;
+          unifs := Tmap.add node vm !unifs;
           let l = G.succ poset.graph node in
           List.iter (fun next -> Queue.push next to_visit) l;
           visit_next ()
@@ -338,8 +357,7 @@ let check poset env ~query:ty ~range =
   in
   TypeId.Set.iter (fun v -> Queue.push v to_visit) poset.tops;
   visit_next ();
-  Tmap.to_iter !unif_opt
-  |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
+  Tmap.to_iter !unifs |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
 
 let copy t =
   { env = t.env; graph = G.copy t.graph; tops = t.tops; bottoms = t.bottoms }

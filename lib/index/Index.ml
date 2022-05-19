@@ -67,12 +67,8 @@ module Make (T : Trie.NODE) : S = struct
         cells
     in
     fun t (pkg, pkg_dir, it) ->
-      if String.HMap.mem t.pkgs_dirs pkg then
-        remove t pkg ;
-      let cells =
-        it
-        |> Iter.fold (aux t) Type.Map.empty
-      in
+      if String.HMap.mem t.pkgs_dirs pkg then remove t pkg;
+      let cells = it |> Iter.fold (aux t) Type.Map.empty in
       String.HMap.add t.pkgs_dirs pkg pkg_dir;
       t.cells <-
         (t.cells
@@ -99,11 +95,9 @@ module Make (T : Trie.NODE) : S = struct
     regenerate_poset t
 
   let import_package t l =
-    List.map
-      (fun (pkg, pkg_dir) -> pkg, pkg_dir, Package.iter [ pkg_dir ])
-      l
+    List.map (fun (pkg, pkg_dir) -> (pkg, pkg_dir, Package.iter [ pkg_dir ])) l
     |> import t
-  
+
   (** Iterators *)
 
   let mem_pkgs t pkgs =
@@ -131,7 +125,7 @@ module Make (T : Trie.NODE) : S = struct
                     Type.Map.get ty cells |> CCOption.map @@ merge elt
                   else None))
 
-  let _filter_with_poset t env ty range =
+  let filter_with_poset t env ty range =
     Poset.check t.poset env ~query:ty ~range
 
   let filter_with_unification env ty it =
@@ -161,7 +155,7 @@ module Make (T : Trie.NODE) : S = struct
     let range = T.range_compatible ty t.trie in
     _info (fun m -> m "%a@." TypeId.Range.pp range);
     Poset.xdot t.poset ~range;
-    _filter_with_poset t env ty range
+    filter_with_poset t env ty range
     |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
            (ty, cell, unif))
 

@@ -1,5 +1,13 @@
 (executable
  (name populate_partial_order)
-  (libraries alcotest common unification index)
-  (flags (:standard -open Common)))
+ (modules populate_partial_order)
+ (libraries alcotest common unification index)
+ (flags
+  (:standard -open Common)))
 
+(executable
+ (name populate_index)
+ (modules populate_index)
+ (libraries alcotest common unification index compiler-libs)
+ (flags
+  (:standard -open Common)))
