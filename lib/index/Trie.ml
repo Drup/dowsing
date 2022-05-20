@@ -82,10 +82,14 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
            else (TypeId.Range.empty, Iter.empty))
 
   let range_compatible ty t =
-    t |> FeatMap.values
-    |> Iter.fold
-         (fun acc sub ->
-           let r = Sub.range_compatible ty sub in
+    t |> FeatMap.to_list
+    |> CCList.fold_left
+         (fun acc (feat, sub) ->
+           let r =
+             if Feat.compatible ~query:(Feat.compute ty) ~data:feat then
+               Sub.range_compatible ty sub
+             else TypeId.Range.empty
+           in
            TypeId.Range.union r acc)
          TypeId.Range.empty
 
