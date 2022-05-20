@@ -69,17 +69,16 @@ module D = Graphviz.Dot (struct
   let vertex_name (v, _) = "\"" ^ Fmt.to_to_string pp_vertex v ^ "\""
 
   let vertex_attributes (_, state) =
-    let color_attr, unif =
+    let color_attr, font_color, lbl =
       match state with
-      | Unif_state.Unknown -> (`Color 0x5F5F00, None)
-      | Unif_state.False -> (`Color 0x5F0000, None)
-      | Unif_state.True u -> (`Color 0x005F00, Some u)
+      | Unif_state.Unknown -> (`Color 0xFFAF00, `Fontcolor 0x000000, [])
+      | Unif_state.False -> (`Color 0x5F0000, `Fontcolor 0xFFFFFF, [])
+      | Unif_state.True u ->
+          let str = Fmt.str "%a" Subst.pp u in
+          (`Color 0x005F00, `Fontcolor 0xFFFFFF, [ `Label ("Unif : " ^ str) ])
     in
-    match unif with
-    | None -> [ color_attr; `Shape `Box; `Style `Filled ]
-    | Some u ->
-        let str = Fmt.str "%a" Subst.pp u in
-        [ color_attr; `Shape `Box; `Style `Filled; `Label str ]
+
+    [ color_attr; font_color; `Shape `Box; `Style `Filled ] @ lbl
 
   let get_subgraph _ = None
   let default_edge_attributes _ = []
@@ -334,7 +333,7 @@ let check poset env ~query:ty ~range =
   let to_visit = Queue.create () in
   let rec visit_down node =
     debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    (* xdot poset ~range:!range ~unifs:!unifs; *)
+    xdot poset ~range:!range ~unifs:!unifs;
     if Tmap.mem node !unifs then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;
