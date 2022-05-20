@@ -1,6 +1,17 @@
 (rule
-  (target index.db)
-  (action (run dowsindex save --index %{target} containers)))
+ (target fmt.db)
+ (action
+  (run dowsindex save --index %{target} fmt)))
 
 (cram
-  (deps %{bin:dowsindex} index.db))
+ (applies_to basics)
+ (deps %{bin:dowsindex} fmt.db))
+
+(rule
+ (target idx_from_list.db)
+ (action
+  (run ../populate_index.exe)))
+
+(cram
+ (applies_to type_list_index)
+ (deps %{bin:dowsindex} idx_from_list.db))
