@@ -16,7 +16,7 @@ let rec apply (env : Type.Env.t) t =
     | Arrow (params, ret) ->
         Type.(arrows env (NSet.map substitute params) (substitute ret))
     | Tuple elts -> Type.(tuple env @@ NSet.map substitute elts)
-    | Other _ | FrozenVar _ | Empty -> ty
+    | Other _ | FrozenVar _ -> ty
 
 let simplify env vars t =
   let unfold var =

@@ -117,7 +117,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   *)
   | Type.Constr (p1, args1), Type.Constr (p2, args2)
     when LongIdent.compare p1 p2 = 0 ->
-      assert (Array.length args1 = Array.length args2); 
+      assert (Array.length args1 = Array.length args2);
       let stack = Stack.push_array2 args1 args2 stack in
       process_stack env stack
   (* Two arrows, we apply VA repeatedly
@@ -143,8 +143,8 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
      Terms are incompatible
   *)
   | Constr _, Constr _ (* if same constructor, already checked above *)
-  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _ | Empty),
-      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _ | Empty) ) ->
+  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
+      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
       FailUnif (t1, t2)
 
 (* Repeated application of VA on an array of subexpressions. *)
@@ -175,7 +175,7 @@ and variable_abstraction env stack t =
   | Var i -> (stack, Pure.var i)
   | Constr (p, [||]) -> (stack, Pure.constant p)
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ | Empty ->
+  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ ->
       let var = Env.gen env in
       let stack = Stack.push_quasi_solved stack var t in
       (stack, Pure.var var)
@@ -184,7 +184,7 @@ and insert_var env stack x s =
   match s with
   | Type.Constr (_, [||])
   | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _
-  | Type.FrozenVar _ | Type.Empty ->
+  | Type.FrozenVar _ ->
       quasi_solved env stack x s
   | Type.Var y -> non_proper env stack x y
 
@@ -362,16 +362,11 @@ let pp_ord fmt c =
   | Equal -> Format.fprintf fmt "Equal"
 
 let compare env (t1 : Type.t) (t2 : Type.t) =
-  match (t1, t2) with
-  | Empty, Empty -> Equal
-  | Empty, _ -> Smaller
-  | _, Empty -> Bigger
-  | _, _ -> (
-      let t1f = Type.freeze_variables env t1 in
-      let t2f = Type.freeze_variables env t2 in
-      let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
-      match (b1, b2) with
-      | true, true -> Equal
-      | false, false -> Uncomparable
-      | true, false -> Smaller
-      | false, true -> Bigger)
+  let t1f = Type.freeze_variables env t1 in
+  let t2f = Type.freeze_variables env t2 in
+  let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
+  match (b1, b2) with
+  | true, true -> Equal
+  | false, false -> Uncomparable
+  | true, false -> Smaller
+  | false, true -> Bigger

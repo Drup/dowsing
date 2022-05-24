@@ -1,7 +1,7 @@
 (* Kind *)
 
 module Kind = struct
-  type t = Var | Constr | Arrow | Tuple | Other | Empty
+  type t = Var | Constr | Arrow | Tuple | Other
 
   let to_int = function
     | Var -> 0
@@ -9,7 +9,6 @@ module Kind = struct
     | Arrow -> 2
     | Tuple -> 3
     | Other -> 4
-    | Empty -> 5
 
   let of_int = function
     | 0 -> Var
@@ -17,7 +16,6 @@ module Kind = struct
     | 2 -> Arrow
     | 3 -> Tuple
     | 4 -> Other
-    | 5 -> Empty
     | _ -> assert false
 
   let to_string = function
@@ -26,7 +24,6 @@ module Kind = struct
     | Arrow -> "arrow"
     | Tuple -> "tuple"
     | Other -> "other"
-    | Empty -> "empty"
 
   let compare t1 t2 = CCInt.compare (to_int t1) (to_int t2)
   let equal t1 t2 = compare t1 t2 = 0
@@ -57,7 +54,7 @@ end
 (* Kind' *)
 
 module Kind' = struct
-  type t = Var | Constr of LongIdent.t | Arrow | Tuple | Other | Empty
+  type t = Var | Constr of LongIdent.t | Arrow | Tuple | Other
 
   let to_int = function
     | Var -> 0
@@ -65,11 +62,10 @@ module Kind' = struct
     | Arrow -> 2
     | Tuple -> 3
     | Other -> 4
-    | Empty -> 5
 
   let compare t1 t2 =
     match (t1, t2) with
-    | Var, Var | Arrow, Arrow | Tuple, Tuple | Other, Other | Empty, Empty -> 0
+    | Var, Var | Arrow, Arrow | Tuple, Tuple | Other, Other -> 0
     | Constr lid1, Constr lid2 -> LongIdent.compare lid1 lid2
     | _ -> CCInt.compare (to_int t1) (to_int t2)
 
@@ -106,7 +102,6 @@ module rec Base : sig
     | Arrow of NSet.t * t
     | Tuple of NSet.t
     | Other of Int.t
-    | Empty
 
   val kind : t -> Kind.t
   val kind' : t -> Kind'.t
@@ -121,7 +116,6 @@ end = struct
     | Arrow of NSet.t * t
     | Tuple of NSet.t
     | Other of Int.t
-    | Empty
 
   let kind : t -> Kind.t = function
     | Var _ | FrozenVar _ -> Var
@@ -129,7 +123,6 @@ end = struct
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
     | Other _ -> Other
-    | Empty -> Empty
 
   let kind' : t -> Kind'.t = function
     | Var _ | FrozenVar _ -> Var
@@ -137,7 +130,6 @@ end = struct
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
     | Other _ -> Other
-    | Empty -> Empty
 
   let rec compare t1 t2 =
     if t1 == t2 then 0
@@ -288,7 +280,6 @@ let tuple env elts =
   @@ match NSet.is_singleton elts with Some elt -> elt | None -> Tuple elts
 
 let other env x = hashcons env @@ Other (CCHash.poly x)
-let empty env = hashcons env @@ Empty
 
 (* freezing *)
 
@@ -299,7 +290,7 @@ let rec freeze_variables env (t : t) =
   | Arrow (args, t) ->
       arrows env (NSet.map (freeze_variables env) args) (freeze_variables env t)
   | Tuple ts -> tuple env (NSet.map (freeze_variables env) ts)
-  | Other _ | FrozenVar _ | Empty -> hashcons env t
+  | Other _ | FrozenVar _ -> hashcons env t
 
 (* import functions *)
 
@@ -437,7 +428,7 @@ let iter =
 
 let rec iter_vars t k =
   match t with
-  | Other _ | FrozenVar _ | Empty -> ()
+  | Other _ | FrozenVar _ -> ()
   | Var var -> k var
   | Constr (_, params) -> CCArray.iter (fun t -> iter_vars t k) params
   | Arrow (params, ret) ->
@@ -456,11 +447,10 @@ let rec pp ppf = function
       Fmt.pf ppf "@[<2>%a@ ->@ %a@]" (NSet.pp pp_parens) params pp_parens ret
   | Tuple elts -> Fmt.pf ppf "@[<2>%a@]" (NSet.pp pp_parens) elts
   | Other i -> Fmt.pf ppf "other%i" i
-  | Empty -> Fmt.pf ppf "empty"
 
 and pp_parens ppf ty =
   match ty with
-  | Var _ | FrozenVar _ | Other _ | Constr _ | Empty -> pp ppf ty
+  | Var _ | FrozenVar _ | Other _ | Constr _ -> pp ppf ty
   | Arrow _ -> Fmt.parens pp ppf ty
   | Tuple elts ->
       if NSet.length elts <= 1 then pp ppf ty else Fmt.parens pp ppf ty

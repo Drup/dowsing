@@ -73,10 +73,10 @@ module D = Graphviz.Dot (struct
     let color_attr, font_color, lbl =
       match state with
       | Unif_state.Unknown -> (`Color 0xFFAF00, `Fontcolor 0x000000, v_name)
-      | Unif_state.False -> (`Color 0x5F0000, `Fontcolor 0xFFFFFF, v_name)
+      | Unif_state.False -> (`Color 0xc60013, `Fontcolor 0xFFFFFF, v_name)
       | Unif_state.True u ->
           let str = Fmt.str "%a" Subst.pp u in
-          (`Color 0x005F00, `Fontcolor 0xFFFFFF, v_name ^ "Unif : " ^ str)
+          (`Color 0x007500, `Fontcolor 0xFFFFFF, v_name ^ "Unif : " ^ str)
     in
     [ color_attr; font_color; `Shape `Box; `Style `Filled; `Label lbl ]
 
@@ -184,12 +184,7 @@ let compat (t1 : Type.t) (t2 : Type.t) =
   aux Feature.all
 
 let compare env t1 t2 =
-  if not (compat t1 t2) then
-    match (t1, t2) with
-    | Empty, Empty -> Unification.Equal
-    | Empty, _ -> Unification.Smaller
-    | _, Empty -> Unification.Bigger
-    | _, _ -> Unification.Uncomparable
+  if not (compat t1 t2) then Unification.Uncomparable
   else Unification.compare env t1 t2
 
 let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
@@ -333,7 +328,7 @@ let check poset env ~query:ty ~range =
   let to_visit = Queue.create () in
   let rec visit_down node =
     debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    (* xdot poset ~range:!range ~unifs:!unifs; *)
+    xdot poset ~range:!range ~unifs:!unifs;
     if Tmap.mem node !unifs then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;

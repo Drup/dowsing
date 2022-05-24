@@ -1,5 +1,5 @@
 module Kind : sig
-  type t = Var | Constr | Arrow | Tuple | Other | Empty
+  type t = Var | Constr | Arrow | Tuple | Other
 
   val to_int : t -> Int.t
   val of_int : Int.t -> t
@@ -16,7 +16,7 @@ module Kind : sig
 end
 
 module Kind' : sig
-  type t = Var | Constr of LongIdent.t | Arrow | Tuple | Other | Empty
+  type t = Var | Constr of LongIdent.t | Arrow | Tuple | Other
 
   val to_int : t -> Int.t
   val compare : t CCOrd.t
@@ -36,7 +36,6 @@ module rec Base : sig
     | Arrow of NSet.t * t
     | Tuple of NSet.t
     | Other of Int.t
-    | Empty
 
   val kind : t -> Kind.t
   val kind' : t -> Kind'.t
@@ -93,7 +92,6 @@ val constr : Env.t -> LongIdent.t -> t Array.t -> t
 val arrow : Env.t -> t -> t -> t
 val arrows : Env.t -> NSet.t -> t -> t
 val tuple : Env.t -> NSet.t -> t
-val empty : Env.t -> t
 
 (* freeze *)
 
