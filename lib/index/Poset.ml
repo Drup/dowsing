@@ -328,7 +328,7 @@ let check poset env ~query:ty ~range =
   let to_visit = Queue.create () in
   let rec visit_down node =
     debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    xdot poset ~range:!range ~unifs:!unifs;
+    (* xdot poset ~range:!range ~unifs:!unifs; *)
     if Tmap.mem node !unifs then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;
