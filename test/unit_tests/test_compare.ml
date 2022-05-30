@@ -7,7 +7,7 @@ let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 let equal_tests = [ ("a * b", "b * a"); ("unit * a", "a") ]
 let smaller_tests = [ ("int -> int", "'f -> int") ]
 let bigger_tests = [ ("'f -> int", "int -> int") ]
-let uncomparable_tests = [ ("int", "float"); ("'f -> int", "int -> 'b") ]
+let uncomparable_tests = [ ("int", "float"); ("'f -> int", "int -> 'b") ;("('a * unit * string * 'b t) format4 -> 'a","('a * Buffer.t * unit * ('b * string) t) format4 -> 'a") ]
 let comp = Alcotest.testable Unification.pp_ord ( = )
 
 let tests =

@@ -14,7 +14,8 @@ let _from_index () =
 
 let _from_list string_types =
   let types =
-    CCList.mapi (fun i s -> TypeId.mk i @@ Type.of_string e s) string_types in
+    CCList.mapi (fun i s -> TypeId.mk i @@ Type.of_string e s) string_types
+  in
   let rec aux tl =
     match tl with
     | [] -> ()
@@ -25,25 +26,27 @@ let _from_list string_types =
   in
   aux types
 
-let () =
-  _from_index ();
-  Format.printf "Size: %i@." (P.size x);
-  P.xdot x
-
 (* let () =
- *    let () =
- *      _from_list
- *        [
- *          "int";
- *          "float";
- *          "int -> int";
- *          "int -> 'a";
- *          "'a -> 'b";
- *          "int * float -> 'a";
- *          "'c -> int";
- *          "float -> 'a";
- *          "int -> ('a -> unit) -> 'a list -> unit";
- *          "unit";
- *        ]
- *    in
- *    P.xdot x *)
+   _from_index ();
+   Format.printf "Size: %i@." (P.size x);
+   P.xdot x *)
+
+let () =
+  let () =
+    _from_list
+      [
+        "int";
+        "float";
+        "int -> int";
+        "int -> 'a";
+        "'a -> 'b";
+        "int * float -> 'a";
+        "'c -> int";
+        "float -> 'a";
+        "int -> ('a -> unit) -> 'a list -> unit";
+        "unit";
+        "'a -> 'a list";
+        "(int -> 'a) -> float";
+      ]
+  in
+  P.xdot x

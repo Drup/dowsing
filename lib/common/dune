@@ -1,4 +1,14 @@
 (library
-  (name common)
-  (libraries compiler-libs.common containers containers-data iter fmt logs utils diet)
-  (flags (:standard -open Utils)))
+ (name common)
+ (libraries
+  compiler-libs.common
+  containers
+  containers-data
+  iter
+  fmt
+  logs
+  utils
+  diet
+  atomic)
+ (flags
+  (:standard -open Utils)))

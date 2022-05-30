@@ -74,6 +74,7 @@ let neg_tests = [
   (* require occur check *)
   "'X -> 'X", "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t" ;
   "'a -> 'a list -> 'a", "'x -> 'x -> 'x" ;
+  "('a * unit * string * 'b t) format4 -> 'a","('a * Buffer.t * unit * ('b * string) t) format4 -> 'a";
 ]
 
 let slow_tests = [

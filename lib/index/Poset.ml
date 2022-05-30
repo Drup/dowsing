@@ -184,11 +184,15 @@ let compat_unif (t1 : Type.t) (t2 : Type.t) =
   aux Feature.all
 
 let compat_match (t1 : Type.t) (t2 : Type.t) =
-  let feat1 = MatchFeat.Const.compute t1
-  and feat2 = MatchFeat.Const.compute t2 in
-  let compat_leq = MatchFeat.Const.compatible ~query:feat1 ~data:feat2
-  and compat_geq = MatchFeat.Const.compatible ~query:feat2 ~data:feat1 in
-  (compat_leq, compat_geq)
+  let check_feat (compat_leq, compat_geq) feat =
+    let module Ft = (val feat : MatchFeat.S) in
+    let feat1 = Ft.compute t1 and feat2 = Ft.compute t2 in
+    let compat_leq = compat_leq && Ft.compatible ~query:feat1 ~data:feat2
+    and compat_geq = compat_geq && Ft.compatible ~query:feat2 ~data:feat1 in
+    (compat_leq, compat_geq)
+  in
+  let feats = MatchFeat.all in
+  CCList.fold_left check_feat (true, true) feats
 
 let compare env t1 t2 =
   if not (compat_unif t1 t2) then Unification.Uncomparable
