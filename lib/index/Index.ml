@@ -154,7 +154,7 @@ module Make (T : Trie.NODE) : S = struct
        |> filter_with_unification env ty *)
     let range = T.range_compatible ty t.trie in
     _info (fun m -> m "%a@." TypeId.Range.pp range);
-    Poset.xdot t.poset ~range;
+    (* Poset.xdot t.poset ~range; *)
     filter_with_poset t env ty range
     |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
            (ty, cell, unif))
