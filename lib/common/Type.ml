@@ -436,6 +436,17 @@ let rec iter_vars t k =
       iter_vars ret k
   | Tuple elts -> Iter.flat_map iter_vars (NSet.to_iter elts) k
 
+let rec iter_consts t f =
+  match t with
+  | Other _ | FrozenVar _ | Var _ -> ()
+  | Constr (lid, params) ->
+      f lid;
+      CCArray.iter (fun t -> iter_consts t f) params
+  | Arrow (params, ret) ->
+      Iter.flat_map iter_consts (NSet.to_iter params) f;
+      iter_consts ret f
+  | Tuple elts -> Iter.flat_map iter_consts (NSet.to_iter elts) f
+
 (* pretty printing *)
 
 let rec pp ppf = function

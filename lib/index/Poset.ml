@@ -173,7 +173,7 @@ end
 
 exception Type_already_present of G.V.t
 
-let compat (t1 : Type.t) (t2 : Type.t) =
+let compat_unif (t1 : Type.t) (t2 : Type.t) =
   let rec aux (fl : (module Feature.S) list) =
     match fl with
     | [] -> true
@@ -183,9 +183,18 @@ let compat (t1 : Type.t) (t2 : Type.t) =
   in
   aux Feature.all
 
+let compat_match (t1 : Type.t) (t2 : Type.t) =
+  let feat1 = MatchFeat.Const.compute t1
+  and feat2 = MatchFeat.Const.compute t2 in
+  let compat_leq = MatchFeat.Const.compatible ~query:feat1 ~data:feat2
+  and compat_geq = MatchFeat.Const.compatible ~query:feat2 ~data:feat1 in
+  (compat_leq, compat_geq)
+
 let compare env t1 t2 =
-  if not (compat t1 t2) then Unification.Uncomparable
-  else Unification.compare env t1 t2
+  if not (compat_unif t1 t2) then Unification.Uncomparable
+  else
+    let compat_leq, compat_geq = compat_match t1 t2 in
+    Unification.compare ~compat_leq ~compat_geq env t1 t2
 
 let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let ty_0 = TypeId.ty vertex_0 in
@@ -328,7 +337,7 @@ let check poset env ~query:ty ~range =
   let to_visit = Queue.create () in
   let rec visit_down node =
     debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    xdot poset ~range:!range ~unifs:!unifs;
+    (* xdot poset ~range:!range ~unifs:!unifs; *)
     if Tmap.mem node !unifs then visit_next ()
     else if not (TypeId.check node !range) then (
       iter_succ poset.graph node update_no_unif;

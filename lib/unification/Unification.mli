@@ -21,4 +21,6 @@ val unifiable : Type.Env.t -> Type.t -> Type.t -> Bool.t
 type ord = Uncomparable | Smaller | Bigger | Equal
 
 val pp_ord : Format.formatter -> ord -> unit
-val compare : Type.Env.t -> Type.t -> Type.t -> ord
+
+val compare :
+  ?compat_leq:bool -> ?compat_geq:bool -> Type.Env.t -> Type.t -> Type.t -> ord

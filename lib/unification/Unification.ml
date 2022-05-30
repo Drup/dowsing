@@ -361,12 +361,20 @@ let pp_ord fmt c =
   | Bigger -> Format.fprintf fmt "Bigger"
   | Equal -> Format.fprintf fmt "Equal"
 
-let compare env (t1 : Type.t) (t2 : Type.t) =
+let compare ?(compat_leq = true) ?(compat_geq = true) env (t1 : Type.t)
+    (t2 : Type.t) =
   let t1f = Type.freeze_variables env t1 in
   let t2f = Type.freeze_variables env t2 in
-  let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
-  match (b1, b2) with
-  | true, true -> Equal
+  match (compat_leq, compat_geq) with
   | false, false -> Uncomparable
-  | true, false -> Smaller
-  | false, true -> Bigger
+  | true, false -> (
+      match unifiable env t1f t2 with true -> Smaller | false -> Uncomparable)
+  | false, true -> (
+      match unifiable env t1 t2f with true -> Bigger | false -> Uncomparable)
+  | true, true -> (
+      let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
+      match (b1, b2) with
+      | true, true -> Equal
+      | false, false -> Uncomparable
+      | true, false -> Smaller
+      | false, true -> Bigger)

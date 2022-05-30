@@ -118,6 +118,7 @@ val head : t -> t
 val tail : t -> NSet.t
 val iter : t -> t Iter.t
 val iter_vars : t -> Variable.t Iter.t
+val iter_consts : t -> LongIdent.t Iter.t
 
 (* pretty printing *)
 
