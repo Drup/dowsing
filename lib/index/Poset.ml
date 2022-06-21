@@ -195,10 +195,10 @@ let compat_match (t1 : Type.t) (t2 : Type.t) =
   CCList.fold_left check_feat (true, true) feats
 
 let compare env t1 t2 =
-  if not (compat_unif t1 t2) then Unification.Uncomparable
+  if not (compat_unif t1 t2) then Acic.Uncomparable
   else
     let compat_leq, compat_geq = compat_match t1 t2 in
-    Unification.compare ~compat_leq ~compat_geq env t1 t2
+    Acic.compare ~compat_leq ~compat_geq env t1 t2
 
 let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let ty_0 = TypeId.ty vertex_0 in
@@ -212,7 +212,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    debug (fun m -> m "%a@," Unification.pp_ord comp);
+    debug (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -237,7 +237,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
           (Fmt.option ~none:(Fmt.any "⊥") pp_vertex)
           prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    debug (fun m -> m "%a@," Unification.pp_ord comp);
+    debug (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -347,7 +347,7 @@ let check poset env ~query:ty ~range =
       iter_succ poset.graph node update_no_unif;
       visit_next ())
     else
-      match Unification.unify env ty node.ty with
+      match Acic.unify env ty node.ty with
       | Some vm ->
           unifs := Tmap.add node vm !unifs;
           let l = G.succ poset.graph node in

@@ -6,7 +6,7 @@ let main opts =
   Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp opts.ty1);
   Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp opts.ty2);
   let unifs =
-    Unification.unifiers env_query opts.ty1 opts.ty2
+    Acic.unifiers env_query opts.ty1 opts.ty2
     |> Iter.sort ~cmp:Subst.compare
     |> Iter.to_list
   in

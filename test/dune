@@ -8,6 +8,6 @@
 (executable
  (name populate_index)
  (modules populate_index)
- (libraries alcotest common unification index compiler-libs)
+ (libraries alcotest common acic index compiler-libs)
  (flags
   (:standard -open Common)))

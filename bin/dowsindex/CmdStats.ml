@@ -56,7 +56,7 @@ let aux opts ?stats0 iter_idx =
   let tbl = ref Measure.Map.empty in
   iter_idx (fun ty ->
       Timer.start timer;
-      ignore @@ Unification.unifiable env_query opts.ty ty;
+      ignore @@ Acic.unifiable env_query opts.ty ty;
       Timer.stop timer;
       let time = Timer.get timer in
       let meas = Measure.make opts.meas_kind ty in
@@ -118,7 +118,7 @@ let main opts =
            Type.of_outcometree env out_ty
       in
       let iter_idx_filt () =
-        iter_idx () |> Iter.filter @@ Unification.unifiable env_query opts.ty
+        iter_idx () |> Iter.filter @@ Acic.unifiable env_query opts.ty
       in
       (iter_idx, iter_idx_filt)
     else

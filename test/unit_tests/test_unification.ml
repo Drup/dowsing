@@ -3,7 +3,7 @@ let test_cnt = ref 0
 let add_tests name tests =
   all_tests := ! all_tests @ [ name, tests ]
 
-(* Unification.unifiable *)
+(* Acic.unifiable *)
 
 let pos_tests = [
   (* com-2 *)
@@ -91,7 +91,7 @@ let tests =
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "%s ≡ %s" str1 str2 in
-      Alcotest.(check bool) name res @@ Unification.unifiable env ty1 ty2
+      Alcotest.(check bool) name res @@ Acic.unifiable env ty1 ty2
     in
     incr test_cnt ;
     Alcotest.test_case (CCInt.to_string ! test_cnt) speed test
@@ -100,7 +100,7 @@ let tests =
   CCList.map (make_test `Quick false) neg_tests @
   CCList.map (make_test `Slow true) slow_tests
 
-let () = add_tests "Unification.unifiable" tests
+let () = add_tests "Acic.unifiable" tests
 
 (* do test *)
 
