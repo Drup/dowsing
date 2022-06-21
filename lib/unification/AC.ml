@@ -36,7 +36,7 @@ end = struct
   (* Replace variables by their representative/a constant *)
   let simplify_problem env {ACTerm. left ; right} =
     let f x = match x with
-      | Pure.Constant _ -> x
+      | Pure.Constant _ | Pure.FrozenVar _ -> x
       | Pure.Var v ->
         match Env.representative env v with
         | V v' -> Var v'
@@ -59,15 +59,15 @@ end = struct
   let make_mapping problems =
     let vars = Variable.HMap.create 4 in
     let nb_vars = ref 0 in
-    let consts = LongIdent.HMap.create 4 in
+    let consts = Pure.HMap.create 4 in
     let nb_consts = ref 0 in
     let f = function
       | Pure.Var v ->
         if Variable.HMap.mem vars v then () else
           Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
-      | Constant p ->
-        if LongIdent.HMap.mem consts p then () else
-          LongIdent.HMap.add consts p @@ CCRef.get_then_incr nb_consts
+      | Constant _ | FrozenVar _ as c ->
+        if Pure.HMap.mem consts c then () else
+          Pure.HMap.add consts c @@ CCRef.get_then_incr nb_consts
     in
     let aux {ACTerm. left ; right} =
       Array.iter f left ; Array.iter f right
@@ -78,13 +78,13 @@ end = struct
   let make problems : t =
     let vars, nb_vars, consts, nb_consts = make_mapping problems in
     let get_index = function
-      | Pure.Constant p -> LongIdent.HMap.find consts p
+      | Pure.Constant _ | FrozenVar _ as c -> Pure.HMap.find consts c
       | Pure.Var v -> Variable.HMap.find vars v + nb_consts
     in
     let nb_atom = nb_vars + nb_consts in
 
     let assoc_pure = Array.make nb_atom Pure.dummy in
-    LongIdent.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.constant k) consts ;
+    Pure.HMap.iter (fun k i -> assoc_pure.(i) <- k) consts ;
     Variable.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
 
     let first_var = nb_consts in
@@ -211,7 +211,7 @@ end = struct
         (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
-          | Pure.Constant _ -> ()
+          | Pure.Constant _ | Pure.FrozenVar _ -> ()
           | Pure.Var var ->
             let multiplicity = System.get_solution sol j in
             Variable.HMap.add_list unifiers var (multiplicity, symb)
@@ -258,3 +258,4 @@ let solve env problems =
   | _ ->
     make_system env problems
     |> solve_system env
+  

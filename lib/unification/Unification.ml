@@ -173,8 +173,9 @@ and variable_abstraction env stack t =
   (* Not a foreign subterm *)
   | Var i -> (stack, Pure.var i)
   | Constr (p, [||]) -> (stack, Pure.constant p)
+  | FrozenVar v -> (stack, Pure.frozen v)
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ ->
+  | Arrow _ | Constr (_, _) | Other _ ->
       let var = Env.gen env in
       let stack = Stack.push_quasi_solved stack var t in
       (stack, Pure.var var)
@@ -254,12 +255,18 @@ let rec solve_tuple_problems env0 =
 
 (* Elementary Arrow theory *)
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
+  (* AL -> BL ≡? AR -> BR *)
   let potentials =
     [
       (fun env () ->
+        (* AL ≡? AR  ∧  BL ≡? BR *)
         Env.push_tuple env left.args right.args;
         insert env left.ret right.ret);
       (fun env () ->
+        (* AL * αL ≡? AR  ∧
+           BL ≡? αL -> βL  ∧
+           βL ≡? BR
+        *)
         let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
         Env.push_tuple env
           (ACTerm.add left.args (Pure.var var_arg_left))
@@ -272,6 +279,10 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         in
         insert_var env var_ret_left right.ret);
       (fun env () ->
+        (* AL ≡? AR * αR  ∧
+           αR -> βR ≡? BR   ∧
+           βL ≡? BL
+        *)
         let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
         Env.push_tuple env left.args
           (ACTerm.add right.args (Pure.var var_arg_right));
@@ -283,13 +294,17 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         in
         insert_var env var_ret_right left.ret);
       (fun env () ->
+        (* AL * αL ≡? AR * αR  ∧
+           BL ≡? αL -> βL  ∧
+           αR -> βR ≡? BR   ∧
+           αL ≡? αR
+        *)
         let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
         let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+        (* TOCHECK *)
         Env.push_tuple env
           (ACTerm.add left.args (Pure.var var_arg_left))
-          right.args;
-        Env.push_tuple env left.args
-          (ACTerm.add left.args (Pure.var var_arg_right));
+          (ACTerm.add right.args (Pure.var var_arg_right));
         let* () =
           insert env left.ret
             (Type.arrow (Env.tyenv env)
@@ -297,10 +312,11 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                (Type.var (Env.tyenv env) var_ret_left))
         in
         let* () =
-          insert env right.ret
+          insert env 
             (Type.arrow (Env.tyenv env)
                (Type.var (Env.tyenv env) var_arg_right)
                (Type.var (Env.tyenv env) var_ret_right))
+            right.ret
         in
         insert env
           (Type.var (Env.tyenv env) var_ret_left)
