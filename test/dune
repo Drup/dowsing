@@ -1,7 +1,7 @@
 (executable
  (name populate_partial_order)
  (modules populate_partial_order)
- (libraries alcotest common unification index)
+ (libraries alcotest common acic index)
  (flags
   (:standard -open Common)))
 
