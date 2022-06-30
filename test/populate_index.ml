@@ -7,21 +7,21 @@ let () =
 
 let types =
   [
-    (* "int"; *)
-    (* "float";
-       "int -> int";
-       "int -> 'a"; *)
-    "int list -> 'b";
-    "int list -> int"
-    (* "float list -> int -> float list";
-       "float -> int";
-       "float -> float list";
-       "'c -> int";
-       "float -> 'a";
-       "int -> ('a -> unit) -> 'a list -> unit";
-       "unit";
-       "'a -> 'a list";
-       "(int -> 'a) -> float"; *);
+    "int";
+    "float";
+    "int -> int";
+    "int -> 'a";
+    "'a -> 'b";
+    "int -> float list -> 'a";
+    "float list -> int -> float list";
+    "float -> int";
+    "float -> float list";
+    "'c -> int";
+    "float -> 'a";
+    "int -> ('a -> unit) -> 'a list -> unit";
+    "unit";
+    "'a -> 'a list";
+    "(int -> 'a) -> float"
   ]
 
 let info_from_list l =
