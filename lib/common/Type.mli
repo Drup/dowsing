@@ -19,6 +19,7 @@ module Kind' : sig
   type t = Var | Constr of LongIdent.t | Arrow | Tuple | Other
 
   val to_int : t -> Int.t
+  val to_string : t -> String.t
   val compare : t CCOrd.t
   val equal : t CCEqual.t
   val hash : t CCHash.t

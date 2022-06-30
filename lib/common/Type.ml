@@ -63,6 +63,13 @@ module Kind' = struct
     | Tuple -> 3
     | Other -> 4
 
+  let to_string = function
+    | Var -> "variable"
+    | Constr _ -> "constructor"
+    | Arrow -> "arrow"
+    | Tuple -> "tuple"
+    | Other -> "other"
+
   let compare t1 t2 =
     match (t1, t2) with
     | Var, Var | Arrow, Arrow | Tuple, Tuple | Other, Other -> 0

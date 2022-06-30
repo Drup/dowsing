@@ -1,5 +1,5 @@
 (tests
- (names test_common test_unification test_poset test_compare)
+ (names test_common test_unification test_poset test_matching test_feature)
  (libraries alcotest common unification index)
  (flags
   (:standard -open Common)))

@@ -3,6 +3,7 @@ module Trie = Trie
 module Info = Info
 module Cell = Cell
 module Poset = Poset
+module MatchFeat = MatchFeat
 
 module type S = IndexIntf.S
 
