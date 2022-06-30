@@ -1,6 +1,10 @@
 module P = Index.Poset
 module Idx = (val Index.(make Feature.all))
 
+let () =
+  Logs.set_reporter (Logs.format_reporter ());
+  if Sys.argv.(1) == "debug" then Logs.set_level @@ Some Logs.Debug
+
 let e = Common.Type.Env.make Data
 let x = P.init e
 
@@ -21,7 +25,7 @@ let _from_list string_types =
     | [] -> ()
     | t :: q ->
         let _node = P.add x t in
-        P.xdot x;
+        (* P.xdot x; *)
         aux q
   in
   aux types
@@ -35,18 +39,21 @@ let () =
   let () =
     _from_list
       [
-        "int";
-        "float";
-        "int -> int";
-        "int -> 'a";
+        (* "int"; *)
+        (* "float";
+           "int -> int";
+           "int -> 'a"; *)
         "'a -> 'b";
-        "int * float -> 'a";
-        "'c -> int";
-        "float -> 'a";
-        "int -> ('a -> unit) -> 'a list -> unit";
-        "unit";
-        "'a -> 'a list";
-        "(int -> 'a) -> float";
+        "int -> float list -> 'a"
+        (* "float list -> int -> float list";
+           "float -> int";
+           "float -> float list";
+           "'c -> int";
+           "float -> 'a";
+           "int -> ('a -> unit) -> 'a list -> unit";
+           "unit";
+           "'a -> 'a list";
+           "(int -> 'a) -> float"; *);
       ]
   in
   P.xdot x

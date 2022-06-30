@@ -8,7 +8,9 @@ let equal_tests =
   [ ("a * b", "b * a"); ("unit * a", "a"); ("'a -> 'b", "'b -> 'a") ]
 
 let smaller_tests = [ ("int -> int", "'f -> int") ]
-let bigger_tests = [ ("'f -> int", "int -> int") ]
+
+let bigger_tests =
+  [ ("'f -> int", "int -> int"); ("'a -> 'b", "int -> float list -> 'a") ]
 
 let uncomparable_tests =
   [

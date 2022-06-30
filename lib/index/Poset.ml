@@ -207,12 +207,12 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
   let rec visit_down already_seen ~prev ~current =
-    debug (fun m ->
+    _info (fun m ->
         m "Visiting Edge down %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
     let comp = compare env (TypeId.ty current) ty_0 in
-    debug (fun m -> m "%a@," Acic.pp_ord comp);
+    _info (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
     | Bigger ->
@@ -265,12 +265,13 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
           next already_seen ~prev ~current
   in
   try
-    debug (fun m -> m "@[<v 2>Node %a@," pp_vertex vertex_0);
+    _info (fun m -> m "@[<v 2>Node %a@." pp_vertex vertex_0);
     TypeId.Set.iter (fun v -> Queue.push (`down, None, v) to_visit) tops;
     let already_seen_0 = visit_next already_seen_0 in
     TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
     let _already_seen_0 = visit_next already_seen_0 in
     Changes.apply poset ch vertex_0;
+    (* xdot poset; *)
     debug (fun m -> m "@]");
     debug (fun m ->
         m "@[New tops: %a@]@.@[New bots: %a @]@." (TypeId.Set.pp TypeId.pp)

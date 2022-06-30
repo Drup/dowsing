@@ -1,20 +1,27 @@
 module P = Index.Poset
 module Idx = (val Index.(make Feature.all))
 
+let () =
+  Logs.set_reporter (Logs.format_reporter ());
+  if Sys.argv.(1) == "debug" then Logs.set_level @@ Some Logs.Debug
+
 let types =
   [
-    "int";
-    "float";
-    "int -> int";
-    "int -> 'a";
+    (* "int"; *)
+    (* "float";
+       "int -> int";
+       "int -> 'a"; *)
     "'a -> 'b";
-    "int * float -> 'a";
-    "'c -> int";
-    "float -> 'a";
-    "int -> ('a -> unit) -> 'a list -> unit";
-    "unit";
-    "'a -> 'a list";
-    "(int -> 'a) -> float";
+    "int -> float list -> 'a"
+    (* "float list -> int -> float list";
+       "float -> int";
+       "float -> float list";
+       "'c -> int";
+       "float -> 'a";
+       "int -> ('a -> unit) -> 'a list -> unit";
+       "unit";
+       "'a -> 'a list";
+       "(int -> 'a) -> float"; *);
   ]
 
 let info_from_list l =

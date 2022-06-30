@@ -88,6 +88,7 @@ module Make (T : Trie.NODE) : S = struct
     (* Do not eta-reduce (Not sure why) *)
     |> Iter.iter (fun ty -> Poset.add p ty);
     t.poset <- p;
+    Poset.xdot t.poset;
     ()
 
   let import t l =
@@ -131,8 +132,7 @@ module Make (T : Trie.NODE) : S = struct
 
   let filter_with_unification env ty it =
     Iter.filter_map
-      (fun ty' ->
-        Acic.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
+      (fun ty' -> Acic.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
       it
 
   let iter ?pkgs t =
