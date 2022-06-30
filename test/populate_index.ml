@@ -3,7 +3,7 @@ module Idx = (val Index.(make Feature.all))
 
 let () =
   Logs.set_reporter (Logs.format_reporter ());
-  if Sys.argv.(1) == "debug" then Logs.set_level @@ Some Logs.Debug
+  Logs.set_level @@ Some Logs.Debug
 
 let types =
   [
@@ -11,8 +11,8 @@ let types =
     (* "float";
        "int -> int";
        "int -> 'a"; *)
-    "'a -> 'b";
-    "int -> float list -> 'a"
+    "int list -> 'b";
+    "int list -> int"
     (* "float list -> int -> float list";
        "float -> int";
        "float -> float list";

@@ -5,8 +5,8 @@ let () =
   Logs.set_reporter (Logs.format_reporter ());
   if Sys.argv.(1) == "debug" then Logs.set_level @@ Some Logs.Debug
 
-let e = Common.Type.Env.make Data
-let x = P.init e
+let env = Common.Type.Env.make Data
+let x = P.init env
 
 let add t =
   Format.printf "%a@." Common.TypeId.pp t;
@@ -18,7 +18,7 @@ let _from_index () =
 
 let _from_list string_types =
   let types =
-    CCList.mapi (fun i s -> TypeId.mk i @@ Type.of_string e s) string_types
+    CCList.mapi (fun i s -> TypeId.mk i @@ Type.of_string env s) string_types
   in
   let rec aux tl =
     match tl with

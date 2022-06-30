@@ -115,7 +115,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
      when p is a type constructor.
   *)
   | Type.Constr (p1, args1), Type.Constr (p2, args2)
-    when LongIdent.compare p1 p2 = 0 ->
+    when LongIdent.equal p1 p2 ->
       assert (Array.length args1 = Array.length args2);
       let stack = Stack.push_array2 args1 args2 stack in
       process_stack env stack
@@ -227,7 +227,11 @@ and attach env v t : return =
   Env.add env v t;
   occur_check env
 
-let insert env t u : return = insert_rec env Stack.empty t u
+let insert env t u : return =
+  Logs.debug (fun m -> m "@[<v2>Insert@ %a = %a@ in@ %a@]"
+                 Type.pp t Type.pp u
+                 Env.pp env);
+  insert_rec env Stack.empty t u
 let insert_var env x ty : return = insert_var env Stack.empty x ty
 
 let insert_tuple_solution env sol =
@@ -297,7 +301,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         (* AL * αL ≡? AR * αR  ∧
            BL ≡? αL -> βL  ∧
            αR -> βR ≡? BR   ∧
-           αL ≡? αR
+           βL ≡? βR
         *)
         let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
         let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
@@ -327,7 +331,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
   |> Iter.flat_map (fun f -> try_with_solution env0 f ())
 
 and try_with_solution : type a. _ -> (Env.t -> a -> return) -> a -> _ =
- fun env f sol k ->
+  fun env f sol k ->
   let env = Env.copy env in
   match f env sol with
   | Done -> solve_loop env k

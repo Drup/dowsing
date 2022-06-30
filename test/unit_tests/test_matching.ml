@@ -3,10 +3,9 @@ let test_cnt = ref 0
 let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
 (* Unification.compare *)
-
+                                                     
 let equal_tests =
   [ ("a * b", "b * a"); ("unit * a", "a"); ("'a -> 'b", "'b -> 'a") ]
-
 let smaller_tests = [ ("int -> int", "'f -> int") ]
 
 let bigger_tests =
@@ -41,37 +40,29 @@ let matching =
 
 let () = add_tests "Acic.compare" matching
 
-let bicompat =
+let unsure =
   [
     ("int * int * 'a -> float", "(int -> int) -> float");
     ("int * bool -> int", "bool -> int -> int");
   ]
 
-let compat_leq =
+let not_bigger =
   [
     ("int * int -> int -> float", "(int -> int) -> float");
     ("int * bool -> int", "'a -> int");
   ]
 
-let compat_geq =
+let not_smaller =
   [
     ("(int -> int) -> float", "int * int * 'a -> float * int");
     ("'a -> 'b", "float list");
+    ("'a -> 'b", "int * float list -> 'a");
   ]
 
-let uncompat = [ ("float", "int"); ("'a -> 'a * int list", "float list") ]
-let comp' = Alcotest.pair Alcotest.bool Alcotest.bool
+let uncompatible = [ ("float", "int"); ("'a -> 'a * int list", "float list") ]
 
-let compat_match (t1 : Type.t) (t2 : Type.t) =
-  let check_feat (compat_leq, compat_geq) feat =
-    let module Ft = (val feat : Index.MatchFeat.S) in
-    let feat1 = Ft.compute t1 and feat2 = Ft.compute t2 in
-    let compat_leq = compat_leq && Ft.compatible ~query:feat1 ~data:feat2
-    and compat_geq = compat_geq && Ft.compatible ~query:feat2 ~data:feat1 in
-    (compat_leq, compat_geq)
-  in
-  let feats = Index.MatchFeat.all in
-  CCList.fold_left check_feat (true, true) feats
+let comp' =
+  Alcotest.testable Acic.pp_hint ( = )
 
 let match_feat =
   let make_test res (str1, str2) =
@@ -80,15 +71,15 @@ let match_feat =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "Comparing %s and %s" str1 str2 in
-      Alcotest.(check comp') name res @@ compat_match ty1 ty2
+      Alcotest.(check comp') name res @@ Index.MatchFeat.compat_match ty1 ty2
     in
     incr test_cnt;
     Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test
   in
-  CCList.map (make_test (true, true)) bicompat
-  @ CCList.map (make_test (true, false)) compat_leq
-  @ CCList.map (make_test (false, true)) compat_geq
-  @ CCList.map (make_test (false, false)) uncompat
+  CCList.map (make_test Unsure) unsure
+  @ CCList.map (make_test Uncompatible) uncompatible
+  @ CCList.map (make_test Not_bigger) not_bigger
+  @ CCList.map (make_test Not_smaller) not_smaller
 
 let () = add_tests "MatchFeat.compatible" match_feat
 

@@ -12,8 +12,16 @@ type ord = Uncomparable | Smaller | Bigger | Equal
 
 val pp_ord : Format.formatter -> ord -> unit
 
-val compare :
-  ?compat_leq:bool -> ?compat_geq:bool -> Type.Env.t -> Type.t -> Type.t -> ord
+type hint =
+  | Uncompatible
+  | Not_smaller
+  | Not_bigger
+  | Unsure
+val pp_hint : hint Fmt.t
+
+val combine_hint : hint -> hint -> hint
+
+val compare : ?hint:hint -> Type.Env.t -> Type.t -> Type.t -> ord
 
 (** {1 Unification} *)
 

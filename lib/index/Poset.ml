@@ -173,33 +173,6 @@ end
 
 exception Type_already_present of G.V.t
 
-let compat_unif (t1 : Type.t) (t2 : Type.t) =
-  let rec aux (fl : (module Feature.S) list) =
-    match fl with
-    | [] -> true
-    | (module Feat) :: q ->
-        Feat.compatible ~query:(Feat.compute t1) ~data:(Feat.compute t2)
-        && aux q
-  in
-  aux Feature.all
-
-let compat_match (t1 : Type.t) (t2 : Type.t) =
-  let check_feat (compat_leq, compat_geq) feat =
-    let module Ft = (val feat : MatchFeat.S) in
-    let feat1 = Ft.compute t1 and feat2 = Ft.compute t2 in
-    let compat_leq = compat_leq && Ft.compatible ~query:feat1 ~data:feat2
-    and compat_geq = compat_geq && Ft.compatible ~query:feat2 ~data:feat1 in
-    (compat_leq, compat_geq)
-  in
-  let feats = MatchFeat.all in
-  CCList.fold_left check_feat (true, true) feats
-
-let compare env t1 t2 =
-  if not (compat_unif t1 t2) then Acic.Uncomparable
-  else
-    let compat_leq, compat_geq = compat_match t1 t2 in
-    Acic.compare ~compat_leq ~compat_geq env t1 t2
-
 let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let ty_0 = TypeId.ty vertex_0 in
   let ch = Changes.empty () in
@@ -211,7 +184,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
         m "Visiting Edge down %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
-    let comp = compare env (TypeId.ty current) ty_0 in
+    let comp = MatchFeat.compare env (TypeId.ty current) ty_0 in
     _info (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
@@ -236,7 +209,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
         m "Visiting Edge up %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊥") pp_vertex)
           prev pp_vertex current);
-    let comp = compare env (TypeId.ty current) ty_0 in
+    let comp = MatchFeat.compare env (TypeId.ty current) ty_0 in
     debug (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)

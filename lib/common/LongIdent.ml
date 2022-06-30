@@ -2,6 +2,7 @@ type t = Longident.t =
   | Lident of String.t
   | Ldot of t * String.t
   | Lapply of t * t
+[@@deriving ord, eq] 
 
 let unit = Lident "unit"
 
@@ -27,9 +28,6 @@ let rec to_iter t k =
   | Lident str -> k str
   | Ldot (t, str) -> to_iter t k ; k str
   | Lapply (t1, t2) -> to_iter t1 k ; to_iter t2 k
-
-let compare = compare
-let equal = (=)
 
 module Map = CCTrie.Make (struct
   type nonrec t = t

@@ -49,6 +49,8 @@ let pos_tests = [
   "'a -> 'b -> 'c", "'x -> 'y * 'z" ;
   "'a -> 'b f -> a", "'x g * 'y f -> 'x" ;
   "'a -> 'a -> a", "'x * a -> 'x" ;
+  (* sub constructor *)
+  "int list -> 'a", "int list -> int";
 ]
 
 let neg_tests = [

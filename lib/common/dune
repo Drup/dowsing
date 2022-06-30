@@ -10,5 +10,6 @@
   utils
   diet
   atomic)
+ (preprocess (pps ppx_deriving.ord ppx_deriving.eq))
  (flags
   (:standard -open Utils)))

@@ -20,7 +20,9 @@ let copy { tyenv ; vars ; tuples ; arrows ; orig_vars } =
 
 let vars e = e.vars
 let tyenv t = t.tyenv
-let gen e = Variable.Gen.gen e.tyenv.var_gen
+let gen e : Variable.t =
+  Obj.magic (1000 + Obj.magic (Variable.Gen.gen e.tyenv.var_gen))
+    
 let add e v ty = e.vars <- Subst.add v ty e.vars
 
 let push_tuple e left right =

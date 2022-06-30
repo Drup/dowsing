@@ -1,5 +1,8 @@
 let test env t1 ~freeze:t2 =
-  Unification.unifiable env t1 (Type.freeze_variables env t2)
+  let t2 = Type.freeze_variables env t2 in
+  Logs.debug (fun m -> m "@[<v 2>Checking matching between@ @[%a@]@;<-2> and@ @[%a@]@]"
+                 Type.pp t1 Type.pp t2);
+  Unification.unifiable env t1 t2
 
 type ord = Uncomparable | Smaller | Bigger | Equal
 
@@ -10,25 +13,51 @@ let pp_ord fmt c =
   | Bigger -> Format.fprintf fmt "Bigger"
   | Equal -> Format.fprintf fmt "Equal"
 
-let compare ?(compat_leq = true) ?(compat_geq = true) env (t1 : Type.t)
-    (t2 : Type.t) =
-  match (compat_leq, compat_geq) with
+type hint =
+  | Uncompatible
+  | Not_smaller
+  | Not_bigger
+  | Unsure
+
+let combine_hint h1 h2 = match h1, h2 with
+  | Uncompatible, _
+  | _, Uncompatible
+  | Not_bigger, Not_smaller
+  | Not_smaller, Not_bigger
+    -> Uncompatible
+  | Not_bigger, Not_bigger
+  | Not_bigger, Unsure
+  | Unsure, Not_bigger
+    -> Not_bigger
+  | Not_smaller, Not_smaller
+  | Not_smaller, Unsure
+  | Unsure, Not_smaller
+    -> Not_smaller
+  | Unsure, Unsure
+    -> Unsure
+
+let pp_hint fmt = function
+  | Not_bigger -> Fmt.pf fmt "Not_bigger"
+  | Not_smaller -> Fmt.pf fmt "Not_smaller"
+  | Unsure -> Fmt.pf fmt "Unsure"
+  | Uncompatible -> Fmt.pf fmt "Uncompatible"
+
+let compare ?(hint = Unsure) env (t1 : Type.t) (t2 : Type.t) =
+  Logs.debug (fun m -> m "Trying match %a %a with hint %a"
+                 Type.pp t1 Type.pp t2
+                 pp_hint hint);
+  (* let hint = Unsure in *)
+  let maybe_smaller, maybe_bigger =
+    match hint with
+    | Unsure -> true, true
+    | Not_bigger -> true, false
+    | Not_smaller -> false, true
+    | Uncompatible -> false, false
+  in
+  let is_smaller = maybe_smaller && test env ~freeze:t1 t2 in
+  let is_bigger = maybe_bigger && test env t1 ~freeze:t2 in
+  match (is_smaller, is_bigger) with
+  | true, true -> Equal
   | false, false -> Uncomparable
-  | true, false -> (
-      match test env ~freeze:t1 t2 with
-      | true -> Smaller
-      | false -> Uncomparable
-    )
-  | false, true -> (
-      match test env t1 ~freeze:t2 with
-      | true -> Bigger
-      | false -> Uncomparable
-    )
-  | true, true -> (
-      let b1 = test env ~freeze:t1 t2
-      and b2 = test env t1 ~freeze:t2 in
-      match (b1, b2) with
-      | true, true -> Equal
-      | false, false -> Uncomparable
-      | true, false -> Smaller
-      | false, true -> Bigger)
+  | true, false -> Smaller
+  | false, true -> Bigger
