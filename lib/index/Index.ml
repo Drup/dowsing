@@ -132,7 +132,7 @@ module Make (T : Trie.NODE) : S = struct
   let filter_with_unification env ty it =
     Iter.filter_map
       (fun ty' ->
-        Unification.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
+        Acic.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
       it
 
   let iter ?pkgs t =

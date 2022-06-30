@@ -1,4 +1,4 @@
-(** AC Unification
+(** ACIC Unification
 
     Follow the algorithm in
     Competing for the AC-unification Race by Boudet (1993)
@@ -8,8 +8,6 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 
 let _info = Logs.info
 let debug = Logs.debug
-
-module Env = Env
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
@@ -175,8 +173,9 @@ and variable_abstraction env stack t =
   (* Not a foreign subterm *)
   | Var i -> (stack, Pure.var i)
   | Constr (p, [||]) -> (stack, Pure.constant p)
+  | FrozenVar v -> (stack, Pure.frozen v)
   (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ | FrozenVar _ ->
+  | Arrow _ | Constr (_, _) | Other _ ->
       let var = Env.gen env in
       let stack = Stack.push_quasi_solved stack var t in
       (stack, Pure.var var)
@@ -256,12 +255,18 @@ let rec solve_tuple_problems env0 =
 
 (* Elementary Arrow theory *)
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
+  (* AL -> BL ≡? AR -> BR *)
   let potentials =
     [
       (fun env () ->
+        (* AL ≡? AR  ∧  BL ≡? BR *)
         Env.push_tuple env left.args right.args;
         insert env left.ret right.ret);
       (fun env () ->
+        (* AL * αL ≡? AR  ∧
+           BL ≡? αL -> βL  ∧
+           βL ≡? BR
+        *)
         let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
         Env.push_tuple env
           (ACTerm.add left.args (Pure.var var_arg_left))
@@ -274,6 +279,10 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         in
         insert_var env var_ret_left right.ret);
       (fun env () ->
+        (* AL ≡? AR * αR  ∧
+           αR -> βR ≡? BR   ∧
+           βL ≡? BL
+        *)
         let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
         Env.push_tuple env left.args
           (ACTerm.add right.args (Pure.var var_arg_right));
@@ -285,13 +294,17 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         in
         insert_var env var_ret_right left.ret);
       (fun env () ->
+        (* AL * αL ≡? AR * αR  ∧
+           BL ≡? αL -> βL  ∧
+           αR -> βR ≡? BR   ∧
+           αL ≡? αR
+        *)
         let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
         let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+        (* TOCHECK *)
         Env.push_tuple env
           (ACTerm.add left.args (Pure.var var_arg_left))
-          right.args;
-        Env.push_tuple env left.args
-          (ACTerm.add left.args (Pure.var var_arg_right));
+          (ACTerm.add right.args (Pure.var var_arg_right));
         let* () =
           insert env left.ret
             (Type.arrow (Env.tyenv env)
@@ -299,10 +312,11 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                (Type.var (Env.tyenv env) var_ret_left))
         in
         let* () =
-          insert env right.ret
+          insert env 
             (Type.arrow (Env.tyenv env)
                (Type.var (Env.tyenv env) var_arg_right)
                (Type.var (Env.tyenv env) var_ret_right))
+            right.ret
         in
         insert env
           (Type.var (Env.tyenv env) var_ret_left)
@@ -361,30 +375,3 @@ let unify (env : Type.Env.t) t1 t2 = Iter.min ~lt:Subst.lt @@ unifiers env t1 t2
 
 let unifiable (env : Type.Env.t) t1 t2 =
   not @@ Iter.is_empty @@ unifiers env t1 t2
-
-type ord = Uncomparable | Smaller | Bigger | Equal
-
-let pp_ord fmt c =
-  match c with
-  | Uncomparable -> Format.fprintf fmt "Uncomparable"
-  | Smaller -> Format.fprintf fmt "Smaller"
-  | Bigger -> Format.fprintf fmt "Bigger"
-  | Equal -> Format.fprintf fmt "Equal"
-
-let compare ?(compat_leq = true) ?(compat_geq = true) env (t1 : Type.t)
-    (t2 : Type.t) =
-  let t1f = Type.freeze_variables env t1 in
-  let t2f = Type.freeze_variables env t2 in
-  match (compat_leq, compat_geq) with
-  | false, false -> Uncomparable
-  | true, false -> (
-      match unifiable env t1f t2 with true -> Smaller | false -> Uncomparable)
-  | false, true -> (
-      match unifiable env t1 t2f with true -> Bigger | false -> Uncomparable)
-  | true, true -> (
-      let b1 = unifiable env t1f t2 and b2 = unifiable env t1 t2f in
-      match (b1, b2) with
-      | true, true -> Equal
-      | false, false -> Uncomparable
-      | true, false -> Smaller
-      | false, true -> Bigger)

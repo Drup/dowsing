@@ -2,13 +2,13 @@ let all_tests = ref []
 let test_cnt = ref 0
 let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
-(* Unification.compare *)
+(* Acic.compare *)
 
 let equal_tests = [ ("a * b", "b * a"); ("unit * a", "a") ]
 let smaller_tests = [ ("int -> int", "'f -> int") ]
 let bigger_tests = [ ("'f -> int", "int -> int") ]
 let uncomparable_tests = [ ("int", "float"); ("'f -> int", "int -> 'b") ;("('a * unit * string * 'b t) format4 -> 'a","('a * Buffer.t * unit * ('b * string) t) format4 -> 'a") ]
-let comp = Alcotest.testable Unification.pp_ord ( = )
+let comp = Alcotest.testable Acic.pp_ord ( = )
 
 let tests =
   let make_test res (str1, str2) =
@@ -17,7 +17,7 @@ let tests =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "Comparing %s and %s" str1 str2 in
-      Alcotest.(check comp) name res @@ Unification.compare env ty1 ty2
+      Alcotest.(check comp) name res @@ Acic.compare env ty1 ty2
     in
     incr test_cnt;
     Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test
