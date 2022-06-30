@@ -2,7 +2,7 @@ module type S = sig
   type t
 
   val name : String.t
-  val to_string : t -> String.t
+  val pp : t Fmt.t
   val compute : Type.t -> t
   val compare : t CCOrd.t
   val compatible : query:t -> data:t -> Bool.t
@@ -13,7 +13,7 @@ module Head : S = struct
 
   type t = Type.Kind'.t
 
-  let to_string = Type.Kind'.to_string
+  let pp fmt feat = Format.fprintf fmt "%s" (Type.Kind'.to_string feat)
   let compute ty = Type.(kind' @@ head ty)
   let compare = Type.Kind'.compare
 
@@ -33,9 +33,9 @@ module Tail : S = struct
     tl : Type.Kind'.MSet.t;
   }
 
-  let to_string { has_var; cnt; tl } =
-    Fmt.str "has_var : %s ; cnt : %s ; tl : %s" (Bool.to_string has_var)
-      (Int.to_string cnt)
+  let pp fmt { has_var; cnt; tl } =
+    Format.fprintf fmt "has_var : %s ; cnt : %s ; tl : %s"
+      (Bool.to_string has_var) (Int.to_string cnt)
       (CCList.to_string ~start:"[" ~stop:"]" ~sep:";" Type.Kind'.to_string
          (Type.Kind'.MSet.to_list tl))
 
@@ -75,8 +75,8 @@ module Constructors : S = struct
     mutable constrs : Int.t Type.Kind'.Map.t;
   }
 
-  let to_string { has_var; constrs } =
-    Fmt.str "has_var : %s ; constrs : %s" (Bool.to_string has_var)
+  let pp fmt { has_var; constrs } =
+    Format.fprintf fmt "has_var : %s ; constrs : %s" (Bool.to_string has_var)
       (CCList.to_string ~start:"[" ~stop:"]" ~sep:";"
          (fun (key, value) ->
            Fmt.str "(%s : %s)" (Type.Kind'.to_string key) (Int.to_string value))

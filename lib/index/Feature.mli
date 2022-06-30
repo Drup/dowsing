@@ -2,7 +2,7 @@ module type S = sig
   type t
 
   val name : String.t
-  val to_string : t -> String.t
+  val pp : t Fmt.t
   val compute : Type.t -> t
   val compare : t -> t -> int
   val compatible : query:t -> data:t -> Bool.t

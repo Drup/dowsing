@@ -33,8 +33,14 @@ let head =
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
-      (* Format.eprintf "First : %s @." (Ft.to_string feat1);
-         Format.eprintf "Second : %s @." (Ft.to_string feat2); *)
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty1 Ft.pp feat1);
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Ft.compatible ~query:feat1 ~data:feat2
     in
@@ -79,8 +85,14 @@ let tail =
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
-      (* Format.eprintf "First : %s @." (Ft.to_string feat1);
-         Format.eprintf "Second : %s @." (Ft.to_string feat2); *)
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty1 Ft.pp feat1);
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Ft.compatible ~query:feat1 ~data:feat2
     in
@@ -127,8 +139,14 @@ let const =
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
-      (* Format.eprintf "First : %s @." (Ft.to_string feat1);
-         Format.eprintf "Second : %s @." (Ft.to_string feat2); *)
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty1 Ft.pp feat1);
+      Logs.debug (fun m ->
+          m "%a for type %a : %a @." Index.Feature.pp
+            (module Ft)
+            Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Ft.compatible ~query:feat1 ~data:feat2
     in
