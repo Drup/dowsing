@@ -173,18 +173,21 @@ end
 
 exception Type_already_present of G.V.t
 
-let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
+let add ?(with_feat = true) ({ env; graph; tops; bottoms } as poset) vertex_0 =
   let ty_0 = TypeId.ty vertex_0 in
   let ch = Changes.empty () in
   let already_seen_0 = TypeId.Set.empty in
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
+  let compare =
+    if with_feat then MatchFeat.compare else Acic.compare ~hint:Unsure
+  in
   let rec visit_down already_seen ~prev ~current =
     debug (fun m ->
         m "Visiting Edge down %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
-    let comp = MatchFeat.compare env (TypeId.ty current) ty_0 in
+    let comp = compare env (TypeId.ty current) ty_0 in
     debug (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)
@@ -209,7 +212,7 @@ let add ({ env; graph; tops; bottoms } as poset) vertex_0 =
         m "Visiting Edge up %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊥") pp_vertex)
           prev pp_vertex current);
-    let comp = MatchFeat.compare env (TypeId.ty current) ty_0 in
+    let comp = compare env (TypeId.ty current) ty_0 in
     debug (fun m -> m "%a@," Acic.pp_ord comp);
     match comp with
     | Equal -> raise (Type_already_present current)

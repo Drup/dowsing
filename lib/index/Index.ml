@@ -81,24 +81,24 @@ module Make (T : Trie.NODE) : S = struct
     let _ = T.refresh ~start:0 t.trie in
     ()
 
-  let regenerate_poset t =
+  let regenerate_poset ?(with_feat = true) t =
     let e = Type.Env.make ~hcons:t.hcons Data in
     let p = Poset.init e in
     T.iterid t.trie
     (* Do not eta-reduce (Not sure why) *)
-    |> Iter.iter (fun ty -> Poset.add p ty);
+    |> Iter.iter (fun ty -> Poset.add ~with_feat p ty);
     t.poset <- p;
-    Poset.xdot t.poset;
+    (* Poset.xdot t.poset; *)
     ()
 
-  let import t l =
+  let import ?(with_poset = true) ?(with_feat = true) t l =
     List.iter (add t) l;
     refresh t;
-    regenerate_poset t
+    if with_poset then regenerate_poset ~with_feat t
 
-  let import_package t l =
+  let import_package ?(with_poset = true) ?(with_feat = true) t l =
     List.map (fun (pkg, pkg_dir) -> (pkg, pkg_dir, Package.iter [ pkg_dir ])) l
-    |> import t
+    |> import ~with_poset ~with_feat t
 
   (** Iterators *)
 
@@ -149,10 +149,14 @@ module Make (T : Trie.NODE) : S = struct
     |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
            (ty, cell, unif))
 
+  let find_with_trie ?pkgs t env ty =
+    let _range, it = T.iter_compatible ty t.trie in
+    it
+    |> filter_with_unification env ty
+    |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
+           (ty, cell, unif))
+
   let find ?pkgs t env ty =
-    (* let _range, it = T.iter_compatible ty t.trie in
-       it
-       |> filter_with_unification env ty *)
     let range = T.range_compatible ty t.trie in
     _info (fun m -> m "%a@." TypeId.Range.pp range);
     (* Poset.xdot t.poset ~range; *)

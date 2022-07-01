@@ -1,0 +1,13 @@
+(executable
+ (name index_construction)
+ (modules index_construction)
+ (libraries common acic index benchmark)
+ (flags
+  (:standard -open Common)))
+
+(executable
+ (name search)
+ (modules search)
+ (libraries common acic index benchmark)
+ (flags
+  (:standard -open Common)))
