@@ -12,6 +12,9 @@ let types_str =
     "int -> int -> int";
     "int -> ('a -> 'b -> 'c) * int -> 'a * int";
     "('a -> 'a) -> 'a";
+    "int * float -> ('a -> int list) -> int";
+    "float";
+    "'a -> 'a list -> ('a -> 'b) -> 'a list * 'b list";
   ]
 
 let types = CCList.map (Type.of_string env_query) types_str
@@ -26,11 +29,20 @@ let () =
       raise
       @@ Index_not_found (Fmt.str "cannot open index file `%a'" Fpath.pp path)
   in
-  let search_exhaustive ty = ignore @@ Index.find_exhaustive idx env_data ty in
-  let search_trie ty = ignore @@ Index.find_with_trie idx env_data ty in
-  let search_trie_poset ty = ignore @@ Index.find idx env_data ty in
+  let search_exhaustive ty =
+    let it = Index.find_exhaustive idx env_data ty in
+    Iter.max it
+  in
+  let search_trie ty =
+    let it = Index.find_with_trie idx env_data ty in
+    Iter.max it
+  in
+  let search_trie_poset ty =
+    let it = Index.find idx env_data ty in
+    Iter.max it
+  in
   let make_res ty =
-    Format.printf "Search times for type : %a @." Type.pp ty;
+    Format.printf "Search time for query type : %a @." Type.pp ty;
     let res =
       Benchmark.throughputN (*latencyN (Int64.of_int 1000)*) 10
         [
