@@ -5,7 +5,7 @@ let idx = Index.make Index.Feature.all
 let path =
   match Fpath.of_string Sys.argv.(1) with
   | Ok path -> path
-  | Error _ -> invalid_arg "Uncorrect path to library"
+  | Error _ -> invalid_arg "Incorrect path to library"
 
 let types_str =
   [
@@ -17,7 +17,12 @@ let types_str =
     "'a -> 'a list -> ('a -> 'b) -> 'a list * 'b list";
   ]
 
-let types = CCList.map (Type.of_string env_query) types_str
+let types =
+  let of_str s =
+    Type.of_string env_query s
+    |> Type.freeze_variables env_query
+  in
+  CCList.map of_str types_str
 
 let () =
   let module Indexing = Index in

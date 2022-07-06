@@ -261,87 +261,87 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms } as poset) vertex_0 =
 
 (*Operating on poset*)
 
-let iter_succ t elt f =
-  let rec aux l =
-    match l with
-    | [] -> ()
-    | h :: q ->
-        f h;
-        aux (G.succ t h);
-        aux q
+let iter_descendants t elt f =
+  let rec aux h =
+    f h;
+    G.iter_succ aux t h
   in
-  aux [ elt ]
+  aux elt
 
-let fold_succ t elt f res_0 =
-  let rec aux res l =
-    match l with
-    | [] -> res
-    | h :: q ->
-        let res1 = f res h in
-        let res2 = aux res1 (G.succ t h) in
-        aux res2 q
+let fold_selected_descendants t p f node0 state0 =
+  let rec aux node state =
+    let state = f node state in
+    if p node then
+      G.fold_succ aux t node state
+    else
+      state
   in
-  aux res_0 [ elt ]
+  aux node0 state0
 
-let iter_pred t elt f =
-  let rec aux l =
-    match l with
-    | [] -> ()
-    | h :: q ->
-        f h;
-        aux (G.pred t h);
-        aux q
+let fold_descendants t f elt z =
+  let rec aux h z =
+    let z = f h z in
+    G.fold_succ aux t h z
   in
-  aux [ elt ]
+  aux elt z
 
-let fold_pred t elt f res_0 =
-  let rec aux res l =
-    match l with
-    | [] -> res
-    | h :: q ->
-        let res1 = f res h in
-        let res2 = aux res1 (G.pred t h) in
-        aux res2 q
+module Tmap = TypeId.Map  
+
+let check poset env ~query:ty ~range:maybe_unif_from_trie =
+  let unifs0 = Tmap.empty in
+  let maybe_unifiable maybe_unif node =
+    TypeId.check node maybe_unif
   in
-  aux res_0 [ elt ]
-
-let check poset env ~query:ty ~range =
-  let module Tmap = TypeId.Map in
-  let unifs = ref Tmap.empty in
-  let range = ref range in
-  let update_no_unif node =
-    range :=
-      TypeId.Range.remove
-        (TypeId.Range.Interval.make node.TypeId.id node.TypeId.id)
-        !range
+  let update_no_unif node maybe_unif =
+    if not @@ TypeId.check node maybe_unif then
+      maybe_unif
+    else 
+    TypeId.Range.remove
+      (TypeId.Range.Interval.make node.TypeId.id node.TypeId.id)
+      maybe_unif
   in
   let to_visit = Queue.create () in
-  let rec visit_down node =
-    debug (fun m -> m "Visiting Node %a @," pp_vertex node);
-    (* xdot poset ~range:!range ~unifs:!unifs; *)
-    if Tmap.mem node !unifs then visit_next ()
-    else if not (TypeId.check node !range) then (
-      iter_succ poset.graph node update_no_unif;
-      visit_next ())
+  let rec visit_next unifs maybe_unif =
+    if Queue.is_empty to_visit then
+      unifs
     else
-      match Acic.unify env ty node.ty with
-      | Some vm ->
-          unifs := Tmap.add node vm !unifs;
-          let l = G.succ poset.graph node in
-          List.iter (fun next -> Queue.push next to_visit) l;
-          visit_next ()
-      | None ->
-          iter_succ poset.graph node update_no_unif;
-          visit_next ()
-  and visit_next () =
-    try
-      let next = Queue.pop to_visit in
-      visit_down next
-    with Queue.Empty -> ()
+      begin
+      let node = Queue.pop to_visit in
+      debug (fun m -> m "Visiting Node %a @," pp_vertex node);
+      (* xdot poset ~range:!range ~unifs:!unifs; *)
+      if Tmap.mem node unifs then
+        (visit_next[@ocaml.tailcall]) unifs maybe_unif
+      else if not (maybe_unifiable maybe_unif_from_trie node) then (
+        let maybe_unif = fold_descendants
+            poset.graph
+            update_no_unif
+            node maybe_unif
+        in
+        (visit_next[@ocaml.tailcall]) unifs maybe_unif)
+      else if not (maybe_unifiable maybe_unif node) then (
+        (visit_next[@ocaml.tailcall]) unifs maybe_unif)
+      else
+        match Acic.unify env ty node.ty with
+        | Some vm ->
+          let unifs = Tmap.add node vm unifs in
+          G.iter_succ
+            (fun next -> Queue.push next to_visit)
+            poset.graph node;
+          (visit_next[@ocaml.tailcall]) unifs maybe_unif
+        | None ->
+          let range =
+            fold_selected_descendants
+              poset.graph
+              (maybe_unifiable maybe_unif) update_no_unif
+              node maybe_unif
+          in
+          (visit_next[@ocaml.tailcall]) unifs range
+    end
   in
   TypeId.Set.iter (fun v -> Queue.push v to_visit) poset.tops;
-  visit_next ();
-  Tmap.to_iter !unifs |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
+  let unifs = visit_next unifs0 maybe_unif_from_trie in
+  Tmap.to_iter unifs
+  |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
 
 let copy t =
   { env = t.env; graph = G.copy t.graph; tops = t.tops; bottoms = t.bottoms }
