@@ -6,11 +6,16 @@ let debug = Logs.debug
 
 module G = Imperative.Digraph.ConcreteBidirectional (TypeId)
 module Edge_set = Set.Make (G.E)
+module Components = Graph.Components.Undirected(G)
+
+type top_info = {
+  is_only_top : bool (** Is the only top of its cc *)
+}
 
 type t = {
   env : Type.Env.t;
   graph : G.t;
-  mutable tops : TypeId.Set.t;
+  mutable tops : top_info TypeId.Map.t;
   mutable bottoms : TypeId.Set.t;
 }
 
@@ -96,14 +101,14 @@ let xdot ?(range = TypeId.Range.empty) ?(unifs = TypeId.Map.empty) e =
 
 let init env =
   let g = G.create () in
-  let tops = TypeId.Set.empty in
+  let tops = TypeId.Map.empty in
   let bottoms = TypeId.Set.empty in
   { env; graph = g; tops; bottoms }
 
 let size poset = G.nb_vertex poset.graph
 
 let clear poset =
-  poset.tops <- TypeId.Set.empty;
+  poset.tops <- TypeId.Map.empty;
   poset.bottoms <- TypeId.Set.empty;
   G.clear poset.graph
 
@@ -152,7 +157,7 @@ module Changes = struct
       (fun dst ->
         let edge = G.E.create vertex_0 () dst in
         debug (fun m -> m "Add Edge %a @," pp_edge edge);
-        poset.tops <- TypeId.Set.remove dst poset.tops;
+        poset.tops <- TypeId.Map.remove dst poset.tops;
         G.add_edge_e poset.graph edge)
       ch.lower_bounds;
     TypeId.Set.iter
@@ -163,11 +168,32 @@ module Changes = struct
         G.add_edge_e poset.graph edge)
       ch.upper_bounds;
     if TypeId.Set.is_empty ch.upper_bounds then
-      poset.tops <- TypeId.Set.add vertex_0 poset.tops;
+      poset.tops <- TypeId.Map.add vertex_0 { is_only_top = false } poset.tops;
     if TypeId.Set.is_empty ch.lower_bounds then
       poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
     ()
 end
+
+(** Annotate tops which are the only tops in a CC *)
+let annotate_top poset =
+  let comps = Components.components_list poset.graph in
+  let tops_in_comps =
+    List.map (fun l -> List.filter (fun v -> TypeId.Map.mem v poset.tops) l)
+      comps
+  in
+  let new_tops = 
+    List.fold_left
+      (fun tops tops_in_cc ->
+         match tops_in_cc with
+         | [ v ] ->
+           TypeId.Map.add v { is_only_top = true } tops
+         | _ ->
+           tops
+      )
+      poset.tops tops_in_comps
+  in
+  poset.tops <- new_tops;
+  ()
 
 (*Adding in poset*)
 
@@ -242,7 +268,7 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms } as poset) vertex_0 =
   in
   try
     debug (fun m -> m "@[<v 2>Node %a@." pp_vertex vertex_0);
-    TypeId.Set.iter (fun v -> Queue.push (`down, None, v) to_visit) tops;
+    TypeId.Map.iter (fun v _ -> Queue.push (`down, None, v) to_visit) tops;
     let already_seen_0 = visit_next already_seen_0 in
     TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
     let _already_seen_0 = visit_next already_seen_0 in
@@ -250,7 +276,8 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms } as poset) vertex_0 =
     (* xdot poset; *)
     debug (fun m -> m "@]");
     debug (fun m ->
-        m "@[New tops: %a@]@.@[New bots: %a @]@." (TypeId.Set.pp TypeId.pp)
+        m "@[New tops: %a@]@.@[New bots: %a @]@."
+          (TypeId.Map.pp TypeId.pp Fmt.nop)
           poset.tops (TypeId.Set.pp TypeId.pp) poset.bottoms);
     debug (fun m ->
         m "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@."
@@ -338,7 +365,12 @@ let check poset env ~query:ty ~range:maybe_unif_from_trie =
           (visit_next[@ocaml.tailcall]) unifs range
     end
   in
-  TypeId.Set.iter (fun v -> Queue.push v to_visit) poset.tops;
+  TypeId.Map.iter (fun top { is_only_top } ->
+      if is_only_top && not (maybe_unifiable maybe_unif_from_trie top) then
+        ()
+      else
+        Queue.push top to_visit)
+    poset.tops;
   let unifs = visit_next unifs0 maybe_unif_from_trie in
   Tmap.to_iter unifs
   |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))

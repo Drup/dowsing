@@ -87,6 +87,7 @@ module Make (T : Trie.NODE) : S = struct
     T.iterid t.trie
     (* Do not eta-reduce (Not sure why) *)
     |> Iter.iter (fun ty -> Poset.add ~with_feat p ty);
+    Poset.annotate_top p;
     t.poset <- p;
     (* Poset.xdot t.poset; *)
     ()
