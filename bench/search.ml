@@ -15,12 +15,12 @@ let types_str =
     "int * float -> ('a -> int list) -> int";
     "float";
     "'a -> 'a list -> ('a -> 'b) -> 'a list * 'b list";
+    "'a list -> _ -> unit";
   ]
 
 let types =
   let of_str s =
-    Type.of_string env_query s
-    |> Type.freeze_variables env_query
+    Type.of_string env_query s |> Type.freeze_variables env_query
   in
   CCList.map of_str types_str
 

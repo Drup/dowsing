@@ -5,14 +5,16 @@ let pkgs = try Package.find [ Sys.argv.(1) ] with _ -> Package.find_all ()
 let () =
   let module Indexing = Index in
   let module Index = (val idx) in
-  let idx = Index.make env in
-  let index_trie () = Index.import_package ~with_poset:false idx pkgs in
-  let index_trie_poset () = Index.import_package ~with_feat:false idx pkgs in
+  let idx1 = Index.make env in
+  let index_trie () = Index.import_package ~with_poset:false idx1 pkgs in
+  let idx2 = Index.make env in
+  let index_trie_poset () = Index.import_package ~with_feat:false idx2 pkgs in
+  let idx3 = Index.make env in
   let index_trie_poset_feat () =
-    Index.import_package ~with_feat:true idx pkgs
+    Index.import_package ~with_feat:true idx3 pkgs
   in
+  Format.printf "Index construction time";
   let res =
-    Format.printf "Index construction time";
     Benchmark.latencyN (Int64.of_int 10)
       [
         ("Trie", index_trie, ());
