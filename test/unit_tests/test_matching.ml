@@ -3,9 +3,14 @@ let test_cnt = ref 0
 let add_tests name tests = all_tests := !all_tests @ [ (name, tests) ]
 
 (* Unification.compare *)
-                                                     
+
 let equal_tests =
-  [ ("a * b", "b * a"); ("unit * a", "a"); ("'a -> 'b", "'b -> 'a") ]
+  [
+    ("a * b", "b * a");
+    ("unit * a", "a");
+    ("'a -> 'b", "'b -> 'a") (* ("'a * 'b -> 'c", "'a -> 'b"); *);
+  ]
+
 let smaller_tests = [ ("int -> int", "'f -> int") ]
 
 let bigger_tests =
@@ -33,7 +38,7 @@ let matching =
     incr test_cnt;
     Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test
   in
-  CCList.map (make_test Equal) equal_tests
+  CCList.map (make_test Matching_equiv) equal_tests
   @ CCList.map (make_test Smaller) smaller_tests
   @ CCList.map (make_test Bigger) bigger_tests
   @ CCList.map (make_test Uncomparable) uncomparable_tests
@@ -60,9 +65,7 @@ let not_smaller =
   ]
 
 let uncompatible = [ ("float", "int"); ("'a -> 'a * int list", "float list") ]
-
-let comp' =
-  Alcotest.testable Acic.pp_hint ( = )
+let comp' = Alcotest.testable Acic.pp_hint ( = )
 
 let match_feat =
   let make_test res (str1, str2) =
