@@ -1,0 +1,20 @@
+(executable
+ (name long_large_poset)
+ (modules long_large_poset)
+ (libraries common acic index compiler-libs)
+ (flags
+  (:standard -open Common)))
+
+(executable
+ (name long_thin_poset)
+ (modules long_thin_poset)
+ (libraries common acic index compiler-libs)
+ (flags
+  (:standard -open Common)))
+
+(executable
+ (name short_large_poset)
+ (modules short_large_poset)
+ (libraries common acic index compiler-libs)
+ (flags
+  (:standard -open Common)))
