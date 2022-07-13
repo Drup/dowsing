@@ -95,6 +95,9 @@ module Make (T : Trie.NODE) : S = struct
   let import ?(with_poset = true) ?(with_feat = true) t l =
     List.iter (add t) l;
     refresh t;
+    _info (fun m ->
+        m "@[%i @ types to insert in the index @]"
+          (Iter.length @@ T.iterid t.trie));
     if with_poset then regenerate_poset ~with_feat t
 
   let import_package ?(with_poset = true) ?(with_feat = true) t l =

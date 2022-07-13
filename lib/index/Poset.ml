@@ -154,16 +154,19 @@ module Changes = struct
     let new_set = TypeId.Set.add new_type old_set in
     TypeId.Map.add repr new_set classes
 
-  let rm_and_add set (prev_v, new_v) =
-    match prev_v with
-    | None -> TypeId.Set.add new_v set
-    | Some ty -> set |> TypeId.Set.remove ty |> TypeId.Set.add new_v
+  let add_upper_bound ch g new_top =
+    let new_upper_bound =
+      G.fold_pred (fun v -> TypeId.Set.remove v) g new_top ch.upper_bounds
+      |> TypeId.Set.add new_top
+    in
+    ch.upper_bounds <- new_upper_bound
 
-  let add_upper_bound ch (previous_top, new_top) =
-    ch.upper_bounds <- rm_and_add ch.upper_bounds (previous_top, new_top)
-
-  let add_lower_bound ch (new_bot, previous_bot) =
-    ch.lower_bounds <- rm_and_add ch.lower_bounds (previous_bot, new_bot)
+  let add_lower_bound ch g new_bot =
+    let new_lower_bound =
+      G.fold_succ (fun v -> TypeId.Set.remove v) g new_bot ch.lower_bounds
+      |> TypeId.Set.add new_bot
+    in
+    ch.lower_bounds <- new_lower_bound
 
   let remove_edge ch dir (prev, current) =
     match prev with
@@ -258,7 +261,7 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms; _ } as poset) vertex_0
         List.iter
           (fun next -> Queue.push (`down, Some current, next) to_visit)
           l;
-        Changes.add_upper_bound ch (prev, current);
+        Changes.add_upper_bound ch poset.graph current;
         visit_next already_seen
     | Uncomparable ->
         incr uncomparable;
@@ -287,14 +290,19 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms; _ } as poset) vertex_0
         incr smaller;
         let l = G.pred graph current in
         List.iter (fun next -> Queue.push (`up, Some current, next) to_visit) l;
-        Changes.add_lower_bound ch (current, prev);
+        Changes.add_lower_bound ch poset.graph current;
         visit_next already_seen
   and visit_next already_seen =
     match Queue.take_opt to_visit with
     | None -> already_seen
     | Some (dir, prev, current) ->
         if TypeId.Set.mem current already_seen then (
-          debug (fun m -> m "Already visited node %a@," TypeId.pp current);
+          let pp_dir fmt d =
+            match d with `up -> Fmt.pf fmt "up" | `down -> Fmt.pf fmt "down"
+          in
+          debug (fun m ->
+              m "Tried to visit an edge %a. Already visited node %a@," pp_dir
+                dir TypeId.pp current);
           visit_next already_seen)
         else
           let next = match dir with `down -> visit_down | `up -> visit_up in
@@ -302,6 +310,7 @@ let add ?(with_feat = true) ({ env; graph; tops; bottoms; _ } as poset) vertex_0
           next already_seen ~prev ~current
   in
   try
+    debug (fun m -> m "Adding type %a in the Poset" TypeId.pp vertex_0);
     let changes =
       try
         debug (fun m -> m "@[<v 2>Node %a@." pp_vertex vertex_0);

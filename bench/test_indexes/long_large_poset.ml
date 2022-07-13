@@ -1,22 +1,30 @@
 module P = Index.Poset
 module Idx = (val Index.(make Feature.all))
 
-let () = Logs.set_reporter (Logs.format_reporter ())
-(* Logs.set_level @@ Some Logs.Debug *)
+let () =
+  Logs.set_reporter (Logs.format_reporter ());
+  Logs.set_level @@ Some Logs.Info
 
 let long_large_list ~depth ~const_width =
   let types = ref [] in
   let rec aux str k =
     if k = 0 then types := str :: !types
+    else if k = depth then (
+      for i = 0 to const_width - 1 do
+        let str = "c" ^ Int.to_string i in
+        aux str (k - 1)
+      done;
+      let str = "'a0" in
+      aux str (k - 1))
     else (
-      for i = 0 to const_width do
+      for i = 0 to const_width - 1 do
         let str = "( " ^ str ^ " -> c" ^ Int.to_string i ^ " )" in
         aux str (k - 1)
       done;
       let str = "( " ^ str ^ " -> 'a" ^ Int.to_string (depth - k + 1) ^ " )" in
       aux str (k - 1))
   in
-  aux "'a0" depth;
+  aux "" depth;
   !types
 
 let info_from_list l =
@@ -36,5 +44,5 @@ let make_index l =
   t
 
 let () =
-  let t = make_index @@ long_large_list ~depth:3 ~const_width:2 in
+  let t = make_index @@ long_large_list ~depth:4 ~const_width:2 in
   Idx.save t @@ Fpath.v "long_large_poset.db"
