@@ -155,7 +155,7 @@ module Make (Trie : Trie.NODE) : S = struct
     let unselect t =
       if Stack.length t.its = 1 then
         error () ;
-      ignore @@ Stack.pop t.its
+      ignore @@ (Stack.pop t.its : iter)
 
     let pp ppf t =
       let sz = Iter.length @@ iter t in
@@ -169,4 +169,4 @@ end
 
 let make feats = (module Make (val Trie.make feats) : S)
 
-module Poset = Poset 
+module Poset = Poset

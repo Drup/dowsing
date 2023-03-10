@@ -36,7 +36,7 @@ let iter pkgs_dirs k =
   pkgs_dirs
   |> CCList.map Fpath.to_string
   |> LibIndex.Misc.unique_subdirs
-  |> LibIndex.load
+  |> LibIndex.load ~qualify:false
   |> LibIndex.all
   |> CCList.iter @@ fun info ->
     match info.LibIndex.kind with

@@ -240,6 +240,7 @@ Some initial basic tests.
   CCOption.return_if : bool -> 'a -> 'a t
   CCMap.S.singleton : key -> 'a -> 'a t
   CCMap.Make.singleton : key -> 'a -> 'a t
+  Containers_bencode.Str_map.singleton : key -> 'a -> 'a t
   CCAtomic.set : 'a t -> 'a -> unit
   CCList.Ref.push : 'a t -> 'a -> unit
   CCListLabels.Ref.push : 'a t -> 'a -> unit
@@ -253,8 +254,10 @@ Some initial basic tests.
   ContainersLabels.Hashtbl.find : ('a, 'b) t -> 'a -> 'b
   CCFun.(@@) : ('a -> 'b) -> 'a -> 'b
   CCFun.(|>) : 'a -> ('a -> 'b) -> 'b
+  CCFun.(let@) : ('a -> 'b) -> 'a -> 'b
   CCFun.Infix.(@@) : ('a -> 'b) -> 'a -> 'b
   CCFun.Infix.(|>) : 'a -> ('a -> 'b) -> 'b
+  CCFun.Infix.(let@) : ('a -> 'b) -> 'a -> 'b
   CCList.mem_assq : 'a -> ('a * 'b) list -> bool
   CCListLabels.mem_assq : 'a -> map:('a * 'b) list -> bool
   Containers.Hashtbl.mem : ('a, 'b) t -> 'a -> bool
@@ -290,13 +293,17 @@ Some initial basic tests.
   Containers.Hashtbl.SeededS.add : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.S.add : 'a t -> key -> 'a -> unit
   Containers.Hashtbl.Make.replace : 'a t -> key -> 'a -> unit
+  Containers_scc.ARG.Node_tbl.add : 'a t -> key -> 'a -> unit
   Containers.Hashtbl.MakeSeeded.add : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.Make.add : 'a t -> key -> 'a -> unit
   Containers.Hashtbl.SeededS.replace : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.S.replace : 'a t -> key -> 'a -> unit
+  Containers_scc.Make.A.Node_tbl.add : 'a t -> key -> 'a -> unit
+  Containers_scc.ARG.Node_tbl.replace : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.SeededS.add : 'a t -> key -> 'a -> unit
   Containers.Hashtbl.MakeSeeded.replace : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.Make.replace : 'a t -> key -> 'a -> unit
+  Containers_scc.Make.A.Node_tbl.replace : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.MakeSeeded.add : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.SeededS.replace : 'a t -> key -> 'a -> unit
   ContainersLabels.Hashtbl.MakeSeeded.replace : 'a t -> key -> 'a -> unit
@@ -312,6 +319,7 @@ Some initial basic tests.
   CCOption.value : 'a t -> default:'a -> 'a
   CCOption.get_or : default:'a -> 'a t -> 'a
   CCAtomic.exchange : 'a t -> 'a -> 'a
+  CCRef.protect : 'a t -> 'a -> (unit -> 'b) -> 'b
   CCFun.lexicographic :
   ('a -> 'a -> int) -> ('a -> 'a -> int) -> 'a -> 'a -> int
   CCList.cons : 'a -> 'a list -> 'a list
@@ -369,11 +377,13 @@ Some initial basic tests.
   eq:('a -> 'a -> bool) -> 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
   CCMap.S.add : key -> 'a -> 'a t -> 'a t
   CCMap.Make.add : key -> 'a -> 'a t -> 'a t
+  Containers_bencode.Str_map.add : key -> 'a -> 'a t -> 'a t
   CCOpt.wrap : ?handler:(exn -> bool) -> ('a -> 'b) -> 'a -> 'b option
   CCOption.wrap : ?handler:(exn -> bool) -> ('a -> 'b) -> 'a -> 'b option
   CCArray.lookup : cmp:'a ord -> 'a -> 'a t -> int option
   CCArrayLabels.lookup : cmp:'a ord -> key:'a -> 'a t -> int option
   CCSeq.unfold : ('b -> ('a * 'b) option) -> 'b -> 'a t
+  CCSeq.iterate : ('a -> 'a) -> 'a -> 'a t
   CCParse.chars_fold :
   f:('acc ->
      char ->
@@ -403,6 +413,10 @@ Some initial basic tests.
   CCPair.map2 :
   ('a1 -> 'b1 -> 'c1) ->
   ('a2 -> 'b2 -> 'c2) -> 'a1 * 'a2 -> 'b1 * 'b2 -> 'c1 * 'c2
+  CCString.fold_left : ('a -> char -> 'a) -> 'a -> string -> 'a
+  CCString.fold_right : (char -> 'a -> 'a) -> string -> 'a -> 'a
+  CCStringLabels.fold_left : f:('a -> char -> 'a) -> init:'a -> string -> 'a
+  CCStringLabels.fold_right : f:(char -> 'a -> 'a) -> string -> init:'a -> 'a
   CCString.fold : ('a -> char -> 'a) -> 'a -> t -> 'a
   CCStringLabels.fold : f:('a -> char -> 'a) -> init:'a -> t -> 'a
   CCByte_buffer.fold_left : ('a -> char -> 'a) -> 'a -> t -> 'a
@@ -417,6 +431,11 @@ Some initial basic tests.
   CCArray.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
   CCListLabels.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
   CCArrayLabels.mem : ?eq:('a -> 'a -> bool) -> 'a -> 'a t -> bool
+  Containers_scc.scc :
+  tbl:(module Hashtbl.S with type key = 'node) ->
+  graph:'graph ->
+  children:('graph -> 'node -> 'node iter) ->
+  nodes:'node list -> unit -> 'node list list
   CCPair.(&&&) : ('a -> 'b) -> ('a -> 'c) -> 'a -> 'b * 'c
   CCArray.fold_left : ('a -> 'b -> 'a) -> 'a -> 'b array -> 'a
   CCArray.fold_right : ('b -> 'a -> 'a) -> 'b array -> 'a -> 'a
@@ -456,6 +475,7 @@ Some initial basic tests.
   CCList.scan_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a list -> 'acc list
   CCListLabels.scan_left :
   f:('acc -> 'a -> 'acc) -> init:'acc -> 'a list -> 'acc list
+  CCSeq.scan : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a t
   CCArray.scan_left : ('acc -> 'a -> 'acc) -> 'acc -> 'a t -> 'acc t
   CCArrayLabels.scan_left :
   f:('acc -> 'a -> 'acc) -> init:'acc -> 'a t -> 'acc t
@@ -470,8 +490,10 @@ Some initial basic tests.
   CCString.fold2 : ('a -> char -> char -> 'a) -> 'a -> string -> string -> 'a
   CCStringLabels.fold2 :
   f:('a -> char -> char -> 'a) -> init:'a -> string -> string -> 'a
+  CCSeq.foldi : ('a -> int -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCList.foldi : ('b -> int -> 'a -> 'b) -> 'b -> 'a t -> 'b
   CCArray.foldi : ('a -> int -> 'b -> 'a) -> 'a -> 'b t -> 'a
+  CCSeq.fold_lefti : ('a -> int -> 'b -> 'a) -> 'a -> 'b t -> 'a
   CCListLabels.foldi : f:('b -> int -> 'a -> 'b) -> init:'b -> 'a t -> 'b
   CCArrayLabels.foldi : f:('a -> int -> 'b -> 'a) -> init:'a -> 'b t -> 'a
   CCMap.S.fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -482,9 +504,14 @@ Some initial basic tests.
   Containers.Hashtbl.Make.fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   Containers.Hashtbl.SeededS.fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   ContainersLabels.Hashtbl.S.fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  Containers_bencode.Str_map.fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  Containers_scc.ARG.Node_tbl.fold :
+  (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   Containers.Hashtbl.MakeSeeded.fold :
   (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   ContainersLabels.Hashtbl.Make.fold :
+  (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+  Containers_scc.Make.A.Node_tbl.fold :
   (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
   ContainersLabels.Hashtbl.SeededS.fold :
   (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
@@ -521,6 +548,10 @@ Some initial basic tests.
   CCListLabels.remove_one : eq:('a -> 'a -> bool) -> 'a -> 'a t -> 'a t
   CCResult.Traverse.fold_m :
   ('b -> 'a -> 'b M.t) -> 'b -> ('a, 'err) t -> 'b M.t
+  CCArray.fold_left_map :
+  ('a -> 'b -> 'a * 'c) -> 'a -> 'b array -> 'a * 'c array
+  CCArrayLabels.fold_left_map :
+  f:('a -> 'b -> 'a * 'c) -> init:'a -> 'b array -> 'a * 'c array
   CCList.fold_left2 : ('a -> 'b -> 'c -> 'a) -> 'a -> 'b list -> 'c list -> 'a
   CCList.fold_right2 : ('a -> 'b -> 'c -> 'c) -> 'a list -> 'b list -> 'c -> 'c
   CCListLabels.fold_left2 :
@@ -533,6 +564,7 @@ Some initial basic tests.
   f:('a -> 'b) -> reduce:('acc -> 'b -> 'acc) -> init:'acc -> 'a list -> 'acc
   CCSeq.fold2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
   CCArray.fold2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
+  CCSeq.fold_left2 : ('acc -> 'a -> 'b -> 'acc) -> 'acc -> 'a t -> 'b t -> 'acc
   CCArrayLabels.fold2 :
   f:('acc -> 'a -> 'b -> 'acc) -> init:'acc -> 'a t -> 'b t -> 'acc
   CCList.fold_product : ('c -> 'a -> 'b -> 'c) -> 'c -> 'a t -> 'b t -> 'c
