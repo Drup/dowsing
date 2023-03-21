@@ -19,7 +19,7 @@
   (name        dowsing)
   (synopsis    "A short synopsis")
   (description "A longer description")
-  (depends ocaml dune
+  (depends ocaml dune bos alcotest zarith ocamlgraph logs fpath
     (containers      (>= 3.11))
     (containers-data (>= 3.11))
     (iter            (>= 1.6))
