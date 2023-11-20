@@ -110,6 +110,7 @@ let rec process_stack env (stack : Stack.t) : return =
 and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   match (t1, t2) with
   | _ when t1 == t2 -> process_stack env stack
+  | Var v, t | t, Var v -> insert_var env stack v t
   (* Decomposition rule
      (s₁,...,sₙ) p ≡ (t₁,...,tₙ) p  --> ∀i, sᵢ ≡ tᵢ
      when p is a type constructor.
@@ -137,13 +138,22 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       let stack, pure_t = variable_abstraction_all env stack t in
       Env.push_tuple env pure_s pure_t;
       process_stack env stack
-  | Var v, t | t, Var v -> insert_var env stack v t
+  | s, Tuple t ->
+      let stack, pure_s = variable_abstraction env stack s in
+      let stack, pure_t = variable_abstraction_all env stack t in
+      Env.push_tuple env [|pure_s|] pure_t;
+      process_stack env stack
+  | Tuple s, t ->
+      let stack, pure_s = variable_abstraction_all env stack s in
+      let stack, pure_t = variable_abstraction env stack t in
+      Env.push_tuple env pure_s [|pure_t|];
+      process_stack env stack
   (* Clash rule
      Terms are incompatible
   *)
   | Constr _, Constr _ (* if same constructor, already checked above *)
-  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
-      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
+  | ( (Constr _ | Arrow _ | Other _ | FrozenVar _),
+      (Constr _ | Arrow _ | Other _ | FrozenVar _) ) ->
       FailUnif (t1, t2)
 
 (* Repeated application of VA on an array of subexpressions. *)

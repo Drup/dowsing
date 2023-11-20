@@ -14,6 +14,7 @@ module System : sig
   val make : ACTerm.problem list -> t
 
   type dioph_solution
+  val pp_solution : dioph_solution Fmt.t
   val get_solution : dioph_solution -> int -> int
 
   val solve : t -> dioph_solution Iter.t
@@ -96,6 +97,7 @@ end = struct
     { nb_atom ; assoc_pure ; first_var ; system }
 
   type dioph_solution = int array
+  let pp_solution = Fmt.Dump.array Fmt.int
   let get_solution = Array.get
 
   let solve { first_var ; system ; _ } : dioph_solution Iter.t =
@@ -208,7 +210,7 @@ end = struct
         let sol = solutions.(i) in
         (* assert (Array.length sol = Array.length vars) ; *)
         let symb = symbols.(i) in
-        (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
+        Logs.debug (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ;
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
           | Pure.Constant _ | Pure.FrozenVar _ -> ()
@@ -217,9 +219,9 @@ end = struct
             Variable.HMap.add_list unifiers var (multiplicity, symb)
         done;
     done;
-    (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
-    (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
-    (* ) ; *)
+    Logs.debug (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(any" | ") Variable.HMap.iter @@
+       pair ~sep:(any" -> ") Variable.pp @@ list ~sep:(any",@ ") @@ pair int Pure.pp ) unifiers
+    ) ;
     let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
     fun k ->
       Variable.HMap.iter
@@ -234,11 +236,11 @@ end = struct
       (seq_solutions:System.dioph_solution Iter.t) : _ Iter.t =
     let stack_solutions = CCVector.create () in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
-    (* Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
-     * Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
-     *   (CCVector.pp @@ Fmt.Dump.array Fmt.int) stack_solutions; *)
+    Fmt.epr "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars;
+    Fmt.epr "@[<v2>Sol stack:@ %a@]@."
+      (CCVector.pp System.pp_solution) stack_solutions;
     let symbols = symbols_of_solutions env system stack_solutions in
-    (* Fmt.epr "@[Symbols: %a@]@," (Fmt.Dump.array @@ Pure.pp namefmt) symbols; *)
+    Fmt.epr "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols;
     let subsets = iterate_subsets (Array.length symbols) system bitvars in
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
