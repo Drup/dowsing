@@ -16,4 +16,4 @@
 (package
  (name dowsing)
  (synopsis "Dowsing is a type of divination employed in attempts to locate functions by giving a type")
- (depends ocaml dune fmt containers iter diet ocp-index ocamlgraph bos zarith))
+ (depends ocaml dune fmt containers containers-data iter diet ocp-index ocamlgraph bos zarith atomic ppx_deriving))

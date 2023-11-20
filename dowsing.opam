@@ -12,12 +12,15 @@ depends: [
   "dune" {>= "3.0"}
   "fmt"
   "containers"
+  "containers-data"
   "iter"
   "diet"
   "ocp-index"
   "ocamlgraph"
   "bos"
   "zarith"
+  "atomic"
+  "ppx_deriving"
   "odoc" {with-doc}
 ]
 build: [
