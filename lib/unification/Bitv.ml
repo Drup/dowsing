@@ -34,7 +34,7 @@ module Int : S with type t = private int = struct
 
   let is_empty n = (n = 0)
   let is_singleton n = n land (n-1) = 0
-  let is_subset i b = (i && b) <> 0
+  let is_subset i b = (i && b) = i
   let mem i b = is_subset (singleton i) b
 
   let pp = CCInt.pp_binary
@@ -57,7 +57,7 @@ module Z : S with type t = private Z.t = struct
 
   let is_empty n = Z.(n = zero)
   let is_singleton n = Z.(n land (n-one) = zero)
-  let is_subset i b = Z.((i && b) <> zero)
+  let is_subset i b = (i && b) = i
   let mem i b = is_subset (singleton i) b
 
   let pp = Z.pp_print
