@@ -11,7 +11,8 @@ module type S = sig
   val is_empty : t -> bool
   val mem : int -> t -> bool
   val is_subset : t -> t -> bool
-  val is_singleton : t -> bool
+  val do_intersect : t -> t -> bool
+  val is_singleton_or_empty : t -> bool
   val pp : Format.formatter -> t -> unit
 
   val capacity : int
