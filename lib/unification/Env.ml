@@ -1,6 +1,6 @@
 type t = {
   tyenv : Type.Env.t ;
-  mutable vars : Subst.t ;
+  mutable vars : Subst.t (* TODO: maybe a simple array could do it because variable might have a continous range *) ;
   mutable tuples : ACTerm.problem list ;
   mutable arrows : ArrowTerm.problem list ;
   orig_vars : Variable.Set.t ;
