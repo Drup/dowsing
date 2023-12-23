@@ -85,7 +85,9 @@ let occur_check env : return =
     match vars_without_predecessors with
     (* We eliminated all the variables: there are no cycles *)
     | _ when n = nb_representatives -> Done
-    | [] -> FailedOccurCheck env
+    | [] ->
+      debug (fun m -> m "Fail occur check");
+      FailedOccurCheck env
     | x :: q ->
         let aux l v =
           Variable.HMap.decr nb_predecessors v;
@@ -101,6 +103,7 @@ let occur_check env : return =
 (** Main process *)
 
 let rec process_stack env (stack : Stack.t) : return =
+    debug (fun m -> m "Process_stack");
   Timeout.check ();
   match Stack.pop stack with
   | Some (Expr (t1, t2), stack) -> insert_rec env stack t1 t2
@@ -108,6 +111,7 @@ let rec process_stack env (stack : Stack.t) : return =
   | None -> Done
 
 and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
+  debug (fun m -> m "Insert_rec %a = %a" Type.pp t1 Type.pp t2);
   match (t1, t2) with
   | _ when t1 == t2 -> process_stack env stack
   (* Decomposition rule
@@ -116,6 +120,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   *)
   | Type.Constr (p1, args1), Type.Constr (p2, args2)
     when LongIdent.equal p1 p2 ->
+    debug (fun m -> m "Constr|Constr");
       assert (Array.length args1 = Array.length args2);
       let stack = Stack.push_array2 args1 args2 stack in
       process_stack env stack
@@ -123,6 +128,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
      (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r'  -->  an equivalent arrow problem
   *)
   | Type.Arrow (arg1, ret1), Type.Arrow (arg2, ret2) ->
+    debug (fun m -> m "Arrow|Arrow");
       let stack, arg1 = variable_abstraction_all env stack arg1 in
       let stack, arg2 = variable_abstraction_all env stack arg2 in
       (* let stack, ret1 = variable_abstraction env stack ret1 in
@@ -132,22 +138,27 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   (* Two tuples, we apply VA repeatedly
      (s₁,...,sₙ) ≡ (t₁,...,tₙ) --> an equivalent pure problem
   *)
-  | Tuple s, Tuple t ->
+  | Tuple s, Tuple t (* Can't we shortcut here? *) ->
+    debug (fun m -> m "Tuple|Tuple");
       let stack, pure_s = variable_abstraction_all env stack s in
       let stack, pure_t = variable_abstraction_all env stack t in
       Env.push_tuple env pure_s pure_t;
       process_stack env stack
-  | Var v, t | t, Var v -> insert_var env stack v t
+  | Var v, t | t, Var v ->
+    debug (fun m -> m "Var|Var");
+    insert_var env stack v t
   (* Clash rule
      Terms are incompatible
   *)
   | Constr _, Constr _ (* if same constructor, already checked above *)
   | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
       (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
+    debug (fun m -> m "Fail");
       FailUnif (t1, t2)
 
 (* Repeated application of VA on an array of subexpressions. *)
 and variable_abstraction_all env stack a =
+    debug (fun m -> m "Variable abstraction");
   let r = ref stack in
   let f x =
     let stack, x = variable_abstraction env !r x in
@@ -156,6 +167,7 @@ and variable_abstraction_all env stack a =
   in
   (!r, Array.map f @@ Type.NSet.as_array a)
 
+(* TODO: do we assume that tuples are flatten? Invariant de la forme normal *)
 (* rule VA/Variable Abstraction
    Given a tuple, assign a variable to each subexpressions that is foreign
    and push them on stack.
@@ -181,8 +193,9 @@ and variable_abstraction env stack t =
       (stack, Pure.var var)
 
 and insert_var env stack x s =
+    debug (fun m -> m "Insert_var: %a = %a" Variable.pp x Type.pp s);
   match s with
-  | Type.Constr (_, [||])
+  | Type.Constr (_, [||]) (* TODO why is this here? It's covered by the Type.Constr _ later *)
   | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _
   | Type.FrozenVar _ ->
       quasi_solved env stack x s
@@ -232,6 +245,7 @@ let insert env t u : return =
                  Type.pp t Type.pp u
                  Env.pp env);
   insert_rec env Stack.empty t u
+
 let insert_var env x ty : return = insert_var env Stack.empty x ty
 
 let insert_tuple_solution env sol =
@@ -332,6 +346,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
 
 and try_with_solution : type a. _ -> (Env.t -> a -> return) -> a -> _ =
   fun env f sol k ->
+  debug (fun m -> m "Trying a solution");
   let env = Env.copy env in
   match f env sol with
   | Done -> solve_loop env k

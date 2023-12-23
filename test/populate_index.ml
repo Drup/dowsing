@@ -3,7 +3,7 @@ module Idx = (val Index.(make Feature.all))
 
 let () =
   Logs.set_reporter (Logs.format_reporter ());
-  Logs.set_level @@ Some Logs.Debug
+  Logs.set_level @@ Some Logs.Info
 
 let types =
   [

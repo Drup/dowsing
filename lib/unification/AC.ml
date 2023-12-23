@@ -234,11 +234,11 @@ end = struct
       (seq_solutions:System.dioph_solution Iter.t) : _ Iter.t =
     let stack_solutions = CCVector.create () in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
-    (* Fmt.epr "@[Bitvars: %a@]@," (Fmt.Dump.array Bitv.pp) bitvars;
-     * Fmt.epr "@[<v2>Sol stack:@ %a@]@,"
-     *   (CCVector.pp @@ Fmt.Dump.array Fmt.int) stack_solutions; *)
+    (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
+    Logs.debug (fun m -> m "@[<v2>Sol stack:@ %a@]@."
+      (CCVector.pp System.pp_solution) stack_solutions); *)
     let symbols = symbols_of_solutions env system stack_solutions in
-    (* Fmt.epr "@[Symbols: %a@]@," (Fmt.Dump.array @@ Pure.pp namefmt) symbols; *)
+    (* Logs.debug (fun m -> m "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols); *)
     let subsets = iterate_subsets (Array.length symbols) system bitvars in
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
