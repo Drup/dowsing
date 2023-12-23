@@ -10,7 +10,8 @@ module type S = sig
   val is_empty : t -> bool
   val mem : int -> t -> bool
   val is_subset : t -> t -> bool
-  val is_singleton : t -> bool
+  val do_intersect : t -> t -> bool
+  val is_singleton_or_empty : t -> bool
   val pp : Format.formatter -> t -> unit
 
   val capacity : int
@@ -33,9 +34,10 @@ module Int : S with type t = private int = struct
   let all_until i = check_len (i+1) ; (1 lsl (i+1) - 1)
 
   let is_empty n = (n = 0)
-  let is_singleton n = n land (n-1) = 0
+  let is_singleton_or_empty n = n land (n-1) = 0
   let is_subset i b = (i && b) = i
-  let mem i b = is_subset (singleton i) b
+  let do_intersect i b = (i && b) <> 0
+  let mem i b = ((singleton i) && b) <> 0
 
   let pp = CCInt.pp_binary
 end
@@ -56,9 +58,10 @@ module Z : S with type t = private Z.t = struct
   let all_until i = let x = i+1 in Z.(one lsl x - one)
 
   let is_empty n = Z.(n = zero)
-  let is_singleton n = Z.(n land (n-one) = zero)
+  let is_singleton_or_empty n = Z.(n land (n-one) = zero)
   let is_subset i b = (i && b) = i
-  let mem i b = is_subset (singleton i) b
+  let do_intersect i b = (i && b) <> Z.zero
+  let mem i b = ((singleton i) && b) <> Z.zero
 
   let pp = Z.pp_print
 end

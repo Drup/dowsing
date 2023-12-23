@@ -143,11 +143,11 @@ end = struct
     k = stop || f a.(k) && for_all2_range f a (k+1) stop
 
   let large_enough bitvars subset =
-    let f col = Bitv.is_subset col subset in
+    let f col = Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 @@ Array.length bitvars
 
   let small_enough first_var bitvars bitset =
-    let f col = Bitv.(is_singleton (bitset && col)) in
+    let f col = Bitv.(is_singleton_or_empty (bitset && col)) in
     for_all2_range f bitvars 0 first_var
 
   let iterate_subsets len system bitvars =
