@@ -23,6 +23,7 @@ depends: [
   "ppx_deriving"
   "alcotest" {with-test}
   "benchmark" {with-test}
+  "trace-tef"
   "odoc" {with-doc}
 ]
 build: [
