@@ -4,6 +4,8 @@
     Competing for the AC-unification Race by Boudet (1993)
 *)
 
+module Trace = Trace_core
+
 module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 
 let _info = Logs.info
@@ -241,10 +243,15 @@ and attach env v t : return =
   occur_check env
 
 let insert env t u : return =
-  Logs.debug (fun m -> m "@[<v2>Insert@ %a = %a@ in@ %a@]"
-                 Type.pp t Type.pp u
-                 Env.pp env);
-  insert_rec env Stack.empty t u
+    Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Insert"
+      ~data:(fun () -> [("t", `String (CCFormat.sprintf "%a" Type.pp t));
+                                 ("u", `String (CCFormat.sprintf "%a" Type.pp u))])
+      (fun _sp ->
+    Logs.debug (fun m -> m "@[<v2>Insert@ %a = %a@ in@ %a@]"
+                   Type.pp t Type.pp u
+                   Env.pp env);
+    insert_rec env Stack.empty t u
+  )
 
 let insert_var env x ty : return = insert_var env Stack.empty x ty
 
@@ -274,6 +281,10 @@ let rec solve_tuple_problems env0 =
 (* Elementary Arrow theory *)
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
   (* AL -> BL ≡? AR -> BR *)
+  Trace.message ~data:(fun () ->
+      [("Left", `String (CCFormat.sprintf "%a" ArrowTerm.pp left));
+       ("Right", `String (CCFormat.sprintf "%a" ArrowTerm.pp right));
+      ]) "Solve_arrow";
   let potentials =
     [
       (fun env () ->
