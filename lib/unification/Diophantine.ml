@@ -24,6 +24,8 @@ module Make() = struct
      Systems of Linear Diophantine Equations", Contejean and Devie, 1994.
   *)
   module Homogeneous_system = struct
+    module Trace = Trace_core
+
     type t = {
       eqns: Z.t array array;
       n_vars: int; (* length of each sub-array *)
@@ -180,6 +182,7 @@ module Make() = struct
 
     (* main solving algorithm *)
     let solve_main (st:state) (yield : solution -> unit) : unit =
+      Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__"solve_main" (fun _sp ->
       let n = st_n st in
       while st.len > 0 do
         st.len <- st.len - 1;
@@ -196,7 +199,8 @@ module Make() = struct
           let sol = Array.copy vec in
           st.solutions <- sol :: st.solutions;
           log_ (fun k->k "! solution %a" pp_vec sol);
-          yield sol;
+          Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__"solve_yield" (fun _sp ->
+          yield sol;)
         ) else (
           (* explore next states *)
           for j=0 to n - 1 do
@@ -233,6 +237,7 @@ module Make() = struct
         st_recycle st sums;
         st_recycle st vec;
       done
+      )
 
     let default_cut _ = false
 
