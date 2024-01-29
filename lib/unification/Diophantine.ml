@@ -182,61 +182,64 @@ module Make() = struct
 
     (* main solving algorithm *)
     let solve_main (st:state) (yield : solution -> unit) : unit =
-      Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__"solve_main" (fun _sp ->
-      let n = st_n st in
-      while st.len > 0 do
-        st.len <- st.len - 1;
-        let i = st.len in
-        (* pop top element *)
-        let vec = st.stack.(i) in
-        let frozen = st.tmp_frozen in
-        blit_full st.frozen.(i) ~into:frozen;
-        let sums = st.sums.(i) in
-        log_ (fun k->k "> @[<2>explore %a :frozen %a@ :sums %a@]"
-            pp_vec vec pp_bvec frozen pp_vec sums);
-        (* check if we got a solution *)
-        if CCArray.for_all is_zero sums then (
-          let sol = Array.copy vec in
-          st.solutions <- sol :: st.solutions;
-          log_ (fun k->k "! solution %a" pp_vec sol);
-          Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__"solve_yield" (fun _sp ->
-          yield sol;)
-        ) else (
-          (* explore next states *)
-          for j=0 to n - 1 do
-            if not frozen.(j) &&
-               right_direction st sums j &&
-               not (is_subsumed_by_sol st vec)
-            then (
-              (* explore [vec + e_j] *)
-              let new_vec = st_alloc_vec st in
-              blit_full vec ~into:new_vec;
-              new_vec.(j) <- Z.succ new_vec.(j);
-              log_ (fun k->k "  new_vec %a (st.len %d)" pp_vec new_vec st.len);
-              if st.cut new_vec then (
-                (* cut branch *)
-                st_recycle st new_vec;
-              ) else (
-                assert (st.len < n);
-                (* push onto stack *)
-                st.stack.(st.len) <- new_vec;
-                blit_full frozen ~into:st.frozen.(st.len);
-                log_ (fun k->k "  push %a :frozen %a"
-                    pp_vec new_vec pp_bvec st.frozen.(st.len));
-                let new_sum = st_alloc_sums st in
-                st.sums.(st.len) <- compute_sum ~into:new_sum st new_vec;
-                (* freeze [j] *)
-                frozen.(j) <- true;
-                (* push on stack *)
-                st.len <- st.len + 1;
+      Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Solve_main" (fun _sp ->
+        let n_solutions = ref 0 in
+        let n = st_n st in
+        while st.len > 0 do
+          st.len <- st.len - 1;
+          let i = st.len in
+          (* pop top element *)
+          let vec = st.stack.(i) in
+          let frozen = st.tmp_frozen in
+          blit_full st.frozen.(i) ~into:frozen;
+          let sums = st.sums.(i) in
+          log_ (fun k->k "> @[<2>explore %a :frozen %a@ :sums %a@]"
+              pp_vec vec pp_bvec frozen pp_vec sums);
+          (* check if we got a solution *)
+          if CCArray.for_all is_zero sums then (
+            let sol = Array.copy vec in
+            st.solutions <- sol :: st.solutions;
+            incr n_solutions;
+            log_ (fun k->k "! solution %a" pp_vec sol);
+            Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Solve_yield" (fun _sp ->
+            yield sol;)
+          ) else (
+            (* explore next states *)
+            for j=0 to n - 1 do
+              if not frozen.(j) &&
+                 right_direction st sums j &&
+                 not (is_subsumed_by_sol st vec)
+              then (
+                (* explore [vec + e_j] *)
+                let new_vec = st_alloc_vec st in
+                blit_full vec ~into:new_vec;
+                new_vec.(j) <- Z.succ new_vec.(j);
+                log_ (fun k->k "  new_vec %a (st.len %d)" pp_vec new_vec st.len);
+                if st.cut new_vec then (
+                  (* cut branch *)
+                  st_recycle st new_vec;
+                ) else (
+                  assert (st.len < n);
+                  (* push onto stack *)
+                  st.stack.(st.len) <- new_vec;
+                  blit_full frozen ~into:st.frozen.(st.len);
+                  log_ (fun k->k "  push %a :frozen %a"
+                      pp_vec new_vec pp_bvec st.frozen.(st.len));
+                  let new_sum = st_alloc_sums st in
+                  st.sums.(st.len) <- compute_sum ~into:new_sum st new_vec;
+                  (* freeze [j] *)
+                  frozen.(j) <- true;
+                  (* push on stack *)
+                  st.len <- st.len + 1;
+                )
               )
-            )
-          done;
-        );
-        (* dispose of local resources *)
-        st_recycle st sums;
-        st_recycle st vec;
-      done
+            done;
+          );
+          (* dispose of local resources *)
+          st_recycle st sums;
+          st_recycle st vec;
+        done;
+        Trace.counter_int "Number of solution of the diophantine system" !n_solutions;
       )
 
     let default_cut _ = false
