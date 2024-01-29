@@ -123,6 +123,8 @@ end = struct
   (** In the following, [i] is always the row/solution index and [j] is always
       the column/variable index. *)
 
+  module Trace = Trace_core
+
   type t = (Variable.t * ACTerm.t) Iter.t
 
   let _pp ppf (subset, unif) =
@@ -231,7 +233,7 @@ end = struct
   (** Combine everything *)
   let get_solutions env
       ({System. nb_atom; assoc_pure;_} as system)
-      (seq_solutions:System.dioph_solution Iter.t) : _ Iter.t =
+      (seq_solutions:System.dioph_solution Iter.t) k =
     let stack_solutions = CCVector.create () in
     let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
     (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
@@ -240,9 +242,11 @@ end = struct
     let symbols = symbols_of_solutions env system stack_solutions in
     (* Logs.debug (fun m -> m "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols); *)
     let subsets = iterate_subsets (Array.length symbols) system bitvars in
+    let n_solutions = ref 0 in
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
-      subsets
+      subsets (fun x -> incr n_solutions; k x);
+    Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
 
 let make_system env problems : System.t =

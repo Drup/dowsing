@@ -287,73 +287,91 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
       ]) "Solve_arrow";
   let potentials =
     [
-      (fun env () ->
+      ("AL ≡? AR  ∧  BL ≡? BR",
+      fun env () ->
         (* AL ≡? AR  ∧  BL ≡? BR *)
-        Env.push_tuple env left.args right.args;
-        insert env left.ret right.ret);
-      (fun env () ->
+        Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
+        "AL ≡? AR  ∧  BL ≡? BR"
+        (fun _sp ->
+          Env.push_tuple env left.args right.args;
+          insert env left.ret right.ret));
+      ("AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR",
+      fun env () ->
         (* AL * αL ≡? AR  ∧
            BL ≡? αL -> βL  ∧
            βL ≡? BR
         *)
-        let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
-        Env.push_tuple env
-          (ACTerm.add left.args (Pure.var var_arg_left))
-          right.args;
-        let* () =
-          insert env left.ret
-            (Type.arrow (Env.tyenv env)
-               (Type.var (Env.tyenv env) var_arg_left)
-               (Type.var (Env.tyenv env) var_ret_left))
-        in
-        insert_var env var_ret_left right.ret);
-      (fun env () ->
+        Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
+        "AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR"
+        (fun _sp ->
+          let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
+          Env.push_tuple env
+            (ACTerm.add left.args (Pure.var var_arg_left))
+            right.args;
+          let* () =
+            insert env left.ret
+              (Type.arrow (Env.tyenv env)
+                 (Type.var (Env.tyenv env) var_arg_left)
+                 (Type.var (Env.tyenv env) var_ret_left))
+          in
+          insert_var env var_ret_left right.ret));
+      ("AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL",
+      fun env () ->
         (* AL ≡? AR * αR  ∧
            αR -> βR ≡? BR   ∧
            βL ≡? BL
         *)
-        let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
-        Env.push_tuple env left.args
-          (ACTerm.add right.args (Pure.var var_arg_right));
-        let* () =
-          insert env right.ret
-            (Type.arrow (Env.tyenv env)
-               (Type.var (Env.tyenv env) var_arg_right)
-               (Type.var (Env.tyenv env) var_ret_right))
-        in
-        insert_var env var_ret_right left.ret);
-      (fun env () ->
+        Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
+        "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL"
+        (fun _sp ->
+          let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+          Env.push_tuple env left.args
+            (ACTerm.add right.args (Pure.var var_arg_right));
+          let* () =
+            insert env right.ret
+              (Type.arrow (Env.tyenv env)
+                 (Type.var (Env.tyenv env) var_arg_right)
+                 (Type.var (Env.tyenv env) var_ret_right))
+          in
+          insert_var env var_ret_right left.ret));
+      ("AL * αL ≡? AR * αR  ∧  BL ≡? αL -> βL  ∧  αR -> βR ≡? BR   ∧  βL ≡? βR",
+      fun env () ->
         (* AL * αL ≡? AR * αR  ∧
            BL ≡? αL -> βL  ∧
            αR -> βR ≡? BR   ∧
            βL ≡? βR
         *)
-        let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
-        let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
-        (* TOCHECK *)
-        Env.push_tuple env
-          (ACTerm.add left.args (Pure.var var_arg_left))
-          (ACTerm.add right.args (Pure.var var_arg_right));
-        let* () =
-          insert env left.ret
-            (Type.arrow (Env.tyenv env)
-               (Type.var (Env.tyenv env) var_arg_left)
-               (Type.var (Env.tyenv env) var_ret_left))
-        in
-        let* () =
-          insert env 
-            (Type.arrow (Env.tyenv env)
-               (Type.var (Env.tyenv env) var_arg_right)
-               (Type.var (Env.tyenv env) var_ret_right))
-            right.ret
-        in
-        insert env
-          (Type.var (Env.tyenv env) var_ret_left)
-          (Type.var (Env.tyenv env) var_ret_right));
+        Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
+        "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> βL  ∧  αR -> βR ≡? BR   ∧  βL ≡? βR"
+        (fun _sp ->
+          let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
+          let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
+          (* TOCHECK *)
+          Env.push_tuple env
+            (ACTerm.add left.args (Pure.var var_arg_left))
+            (ACTerm.add right.args (Pure.var var_arg_right));
+          let* () =
+            insert env left.ret
+              (Type.arrow (Env.tyenv env)
+                 (Type.var (Env.tyenv env) var_arg_left)
+                 (Type.var (Env.tyenv env) var_ret_left))
+          in
+          let* () =
+            insert env 
+              (Type.arrow (Env.tyenv env)
+                 (Type.var (Env.tyenv env) var_arg_right)
+                 (Type.var (Env.tyenv env) var_ret_right))
+              right.ret
+          in
+          insert env
+            (Type.var (Env.tyenv env) var_ret_left)
+            (Type.var (Env.tyenv env) var_ret_right)));
     ]
   in
   potentials |> Iter.of_list
-  |> Iter.flat_map (fun f -> try_with_solution env0 f ())
+  |> Iter.flat_map (fun (desc, f) ->
+      Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ ("ITER: "^desc)
+      (fun _sp -> try_with_solution env0 f ()))
 
 and try_with_solution : type a. _ -> (Env.t -> a -> return) -> a -> _ =
   fun env f sol k ->
@@ -376,8 +394,12 @@ and solve_loop env k =
   | None -> (
       debug (fun m -> m "@[<v2>New env:@,%a@]@." Env.pp env);
       match Env.pop_arrow env with
-      | Some pb -> solve_arrow_problem env pb k
-      | None -> solve_tuple_problems env k)
+      | Some pb ->
+          Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Solve_arrow"
+            (fun _sp -> solve_arrow_problem env pb k)
+      | None ->
+          Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Solve_tuple"
+            (fun _sp -> solve_tuple_problems env k))
 
 let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   let orig_vars =
@@ -393,7 +415,7 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   | FailUnif _ | FailedOccurCheck _ -> Iter.empty
 
 (* 1s timeout *)
-let timeout = 0.1
+let timeout = 30.
 let iter_with_timeout (it : _ Iter.t) k =
   match Timeout.with_timeout timeout (fun () -> it k) with
   | Ok () -> ()
