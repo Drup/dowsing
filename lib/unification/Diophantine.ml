@@ -239,7 +239,8 @@ module Make() = struct
           st_recycle st sums;
           st_recycle st vec;
         done;
-        Trace.counter_int "Number of solution of the diophantine system" !n_solutions;
+        Trace.message ~data:(fun () -> [("n", `Int !n_solutions)])
+         "Number of solution of the diophantine system";
       )
 
     let default_cut _ = false
