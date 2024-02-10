@@ -15,6 +15,6 @@ let main_cmd, main_info =
 
 let () =
   exit @@
-  Trace_tef.with_setup ~out:(`File "trace.json") () (fun () ->
+  Trace_tef.with_setup () (fun () ->
   Logs.(set_reporter @@ format_reporter ()) ;
   Cmd.eval @@ Cmd.group ~default:main_cmd main_info cmds)
