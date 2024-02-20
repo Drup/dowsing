@@ -11,12 +11,17 @@ module System : sig
 
   val simplify_problem : Env.t -> ACTerm.problem -> ACTerm.problem
 
-  val make : ACTerm.problem list -> t
+  (* Storing the pure term with the system repeat information because in [assoc_pure],
+    the first value contains it, but in the future we want to have heterogenous system
+    meaning we may loose this information. *)
+  val make : ACTerm.problem list -> t * (Pure.t * t) list
 
   type dioph_solution
   val get_solution : dioph_solution -> int -> int
 
   val solve : t -> dioph_solution Iter.t
+
+  val pp_dioph : dioph_solution Fmt.t
 
 end = struct
 
@@ -49,7 +54,8 @@ end = struct
     let equation = Array.make nb_atom 0 in
     let add dir r =
       let i = get_index r in
-      equation.(i) <- equation.(i) + dir
+      if i >= 0 then
+        equation.(i) <- equation.(i) + dir
     in
     Array.iter (add 1) left ;
     Array.iter (add (-1)) right ;
@@ -59,41 +65,50 @@ end = struct
   let make_mapping problems =
     let vars = Variable.HMap.create 4 in
     let nb_vars = ref 0 in
-    let consts = Pure.HMap.create 4 in
+    let consts = ref Pure.Set.empty in
     let nb_consts = ref 0 in
     let f = function
       | Pure.Var v ->
         if Variable.HMap.mem vars v then () else
           Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
       | Constant _ | FrozenVar _ as c ->
-        if Pure.HMap.mem consts c then () else
-          Pure.HMap.add consts c @@ CCRef.get_then_incr nb_consts
+        consts := Pure.Set.add c !consts
     in
     let aux {ACTerm. left ; right} =
       Array.iter f left ; Array.iter f right
     in
     List.iter aux problems ;
-    vars, !nb_vars, consts, !nb_consts
+    vars, !nb_vars, Pure.Set.to_list !consts, !nb_consts
 
-  let make problems : t =
-    let vars, nb_vars, consts, nb_consts = make_mapping problems in
-    let get_index = function
-      | Pure.Constant _ | FrozenVar _ as c -> Pure.HMap.find consts c
-      | Pure.Var v -> Variable.HMap.find vars v + nb_consts
+  let make problems : t * (Pure.t * t) list =
+    let vars, nb_vars, consts, _nb_consts = make_mapping problems in
+    let get_index const term =
+      match term, const with
+      | (Pure.Constant _ | FrozenVar _), None -> -1
+      | Pure.Var v, Some _ -> Variable.HMap.find vars v + 1
+      | Pure.Var v, None -> Variable.HMap.find vars v
+      | _, Some c -> if Pure.equal term c then 0 else - 1
     in
-    let nb_atom = nb_vars + nb_consts in
 
-    let assoc_pure = Array.make nb_atom Pure.dummy in
-    Pure.HMap.iter (fun k i -> assoc_pure.(i) <- k) consts ;
-    Variable.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
+    let gen const =
+      let nb_consts = match const with Some _ -> 1 | None -> 0 in
+      let nb_atom = nb_vars + nb_consts in
+      let assoc_pure = Array.make nb_atom Pure.dummy in
+      begin match const with
+      | Some k -> assoc_pure.(0) <- k
+      | None -> ()
+      end;
+      Variable.HMap.iter (fun k i -> assoc_pure.(i+nb_consts) <- Pure.var k) vars ;
 
-    let first_var = nb_consts in
-    let system =
-      Iter.of_list problems
-      |> Iter.map (add_problem get_index nb_atom)
-      |> Iter.to_array (* TO OPTIM *)
+      let first_var = nb_consts in
+      let system =
+        Iter.of_list problems
+        |> Iter.map (add_problem (get_index const) nb_atom)
+        |> Iter.to_array (* TO OPTIM *)
+      in
+      { nb_atom ; assoc_pure ; first_var ; system }
     in
-    { nb_atom ; assoc_pure ; first_var ; system }
+    gen None, List.map (fun p -> p, gen (Some p)) consts
 
   type dioph_solution = int array
   let get_solution = Array.get
@@ -109,6 +124,8 @@ end = struct
     let cut x = cut_aux 0 first_var 0 x in
     Solver.solve ~cut @@ Solver.make system
 
+  let pp_dioph =
+    Fmt.(vbox (array ~sep:(any ", ") int))
 end
 
 (** See section 6.2 and 6.3 *)
@@ -117,7 +134,7 @@ module Dioph2Sol : sig
   type t = (Variable.t * ACTerm.t) Iter.t
 
   val get_solutions :
-    Env.t -> System.t -> System.dioph_solution Iter.t -> t Iter.t
+    Env.t -> System.t -> System.dioph_solution Iter.t  -> (Pure.t * System.dioph_solution list) list -> t Iter.t
 
 end = struct
   (** In the following, [i] is always the row/solution index and [j] is always
@@ -140,41 +157,36 @@ end = struct
   (** Construction of the hullot tree to iterate through subsets. *)
 
   let rec for_all2_range f a k stop : bool =
-    k = stop || f a.(k) && for_all2_range f a (k+1) stop
+    k = stop || f k a.(k) && for_all2_range f a (k+1) stop
 
-  let large_enough bitvars subset =
-    let f col = Bitv.do_intersect col subset in
+  let large_enough const_vec bitvars subset =
+    let f k col = Bitv.mem k const_vec || Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 @@ Array.length bitvars
 
-  let small_enough first_var bitvars bitset =
-    let f col = Bitv.(is_singleton_or_empty (bitset && col)) in
-    for_all2_range f bitvars 0 first_var
+  let combine_const_sols const_sols =
+    CCList.map_product_l (fun (c, l) -> List.map (fun x -> (c,x)) l) const_sols
 
-  let iterate_subsets len system bitvars =
-    Hullot.Default.iter ~len
-      ~small:(small_enough system.System.first_var bitvars)
-      ~large:(large_enough bitvars)
+  let iterate_subsets nb_columns const_sols len bitvars =
+    let consts_parts = combine_const_sols const_sols |> Iter.of_list in
+    Iter.flat_map (fun consts_part ->
+      let const_vec =
+        let bitv = ref Bitv.empty in
+        for j = 0 to nb_columns - 1 do
+          if List.exists (fun (_, sol) -> System.get_solution sol (j+1) <> 0 ) consts_part then
+            bitv := Bitv.add !bitv j
+        done;
+        !bitv
+      in
+      Iter.map (fun x -> (consts_part, x))
+        (Hullot.Default.iter ~len
+          ~small:(fun _ -> true)
+          ~large:(large_enough const_vec bitvars))
+    ) consts_parts
 
-  (** Constructions of the mapping from solutions to variable/constant *)
-  let symbol_of_solution gen {System. first_var ; assoc_pure; _ } sol =
-    (* By invariant, we know that solutions have at most one non-null
-       factor associated with a constant, so we scan them linearly, and if
-       non is found, we create a fresh variable. *)
-    (* assert (Array.length sol >= first_var) ; *)
-    let rec aux j =
-      if j >= first_var then Pure.var (Env.gen gen)
-      else if System.get_solution sol j <> 0 then
-        assoc_pure.(j)
-      else aux (j+1)
-    in
-    aux 0
-
-  let symbols_of_solutions gen system solutions =
-    let pures = Array.make (CCVector.length solutions) Pure.dummy in
-    let f i sol = pures.(i) <- symbol_of_solution gen system sol in
-    CCVector.iteri f solutions;
-    pures
-
+  (** From the iter of solution of the diophantine equations system,
+      extract the solution in a vector and return an array of bitset
+      for each variables, the bitset contains i if the ith solution
+      gives a non-zero value to the variables. *)
   let extract_solutions stack nb_atom
       (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
     let nb_columns = nb_atom in
@@ -201,12 +213,19 @@ end = struct
     List.iter f l;
     ACTerm.make @@ CCVector.to_array buffer
 
-  let unifier_of_subset vars solutions symbols subset =
+  let unifier_of_subset vars solutions symbols (const_sols, pure_sols) =
+    (* TODO: vars should be only variable therefore the type should
+       change removing the need for the match *)
     assert (CCVector.length solutions = Array.length symbols);
+
+    (* Unifier is a map from variable to a list of pure terms presenting the
+       the tuple associated with the variable *)
     let unifiers = Variable.HMap.create (Array.length vars) in
     let solutions = CCVector.unsafe_get_array solutions in
+
+    (* We add the variables comming from the solution in pure_sols *)
     for i = 0 to Array.length symbols - 1 do
-      if Bitv.mem i subset then
+      if Bitv.mem i pure_sols then
         let sol = solutions.(i) in
         (* assert (Array.length sol = Array.length vars) ; *)
         let symb = symbols.(i) in
@@ -222,6 +241,20 @@ end = struct
     (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
     (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
     (* ) ; *)
+
+    (* We add the constant comming from const_sols *)
+    List.iter (fun (constant, sol) ->
+      for j = 0 to Array.length vars - 1 do
+        assert (System.get_solution sol 0 = 1);
+        match vars.(j) with
+        | Pure.Constant _ | Pure.FrozenVar _ -> ()
+        | Pure.Var var ->
+            (* We have a shift of 1 because the first entry is for the constant (TODO: change it once using heterogenous system) *)
+            let multiplicity = System.get_solution sol (j+1) in
+            Variable.HMap.add_list unifiers var (multiplicity, constant)
+      done
+    ) const_sols;
+
     let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
     fun k ->
       Variable.HMap.iter
@@ -232,16 +265,16 @@ end = struct
 
   (** Combine everything *)
   let get_solutions env
-      ({System. nb_atom; assoc_pure;_} as system)
-      (seq_solutions:System.dioph_solution Iter.t) k =
+      {System. nb_atom; assoc_pure;_}
+      pure_solutions const_sols k =
     let stack_solutions = CCVector.create () in
-    let bitvars = extract_solutions stack_solutions nb_atom seq_solutions in
+    let bitvars = extract_solutions stack_solutions nb_atom pure_solutions in
     (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
     Logs.debug (fun m -> m "@[<v2>Sol stack:@ %a@]@."
       (CCVector.pp System.pp_solution) stack_solutions); *)
-    let symbols = symbols_of_solutions env system stack_solutions in
+    let symbols = Array.init (CCVector.length stack_solutions) (fun _ -> Pure.var (Env.gen env)) in
     (* Logs.debug (fun m -> m "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols); *)
-    let subsets = iterate_subsets (Array.length symbols) system bitvars in
+    let subsets = iterate_subsets nb_atom const_sols (Array.length symbols) bitvars in (* TODO need change here *)
     let n_solutions = ref 0 in
     Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
@@ -249,17 +282,36 @@ end = struct
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
 
-let make_system env problems : System.t =
+(** [make_systems env problems] take a list of AC problem. Which mean problem
+    of the form [t_1 * t_2 * t_4 = t_5 * t_6] and return a colection of
+    systems of diophantine equations [homogenous_system * heterogenous_systems]
+    where [homogenous_system] is a homogenous system of diophantine equations
+    corresponding to the projection of [problems] with no constant.
+    [heterogenous_systems] is a list of heterogenous systems together with the
+    pure term associated to it which correspond to the projection of [problems]
+    on this constant. *)
+let make_systems env problems : System.t * (Pure.t * System.t) list =
   System.make @@ List.map (System.simplify_problem env) problems
 
-let solve_system env system =
-  let dioph_sols = System.solve system in
-  Dioph2Sol.get_solutions env system dioph_sols
+(** Take a collection of diophantine equations corresponding to the projection
+    of the original problem on to each constant and the homogenous systems,
+    solve them and combine them into solution to the original problems. *)
+let solve_systems env (pure_system, const_systems) =
+  Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp pure_system);
+  Logs.debug (fun m -> m "@[Const system: %a@]" Fmt.(vbox @@ list ~sep:cut (pair Pure.pp System.pp)) const_systems);
+  let const_sols = List.map (fun (p, system) ->
+    (p, System.solve system
+        |> Iter.filter (fun s -> System.get_solution s 0 = 1)
+        |> Iter.to_list)) const_systems
+  in
+  let pure_sols = System.solve pure_system in
+  Logs.debug (fun m -> m "@[Const solution: %a@]" Fmt.Dump.(list @@ pair Pure.pp (list System.pp_dioph)) const_sols);
+  Dioph2Sol.get_solutions env pure_system pure_sols const_sols
 
 let solve env problems =
   match problems with
   | [] -> Iter.empty
   | _ ->
-    make_system env problems
-    |> solve_system env
-  
+    make_systems env problems
+    |> solve_systems env
+
