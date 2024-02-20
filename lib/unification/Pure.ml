@@ -11,6 +11,15 @@ let equal x y = match x, y with
   | Constant x, Constant y -> LongIdent.equal x y
   | _, _ -> false
 
+let compare x y = match x,y with
+  | Var x, Var y
+  | FrozenVar x, FrozenVar y -> Variable.compare x y
+  | Constant x, Constant y -> LongIdent.compare x y
+  | Var _, (FrozenVar _ | Constant _) -> -1
+  | (FrozenVar _ | Constant _), Var _ -> 1
+  | FrozenVar _, Constant _ -> -1
+  | Constant _, FrozenVar _ -> 1
+
 let dummy = Constant (Longident.Lident "dummy")
 let var x = Var x
 let frozen x = FrozenVar x
@@ -31,3 +40,8 @@ module HMap = Hashtbl.Make(struct
     let hash = Hashtbl.hash
     let equal = equal
   end)
+
+module Set = CCSet.Make(struct
+  type nonrec t = t
+  let compare = compare
+end)
