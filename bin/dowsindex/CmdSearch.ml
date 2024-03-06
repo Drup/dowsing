@@ -25,8 +25,15 @@ let main opts =
       with Not_found -> error "unknown package"
     in
     iter_idx
-    |> Iter.sort ~cmp:(fun (_, (ty1, unif1)) (_, (ty2, unif2)) ->
-           CCOrd.(Subst.compare unif1 unif2 <?> (Type.compare, ty1, ty2)))
+    |> Iter.sort ~cmp:(fun (info1, (ty1, unif1)) (info2, (ty2, unif2)) ->
+        let open CCOrd in 
+        Subst.compare unif1 unif2
+        <?> (Type.compare, ty1, ty2)
+        <?> (LongIdent.compare,
+             info1.Indexing.Info.lid, info2.Indexing.Info.lid)
+        <?> (Fpath.compare,
+             info1.Indexing.Info.pkg_dir, info2.Indexing.Info.pkg_dir)
+      )
     |> Iter.map (fun (info, _) -> info)
   in
   let res = CCOption.fold (CCFun.flip Iter.take) res opts.cnt in
