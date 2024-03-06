@@ -16,26 +16,18 @@ module type S = sig
 
   val make : Type.Env.t -> t
 
-  val import_package :
-    ?with_poset:bool ->
-    ?with_feat:bool ->
-    t ->
-    (String.t * Fpath.t) list ->
-    unit
-  (** [import_package t l] adds all the package pairs [pkg, pkg_dir] in [l]
-      to the index [t].
-
-      Removes old contents from packages if present.
-  *)
-
   val import :
     ?with_poset:bool ->
     ?with_feat:bool ->
     t ->
-    (String.t * Fpath.t * Package.info Iter.t) list ->
+    (String.t * Fpath.t * (Longident.t * Info.t) Iter.t) list ->
     unit
-  (** [import t l] is similar to {!import_package}, but manually
-      takes an iterator of {!Package.info} elements. *)
+  (** [import_package t l] adds all the package in [l] to the index [t].
+      A package is a triplet [pkg, pkg_dir, iter] where [iter] is an
+      iterator of items to index.
+
+      Removes old contents from packages if present.
+  *)
 
   val iter : ?pkgs:String.t List.t -> t -> iter
   (** [iter t] iterates over all types. *)

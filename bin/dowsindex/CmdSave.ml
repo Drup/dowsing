@@ -12,8 +12,13 @@ let main opts =
   Bos.OS.Dir.create ~path:true @@ Fpath.parent opts.idx_file
   |> CCResult.iter_err (fun (`Msg msg) -> error msg);
   let pkgs =
-    try if opts.pkgs = [] then Package.find_all () else Package.find opts.pkgs
-    with Package.Error pkg -> error @@ Fmt.str "cannot find package `%s'" pkg
+    try
+      if opts.pkgs = [] then
+        Dowsing_findlib.find_all ()
+      else
+        Dowsing_findlib.find opts.pkgs
+    with Dowsing_findlib.Error pkg ->
+      error @@ Fmt.str "cannot find package `%s'" pkg
   in
   if opts.verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@." (CCList.length pkgs)
@@ -22,7 +27,7 @@ let main opts =
   let idx =
     try Index.load opts.idx_file with Sys_error _ -> Index.make env_data
   in
-  Index.import_package idx pkgs;
+  Index.import idx @@ List.map (fun (pkg, dir) -> (pkg, dir, Dowsing_libindex.iter [dir])) pkgs;
   Fmt.pr "@[<2>Create an index:@,%a@]@."
     Index.pp_metrics idx;
   try

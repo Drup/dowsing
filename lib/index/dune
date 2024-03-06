@@ -1,4 +1,4 @@
 (library
   (name index)
-  (libraries utils common package acic ocamlgraph)
+  (libraries utils common acic ocamlgraph)
   (flags (:standard -open Utils -open Common)))

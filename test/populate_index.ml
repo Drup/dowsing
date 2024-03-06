@@ -28,7 +28,7 @@ let info_from_list l =
   let add_info i str_ty =
     let out_ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    { Package.orig_lid = lid; lid; out_ty }
+    lid, { Index.Info. lid; out_ty; }
   in
   CCList.mapi add_info l |> Iter.of_list
 

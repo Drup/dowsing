@@ -1,5 +1,9 @@
 (executable
-  (name dowsindex)
-  (public_name dowsindex)
-  (libraries cmdliner logs bos utils common package acic index trace trace.core trace-tef)
-  (flags (:standard -open Utils -open Common)))
+ (name dowsindex)
+ (public_name dowsindex)
+ (libraries cmdliner logs bos
+            utils common index
+            dowsing_findlib
+            dowsing_libindex
+            trace trace.core trace-tef)
+ (flags (:standard -open Utils -open Common)))

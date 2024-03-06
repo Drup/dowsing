@@ -50,7 +50,7 @@ let print_table ?(sep = 4) col_names rows =
 let aux opts ?stats0 iter_idx =
   let iter_idx =
     try iter_idx ()
-    with Not_found | Package.Error _ -> error "unknown package"
+    with Not_found | Dowsing_findlib.Error _ -> error "unknown package"
   in
   let timer = Timer.make () in
   let tbl = ref Measure.Map.empty in
@@ -111,9 +111,9 @@ let main opts =
       let hcons = Type.Hashcons.make () in
       let iter_idx () =
         pkgs
-        |> CCOption.map_lazy Package.find_all Package.find
-        |> CCList.map snd |> Package.iter
-        |> Iter.map @@ fun Package.{ out_ty; _ } ->
+        |> CCOption.map_lazy Dowsing_findlib.find_all Dowsing_findlib.find
+        |> CCList.map snd |> Dowsing_libindex.iter
+        |> Iter.map @@ fun (_lid, {Index.Info.out_ty; _ }) ->
            let env = Type.Env.make Data ~hcons in
            Type.of_outcometree env out_ty
       in

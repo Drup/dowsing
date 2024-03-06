@@ -58,13 +58,12 @@ module Make (T : Trie.NODE) : S = struct
       Removes the old content of [pkg] if present.
   *)
   let add =
-    let aux t cells Package.{ orig_lid; lid; out_ty } =
+    let aux t cells (lid, (info : Info.t)) =
       let env = Type.Env.make Data ~hcons:t.hcons in
-      let ty = Type.of_outcometree env out_ty in
-      let info = Info.{ lid; out_ty } in
+      let ty = Type.of_outcometree env info.out_ty in
       t.trie <- T.add ty t.trie;
       Type.Map.update ty
-        (CCFun.compose (Cell.update orig_lid info) CCOption.return)
+        (CCFun.compose (Cell.update lid info) CCOption.return)
         cells
     in
     fun t (pkg, pkg_dir, it) ->
@@ -99,10 +98,6 @@ module Make (T : Trie.NODE) : S = struct
         m "@[%i @ types to insert in the index @]"
           (Iter.length @@ T.iterid t.trie));
     if with_poset then regenerate_poset ~with_feat t
-
-  let import_package ?(with_poset = true) ?(with_feat = true) t l =
-    List.map (fun (pkg, pkg_dir) -> (pkg, pkg_dir, Package.iter [ pkg_dir ])) l
-    |> import ~with_poset ~with_feat t
 
   (** Iterators *)
 
