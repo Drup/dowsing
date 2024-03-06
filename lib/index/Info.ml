@@ -1,6 +1,7 @@
 type t = {
   lid : LongIdent.t ;
-  out_ty : Outcometree.out_type ;
+  ty : Outcometree.out_type ;
+  pkg_dir : Fpath.t ;
 }
 
 let compare t1 t2 =
@@ -14,4 +15,4 @@ let is_internal info =
 let pp ppf t =
   Fmt.pf ppf "@[%a :@ %a@]"
     LongIdent.pp t.lid
-    !Oprint.out_type t.out_ty
+    !Oprint.out_type t.ty

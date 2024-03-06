@@ -25,9 +25,9 @@ let main opts =
       with Not_found -> error "unknown package"
     in
     iter_idx
-    |> Iter.sort ~cmp:(fun (ty1, _, unif1) (ty2, _, unif2) ->
+    |> Iter.sort ~cmp:(fun (_, (ty1, unif1)) (_, (ty2, unif2)) ->
            CCOrd.(Subst.compare unif1 unif2 <?> (Type.compare, ty1, ty2)))
-    |> Iter.flat_map (fun (_, cell, _) -> Indexing.Cell.iter cell)
+    |> Iter.map (fun (info, _) -> info)
   in
   let res = CCOption.fold (CCFun.flip Iter.take) res opts.cnt in
   Fmt.pr "@[<v>%a@]@." (Fmt.iter Iter.iter Indexing.Info.pp) res

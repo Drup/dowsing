@@ -112,10 +112,12 @@ let main opts =
       let iter_idx () =
         pkgs
         |> CCOption.map_lazy Dowsing_findlib.find_all Dowsing_findlib.find
-        |> CCList.map snd |> Dowsing_libindex.iter
-        |> Iter.map @@ fun (_lid, {Index.Info.out_ty; _ }) ->
+        |> CCList.map snd
+        |> CCList.to_iter
+        |> Iter.flat_map Dowsing_libindex.iter
+        |> Iter.map @@ fun (_lid, {Index.Info.ty; _ }) ->
            let env = Type.Env.make Data ~hcons in
-           Type.of_outcometree env out_ty
+           Type.of_outcometree env ty
       in
       let iter_idx_filt () =
         iter_idx () |> Iter.filter @@ Acic.unifiable env_query opts.ty
@@ -128,8 +130,8 @@ let main opts =
         with Sys_error _ ->
           error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
       in
-      ( (fun () -> Index.iter idx ?pkgs |> Iter.map fst),
-        fun () -> Index.iter_compatible idx opts.ty ?pkgs |> Iter.map fst )
+      ( (fun () -> Index.iter idx ?pkgs |> Iter.map snd),
+        fun () -> Index.iter_compatible idx opts.ty ?pkgs |> Iter.map snd )
   in
   aux opts iter_idx iter_idx_filt
 

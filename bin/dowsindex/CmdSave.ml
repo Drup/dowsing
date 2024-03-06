@@ -27,7 +27,7 @@ let main opts =
   let idx =
     try Index.load opts.idx_file with Sys_error _ -> Index.make env_data
   in
-  Index.import idx @@ List.map (fun (pkg, dir) -> (pkg, dir, Dowsing_libindex.iter [dir])) pkgs;
+  Index.import idx @@ List.map (fun (pkg, dir) -> (pkg, dir, Dowsing_libindex.iter dir)) pkgs;
   Fmt.pr "@[<2>Create an index:@,%a@]@."
     Index.pp_metrics idx;
   try

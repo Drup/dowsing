@@ -26,16 +26,16 @@ let types =
 
 let info_from_list l =
   let add_info i str_ty =
-    let out_ty = Type.outcome_of_string str_ty in
+    let ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    lid, { Index.Info. lid; out_ty; }
+    lid, { Index.Info. lid; ty; pkg_dir = Fpath.v "test" }
   in
   CCList.mapi add_info l |> Iter.of_list
 
 let make_index l =
   let env = Common.Type.Env.make Data in
   let t = Idx.make env in
-  let infos = ("No package", Fpath.v "No package", info_from_list l) in
+  let infos = ("test", Fpath.v "test", info_from_list l) in
   Idx.import t [ infos ];
   t
 

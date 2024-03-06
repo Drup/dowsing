@@ -1,9 +1,9 @@
 module Feature = Feature
 module Trie = Trie
 module Info = Info
-module Cell = Cell
 module Poset = Poset
 module MatchFeat = MatchFeat
+module Doc = Doc
 
 module type S = IndexIntf.S
 
@@ -12,69 +12,54 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 let _info = Logs.info
 let _debug = Logs.debug
 
-module Make (T : Trie.NODE) : S = struct
-  module T = T
+module Make (TX : Trie.NODE) : S = struct
+  module T = TX
 
   type t = {
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
     pkgs_dirs : Fpath.t String.HMap.t;
-        (** Cells containing the package info. 
-        Ref-counted, to ensure proper dependencies *)
-    mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t;
+    content : Doc.t;
+    index_by_type : Doc.ID.Set.t Type.HMap.t;
     mutable poset : Poset.t;
   }
 
-  type iter = (Type.t * Cell.t) Iter.t
-  type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
+  type iter = (Doc.entry * Type.t) Iter.t
+  type iter_with_unifier = (Doc.entry * (Type.t * Subst.t)) Iter.t
 
   let make env =
     {
       hcons = Type.Hashcons.make ();
       trie = T.empty;
       pkgs_dirs = String.HMap.create 17;
-      cells = Fpath.Map.empty;
+      content = Doc.empty;
+      index_by_type = Type.HMap.create 17;
       poset = Poset.init env;
     }
-
-  (** [remove pkg] removes the package [pkg].
-
-      Only completely removes the entries if there are no more dependencies.
-  *)
-  let remove t pkg =
-    let pkg_dir = String.HMap.find t.pkgs_dirs pkg in
-    t.cells |> Fpath.Map.get pkg_dir |> snd
-    |> Type.Map.iter (fun ty _ -> t.trie <- T.remove ty t.trie);
-    String.HMap.remove t.pkgs_dirs pkg;
-    t.cells <-
-      (t.cells
-      |> Fpath.Map.update pkg_dir @@ function
-         | None -> assert false
-         | Some (cnt, cells) -> if cnt = 1 then None else Some (cnt - 1, cells)
-      )
 
   (** [add pkg pkg_dir] adds the package [pkg] available in path [pkg_dir].
 
       Removes the old content of [pkg] if present.
   *)
-  let add =
-    let aux t cells (lid, (info : Info.t)) =
+  let add t (pkg, pkg_dir, it) =
+    let aux t (lid, (info : Info.t)) =
       let env = Type.Env.make Data ~hcons:t.hcons in
-      let ty = Type.of_outcometree env info.out_ty in
+      let ty = Type.of_outcometree env info.ty in
       t.trie <- T.add ty t.trie;
-      Type.Map.update ty
-        (CCFun.compose (Cell.update lid info) CCOption.return)
-        cells
+      let id = Doc.add t.content lid info in
+      Type.HMap.update t.index_by_type ~k:ty ~f:(fun _ -> function
+          | None ->
+            Some (Doc.ID.Set.singleton id)
+          | Some ids ->
+            Some (Doc.ID.Set.add id ids)
+        )
     in
-    fun t (pkg, pkg_dir, it) ->
-      if String.HMap.mem t.pkgs_dirs pkg then remove t pkg;
-      let cells = it |> Iter.fold (aux t) Type.Map.empty in
-      String.HMap.add t.pkgs_dirs pkg pkg_dir;
-      t.cells <-
-        (t.cells
-        |> Fpath.Map.update pkg_dir @@ function
-           | None -> Some (1, cells)
-           | Some (cnt, _) -> Some (cnt + 1, cells))
+    if String.HMap.mem t.pkgs_dirs pkg then
+      Fmt.failwith
+        "Package %s is already present in the index. \
+         Please regenerate the index" pkg ;
+    Iter.iter (aux t) it;
+    String.HMap.add t.pkgs_dirs pkg pkg_dir
 
   let refresh t =
     let _ = T.refresh ~start:0 t.trie in
@@ -114,17 +99,18 @@ module Make (T : Trie.NODE) : S = struct
         in
         fun pkg -> Fpath.Set.mem pkg set
 
-  let filter_with_pkgs ~to_type ~merge ?pkgs t iter =
+  let filter_with_pkgs ~to_type ?pkgs t iter =
     let pkg_filt = mem_pkgs t pkgs in
     iter
     |> Iter.flat_map (fun elt ->
-           let ty = to_type elt in
-           let it k = Fpath.Map.iter (fun p c -> k (p, c)) t.cells in
-           it
-           |> Iter.filter_map (fun (pkg_dir, (_, cells)) ->
-                  if pkg_filt pkg_dir then
-                    Type.Map.get ty cells |> CCOption.map @@ merge elt
-                  else None))
+        let ty = to_type elt in
+        let ids = Type.HMap.find t.index_by_type ty in
+        Doc.ID.Set.to_iter ids
+        |> Iter.filter_map (fun id ->
+            let info = Doc.find t.content id in
+            if pkg_filt info.pkg_dir && not (Info.is_internal info) then
+              Some (info, elt)
+            else None))
 
   let filter_with_poset t env ty range =
     Poset.check t.poset env ~query:ty ~range
@@ -134,34 +120,31 @@ module Make (T : Trie.NODE) : S = struct
       (fun ty' -> Acic.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
       it
 
-  let iter ?pkgs t =
+  let iter ?pkgs t : iter =
     T.iter t.trie
-    |> filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make
+    |> filter_with_pkgs t ?pkgs ~to_type:CCFun.id
 
-  let iter_compatible ?pkgs t ty =
+  let iter_compatible ?pkgs t ty : iter =
     let _range, it = T.iter_compatible ty t.trie in
-    filter_with_pkgs t ?pkgs ~to_type:CCFun.id ~merge:CCPair.make it
+    filter_with_pkgs t ?pkgs ~to_type:CCFun.id it
 
-  let find_exhaustive ?pkgs t env ty =
+  let find_exhaustive ?pkgs t env ty : iter_with_unifier =
     T.iter t.trie
     |> filter_with_unification env ty
-    |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
-           (ty, cell, unif))
+    |> filter_with_pkgs t ?pkgs ~to_type:fst
 
-  let find_with_trie ?pkgs t env ty =
+  let find_with_trie ?pkgs t env ty : iter_with_unifier =
     let _range, it = T.iter_compatible ty t.trie in
     it
     |> filter_with_unification env ty
-    |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
-           (ty, cell, unif))
+    |> filter_with_pkgs t ?pkgs ~to_type:fst
 
-  let find ?pkgs t env ty =
+  let find ?pkgs t env ty : iter_with_unifier =
     let range = T.range_compatible ty t.trie in
     _info (fun m -> m "%a@." TypeId.Range.pp range);
     (* Poset.xdot t.poset ~range; *)
     filter_with_poset t env ty range
-    |> filter_with_pkgs t ?pkgs ~to_type:fst ~merge:(fun (ty, unif) cell ->
-           (ty, cell, unif))
+    |> filter_with_pkgs t ?pkgs ~to_type:fst
 
   let pp_metrics fmt t =
     Fmt.pf fmt
@@ -173,7 +156,7 @@ module Make (T : Trie.NODE) : S = struct
       (Obj.reachable_words (Obj.repr t) / 1024)
       (Obj.reachable_words (Obj.repr t.trie) / 1024)
       (Obj.reachable_words (Obj.repr t.poset) / 1024)
-      (Obj.reachable_words (Obj.repr t.cells) / 1024)
+      (Obj.reachable_words (Obj.repr t.content) / 1024)
 
   module Archive = struct
     let of_index = CCFun.id

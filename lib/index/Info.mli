@@ -1,6 +1,7 @@
 type t = {
   lid : LongIdent.t ;
-  out_ty : Outcometree.out_type ;
+  ty : Outcometree.out_type ;
+  pkg_dir : Fpath.t ;
 }
 
 val compare : t CCOrd.t

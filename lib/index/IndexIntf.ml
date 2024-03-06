@@ -5,14 +5,13 @@ module type S = sig
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
     pkgs_dirs : Fpath.t String.HMap.t;
-        (** Cells containing the package info. 
-        Ref-counted, to ensure proper dependencies *)
-    mutable cells : (Int.t * Cell.t Type.Map.t) Fpath.Map.t;
+    content : Doc.t;
+    index_by_type : Doc.ID.Set.t Type.HMap.t;
     mutable poset : Poset.t;
   }
 
-  type iter = (Type.t * Cell.t) Iter.t
-  type iter_with_unifier = (Type.t * Cell.t * Subst.t) Iter.t
+  type iter = (Info.t * Type.t) Iter.t
+  type iter_with_unifier = (Info.t * (Type.t * Subst.t)) Iter.t
 
   val make : Type.Env.t -> t
 
@@ -64,7 +63,7 @@ module type S = sig
 
     val make : index -> t
     val iter : t -> iter
-    val select : t -> (Type.t -> Bool.t) -> unit
+    val select : t -> (Info.t -> Bool.t) -> unit
     val unselect : t -> unit
     val pp : t Fmt.t [@@ocaml.toplevel_printer]
   end
