@@ -14,6 +14,7 @@ let is_internal info =
   |> Iter.exists @@ String.mem ~start:0 ~sub:"__"
 
 let pp ppf t =
-  Fmt.pf ppf "@[%a :@ %a@]"
+  Fmt.pf ppf "@[%s:%a :@ %a@]"
+    t.pkg
     LongIdent.pp t.lid
     !Oprint.out_type t.ty
