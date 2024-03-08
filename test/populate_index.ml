@@ -1,6 +1,3 @@
-module P = Index.Poset
-module Idx = (val Index.(make Feature.all))
-
 let () =
   Logs.set_reporter (Logs.format_reporter ());
   Logs.set_level @@ Some Logs.Info
@@ -28,17 +25,14 @@ let info_from_list l =
   let add_info i str_ty =
     let ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    lid, { Index.Info. lid; ty; pkg_dir = Fpath.v "test" }
+    { Db.Entry. lid; ty; pkg = "test" ; pkg_dir = Fpath.v "test" }
   in
   CCList.mapi add_info l |> Iter.of_list
 
-let make_index l =
+let make_db l =
   let env = Common.Type.Env.make Data in
-  let t = Idx.make env in
-  let infos = ("test", Fpath.v "test", info_from_list l) in
-  Idx.import t [ infos ];
-  t
+  Db.create env @@ info_from_list l
 
 let () =
-  let t = make_index types in
-  Idx.save t @@ Fpath.v "idx_from_list.db"
+  let t = make_db types in
+  Db.save t @@ Fpath.v "idx_from_list.db"

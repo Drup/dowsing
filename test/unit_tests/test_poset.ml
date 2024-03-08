@@ -1,5 +1,5 @@
-module P = Index__Poset
-module Index = (val Index.(make Feature.all))
+module P = Db.Internals.Poset
+module Index = Db.DefaultIndex
 
 let e = Common.Type.Env.make Data
 

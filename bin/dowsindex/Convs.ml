@@ -38,8 +38,8 @@ let feats =
     parse str
     |> map_err (fun _ -> `Msg "ill-formed feature list")
     >>= (fun feats ->
-      try Ok (CCList.map Index.Feature.of_string feats)
+      try Ok (CCList.map Db.Feature.of_string feats)
       with Not_found -> Error (`Msg "illegal feature")
     )
   in
-  Arg.conv (parse, Fmt.(list ~sep:(any ",") Index.Feature.pp))
+  Arg.conv (parse, Fmt.(list ~sep:(any ",") Db.Feature.pp))

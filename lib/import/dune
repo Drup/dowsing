@@ -1,11 +1,11 @@
 (library
  (name dowsing_findlib)
  (modules Dowsing_findlib)
- (libraries findlib index fpath common)
+ (libraries findlib db fpath common)
  (flags (:standard -open Common)))
 
 (library
  (name dowsing_libindex)
  (modules Dowsing_libindex)
- (libraries index fpath ocp-index.lib common)
+ (libraries db fpath ocp-index.lib common)
  (flags (:standard -open Common)))

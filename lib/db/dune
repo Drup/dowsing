@@ -1,4 +1,4 @@
 (library
-  (name index)
+  (name db)
   (libraries utils common acic ocamlgraph)
   (flags (:standard -open Utils -open Common)))

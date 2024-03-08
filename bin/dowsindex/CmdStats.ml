@@ -112,10 +112,9 @@ let main opts =
       let iter_idx () =
         pkgs
         |> CCOption.map_lazy Dowsing_findlib.find_all Dowsing_findlib.find
-        |> CCList.map snd
         |> CCList.to_iter
-        |> Iter.flat_map Dowsing_libindex.iter
-        |> Iter.map @@ fun (_lid, {Index.Info.ty; _ }) ->
+        |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
+        |> Iter.map @@ fun {Db.Entry.ty; _ } ->
            let env = Type.Env.make Data ~hcons in
            Type.of_outcometree env ty
       in
@@ -124,14 +123,13 @@ let main opts =
       in
       (iter_idx, iter_idx_filt)
     else
-      let module Index = (val opts.copts.idx) in
-      let idx =
-        try Index.load opts.idx_file
+      let db =
+        try Db.load opts.idx_file
         with Sys_error _ ->
           error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
       in
-      ( (fun () -> Index.iter idx ?pkgs |> Iter.map snd),
-        fun () -> Index.iter_compatible idx opts.ty ?pkgs |> Iter.map snd )
+      ( (fun () -> Db.iter db ?pkgs |> Iter.map snd),
+        fun () -> Db.iter_compatible db opts.ty ?pkgs |> Iter.map snd )
   in
   aux opts iter_idx iter_idx_filt
 

@@ -2,7 +2,7 @@
  (name dowsindex)
  (public_name dowsindex)
  (libraries cmdliner logs bos
-            utils common index
+            utils common db
             dowsing_findlib
             dowsing_libindex
             trace trace.core trace-tef)

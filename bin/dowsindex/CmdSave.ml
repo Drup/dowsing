@@ -8,7 +8,6 @@ type opts = {
 }
 
 let main opts =
-  let module Index = (val opts.copts.idx) in
   Bos.OS.Dir.create ~path:true @@ Fpath.parent opts.idx_file
   |> CCResult.iter_err (fun (`Msg msg) -> error msg);
   let pkgs =
@@ -24,14 +23,15 @@ let main opts =
     Fmt.pr "@[<v2>found %i packages:@ %a@]@." (CCList.length pkgs)
       Fmt.(list ~sep:sp @@ using snd Fpath.pp)
       pkgs;
-  let idx =
-    try Index.load opts.idx_file with Sys_error _ -> Index.make env_data
+  let infos =
+    Iter.of_list pkgs
+    |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
   in
-  Index.import idx @@ List.map (fun (pkg, dir) -> (pkg, dir, Dowsing_libindex.iter dir)) pkgs;
+  let db = Db.create env_data infos in
   Fmt.pr "@[<2>Create an index:@,%a@]@."
-    Index.pp_metrics idx;
+    Db.DefaultIndex.pp_metrics db.idx;
   try
-    Index.save idx opts.idx_file
+    Db.save db opts.idx_file
   with Sys_error _ ->
     error @@ Fmt.str "cannot write index file `%a'" Fpath.pp opts.idx_file
 

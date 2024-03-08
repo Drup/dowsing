@@ -1,5 +1,4 @@
-module P = Index.Poset
-module Idx = (val Index.(make Feature.all))
+module P = Db.Internal.Poset
 
 let () = Logs.set_reporter (Logs.format_reporter ())
 (* Logs.set_level @@ Some Logs.Debug *)
@@ -12,7 +11,7 @@ let add t =
   P.add x t
 
 let _from_index () =
-  let idx = Idx.load @@ Fpath.v Sys.argv.(1) in
+  let idx = Db.load @@ Fpath.v Sys.argv.(1) in
   Idx.T.iterid idx.trie add
 
 let _from_list string_types =

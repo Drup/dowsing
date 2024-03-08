@@ -1,6 +1,7 @@
 type t = {
   lid : LongIdent.t ;
   ty : Outcometree.out_type ;
+  pkg : string ;
   pkg_dir : Fpath.t ;
 }
 

@@ -1,13 +1,13 @@
 (executable
  (name populate_partial_order)
  (modules populate_partial_order)
- (libraries alcotest common acic index)
+ (libraries alcotest common acic db)
  (flags
   (:standard -open Common)))
 
 (executable
  (name populate_index)
  (modules populate_index)
- (libraries alcotest common acic index compiler-libs)
+ (libraries alcotest common acic db compiler-libs)
  (flags
   (:standard -open Common)))

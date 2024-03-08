@@ -1,5 +1,3 @@
-type entry = Info.t
-
 module ID : sig
   type t
   module Tbl : sig
@@ -8,6 +6,7 @@ module ID : sig
     val create : unit -> 'a t
     val get : key -> 'a t -> 'a
     val add : 'a -> 'a t -> key
+    val iteri : (key -> 'a -> unit) -> 'a t -> unit
   end
   module Set : CCSet.S with type elt = t
 end = struct
@@ -20,6 +19,7 @@ end = struct
     let add v t =
       CCVector.push t v;
       CCVector.size t - 1
+    let iteri = CCVector.iteri
   end
   module Set = CCSet.Make(CCInt)
 end
@@ -28,12 +28,12 @@ end
 type t = {
   (* Actual context of the Database, indexed by unique identifiers.
      TODO: Ideally, the entries should be mmap-ed *)
-  entries : entry ID.Tbl.t ;
+  entries : Entry.t ID.Tbl.t ;
   (* Index by longident *)
   index_by_lid : ID.t LongIdent.HMap.t ;
 }
 
-let empty = {
+let create () = {
   entries = ID.Tbl.create () ;
   index_by_lid = LongIdent.HMap.create 17 ;
 }
@@ -45,11 +45,34 @@ let find_lid t lid =
   let id = LongIdent.HMap.find t.index_by_lid lid in
   ID.Tbl.get id t.entries
 
-let add t lid v =
-  if LongIdent.HMap.mem t.index_by_lid lid then
+let add t (v : Entry.t) =
+  if LongIdent.HMap.mem t.index_by_lid v.lid then
     Fmt.failwith "The key %a is already present in the database"
-      LongIdent.pp lid
+      LongIdent.pp v.lid
   else
     let id = ID.Tbl.add v t.entries in
-    LongIdent.HMap.add t.index_by_lid lid id;
+    LongIdent.HMap.add t.index_by_lid v.lid id;
     id
+
+let iteri t f =
+  ID.Tbl.iteri (fun k v -> f (k,v)) t.entries
+
+let mem_pkgs pkgs =
+  match pkgs with
+  | None -> fun _ -> true
+  | Some pkgs ->
+    let set =
+      CCList.fold_left
+        (fun set pkg -> String.Set.add pkg set)
+        String.Set.empty pkgs
+    in
+    fun pkg -> String.Set.mem pkg set
+
+let resolve_all ?pkgs t ids =
+  let pkg_filt = mem_pkgs pkgs in
+  ids
+  |> Iter.filter_map (fun (id, x) ->
+      let info = find t id in
+      if pkg_filt info.pkg && not (Entry.is_internal info) then
+        Some (info, x)
+      else None)

@@ -29,16 +29,16 @@ let head =
     let env_query = Type.Env.make Query in
     let env = Type.Env.make Data in
     let test () =
-      let module Ft = Index.Feature.Head in
+      let module Ft = Db.Feature.Head in
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty1 Ft.pp feat1);
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in
@@ -81,16 +81,16 @@ let tail =
     let env_query = Type.Env.make Query in
     let env = Type.Env.make Data in
     let test () =
-      let module Ft = Index.Feature.Tail in
+      let module Ft = Db.Feature.Tail in
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty1 Ft.pp feat1);
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in
@@ -135,16 +135,16 @@ let const =
     let env_query = Type.Env.make Query in
     let env = Type.Env.make Data in
     let test () =
-      let module Ft = Index.Feature.Constructors in
+      let module Ft = Db.Feature.Constructors in
       let ty1 = Type.of_string env_query str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty1 Ft.pp feat1);
       Logs.debug (fun m ->
-          m "%a for type %a : %a @." Index.Feature.pp
+          m "%a for type %a : %a @." Db.Feature.pp
             (module Ft)
             Type.pp ty2 Ft.pp feat2);
       let name = Fmt.str "%s ≡ %s" str1 str2 in

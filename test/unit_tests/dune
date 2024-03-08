@@ -1,5 +1,5 @@
 (tests
  (names test_common test_unification test_poset test_matching test_feature)
- (libraries alcotest common acic index)
+ (libraries alcotest common acic db)
  (flags
   (:standard -open Common)))

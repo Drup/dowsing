@@ -10,16 +10,14 @@ type opts = {
 }
 
 let main opts =
-  let module Indexing = Index in
-  let module Index = (val opts.copts.idx) in
   let pkgs = if CCList.is_empty opts.pkgs then None else Some opts.pkgs in
   let idx =
-    try Index.load opts.idx_file
+    try Db.load opts.idx_file
     with Sys_error _ ->
       error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
   in
   let res =
-    let find = if opts.exhaustive then Index.find_exhaustive else Index.find in
+    let find = if opts.exhaustive then Db.find_exhaustive else Db.find in
     let iter_idx =
       try find idx env_query opts.ty ?pkgs
       with Not_found -> error "unknown package"
@@ -30,14 +28,14 @@ let main opts =
         Subst.compare unif1 unif2
         <?> (Type.compare, ty1, ty2)
         <?> (LongIdent.compare,
-             info1.Indexing.Info.lid, info2.Indexing.Info.lid)
+             info1.Db.Entry.lid, info2.Db.Entry.lid)
         <?> (Fpath.compare,
-             info1.Indexing.Info.pkg_dir, info2.Indexing.Info.pkg_dir)
+             info1.Db.Entry.pkg_dir, info2.Db.Entry.pkg_dir)
       )
     |> Iter.map (fun (info, _) -> info)
   in
   let res = CCOption.fold (CCFun.flip Iter.take) res opts.cnt in
-  Fmt.pr "@[<v>%a@]@." (Fmt.iter Iter.iter Indexing.Info.pp) res
+  Fmt.pr "@[<v>%a@]@." (Fmt.iter Iter.iter Db.Entry.pp) res
 
 let main copts exhaustive cnt idx_file ty pkgs =
   try Ok (main { copts; exhaustive; cnt; idx_file; ty; pkgs })
