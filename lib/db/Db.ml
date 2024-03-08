@@ -13,7 +13,7 @@ type t = {
   content : Content.t ;
 }
 
-let create env entries =
+let create ?with_feat ?with_poset env entries =
   let content = Content.create () in
   let idx = DefaultIndex.create env in
   Iter.iter (fun entry -> 
@@ -24,11 +24,15 @@ let create env entries =
     Content.iteri content
     |> Iter.map (fun (id, entry) -> id, entry.Entry.ty)
   in
-  DefaultIndex.import idx type_column;
+  DefaultIndex.import ?with_feat ?with_poset idx type_column;
   { idx; content}
 
 let find ?pkgs t env ty =
   DefaultIndex.find t.idx env ty
+  |> Content.resolve_all ?pkgs t.content
+
+let find_with_trie ?pkgs t env ty =
+  DefaultIndex.find_with_trie t.idx env ty
   |> Content.resolve_all ?pkgs t.content
 
 let find_exhaustive ?pkgs t env ty =

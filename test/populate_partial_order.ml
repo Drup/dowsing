@@ -1,4 +1,5 @@
-module P = Db.Internal.Poset
+module P = Db.Internals.Poset
+module Idx = Db.DefaultIndex
 
 let () = Logs.set_reporter (Logs.format_reporter ())
 (* Logs.set_level @@ Some Logs.Debug *)
@@ -12,7 +13,7 @@ let add t =
 
 let _from_index () =
   let idx = Db.load @@ Fpath.v Sys.argv.(1) in
-  Idx.T.iterid idx.trie add
+  Idx.T.iterid idx.idx.trie add
 
 let _from_list string_types =
   let types =

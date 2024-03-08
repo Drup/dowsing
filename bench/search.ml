@@ -1,6 +1,6 @@
 let env_data = Common.Type.Env.make Data
 let env_query = Common.Type.Env.make Query
-let idx = Index.make Index.Feature.all
+module Index = Db.DefaultIndex
 
 let path =
   match Fpath.of_string Sys.argv.(1) with
@@ -25,25 +25,23 @@ let types =
   CCList.map of_str types_str
 
 let () =
-  let module Indexing = Index in
-  let module Index = (val idx) in
   let exception Index_not_found of string in
   let idx =
-    try Index.load path
+    try Db.load path
     with Sys_error _ ->
       raise
       @@ Index_not_found (Fmt.str "cannot open index file `%a'" Fpath.pp path)
   in
   let search_exhaustive ty =
-    let it = Index.find_exhaustive idx env_data ty in
+    let it = Db.find_exhaustive idx env_data ty in
     Iter.max it
   in
   let search_trie ty =
-    let it = Index.find_with_trie idx env_data ty in
+    let it = Db.find_with_trie idx env_data ty in
     Iter.max it
   in
   let search_trie_poset ty =
-    let it = Index.find idx env_data ty in
+    let it = Db.find idx env_data ty in
     Iter.max it
   in
   let make_res ty =

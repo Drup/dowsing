@@ -1,5 +1,5 @@
-module P = Index.Poset
-module Idx = (val Index.(make Feature.all))
+module P = Db.Internals.Poset
+module Idx = Db.DefaultIndex
 
 let () = Logs.set_reporter (Logs.format_reporter ())
 (* Logs.set_level @@ Some Logs.Debug *)
@@ -23,20 +23,17 @@ let short_large_list ~connect_comp =
 
 let info_from_list l =
   let add_info i str_ty =
-    Logs.info (fun m -> m "Converting to type : %s @." str_ty);
-    let out_ty = Type.outcome_of_string str_ty in
+    Logs.debug (fun m -> m "Converting to type : %s @." str_ty);
+    let ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    { Package.orig_lid = lid; lid; out_ty }
+    {Db.Entry. lid; ty; pkg = "bench"; pkg_dir = Fpath.v "bench" }
   in
   CCList.mapi add_info l |> Iter.of_list
 
 let make_index l =
   let env = Common.Type.Env.make Data in
-  let t = Idx.make env in
-  let infos = ("No package", Fpath.v "No package", info_from_list l) in
-  Idx.import t [ infos ];
-  t
+  Db.create env @@ info_from_list l
 
 let () =
   let t = make_index @@ short_large_list ~connect_comp:5 in
-  Idx.save t @@ Fpath.v "short_large_poset.db"
+  Db.save t @@ Fpath.v "short_large_poset.db"

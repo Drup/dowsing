@@ -1,18 +1,17 @@
 let env = Common.Type.Env.make Data
-let idx = Index.make Index.Feature.all
-let pkgs = try Package.find [ Sys.argv.(1) ] with _ -> Package.find_all ()
+module Index = Db.DefaultIndex
+let pkgs = try Dowsing_findlib.find [ Sys.argv.(1) ] with _ -> Dowsing_findlib.find_all ()
 
 let () =
-  let module Indexing = Index in
-  let module Index = (val idx) in
-  let idx1 = Index.make env in
-  let index_trie () = Index.import_package ~with_poset:false idx1 pkgs in
-  let idx2 = Index.make env in
-  let index_trie_poset () = Index.import_package ~with_feat:false idx2 pkgs in
-  let idx3 = Index.make env in
-  let index_trie_poset_feat () =
-    Index.import_package ~with_feat:true idx3 pkgs
+  let it =
+    pkgs
+    |> Iter.of_list
+    |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
+    |> Iter.persistent
   in
+  let index_trie () = Db.create ~with_poset:false env it in
+  let index_trie_poset () = Db.create ~with_feat:false env it in
+  let index_trie_poset_feat () = Db.create ~with_feat:true env it in
   Format.printf "Index construction time";
   let res =
     Benchmark.latencyN (Int64.of_int 10)

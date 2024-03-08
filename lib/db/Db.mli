@@ -12,9 +12,17 @@ type t = {
   content : Content.t ;
 }
 
-val create : Type.Env.t -> Entry.t Iter.t -> t
+val create : 
+  ?with_feat:bool ->
+  ?with_poset:bool ->
+  Type.Env.t -> Entry.t Iter.t -> t
 
 val find : 
+  ?pkgs:Utils.String.HMap.key list ->
+  t ->
+  Type.Env.t ->
+  Type.t -> (Entry.t * (Type.t * Common.Subst.t)) Iter.t
+val find_with_trie : 
   ?pkgs:Utils.String.HMap.key list ->
   t ->
   Type.Env.t ->
