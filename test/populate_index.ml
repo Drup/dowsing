@@ -25,7 +25,7 @@ let info_from_list l =
   let add_info i str_ty =
     let ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    { Db.Entry. lid; ty; pkg = "test" ; pkg_dir = Fpath.v "test" }
+    { Db.Entry. lid; ty; pkg = "test" ; source_file = Fpath.v "test" }
   in
   CCList.mapi add_info l |> Iter.of_list
 

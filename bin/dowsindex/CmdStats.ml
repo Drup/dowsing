@@ -4,7 +4,6 @@ type opts = {
   copts : copts;
   meas_kind : Measure.Kind.t;
   with_feats : Bool.t;
-  no_idx : Bool.t;
   idx_file : Fpath.t;
   ty : Type.t;
   pkgs : String.t List.t;
@@ -49,8 +48,7 @@ let print_table ?(sep = 4) col_names rows =
 
 let aux opts ?stats0 iter_idx =
   let iter_idx =
-    try iter_idx ()
-    with Not_found | Dowsing_findlib.Error _ -> error "unknown package"
+    iter_idx ()
   in
   let timer = Timer.make () in
   let tbl = ref Measure.Map.empty in
@@ -107,34 +105,18 @@ let aux opts iter_idx iter_idx_filt =
 let main opts =
   let pkgs = if CCList.is_empty opts.pkgs then None else Some opts.pkgs in
   let iter_idx, iter_idx_filt =
-    if opts.no_idx then
-      let hcons = Type.Hashcons.make () in
-      let iter_idx () =
-        pkgs
-        |> CCOption.map_lazy Dowsing_findlib.find_all Dowsing_findlib.find
-        |> CCList.to_iter
-        |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
-        |> Iter.map @@ fun {Db.Entry.ty; _ } ->
-           let env = Type.Env.make Data ~hcons in
-           Type.of_outcometree env ty
-      in
-      let iter_idx_filt () =
-        iter_idx () |> Iter.filter @@ Acic.unifiable env_query opts.ty
-      in
-      (iter_idx, iter_idx_filt)
-    else
-      let db =
-        try Db.load opts.idx_file
-        with Sys_error _ ->
-          error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
-      in
-      ( (fun () -> Db.iter db ?pkgs |> Iter.map snd),
-        fun () -> Db.iter_compatible db opts.ty ?pkgs |> Iter.map snd )
+    let db =
+      try Db.load opts.idx_file
+      with Sys_error _ ->
+        error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
+    in
+    ( (fun () -> Db.iter db ?pkgs |> Iter.map snd),
+      fun () -> Db.iter_compatible db opts.ty ?pkgs |> Iter.map snd )
   in
   aux opts iter_idx iter_idx_filt
 
-let main copts meas_kind with_feats no_idx idx_file ty pkgs =
-  try Ok (main { copts; meas_kind; with_feats; no_idx; idx_file; ty; pkgs })
+let main copts meas_kind with_feats idx_file ty pkgs =
+  try Ok (main { copts; meas_kind; with_feats; idx_file; ty; pkgs })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -182,5 +164,5 @@ let cmd =
     (info "stats" ~sdocs:Manpage.s_common_options ~doc)
     Term.(
       term_result
-        (const main $ copts $ meas_kind $ with_feats $ no_idx $ idx_file $ ty
+        (const main $ copts $ meas_kind $ with_feats $ idx_file $ ty
        $ pkgs))

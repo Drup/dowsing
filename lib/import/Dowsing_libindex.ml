@@ -15,5 +15,9 @@ let iter pkg pkg_dir k =
         let lid = LongIdent.of_list @@ info.path @ [ info.name ] in
         let [@warning "-8"] Outcometree.Osig_value out_ty = Option.get info.ty in
         let ty = out_ty.oval_type in
-        k {Db.Entry. lid ; ty ; pkg; pkg_dir}
+        let source_file =
+          let (Cmt s | Cmti s | Cmi s) = info.file in
+          Fpath.v s
+        in
+        k {Db.Entry. lid ; ty ; pkg; source_file}
     | _ -> ()

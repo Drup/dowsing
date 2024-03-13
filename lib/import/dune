@@ -9,3 +9,15 @@
  (modules Dowsing_libindex)
  (libraries db fpath ocp-index.lib common)
  (flags (:standard -open Common)))
+
+(library
+ (name dowsing_odoc)
+ (modules Dowsing_odoc)
+ (libraries db fpath odoc.search odoc.odoc common)
+ (flags (:standard -open Common)))
+
+(library
+ (name dowsing_odig)
+ (modules Dowsing_odig)
+ (libraries db fpath common containers.unix)
+ (flags (:standard -open Common)))

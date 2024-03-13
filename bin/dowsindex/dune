@@ -3,7 +3,7 @@
  (public_name dowsindex)
  (libraries cmdliner logs bos
             utils common db
-            dowsing_findlib
-            dowsing_libindex
+            dowsing_odig
+            dowsing_odoc
             trace trace.core trace-tef)
  (flags (:standard -open Utils -open Common)))

@@ -2,7 +2,7 @@ type t = {
   lid : LongIdent.t ;
   ty : Outcometree.out_type ;
   pkg : string ;
-  pkg_dir : Fpath.t ;
+  source_file : Fpath.t ;
 }
 
 val compare : t CCOrd.t

@@ -29,8 +29,8 @@ let main opts =
         <?> (Type.compare, ty1, ty2)
         <?> (LongIdent.compare,
              info1.Db.Entry.lid, info2.Db.Entry.lid)
-        <?> (Fpath.compare,
-             info1.Db.Entry.pkg_dir, info2.Db.Entry.pkg_dir)
+        <?> (String.compare,
+             info1.Db.Entry.pkg, info2.Db.Entry.pkg)
       )
     |> Iter.map (fun (info, _) -> info)
   in

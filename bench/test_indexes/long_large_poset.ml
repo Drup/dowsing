@@ -29,7 +29,7 @@ let info_from_list l =
     Logs.debug (fun m -> m "Converting to type : %s @." str_ty);
     let ty = Type.outcome_of_string str_ty in
     let lid = LongIdent.Lident (Int.to_string i) in
-    {Db.Entry. lid; ty; pkg = "bench"; pkg_dir = Fpath.v "bench" }
+    {Db.Entry. lid; ty; pkg = "bench"; source_file = Fpath.v "bench" }
   in
   CCList.mapi add_info l |> Iter.of_list
 

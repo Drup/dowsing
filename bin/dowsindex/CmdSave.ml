@@ -2,9 +2,11 @@ open CommonOpts
 
 type opts = {
   copts : copts;
-  verbose : Bool.t;
+  verbose : bool;
   idx_file : Fpath.t;
-  pkgs : String.t List.t;
+  dependencies : bool ;
+  pkgs : String.t list;
+  files : Fpath.t list
 }
 
 let main opts =
@@ -13,19 +15,23 @@ let main opts =
   let pkgs =
     try
       if opts.pkgs = [] then
-        Dowsing_findlib.find_all ()
+        Dowsing_odig.find_all ()
       else
-        Dowsing_findlib.find opts.pkgs
-    with Dowsing_findlib.Error pkg ->
+        Dowsing_odig.find ~dependencies:opts.dependencies opts.pkgs
+    with Dowsing_odig.Unbound_package pkg ->
       error @@ Fmt.str "cannot find package `%s'" pkg
   in
   if opts.verbose then
     Fmt.pr "@[<v2>found %i packages:@ %a@]@." (CCList.length pkgs)
-      Fmt.(list ~sep:sp @@ using snd Fpath.pp)
+      Fmt.(list ~sep:sp @@ using fst string)
       pkgs;
+  let pkgs =
+    if opts.files <> []
+    then ("", opts.files) :: pkgs
+    else pkgs
+  in
   let infos =
-    Iter.of_list pkgs
-    |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
+    Dowsing_odoc.iter pkgs
   in
   let db = Db.create env_data infos in
   Fmt.pr "@[<2>Create an index:@,%a@]@."
@@ -35,8 +41,8 @@ let main opts =
   with Sys_error _ ->
     error @@ Fmt.str "cannot write index file `%a'" Fpath.pp opts.idx_file
 
-let main copts verbose idx_file pkgs =
-  try Ok (main { copts; verbose; idx_file; pkgs })
+let main copts verbose idx_file dependencies pkgs files =
+  try Ok (main { copts; verbose; idx_file; dependencies; pkgs; files })
   with Error msg -> Error (`Msg msg)
 
 open Cmdliner
@@ -46,16 +52,30 @@ let verbose =
   Arg.(value & flag & info [ "verbose" ] ~doc)
 
 let idx_file =
-  let docv = "file" in
+  let docv = "INDEX" in
   let doc = "Set index file." in
   Arg.(value & opt Convs.path Paths.idx_file & info [ "index" ] ~docv ~doc)
 
 let pkgs =
-  let docv = "package" in
-  Arg.(value & pos_all string [] & info [] ~docv)
+  let docv = "PACKAGES" in
+  let doc = "List of indexed packages" in
+  Arg.(value & opt Arg.(list string) [] & info ["p";"pkgs"] ~docv ~doc)
+
+let dependencies =
+  let doc = "Load package dependencies" in
+  Arg.(value & flag & info ["dependencies"] ~doc)
+
+let odocls =
+  let docv = "ODOCL" in
+  let doc = "Indexed .odocl files" in
+  Arg.(value & pos_all Convs.file [] & info [] ~docv ~doc)
 
 let cmd =
   let doc = "save index" in
   Cmd.v
     (Cmd.info "save" ~sdocs:Manpage.s_common_options ~doc)
-    Term.(term_result (const main $ copts $ verbose $ idx_file $ pkgs))
+    Term.(term_result (
+        const main
+        $ copts $ verbose
+        $ idx_file
+        $ dependencies $ pkgs $ odocls))
