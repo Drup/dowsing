@@ -87,10 +87,9 @@ let slow_tests = [
 
 let tests =
   let make_test speed res (str1, str2) =
-    let env_query = Type.Env.make Query in
-    let env  = Type.Env.make Data in
+    let env  = Type.Env.make () in
     let test () =
-      let ty1 = Type.of_string env_query str1 in
+      let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "%s ≡ %s" str1 str2 in
       Alcotest.(check bool) name res @@ Acic.unifiable env ty1 ty2

@@ -9,34 +9,25 @@ module Map = CCMap.Make (CCInt)
 module HMap = CCHashtbl.Make (CCInt)
 module Set = CCSet.Make (CCInt)
 
-module Namespace = struct
+(* module Namespace () = struct *)
+(*   type t = int *)
+(*   let compare = Int.compare *)
+(*   let equal = Int.equal *)
+(*   let pp = Fmt.int *)
+(*   let zero = 0 *)
+(*   let incr x = x+1 *)
+(* end *)
 
-  type t = Data | Query
-
-  let seed = function
-    | Data -> 1
-    | Query -> -1
-
-  let next var = var + CCInt.sign var
-
-  let get var =
-    assert (var <> 0) ;
-    if var > 0 then Data else Query
-
-  let count var = CCInt.abs var - 1
-
-end
-
-module Gen = struct
+module Gen  = struct
 
   type t = var ref
 
-  let make namespace =
-    ref @@ Namespace.seed namespace
+  let make () =
+    ref 0
 
   let gen t =
     let var = !t in
-    t := Namespace.next var ;
+    t := var+1 ;
     var
 
 end
@@ -54,14 +45,9 @@ let to_string =
     aux
   in
   fun var ->
-    let start_chr =
-      match Namespace.get var with
-      | Data -> 'a'
-      | Query -> 'A'
-    in
     let str =
-      Namespace.count var
-      |> base_26 start_chr
+      var
+      |> base_26 'a'
       |> String.of_list
     in
     str

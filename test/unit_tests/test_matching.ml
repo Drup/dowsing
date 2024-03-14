@@ -28,7 +28,7 @@ let comp = Alcotest.testable Acic.pp_ord ( = )
 
 let matching =
   let make_test res (str1, str2) =
-    let env = Type.Env.make Data in
+    let env = Type.Env.make () in
     let test () =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
@@ -69,7 +69,7 @@ let comp' = Alcotest.testable Acic.pp_hint ( = )
 
 let match_feat =
   let make_test res (str1, str2) =
-    let env = Type.Env.make Data in
+    let env = Type.Env.make () in
     let test () =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in

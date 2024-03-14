@@ -31,7 +31,7 @@ module Make (TX : Trie.NODE) : S = struct
       Removes the old content of [pkg] if present.
   *)
   let add t (id, ty) =
-    let env = Type.Env.make Data ~hcons:t.hcons in
+    let env = Type.Env.make ~hcons:t.hcons () in
     let ty = Type.of_outcometree env ty in
     t.trie <- T.add ty t.trie;
     Type.HMap.update t.index_by_type ~k:ty ~f:(fun _ -> function
@@ -46,7 +46,7 @@ module Make (TX : Trie.NODE) : S = struct
     ()
 
   let regenerate_poset t =
-    let e = Type.Env.make ~hcons:t.hcons Data in
+    let e = Type.Env.make ~hcons:t.hcons () in
     let p = Poset.init e in
     T.iterid t.trie
     (* Do not eta-reduce (Not sure why) *)

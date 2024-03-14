@@ -82,7 +82,10 @@ end
 module Env : sig
   type t = { var_gen : Variable.Gen.t; hcons : Hashcons.t }
 
-  val make : ?hcons:Hashcons.t -> Variable.Namespace.t -> t
+  val make : ?hcons:Hashcons.t -> unit -> t
+
+  (** [restart env] returns a new env with a fresh variable generator *)
+  val restart : t -> t
 end
 
 (* smart constructors *)
@@ -94,19 +97,17 @@ val arrow : Env.t -> t -> t -> t
 val arrows : Env.t -> NSet.t -> t -> t
 val tuple : Env.t -> NSet.t -> t
 
-(* freeze *)
+(* utility *)
 
 val freeze_variables : Env.t -> t -> t
+val refresh_variables : Env.t -> t -> t
 
-(* importation functions *)
+(* import functions *)
 
 val of_outcometree : Env.t -> Outcometree.out_type -> t
 val of_parsetree : Env.t -> Parsetree.core_type -> t
 val of_lexing : Env.t -> Lexing.lexbuf -> t
 val of_string : Env.t -> String.t -> t
-
-val of_outcometree' :
-  Env.t -> Outcometree.out_type -> Variable.t String.HMap.t * t
 
 val of_parsetree' : Env.t -> Parsetree.core_type -> Variable.t String.HMap.t * t
 val of_lexing' : Env.t -> Lexing.lexbuf -> Variable.t String.HMap.t * t

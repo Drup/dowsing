@@ -15,7 +15,7 @@ depends: [
   "containers-data"
   "iter"
   "diet"
-  "ocp-index"
+  "odoc"
   "ocamlgraph"
   "bos"
   "zarith"
@@ -24,7 +24,6 @@ depends: [
   "alcotest" {with-test}
   "benchmark" {with-test}
   "trace-tef"
-  "odoc" {with-doc}
 ]
 build: [
   ["dune" "subst"] {dev}

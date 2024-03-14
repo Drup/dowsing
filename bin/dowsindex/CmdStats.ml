@@ -54,7 +54,7 @@ let aux opts ?stats0 iter_idx =
   let tbl = ref Measure.Map.empty in
   iter_idx (fun ty ->
       Timer.start timer;
-      ignore @@ Acic.unifiable env_query opts.ty ty;
+      ignore @@ Acic.unifiable env opts.ty ty;
       Timer.stop timer;
       let time = Timer.get timer in
       let meas = Measure.make opts.meas_kind ty in
@@ -151,7 +151,7 @@ let ty =
   let docv = "type" in
   Arg.(
     required
-    & pos ~rev:true 0 (some @@ Convs.scheme env_query) None
+    & pos ~rev:true 0 (some @@ Convs.scheme env) None
     & info [] ~docv)
 
 let pkgs =

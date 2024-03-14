@@ -26,11 +26,10 @@ let neg_head =
 
 let head =
   let make_test speed res (str1, str2) =
-    let env_query = Type.Env.make Query in
-    let env = Type.Env.make Data in
+    let env = Type.Env.make () in
     let test () =
       let module Ft = Db.Feature.Head in
-      let ty1 = Type.of_string env_query str1 in
+      let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->
@@ -78,11 +77,10 @@ let neg_tail =
 
 let tail =
   let make_test speed res (str1, str2) =
-    let env_query = Type.Env.make Query in
-    let env = Type.Env.make Data in
+    let env = Type.Env.make () in
     let test () =
       let module Ft = Db.Feature.Tail in
-      let ty1 = Type.of_string env_query str1 in
+      let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->
@@ -132,11 +130,10 @@ let neg_const =
 
 let const =
   let make_test speed res (str1, str2) =
-    let env_query = Type.Env.make Query in
-    let env = Type.Env.make Data in
+    let env = Type.Env.make () in
     let test () =
       let module Ft = Db.Feature.Constructors in
-      let ty1 = Type.of_string env_query str1 in
+      let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let feat1 = Ft.compute ty1 and feat2 = Ft.compute ty2 in
       Logs.debug (fun m ->

@@ -9,22 +9,22 @@ module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t
 module Set : CCSet.S with type elt = t
 
-module Namespace : sig
+(* module Namespace : sig *)
 
-  type t = Data | Query
+(*   type t = Data | Query *)
 
-  val seed : t -> var
-  val next : var -> var
-  val get : var -> t
-  val count : var -> Int.t
+(*   val seed : t -> var *)
+(*   val next : var -> var *)
+(*   val get : var -> t *)
+(*   val count : var -> Int.t *)
 
-end
+(* end *)
 
 module Gen : sig
 
   type t
 
-  val make : Namespace.t -> t
+  val make : unit -> t
   val gen : t -> var
 
 end

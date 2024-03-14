@@ -248,8 +248,9 @@ end
 module Env = struct
   type t = { var_gen : Variable.Gen.t; hcons : Hashcons.t }
 
-  let make ?(hcons = Hashcons.make ()) namespace =
-    { var_gen = Variable.Gen.make namespace; hcons }
+  let make ?(hcons = Hashcons.make ()) () =
+    { var_gen = Variable.Gen.make (); hcons }
+  let restart env = {env with var_gen = Variable.Gen.make () }
 end
 
 let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
@@ -290,7 +291,7 @@ let tuple env elts =
 
 let other env x = hashcons env @@ Other (CCHash.poly x)
 
-(* freezing *)
+(** Utility functions *)
 
 let rec freeze_variables env (t : t) =
   match t with
@@ -301,7 +302,22 @@ let rec freeze_variables env (t : t) =
   | Tuple ts -> tuple env (NSet.map (freeze_variables env) ts)
   | Other _ | FrozenVar _ -> hashcons env t
 
-(* import functions *)
+let rec refresh_variables bdgs env (t : t) =
+  match t with
+  | Var v ->
+    let v' =
+      Variable.HMap.get_or_add bdgs ~f:(fun _ -> Variable.Gen.gen env.Env.var_gen) ~k:v
+    in
+    var env v'
+  | Constr (lid, t) -> constr env lid (Array.map (refresh_variables bdgs env) t)
+  | Arrow (args, t) ->
+    arrows env (NSet.map (refresh_variables bdgs env) args) (refresh_variables bdgs env t)
+  | Tuple ts -> tuple env (NSet.map (refresh_variables bdgs env) ts)
+  | Other _ | FrozenVar _ -> hashcons env t
+let refresh_variables env t =
+  refresh_variables (Variable.HMap.create 17) env t
+
+(** import functions *)
 
 let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
   match out_ty with
@@ -379,7 +395,7 @@ let outcome_of_string (str : String.t) =
   in
   parse_to_outcome parse_ty
 
-let var' bdgs (env : Env.t) = function
+let generate_var bdgs (env : Env.t) = function
   | None -> var env @@ Variable.Gen.gen env.var_gen
   | Some name -> (
       match String.HMap.get bdgs name with
@@ -388,11 +404,12 @@ let var' bdgs (env : Env.t) = function
           let v = Variable.Gen.gen env.var_gen in
           String.HMap.add bdgs name v;
           var env v)
-
+    
 let of_outcometree', of_parsetree' =
   let wrap fn (env : Env.t) x =
+    let env = Env.restart env in
     let bdgs = String.HMap.create 17 in
-    let var = var' bdgs env in
+    let var = generate_var bdgs env in
     let rec fn' x = fn fn' env var x in
     (bdgs, fn' x)
   in

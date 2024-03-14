@@ -34,7 +34,7 @@ let main opts =
   let infos =
     Dowsing_odoc.iter pkgs
   in
-  let db = Db.create ~with_poset:opts.with_poset env_data infos in
+  let db = Db.create ~with_poset:opts.with_poset env infos in
   Fmt.pr "@[<2>Create an index:@,%a@]@."
     Db.DefaultIndex.pp_metrics db.idx;
   try

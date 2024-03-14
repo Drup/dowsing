@@ -8,7 +8,7 @@ let main opts =
   Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp opts.ty2);
   let unifs =
     Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Unification cmd" (fun _ ->
-      Acic.unifiers env_query opts.ty1 opts.ty2
+      Acic.unifiers env opts.ty1 opts.ty2
       |> Iter.sort ~cmp:Subst.compare
       |> Iter.to_list)
   in
@@ -26,11 +26,11 @@ let all_unifs =
 
 let ty1 =
   let docv = "type1" in
-  Arg.(required & pos 0 (some @@ Convs.typ env_query) None & info [] ~docv)
+  Arg.(required & pos 0 (some @@ Convs.typ env) None & info [] ~docv)
 
 let ty2 =
   let docv = "type2" in
-  Arg.(required & pos 1 (some @@ Convs.typ env_data) None & info [] ~docv)
+  Arg.(required & pos 1 (some @@ Convs.typ env) None & info [] ~docv)
 
 let cmd =
   let doc = "unify two types" in

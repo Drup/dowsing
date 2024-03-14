@@ -427,6 +427,9 @@ and solve_loop env k =
 
 let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__ @@
+  let tyenv = Type.Env.restart tyenv in
+  let t1 = Type.refresh_variables tyenv t1 in
+  let t2 = Type.refresh_variables tyenv t2 in
   let orig_vars =
     Variable.Set.(
       union (of_iter @@ Type.iter_vars t1) (of_iter @@ Type.iter_vars t2))

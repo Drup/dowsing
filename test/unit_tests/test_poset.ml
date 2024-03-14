@@ -1,7 +1,7 @@
 module P = Db.Internals.Poset
 module Index = Db.DefaultIndex
 
-let e = Common.Type.Env.make Data
+let e = Common.Type.Env.make ()
 
 (* Common vertices and edges tests *)
 

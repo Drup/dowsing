@@ -30,7 +30,7 @@ let info_from_list l =
   CCList.mapi add_info l |> Iter.of_list
 
 let make_db l =
-  let env = Common.Type.Env.make Data in
+  let env = Common.Type.Env.make () in
   Db.create ~with_poset:true env @@ info_from_list l
 
 let () =
