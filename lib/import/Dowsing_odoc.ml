@@ -61,8 +61,27 @@ let rec odoc_to_outcometree
      let c = lid_of_odoc_path c in
      let params = List.map odoc_to_outcometree params in
      Otyp_constr (oid_of_lid c, params)
-   | Polymorphic_variant _ ->
-     Otyp_stuff "polyvariant" (*TODO*)
+   | Polymorphic_variant { kind; elements } ->
+     let closed, bound = match kind with
+         | Fixed -> true, None
+         | Closed l -> true, Some l
+         | Open -> false, None
+     in
+     let elements =
+       match elements with
+       | [ Type ty ] -> Outcometree.Ovar_typ (odoc_to_outcometree ty)
+       | l ->
+         let l = 
+           List.map (function
+                 OM.Lang.TypeExpr.Polymorphic_variant.Constructor
+                   { name; constant; arguments; _ } ->
+                 (name, constant, List.map odoc_to_outcometree arguments)
+               | _ -> assert false
+             ) l
+         in
+         Outcometree.Ovar_fields l
+     in 
+     Otyp_variant (false, elements, closed, bound)
    | Object _ ->
      Otyp_stuff "object" (*TODO*)
    | Class (_, _) -> 
