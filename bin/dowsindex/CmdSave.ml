@@ -15,7 +15,7 @@ let main opts =
   |> CCResult.iter_err (fun (`Msg msg) -> error msg);
   let pkgs =
     try
-      if opts.pkgs = [] then
+      if opts.pkgs = [] && opts.files = [] then
         Dowsing_odig.find_all ()
       else
         Dowsing_odig.find ~dependencies:opts.dependencies opts.pkgs
@@ -61,7 +61,7 @@ let idx_file =
 
 let pkgs =
   let docv = "PACKAGES" in
-  let doc = "List of indexed packages" in
+  let doc = "Indexed packages" in
   Arg.(value & opt Arg.(list string) [] & info ["p";"pkgs"] ~docv ~doc)
 
 let dependencies =
