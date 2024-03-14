@@ -35,7 +35,7 @@ let info_from_list l =
 
 let make_index l =
   let env = Common.Type.Env.make Data in
-  Db.create env @@ info_from_list l
+  Db.create ~with_poset:true env @@ info_from_list l
 
 let () =
   let t = make_index @@ long_large_list ~depth:4 ~const_width:2 in

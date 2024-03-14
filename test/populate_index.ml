@@ -31,7 +31,7 @@ let info_from_list l =
 
 let make_db l =
   let env = Common.Type.Env.make Data in
-  Db.create env @@ info_from_list l
+  Db.create ~with_poset:true env @@ info_from_list l
 
 let () =
   let t = make_db types in

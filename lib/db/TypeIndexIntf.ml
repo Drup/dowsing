@@ -5,7 +5,7 @@ module type S = sig
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
     index_by_type : Content.ID.Set.t Type.HMap.t;
-    mutable poset : Poset.t;
+    mutable poset : Poset.t option;
   }
 
   type iter = (Content.ID.t * Type.t) Iter.t
@@ -14,8 +14,7 @@ module type S = sig
   val create : Type.Env.t -> t
 
   val import :
-    ?with_poset:bool ->
-    ?with_feat:bool ->
+    with_poset:bool ->
     t ->
     (Content.ID.t * Outcometree.out_type) Iter.t ->
     unit

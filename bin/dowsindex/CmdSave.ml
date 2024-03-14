@@ -5,6 +5,7 @@ type opts = {
   verbose : bool;
   idx_file : Fpath.t;
   dependencies : bool ;
+  with_poset : bool ;
   pkgs : String.t list;
   files : Fpath.t list
 }
@@ -33,7 +34,7 @@ let main opts =
   let infos =
     Dowsing_odoc.iter pkgs
   in
-  let db = Db.create env_data infos in
+  let db = Db.create ~with_poset:opts.with_poset env_data infos in
   Fmt.pr "@[<2>Create an index:@,%a@]@."
     Db.DefaultIndex.pp_metrics db.idx;
   try
@@ -41,9 +42,11 @@ let main opts =
   with Sys_error _ ->
     error @@ Fmt.str "cannot write index file `%a'" Fpath.pp opts.idx_file
 
-let main copts verbose idx_file dependencies pkgs files =
-  try Ok (main { copts; verbose; idx_file; dependencies; pkgs; files })
-  with Error msg -> Error (`Msg msg)
+let main copts verbose idx_file dependencies pkgs files with_poset =
+  let opts =
+    { copts; verbose; idx_file; dependencies; pkgs; files; with_poset }
+  in
+  try Ok (main opts) with Error msg -> Error (`Msg msg)
 
 open Cmdliner
 
@@ -70,6 +73,10 @@ let odocls =
   let doc = "Indexed .odocl files" in
   Arg.(value & pos_all Convs.file [] & info [] ~docv ~doc)
 
+let with_poset =
+  let doc = "Enable poset construction" in
+  Arg.(value & opt ~vopt:true bool false & info ["poset"] ~doc)
+
 let cmd =
   let doc = "save index" in
   Cmd.v
@@ -78,4 +85,6 @@ let cmd =
         const main
         $ copts $ verbose
         $ idx_file
-        $ dependencies $ pkgs $ odocls))
+        $ dependencies $ pkgs $ odocls
+        $ with_poset
+      ))

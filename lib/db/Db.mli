@@ -13,8 +13,7 @@ type t = {
 }
 
 val create : 
-  ?with_feat:bool ->
-  ?with_poset:bool ->
+  with_poset:bool ->
   Type.Env.t -> Entry.t Iter.t -> t
 
 val find : 

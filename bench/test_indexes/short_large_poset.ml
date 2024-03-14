@@ -32,7 +32,7 @@ let info_from_list l =
 
 let make_index l =
   let env = Common.Type.Env.make Data in
-  Db.create env @@ info_from_list l
+  Db.create ~with_poset:true env @@ info_from_list l
 
 let () =
   let t = make_index @@ short_large_list ~connect_comp:5 in
