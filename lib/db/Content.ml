@@ -46,10 +46,11 @@ let find_lid t lid =
   ID.Tbl.get id t.entries
 
 let add t (v : Entry.t) =
-  if LongIdent.HMap.mem t.index_by_lid v.lid then
-    Fmt.failwith "The key %a is already present in the database"
-      LongIdent.pp v.lid
-  else
+  match LongIdent.HMap.get t.index_by_lid v.lid with
+  | Some id ->
+    (* TODO Probably should do a warning here *)
+    id
+  | None ->
     let id = ID.Tbl.add v t.entries in
     LongIdent.HMap.add t.index_by_lid v.lid id;
     id

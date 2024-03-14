@@ -71,12 +71,13 @@ let rec odoc_to_outcometree
        match elements with
        | [ Type ty ] -> Outcometree.Ovar_typ (odoc_to_outcometree ty)
        | l ->
-         let l = 
-           List.map (function
+         let l =
+           (* TODO This is incorrect *)
+           List.filter_map (function
                  OM.Lang.TypeExpr.Polymorphic_variant.Constructor
                    { name; constant; arguments; _ } ->
-                 (name, constant, List.map odoc_to_outcometree arguments)
-               | _ -> assert false
+                 Some (name, constant, List.map odoc_to_outcometree arguments)
+               | _ -> None
              ) l
          in
          Outcometree.Ovar_fields l
