@@ -20,9 +20,14 @@ let index_file register filename =
 module OM = Odoc_model
 module P = OM.Paths
 
-let oid_of_lid l =
+let rec oid_of_lid l =
   match l with
   | [] -> assert false
+  (* Chop path starting with [Stdlib]
+     TODO: handler opening properly
+  *)
+  | "Stdlib" :: t ->
+    oid_of_lid t
   | h :: t ->
     List.fold_left (fun acc s -> Outcometree.Oide_dot (acc, s))
       (Outcometree.Oide_ident {printed_name = h})
