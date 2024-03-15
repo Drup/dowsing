@@ -2,11 +2,11 @@
  (target fmt.db)
  (deps ../assets/fmt.odocl)
  (action
-  (run dowsindex save --index %{target} --poset=true %{deps})))
+  (run dowsing save --index %{target} --poset=true %{deps})))
 
 (cram
  (applies_to basics)
- (deps %{bin:dowsindex} fmt.db))
+ (deps %{bin:dowsing} fmt.db))
 
 (rule
  (target idx_from_list.db)
@@ -15,4 +15,4 @@
 
 (cram
  (applies_to type_list_index)
- (deps %{bin:dowsindex} idx_from_list.db))
+ (deps %{bin:dowsing} idx_from_list.db))

@@ -1,22 +1,22 @@
 Some initial basic tests.
 
-  $ dowsindex search --index fmt.db "int -> int -> int"
-  dowsindex: [INFO] [0-1]
+  $ dowsing search --index fmt.db "int -> int -> int"
+  dowsing: [INFO] [0-1]
   
   
 
-  $ dowsindex search --index fmt.db "int -> int -> int -> int"
-  dowsindex: [INFO] [0-1]
+  $ dowsing search --index fmt.db "int -> int -> int -> int"
+  dowsing: [INFO] [0-1]
   
   
 
-  $ dowsindex search --index fmt.db "int -> int list"
-  dowsindex: [INFO] [0-1]
+  $ dowsing search --index fmt.db "int -> int list"
+  dowsing: [INFO] [0-1]
   
   
 
-  $ dowsindex search --index fmt.db ". int -> int -> 'a"
-  dowsindex: [INFO] [0-12][73-74]
+  $ dowsing search --index fmt.db ". int -> int -> 'a"
+  dowsing: [INFO] [0-12][73-74]
   
   :Fmt.id : 'a -> 'a
   :Fmt.to_to_string : 'a Fmt.t -> 'a -> string
