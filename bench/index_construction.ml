@@ -1,12 +1,12 @@
 let env = Common.Type.Env.make ()
 module Index = Db.DefaultIndex
-let pkgs = try Dowsing_findlib.find [ Sys.argv.(1) ] with _ -> Dowsing_findlib.find_all ()
+let files =
+  try List.map Fpath.v @@ CCList.drop 1 @@ Array.to_list @@ Sys.argv
+  with _ -> Fmt.failwith "please provide some odocl files"
 
 let () =
   let it =
-    pkgs
-    |> Iter.of_list
-    |> Iter.flat_map (fun (pkg, dir) -> Dowsing_libindex.iter pkg dir)
+    Dowsing_odoc.iter ["", files]
     |> Iter.persistent
   in
   let index_trie () = Db.create ~with_poset:false env it in

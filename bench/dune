@@ -1,7 +1,7 @@
 (executable
  (name index_construction)
  (modules index_construction)
- (libraries common acic db dowsing_findlib dowsing_libindex benchmark)
+ (libraries common acic db dowsing_odoc benchmark)
  (flags
   (:standard -open Common)))
 
