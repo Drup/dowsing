@@ -1,6 +1,7 @@
 (executable
  (name dowsindex)
- (public_name dowsindex)
+ (public_name dowsing)
+ (package dowsing)
  (libraries cmdliner logs bos
             utils common db
             dowsing_odig

@@ -1,2 +1,3 @@
 (library
- (name dowsing))
+ (package dowsing-lib)
+ (name dowsing_lib))
