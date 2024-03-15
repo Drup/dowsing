@@ -17,8 +17,11 @@
  (name dowsing)
  (synopsis "Dowsing is a type of divination employed in attempts to locate functions by giving a type")
  (depends
-   ocaml dune fmt containers containers-data iter diet odoc odig ocamlgraph bos zarith atomic ppx_deriving
+   (ocaml (>= "5.0"))  dune
+   fmt containers containers-data iter bos
+   diet ocamlgraph zarith atomic ppx_deriving
    trace-tef
+   odoc odig 
   (alcotest :with-test)
   (benchmark :with-test)
 ))

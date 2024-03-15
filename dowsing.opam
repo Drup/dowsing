@@ -8,21 +8,21 @@ license: "MIT"
 homepage: "https://github.com/Drup/dowsing"
 bug-reports: "https://github.com/Drup/dowsing/issues"
 depends: [
-  "ocaml"
+  "ocaml" {>= "5.0"}
   "dune" {>= "3.0"}
   "fmt"
   "containers"
   "containers-data"
   "iter"
-  "diet"
-  "odoc"
-  "odig"
-  "ocamlgraph"
   "bos"
+  "diet"
+  "ocamlgraph"
   "zarith"
   "atomic"
   "ppx_deriving"
   "trace-tef"
+  "odoc"
+  "odig"
   "alcotest" {with-test}
   "benchmark" {with-test}
 ]

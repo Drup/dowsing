@@ -330,7 +330,7 @@ let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
   | Otyp_tuple elts ->
       elts |> Iter.of_list |> Iter.map of_outcometree |> NSet.of_iter
       |> tuple env
-  | Otyp_alias (out_ty, _) -> of_outcometree out_ty
+  | Otyp_alias { aliased ; _ } -> of_outcometree aliased
   (* not handled *)
   | Otyp_object _ | Otyp_class _ | Otyp_variant _ | Otyp_module _
   | Otyp_attribute _
@@ -378,8 +378,9 @@ let rec parse_to_outcome (parse_ty : Parsetree.core_type) =
       in
       Outcometree.Otyp_arrow (str, parse_to_outcome param, parse_to_outcome ret)
   | Ptyp_tuple elts -> Outcometree.Otyp_tuple (CCList.map parse_to_outcome elts)
-  | Ptyp_alias (parse_ty, str) ->
-      Outcometree.Otyp_alias (parse_to_outcome parse_ty, str)
+  | Ptyp_alias (parse_ty, alias) ->
+      let aliased = parse_to_outcome parse_ty in
+      Outcometree.Otyp_alias {non_gen = false; aliased; alias}
   | Ptyp_poly (s, parse_ty) ->
       let f (str : string Location.loc) = str.txt in
       let str = CCList.map f s in

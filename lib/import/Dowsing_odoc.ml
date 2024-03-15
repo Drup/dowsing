@@ -82,7 +82,7 @@ let rec odoc_to_outcometree
          in
          Outcometree.Ovar_fields l
      in 
-     Otyp_variant (false, elements, closed, bound)
+     Otyp_variant (elements, closed, bound)
    | Object _ ->
      Otyp_stuff "object" (*TODO*)
    | Class (_, _) -> 
