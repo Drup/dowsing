@@ -16,14 +16,15 @@ depends: [
   "iter"
   "diet"
   "odoc"
+  "odig"
   "ocamlgraph"
   "bos"
   "zarith"
   "atomic"
   "ppx_deriving"
+  "trace-tef"
   "alcotest" {with-test}
   "benchmark" {with-test}
-  "trace-tef"
 ]
 build: [
   ["dune" "subst"] {dev}
@@ -40,7 +41,3 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/Drup/dowsing.git"
-pin-depends: [
-  ["ocp-index.dev" "git+https://github.com/OCamlPro/ocp-index.git"]
-  ["ocp-browser.dev" "git+https://github.com/OCamlPro/ocp-index.git"]
-]

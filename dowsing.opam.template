@@ -1,4 +1,0 @@
-pin-depends: [
-  ["ocp-index.dev" "git+https://github.com/OCamlPro/ocp-index.git"]
-  ["ocp-browser.dev" "git+https://github.com/OCamlPro/ocp-index.git"]
-]
