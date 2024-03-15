@@ -1,7 +1,8 @@
 (rule
  (target fmt.db)
+ (deps ../assets/fmt.odocl)
  (action
-  (run dowsindex save --index %{target} --poset -p fmt)))
+  (run dowsindex save --index %{target} --poset=true %{deps})))
 
 (cram
  (applies_to basics)
