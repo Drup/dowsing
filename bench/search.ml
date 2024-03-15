@@ -1,5 +1,4 @@
-let env_data = Common.Type.Env.make Data
-let env_query = Common.Type.Env.make Query
+let env = Common.Type.Env.make ()
 module Index = Db.DefaultIndex
 
 let path =
@@ -20,7 +19,7 @@ let types_str =
 
 let types =
   let of_str s =
-    Type.of_string env_query s |> Type.freeze_variables env_query
+    Type.of_string env s |> Type.freeze_variables env
   in
   CCList.map of_str types_str
 
@@ -33,15 +32,15 @@ let () =
       @@ Index_not_found (Fmt.str "cannot open index file `%a'" Fpath.pp path)
   in
   let search_exhaustive ty =
-    let it = Db.find_exhaustive idx env_data ty in
+    let it = Db.find_exhaustive idx env ty in
     Iter.max it
   in
   let search_trie ty =
-    let it = Db.find_with_trie idx env_data ty in
+    let it = Db.find_with_trie idx env ty in
     Iter.max it
   in
   let search_trie_poset ty =
-    let it = Db.find idx env_data ty in
+    let it = Db.find idx env ty in
     Iter.max it
   in
   let make_res ty =

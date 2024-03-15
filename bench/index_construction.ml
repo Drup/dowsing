@@ -1,4 +1,4 @@
-let env = Common.Type.Env.make Data
+let env = Common.Type.Env.make ()
 module Index = Db.DefaultIndex
 let pkgs = try Dowsing_findlib.find [ Sys.argv.(1) ] with _ -> Dowsing_findlib.find_all ()
 

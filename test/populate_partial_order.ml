@@ -4,7 +4,7 @@ module Idx = Db.DefaultIndex
 let () = Logs.set_reporter (Logs.format_reporter ())
 (* Logs.set_level @@ Some Logs.Debug *)
 
-let env = Common.Type.Env.make Data
+let env = Common.Type.Env.make ()
 let x = P.init env
 
 let add t =
