@@ -13,7 +13,7 @@ depends: [
   "cmdliner"
   "odoc"
   "odig"
-  "dowsing-index" {= "version"}
+  "dowsing-lib" {= "version"}
   "alcotest" {with-test}
   "benchmark" {with-test}
 ]
