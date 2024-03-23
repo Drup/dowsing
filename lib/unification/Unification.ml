@@ -333,11 +333,11 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                      (Type.var (Env.tyenv env) var_ret_left))
               in
               insert_var env var_ret_left right.ret) );
-      ( "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL",
+      ( "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βR ≡? BL",
         fun env () ->
           (* AL ≡? AR * αR  ∧
              αR -> βR ≡? BR   ∧
-             βL ≡? BL
+             βR ≡? BL
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL" (fun _sp ->

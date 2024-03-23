@@ -16,6 +16,9 @@ depends: [
   "dowsing-lib" {= version}
   "alcotest" {with-test}
   "benchmark" {with-test}
+  "bechamel" {with-test}
+  "bechamel-notty" {with-test}
+  "trace-tef"
 ]
 build: [
   ["dune" "subst"] {dev}

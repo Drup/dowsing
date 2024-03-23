@@ -11,3 +11,10 @@
  (libraries common acic db benchmark)
  (flags
   (:standard -open Common)))
+
+(executable
+  (name AC)
+  (modules AC)
+  (libraries common acic bechamel bechamel-notty notty.unix)
+  (flags
+    (:standard -open Common)))
