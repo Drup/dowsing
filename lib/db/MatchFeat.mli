@@ -11,10 +11,8 @@ end
 module Const : S
 
 val all : (module S) List.t
-val all_names : String.t List.t
-val to_string : (module S) -> String.t
-val of_string : String.t -> (module S)
 val pp : (module S) Fmt.t
 
-val compat_match : Type.t -> Type.t -> Acic.hint
+val compatible : Type.t -> Type.t -> Acic.hint
+
 val compare : Type.Env.t -> Type.t -> Type.t -> Acic.ord

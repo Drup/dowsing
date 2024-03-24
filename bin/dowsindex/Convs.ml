@@ -30,16 +30,3 @@ let file =
     |> CCResult.flat_map Bos.OS.Path.must_exist
   in
   Arg.conv (parse, Fpath.pp)
-
-let feats =
-  let parse = CCParse.(parse_string @@ sep1 ~by:(char ',') U.word) in
-  let parse str =
-    let open CCResult in
-    parse str
-    |> map_err (fun _ -> `Msg "ill-formed feature list")
-    >>= (fun feats ->
-      try Ok (CCList.map Db.Feature.of_string feats)
-      with Not_found -> Error (`Msg "illegal feature")
-    )
-  in
-  Arg.conv (parse, Fmt.(list ~sep:(any ",") Db.Feature.pp))

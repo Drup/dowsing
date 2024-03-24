@@ -74,7 +74,7 @@ let match_feat =
       let ty1 = Type.of_string env str1 in
       let ty2 = Type.of_string env str2 in
       let name = Fmt.str "Comparing %s and %s" str1 str2 in
-      Alcotest.(check comp') name res @@ Db.Internals.MatchFeat.compat_match ty1 ty2
+      Alcotest.(check comp') name res @@ Db.Internals.MatchFeat.compatible ty1 ty2
     in
     incr test_cnt;
     Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test

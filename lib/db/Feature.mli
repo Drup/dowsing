@@ -13,7 +13,6 @@ module Tail : S
 module Constructors : S
 
 val all : (module S) List.t
-val all_names : String.t List.t
-val to_string : (module S) -> String.t
-val of_string : String.t -> (module S)
 val pp : (module S) Fmt.t
+
+val compatible : Type.t -> Type.t -> bool

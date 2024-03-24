@@ -1,4 +1,4 @@
-module type NODE = sig
+module type S = sig
   type t
 
   val empty : t
@@ -11,7 +11,7 @@ module type NODE = sig
   val refresh : start:int -> t -> int
 end
 
-module Leaf : NODE = struct
+module Leaf : S = struct
   type t = { mutable range : TypeId.Range.interval; types : Type.Set.t }
 
   let empty = { range = TypeId.Range.Interval.make 0 1; types = Type.Set.empty }
@@ -35,7 +35,7 @@ module Leaf : NODE = struct
     stop
 end
 
-module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
+module Node (Feat : Feature.S) (Sub : S) : S = struct
   module FeatMap = CCMap.Make (Feat)
 
   type t = Sub.t FeatMap.t
@@ -99,7 +99,9 @@ module Node (Feat : Feature.S) (Sub : NODE) : NODE = struct
     FeatMap.fold (fun _ t start -> Sub.refresh ~start t) t start
 end
 
-let rec make feats =
-  match feats with
-  | [] -> (module Leaf : NODE)
-  | feat :: feats -> (module Node ((val feat : Feature.S)) ((val make feats)))
+module Default : S =
+  Node (Feature.Head) (
+    Node (Feature.Tail) (
+      Leaf
+    )
+  )
