@@ -6,18 +6,22 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 let _info = Logs.info
 let _debug = Logs.debug
 
-module Make (TX : Trie.NODE) : S = struct
-  module T = TX
+module Make (Elt : Set.OrderedType) = struct
+  module T = Trie.Default
+  module ID = struct
+    include Elt
+    module Set = CCSet.Make(Elt)
+  end
 
   type t = {
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : Content.ID.Set.t Type.HMap.t;
+    index_by_type : ID.Set.t Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
-  type iter = (Content.ID.t * Type.t) Iter.t
-  type iter_with_unifier = (Content.ID.t * (Type.t * Subst.t)) Iter.t
+  type iter = (ID.t * Type.t) Iter.t
+  type iter_with_unifier = (ID.t * (Type.t * Subst.t)) Iter.t
 
   let create _env = {
     hcons = Type.Hashcons.make ();
@@ -36,9 +40,9 @@ module Make (TX : Trie.NODE) : S = struct
     t.trie <- T.add ty t.trie;
     Type.HMap.update t.index_by_type ~k:ty ~f:(fun _ -> function
         | None ->
-          Some (Content.ID.Set.singleton id)
+          Some (ID.Set.singleton id)
         | Some ids ->
-          Some (Content.ID.Set.add id ids)
+          Some (ID.Set.add id ids)
       )
 
   let refresh t =
@@ -70,7 +74,7 @@ module Make (TX : Trie.NODE) : S = struct
     it (fun elt ->
         let ty = to_type elt in
         let ids = Type.HMap.find t.index_by_type ty in
-        Content.ID.Set.iter (fun id -> k (id, elt)) ids
+        ID.Set.iter (fun id -> k (id, elt)) ids
       )
 
   let filter_with_unification env ty it =

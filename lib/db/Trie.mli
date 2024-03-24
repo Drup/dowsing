@@ -1,4 +1,4 @@
-module type NODE = sig
+module type S = sig
   type t
 
   val empty : t
@@ -11,7 +11,7 @@ module type NODE = sig
   val refresh : start:int -> t -> int
 end
 
-module Leaf : NODE
-module Node (Feat : Feature.S) (Sub : NODE) : NODE
+module Leaf : S
+module Node (Feat : Feature.S) (Sub : S) : S
 
-val make : (module Feature.S) List.t -> (module NODE)
+module Default : S

@@ -5,8 +5,7 @@ module Content = Content
 module Feature = Feature
 module TypeIndex = TypeIndex
 
-let features = Feature.all
-module DefaultIndex : TypeIndex.S = TypeIndex.Make ((val Trie.make features))
+module DefaultIndex = TypeIndex.Make (Content.ID)
 
 type t = {
   idx : DefaultIndex.t ;

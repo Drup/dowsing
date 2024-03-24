@@ -1,5 +1,6 @@
 module ID : sig
   type t
+  val compare : t -> t -> int
   module Tbl : sig
     type key = t
     type 'a t
@@ -11,6 +12,7 @@ module ID : sig
   module Set : CCSet.S with type elt = t
 end = struct
   type t = int
+  let compare = Int.compare
   module Tbl = struct
     type key = t
     type 'a t = 'a CCVector.vector
