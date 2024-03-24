@@ -43,26 +43,10 @@ module Const : S = struct
 end
 
 let all = [ (module Const : S) ]
-
-let all_with_names =
-  CCList.map (fun ((module Feat : S) as feat) -> (Feat.name, feat)) all
-
-let all_names = CCList.map fst all_with_names
 let to_string (module Feat : S) = Feat.name
-let of_string = CCFun.flip List.assoc @@ all_with_names
 let pp = Fmt.of_to_string to_string
 
-let compat_unif (t1 : Type.t) (t2 : Type.t) =
-  let rec aux (fl : (module Feature.S) list) =
-    match fl with
-    | [] -> true
-    | (module Feat) :: q ->
-        Feat.compatible ~query:(Feat.compute t1) ~data:(Feat.compute t2)
-        && aux q
-  in
-  aux Feature.all
-
-let compat_match (t1 : Type.t) (t2 : Type.t) =
+let compatible (t1 : Type.t) (t2 : Type.t) =
   let check_feat h0 feat =
     let module Ft = (val feat : S) in
     let feat1 = Ft.compute t1 and feat2 = Ft.compute t2 in
@@ -77,7 +61,7 @@ let compat_match (t1 : Type.t) (t2 : Type.t) =
   CCList.fold_left check_feat Unsure feats
 
 let compare env t1 t2 =
-  if not (compat_unif t1 t2) then Acic.Uncomparable
+  if not (Feature.compatible t1 t2) then Acic.Uncomparable
   else
-    let hint = compat_match t1 t2 in
+    let hint = compatible t1 t2 in
     Acic.compare ~hint env t1 t2

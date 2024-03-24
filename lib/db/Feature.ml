@@ -117,11 +117,15 @@ module Constructors : S = struct
 end
 
 let all = [ (module Head : S); (module Tail : S) ]
-
-let all_with_names =
-  CCList.map (fun ((module Feat : S) as feat) -> (Feat.name, feat)) all
-
-let all_names = CCList.map fst all_with_names
 let to_string (module Feat : S) = Feat.name
-let of_string = CCFun.flip List.assoc @@ all_with_names
 let pp = Fmt.of_to_string to_string
+
+let compatible (t1 : Type.t) (t2 : Type.t) =
+  let rec aux (fl : (module S) list) =
+    match fl with
+    | [] -> true
+    | (module Feat) :: q ->
+        Feat.compatible ~query:(Feat.compute t1) ~data:(Feat.compute t2)
+        && aux q
+  in
+  aux all
