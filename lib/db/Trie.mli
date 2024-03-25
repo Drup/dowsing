@@ -2,13 +2,11 @@ module type S = sig
   type t
 
   val empty : t
-  val add : Type.t -> t -> t
-  val remove : Type.t -> t -> t
+  val add : TypeId.t -> t -> t
+  val checker : Type.t -> t -> TypeId.Range.t
+  val search : Type.t -> t -> Type.t Iter.t 
+  val union : t -> t -> t
   val iter : t -> Type.t Iter.t
-  val iter_compatible : Type.t -> t -> TypeId.Range.t * Type.t Iter.t
-  val range_compatible : Type.t -> t -> TypeId.Range.t
-  val iterid : t -> TypeId.t Iter.t
-  val refresh : start:int -> t -> int
 end
 
 module Leaf : S

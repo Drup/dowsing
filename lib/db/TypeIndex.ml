@@ -8,7 +8,7 @@ let _debug = Logs.debug
 
 module Make (Elt : Set.OrderedType) = struct
   module T = Trie.Default
-  module ID = struct
+  module Elt = struct
     include Elt
     module Set = CCSet.Make(Elt)
   end
@@ -16,70 +16,63 @@ module Make (Elt : Set.OrderedType) = struct
   type t = {
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : ID.Set.t Type.HMap.t;
+    index_by_type : (Elt.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
-  type iter = (ID.t * Type.t) Iter.t
-  type iter_with_unifier = (ID.t * (Type.t * Subst.t)) Iter.t
+  type iter = (Elt.t * Type.t) Iter.t
+  type iter_with_unifier = (Elt.t * (Type.t * Subst.t)) Iter.t
 
-  let create _env = {
+  let create ~with_poset _env = {
     hcons = Type.Hashcons.make ();
     trie = T.empty;
     index_by_type = Type.HMap.create 17;
-    poset = None;
+    poset = if with_poset then Some (Poset.init _env) else None;
   }
 
-  (** [add pkg pkg_dir] adds the package [pkg] available in path [pkg_dir].
+  let size t = Type.HMap.length t.index_by_type
 
-      Removes the old content of [pkg] if present.
-  *)
-  let add t (id, ty) =
+  let add t (entry, ty) =
     let env = Type.Env.make ~hcons:t.hcons () in
     let ty = Type.of_outcometree env ty in
-    t.trie <- T.add ty t.trie;
-    Type.HMap.update t.index_by_type ~k:ty ~f:(fun _ -> function
-        | None ->
-          Some (ID.Set.singleton id)
-        | Some ids ->
-          Some (ID.Set.add id ids)
-      )
+    match Type.HMap.get t.index_by_type ty with
+    | None ->
+      let id = size t in
+      let tyid = TypeId.mk id ty in
+      let entries = Elt.Set.singleton entry in
+      Type.HMap.add t.index_by_type ty (entries, tyid);
+      t.trie <- T.add tyid t.trie;
+      begin match t.poset with
+        | None -> ()
+        | Some poset ->
+          (* TODO: Use the content of the trie to help Poset.add *)
+          (* let _rg = T.checker ty t.trie in *)
+          Poset.add poset tyid
+      end
+    | Some (entries, tyid) ->
+      let entries = Elt.Set.add entry entries in
+      Type.HMap.replace t.index_by_type ty (entries, tyid)
 
-  let refresh t =
-    let _ = T.refresh ~start:0 t.trie in
-    ()
-
-  let regenerate_poset t =
-    let e = Type.Env.make ~hcons:t.hcons () in
-    let p = Poset.init e in
-    T.iterid t.trie
-    (* Do not eta-reduce (Not sure why) *)
-    |> Iter.iter (fun ty -> Poset.add p ty);
-    Poset.annotate_top p;
-    t.poset <- Some p;
-    (* Poset.xdot t.poset; *)
-    ()
-
-  let import ~with_poset t l =
-    Iter.iter (add t) l;
-    refresh t;
+  let import t l =
     _info (fun m ->
         m "@[%i @ types to insert in the index @]"
-          (Iter.length @@ T.iterid t.trie));
-    if with_poset then regenerate_poset t
+          (Iter.length l));
+    Iter.iter (add t) l
 
   (** Iterators *)
 
   let insert_ids ~to_type t it k =
     it (fun elt ->
         let ty = to_type elt in
-        let ids = Type.HMap.find t.index_by_type ty in
-        ID.Set.iter (fun id -> k (id, elt)) ids
+        let elts, _ = Type.HMap.find t.index_by_type ty in
+        Elt.Set.iter (fun id -> k (id, elt)) elts
       )
 
   let filter_with_unification env ty it =
     Iter.filter_map
-      (fun ty' -> Acic.unify env ty ty' |> CCOption.map @@ CCPair.make ty')
+      (fun ty' ->
+         Acic.unify env ty ty'
+         |> CCOption.map @@ CCPair.make ty')
       it
 
   let iter t : iter =
@@ -87,7 +80,7 @@ module Make (Elt : Set.OrderedType) = struct
     |> insert_ids t ~to_type:Fun.id
 
   let iter_compatible t ty : iter =
-    let _range, it = T.iter_compatible ty t.trie in
+    let it = T.search ty t.trie in
     it
     |> insert_ids t ~to_type:Fun.id
 
@@ -97,21 +90,19 @@ module Make (Elt : Set.OrderedType) = struct
     |> insert_ids t ~to_type:fst
 
   let find_with_trie t env ty : iter_with_unifier =
-    let _range, it = T.iter_compatible ty t.trie in
+    let it = T.search ty t.trie in
     it
     |> filter_with_unification env ty
     |> insert_ids t ~to_type:fst
 
   let find t env ty : iter_with_unifier =
-    let range, it = T.iter_compatible ty t.trie in
-    _info (fun m -> m "%a@." TypeId.Range.pp range);
-    let unifs = match t.poset with
-      | None -> filter_with_unification env ty it
-      | Some poset -> 
-        (* Poset.xdot t.poset ~range; *)
-        Poset.check poset env ~query:ty ~range
-    in
-    insert_ids t ~to_type:fst unifs
+    match t.poset with
+    | None ->
+      find_with_trie t env ty
+    | Some poset -> 
+      let range = T.checker ty t.trie in
+      Poset.check poset env ~query:ty ~range
+      |> insert_ids t ~to_type:fst
 
   let pp_metrics fmt t =
     Fmt.pf fmt
