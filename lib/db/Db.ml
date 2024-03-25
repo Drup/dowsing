@@ -14,7 +14,7 @@ type t = {
 
 let create ~with_poset env entries =
   let content = Content.create () in
-  let idx = DefaultIndex.create env in
+  let idx = DefaultIndex.create ~with_poset env in
   Iter.iter (fun entry -> 
       let _ = Content.add content entry in
       ()
@@ -23,7 +23,7 @@ let create ~with_poset env entries =
     Content.iteri content
     |> Iter.map (fun (id, entry) -> id, entry.Entry.ty)
   in
-  DefaultIndex.import ~with_poset idx type_column;
+  DefaultIndex.import idx type_column;
   { idx; content}
 
 let find ?pkgs t env ty =
