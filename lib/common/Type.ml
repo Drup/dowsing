@@ -110,6 +110,7 @@ module rec Base : sig
     | Arrow of NSet.t * t
     (** Represents the types of the form [(a₁,...,aₙ) -> r] *)
     | Tuple of NSet.t
+    (** Represents tuples [(a₁*...*aₙ)] *)
     | Other of Int.t
 
   val kind : t -> Kind.t
