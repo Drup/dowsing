@@ -11,6 +11,7 @@ end
 include M
 module Set = CCSet.Make (M)
 module Map = CCMap.Make (M)
+module Tbl = CCHashtbl.Make(M)
 
 let mk id ty = { id; ty }
 let ty t = t.ty
@@ -18,7 +19,11 @@ let ty t = t.ty
 module Range = struct
   include Diet.Int
 
-  let singleton start stop = add (Interval.make start stop) empty
+  let singleton elt = add (Interval.make elt (elt+1) ) empty
+      
+  let of_set set =
+    Set.fold (fun x rg -> add (Interval.make x.id (x.id+1)) rg) set empty
+
   let pp_range fmt t = Fmt.pf fmt "[%i-%i]" (Interval.x t) (Interval.y t)
   let pp = Fmt.(iter ~sep:nop) iter pp_range
 end
