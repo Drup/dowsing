@@ -129,10 +129,6 @@ module Changes = struct
     mutable upper_bounds : TypeId.Set.t;
   }
 
-  type t =
-    | Add_to_class of TypeId.t * TypeId.t
-    | Add_as_new_class of handle_edges
-
   let empty () =
     {
       upper_bounds = TypeId.Set.empty;
@@ -172,37 +168,36 @@ module Changes = struct
         in
         ch.remove_edges <- Edge_set.add edge ch.remove_edges
 
-  let apply poset changes vertex_0 =
-    match changes with
-    | Add_to_class (ty, repr) ->
-        poset.classes <- add_to_class ty repr poset.classes
-    | Add_as_new_class ch ->
-        G.add_vertex poset.graph vertex_0;
-        Edge_set.iter
-          (fun edge ->
-            debug (fun m -> m "Remove Edge %a @," pp_edge edge);
-            G.remove_edge_e poset.graph edge)
-          ch.remove_edges;
-        TypeId.Set.iter
-          (fun dst ->
-            let edge = G.E.create vertex_0 () dst in
-            debug (fun m -> m "Add Edge %a @," pp_edge edge);
-            poset.tops <- TypeId.Map.remove dst poset.tops;
-            G.add_edge_e poset.graph edge)
-          ch.lower_bounds;
-        TypeId.Set.iter
-          (fun src ->
-            let edge = G.E.create src () vertex_0 in
-            debug (fun m -> m "Add Edge %a @," pp_edge edge);
-            poset.bottoms <- TypeId.Set.remove src poset.bottoms;
-            G.add_edge_e poset.graph edge)
-          ch.upper_bounds;
-        if TypeId.Set.is_empty ch.upper_bounds then
-          poset.tops <-
-            TypeId.Map.add vertex_0 { is_only_top = false } poset.tops;
-        if TypeId.Set.is_empty ch.lower_bounds then
-          poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
-        ()
+  let add_to_class poset ty repr =
+    poset.classes <- add_to_class ty repr poset.classes
+
+  let add_new_class poset vertex_0 ch =
+    G.add_vertex poset.graph vertex_0;
+    Edge_set.iter
+      (fun edge ->
+         debug (fun m -> m "Remove Edge %a @," pp_edge edge);
+         G.remove_edge_e poset.graph edge)
+      ch.remove_edges;
+    TypeId.Set.iter
+      (fun dst ->
+         let edge = G.E.create vertex_0 () dst in
+         debug (fun m -> m "Add Edge %a @," pp_edge edge);
+         poset.tops <- TypeId.Map.remove dst poset.tops;
+         G.add_edge_e poset.graph edge)
+      ch.lower_bounds;
+    TypeId.Set.iter
+      (fun src ->
+         let edge = G.E.create src () vertex_0 in
+         debug (fun m -> m "Add Edge %a @," pp_edge edge);
+         poset.bottoms <- TypeId.Set.remove src poset.bottoms;
+         G.add_edge_e poset.graph edge)
+      ch.upper_bounds;
+    if TypeId.Set.is_empty ch.upper_bounds then
+      poset.tops <-
+        TypeId.Map.add vertex_0 { is_only_top = false } poset.tops;
+    if TypeId.Set.is_empty ch.lower_bounds then
+      poset.bottoms <- TypeId.Set.add vertex_0 poset.bottoms;
+    ()
 end
 
 (** Annotate tops which are the only tops in a CC *)
@@ -229,107 +224,109 @@ let annotate_top poset =
 exception Same_matching_class of G.V.t * G.V.t
 exception Same_type of G.V.t
 
-let add ({ env; graph; tops; bottoms; _ } as poset) vertex_0 =
-  let ty_0 = TypeId.ty vertex_0 in
+let add ({ env; graph; tops; bottoms; _ } as poset) tyid_0 ~range =
+  let ty_0 = TypeId.ty tyid_0 in
   let ch = Changes.empty () in
   let already_seen_0 = TypeId.Set.empty in
   let to_visit : (_ * TypeId.t option * TypeId.t) Queue.t = Queue.create () in
   let bigger = ref 0 and smaller = ref 0 and uncomparable = ref 0 in
-  let compare = MatchFeat.compare in
+  let compare tyid =
+    if TypeId.check tyid range then
+      MatchFeat.compare env (TypeId.ty tyid) ty_0
+    else
+      Uncomparable
+  in
   let rec visit_down already_seen ~prev ~current =
     debug (fun m ->
         m "Visiting Edge down %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊤") pp_vertex)
           prev pp_vertex current);
-    let comp = compare env (TypeId.ty current) ty_0 in
-    debug (fun m -> m "%a@," Acic.pp_ord comp);
-    match comp with
+    match compare current with
     | Matching_equiv ->
-        if Type.equal ty_0 (TypeId.ty current) then raise (Same_type vertex_0)
-        else raise (Same_matching_class (vertex_0, current))
+      if Type.equal ty_0 (TypeId.ty current) then raise (Same_type tyid_0)
+      else raise (Same_matching_class (tyid_0, current))
     | Bigger ->
-        incr bigger;
-        let l = G.succ graph current in
-        List.iter
-          (fun next -> Queue.push (`down, Some current, next) to_visit)
-          l;
-        Changes.add_upper_bound ch poset.graph current;
-        visit_next already_seen
+      incr bigger;
+      let l = G.succ graph current in
+      List.iter
+        (fun next -> Queue.push (`down, Some current, next) to_visit)
+        l;
+      Changes.add_upper_bound ch poset.graph current;
+      visit_next already_seen
     | Uncomparable ->
-        incr uncomparable;
-        visit_next already_seen
+      incr uncomparable;
+      visit_next already_seen
     | Smaller ->
-        incr smaller;
-        Changes.remove_edge ch `down (prev, current);
-        let already_seen = TypeId.Set.remove current already_seen in
-        visit_next already_seen
+      incr smaller;
+      Changes.remove_edge ch `down (prev, current);
+      let already_seen = TypeId.Set.remove current already_seen in
+      visit_next already_seen
   and visit_up already_seen ~prev ~current =
     debug (fun m ->
         m "Visiting Edge up %a → %a@,"
           (Fmt.option ~none:(Fmt.any "⊥") pp_vertex)
           prev pp_vertex current);
-    let comp = compare env (TypeId.ty current) ty_0 in
-    debug (fun m -> m "%a@," Acic.pp_ord comp);
-    match comp with
-    | Matching_equiv -> raise (Same_matching_class (vertex_0, current))
+    match compare current with
+    | Matching_equiv -> raise (Same_matching_class (tyid_0, current))
     | Bigger ->
-        incr bigger;
-        visit_next already_seen
+      incr bigger;
+      visit_next already_seen
     | Uncomparable ->
-        incr uncomparable;
-        visit_next already_seen
+      incr uncomparable;
+      visit_next already_seen
     | Smaller ->
-        incr smaller;
-        let l = G.pred graph current in
-        List.iter (fun next -> Queue.push (`up, Some current, next) to_visit) l;
-        Changes.add_lower_bound ch poset.graph current;
-        visit_next already_seen
+      incr smaller;
+      let l = G.pred graph current in
+      List.iter (fun next -> Queue.push (`up, Some current, next) to_visit) l;
+      Changes.add_lower_bound ch poset.graph current;
+      visit_next already_seen
   and visit_next already_seen =
     match Queue.take_opt to_visit with
     | None -> already_seen
     | Some (dir, prev, current) ->
-        if TypeId.Set.mem current already_seen then (
-          let pp_dir fmt d =
-            match d with `up -> Fmt.pf fmt "up" | `down -> Fmt.pf fmt "down"
-          in
-          debug (fun m ->
-              m "Tried to visit an edge %a. Already visited node %a@," pp_dir
-                dir TypeId.pp current);
-          visit_next already_seen)
-        else
-          let next = match dir with `down -> visit_down | `up -> visit_up in
-          let already_seen = TypeId.Set.add current already_seen in
-          next already_seen ~prev ~current
-  in
-  try
-    debug (fun m -> m "Adding type %a in the Poset" TypeId.pp vertex_0);
-    let changes =
-      try
-        debug (fun m -> m "@[<v 2>Node %a@." pp_vertex vertex_0);
-        TypeId.Map.iter (fun v _ -> Queue.push (`down, None, v) to_visit) tops;
-        let already_seen_0 = visit_next already_seen_0 in
-        TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
-        let _already_seen_0 = visit_next already_seen_0 in
-        Changes.Add_as_new_class ch
-      with Same_matching_class (ty, repr) ->
+      if TypeId.Set.mem current already_seen then (
+        let pp_dir fmt d =
+          match d with `up -> Fmt.pf fmt "up" | `down -> Fmt.pf fmt "down"
+        in
         debug (fun m ->
-            m "Found a type of same matching equivalence class : %a!@."
-              pp_vertex repr);
-        Changes.Add_to_class (ty, repr)
-    in
-    Changes.apply poset changes vertex_0;
-    (* xdot poset; *)
-    debug (fun m -> m "@]");
-    debug (fun m ->
-        m "@[New tops: %a@]@.@[New bots: %a @]@."
-          (TypeId.Map.pp TypeId.pp Fmt.nop)
-          poset.tops (TypeId.Set.pp TypeId.pp) poset.bottoms);
-    debug (fun m ->
-        m "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@."
-          !bigger !uncomparable !smaller);
-    ()
-  with Same_type v ->
-    Format.eprintf "Type %a already present in Poset @." TypeId.pp v
+            m "Tried to visit an edge %a. Already visited node %a@," pp_dir
+              dir TypeId.pp current);
+        visit_next already_seen)
+      else
+        let already_seen = TypeId.Set.add current already_seen in
+        match dir with
+        | `down -> visit_down already_seen ~prev ~current
+        | `up -> visit_up already_seen ~prev ~current
+  in
+  debug (fun m -> m "Adding type %a in the Poset" TypeId.pp tyid_0);
+  begin try
+      debug (fun m -> m "@[<v 2>Node %a@." pp_vertex tyid_0);
+      TypeId.Map.iter (fun v _ -> Queue.push (`down, None, v) to_visit) tops;
+      let already_seen_0 = visit_next already_seen_0 in
+      TypeId.Set.iter (fun v -> Queue.push (`up, None, v) to_visit) bottoms;
+      let _already_seen_0 = visit_next already_seen_0 in
+      Changes.add_new_class poset tyid_0 ch
+    with
+    | Same_matching_class (ty, repr) ->
+      debug (fun m ->
+          m "Found a type of same matching equivalence class : %a!@."
+            pp_vertex repr);
+      Changes.add_to_class poset ty repr;
+    | Same_type v ->
+      debug (fun m -> 
+          m "Type %a already present in Poset @." TypeId.pp v
+        );
+  end;
+  (* xdot poset; *)
+  debug (fun m -> m "@]");
+  debug (fun m ->
+      m "@[New tops: %a@]@.@[New bots: %a @]@."
+        (TypeId.Map.pp TypeId.pp Fmt.nop)
+        poset.tops (TypeId.Set.pp TypeId.pp) poset.bottoms);
+  debug (fun m ->
+      m "@[<v 2>Explored:@ %i bigger@ %i uncomparable@ %i smaller@]@.@."
+        !bigger !uncomparable !smaller);
+  ()
 
 (*Operating on poset*)
 
@@ -354,82 +351,89 @@ let fold_descendants t f elt z =
   in
   aux elt z
 
-module Tmap = TypeId.Map
+exception Incorrect_class of TypeId.t * TypeId.t
 
-exception Uncorrect_class of TypeId.t * TypeId.t
-
-let check poset env ~query:ty ~range:maybe_unif_from_trie =
-  let unifs0 = Tmap.empty in
-  let maybe_unifiable maybe_unif node = TypeId.check node maybe_unif in
-  let update_no_unif node maybe_unif =
-    if not @@ TypeId.check node maybe_unif then maybe_unif
+module MemoTbl = struct
+  type state = Maybe | Unifiable of Subst.t | Not_unifiable
+  type t = { tbl : state TypeId.Tbl.t ; rg : TypeId.Range.t }
+  let init poset =
+    let tbl = TypeId.Tbl.create (size poset) in
+    tbl
+  let get tbl tyid =
+    TypeId.Tbl.get_or tbl tyid ~default:Maybe
+  let mark_unif tbl tyid sub = 
+    TypeId.Tbl.add tbl tyid (Unifiable sub)
+  let mark_not_unif tbl tyid = 
+    TypeId.Tbl.add tbl tyid Not_unifiable
+  let iter_unifiable tbl =
+    TypeId.Tbl.to_iter tbl
+    |> Iter.filter_map (function (k, Unifiable sub) -> Some (k,sub) | _ -> None)
+end
+  
+let check poset env ~query:ty ~range =
+  let memotbl = MemoTbl.init poset in
+  let check tyid =
+    if TypeId.check tyid range then
+      MemoTbl.get memotbl tyid
     else
-      TypeId.Range.remove
-        (TypeId.Range.Interval.make node.TypeId.id node.TypeId.id)
-        maybe_unif
+      Not_unifiable
   in
-  let add_unifs_class ty_query node vm unifs =
-    let unifs = Tmap.add node vm unifs in
+  let mark_unif_class ty_query node subst =
+    MemoTbl.mark_unif memotbl node subst;
     try
       match TypeId.Map.get node poset.classes with
       | Some set ->
-          let get_unif ty_class =
-            match Acic.unify env ty_query (TypeId.ty ty_class) with
-            | Some vm -> vm
-            | None -> raise (Uncorrect_class (ty_class, node))
-          in
-
-          TypeId.Set.fold
-            (fun ty_class unifs ->
-              let unif = get_unif ty_class in
-              Tmap.add ty_class unif unifs)
-            set unifs
-      | None -> unifs
-    with Uncorrect_class (ty_class, repr) ->
+        let get_unif ty_class =
+          match Acic.unify env ty_query (TypeId.ty ty_class) with
+          | Some vm -> vm
+          | None -> raise (Incorrect_class (ty_class, node))
+        in
+        TypeId.Set.iter
+          (fun ty_class ->
+             let unif = get_unif ty_class in
+             MemoTbl.mark_unif memotbl ty_class unif)
+          set
+      | None -> ()
+    with Incorrect_class (ty_class, repr) ->
       debug (fun m ->
           m
             "Type %a in the Poset was not in the correct matching class of \
              type %a"
-            TypeId.pp ty_class TypeId.pp repr);
-      unifs
+            TypeId.pp ty_class TypeId.pp repr)
   in
   let to_visit = Queue.create () in
-  let rec visit_next unifs maybe_unif =
-    if Queue.is_empty to_visit then unifs
+  let rec visit_next () =
+    if Queue.is_empty to_visit then ()
     else
       let node = Queue.pop to_visit in
       debug (fun m -> m "Visiting Node %a @," pp_vertex node);
       (* xdot poset ~range:!range ~unifs:!unifs; *)
-      if Tmap.mem node unifs then
-        (visit_next [@ocaml.tailcall]) unifs maybe_unif
-      else if not (maybe_unifiable maybe_unif_from_trie node) then
-        let maybe_unif =
-          fold_descendants poset.graph update_no_unif node maybe_unif
-        in
-        (visit_next [@ocaml.tailcall]) unifs maybe_unif
-      else if not (maybe_unifiable maybe_unif node) then
-        (visit_next [@ocaml.tailcall]) unifs maybe_unif
-      else
+      match check node with
+      | Unifiable _ ->
+        (visit_next [@ocaml.tailcall]) ()
+      | Not_unifiable ->
+        iter_descendants
+          poset.graph node (MemoTbl.mark_not_unif memotbl) ;
+        (visit_next [@ocaml.tailcall]) ()
+      | Maybe ->
         match Acic.unify env ty node.ty with
         | Some vm ->
-            let unifs = add_unifs_class ty node vm unifs in
-            G.iter_succ (fun next -> Queue.push next to_visit) poset.graph node;
-            (visit_next [@ocaml.tailcall]) unifs maybe_unif
+          mark_unif_class ty node vm;
+          G.iter_succ (fun next -> Queue.push next to_visit) poset.graph node;
+          (visit_next [@ocaml.tailcall]) ()
         | None ->
-            let range =
-              fold_selected_descendants poset.graph
-                (maybe_unifiable maybe_unif)
-                update_no_unif node maybe_unif
-            in
-            (visit_next [@ocaml.tailcall]) unifs range
+          iter_descendants
+            poset.graph node (MemoTbl.mark_not_unif memotbl) ;
+          (visit_next [@ocaml.tailcall]) ()
   in
   TypeId.Map.iter
     (fun top { is_only_top } ->
-      if is_only_top && not (maybe_unifiable maybe_unif_from_trie top) then ()
-      else Queue.push top to_visit)
+       if is_only_top && not (TypeId.check top range) then ()
+       else Queue.push top to_visit)
     poset.tops;
-  let unifs = visit_next unifs0 maybe_unif_from_trie in
-  Tmap.to_iter unifs |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
+  visit_next ();
+  MemoTbl.iter_unifiable memotbl
+  |> Iter.map (fun (ty_id, sub) -> (ty_id.TypeId.ty, sub))
 
 let copy t =
   {
