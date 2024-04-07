@@ -44,9 +44,8 @@ module Make (Elt : Set.OrderedType) = struct
       begin match t.poset with
         | None -> ()
         | Some poset ->
-          (* TODO: Use the content of the trie to help Poset.add *)
-          (* let _rg = T.checker ty t.trie in *)
-          Poset.add poset tyid
+          let range = T.checker ty t.trie in
+          Poset.add poset tyid ~range
       end
     | Some (entries, tyid) ->
       let entries = Elt.Set.add entry entries in
