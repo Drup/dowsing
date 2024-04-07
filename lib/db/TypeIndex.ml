@@ -23,12 +23,11 @@ module Make (Elt : Set.OrderedType) = struct
   type iter = (Elt.t * Type.t) Iter.t
   type iter_with_unifier = (Elt.t * (Type.t * Subst.t)) Iter.t
 
-  let create ~with_poset _env = {
-    hcons = Type.Hashcons.make ();
-    trie = T.empty;
-    index_by_type = Type.HMap.create 17;
-    poset = if with_poset then Some (Poset.init _env) else None;
-  }
+  let create ~with_poset env =
+    let index_by_type = Type.HMap.create 17 in
+    let trie = T.empty in
+    let poset = if with_poset then Some (Poset.init env) else None in
+    { hcons = env.hcons; trie ; index_by_type ; poset }
 
   let size t = Type.HMap.length t.index_by_type
 

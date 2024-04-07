@@ -122,11 +122,6 @@ let init env =
 let size poset = G.nb_vertex poset.graph
 let connectivity poset = G.nb_edges poset.graph
 
-let clear poset =
-  poset.tops <- TypeId.Map.empty;
-  poset.bottoms <- TypeId.Set.empty;
-  G.clear poset.graph
-
 module Changes = struct
   type handle_edges = {
     mutable remove_edges : Edge_set.t;
