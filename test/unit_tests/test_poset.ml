@@ -14,8 +14,9 @@ let make_checker s =
     let r = ref 0 in
     fun s ->
       let n = TypeId.mk (CCRef.get_then_incr r) (Type.of_string e s) in
-      P.add x0 n;
       type_list := n :: !type_list;
+      P.add x0 n
+        ~range:TypeId.Range.(add (Interval.make 0 !r) empty);
       n
   in
   let check_vertex x elt () =
