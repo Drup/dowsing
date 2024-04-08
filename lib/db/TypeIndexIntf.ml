@@ -9,7 +9,7 @@ module type S = sig
   type t = private {
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : (Elt.Set.t * TypeId.t) Type.HMap.t;
+    index_by_type : (Elt.Set.t * TypeId.t * Automorphism.all) Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
