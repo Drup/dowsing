@@ -29,17 +29,13 @@ module Const : S = struct
 
   let compare = CSet.compare
 
-  let subset ~small:t1 t2 =
-    let check_mem b cnt ty = b && cnt <= CSet.count t2 ty in
-    CSet.fold t1 true check_mem
-
   (*compatible t1 t2 returns false if t1 cannot match with t2 in the sense t1 <= t2*)
   let compatible t1 t2 : Acic.hint =
-    match subset ~small:t1 t2, subset t1 ~small:t2 with
+    match CSet.contains t2 t1, CSet.contains t1 t2 with
     | true, true -> Unsure
-    | false, false -> Uncompatible
-    | true, false -> Not_smaller
-    | false, true -> Not_bigger
+    | false, false -> Incompatible
+    | true, false -> Maybe_bigger
+    | false, true -> Maybe_smaller
 end
 
 let all = [ (module Const : S) ]
@@ -61,7 +57,7 @@ let compatible (t1 : Type.t) (t2 : Type.t) =
   CCList.fold_left check_feat Unsure feats
 
 let compare env t1 t2 =
-  if not (Feature.compatible t1 t2) then Acic.Uncomparable
+  if not (Feature.compatible t1 t2) then Acic.Incomparable
   else
     let hint = compatible t1 t2 in
     Acic.compare ~hint env t1 t2
