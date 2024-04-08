@@ -234,7 +234,7 @@ let add ({ env; graph; tops; bottoms; _ } as poset) tyid_0 ~range =
     if TypeId.check tyid range then
       MatchFeat.compare env (TypeId.ty tyid) ty_0
     else
-      Uncomparable
+      Incomparable
   in
   let rec visit_down already_seen ~prev ~current =
     debug (fun m ->
@@ -253,7 +253,7 @@ let add ({ env; graph; tops; bottoms; _ } as poset) tyid_0 ~range =
         l;
       Changes.add_upper_bound ch poset.graph current;
       visit_next already_seen
-    | Uncomparable ->
+    | Incomparable ->
       incr uncomparable;
       visit_next already_seen
     | Smaller ->
@@ -271,7 +271,7 @@ let add ({ env; graph; tops; bottoms; _ } as poset) tyid_0 ~range =
     | Bigger ->
       incr bigger;
       visit_next already_seen
-    | Uncomparable ->
+    | Incomparable ->
       incr uncomparable;
       visit_next already_seen
     | Smaller ->
