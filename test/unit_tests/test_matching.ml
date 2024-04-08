@@ -41,7 +41,7 @@ let matching =
   CCList.map (make_test Matching_equiv) equal_tests
   @ CCList.map (make_test Smaller) smaller_tests
   @ CCList.map (make_test Bigger) bigger_tests
-  @ CCList.map (make_test Uncomparable) uncomparable_tests
+  @ CCList.map (make_test Incomparable) uncomparable_tests
 
 let () = add_tests "Acic.compare" matching
 
@@ -51,20 +51,22 @@ let unsure =
     ("int * bool -> int", "bool -> int -> int");
   ]
 
-let not_bigger =
+let maybe_smaller =
   [
     ("int * int -> int -> float", "(int -> int) -> float");
     ("int * bool -> int", "'a -> int");
   ]
 
-let not_smaller =
+let maybe_bigger =
   [
     ("(int -> int) -> float", "int * int * 'a -> float * int");
     ("'a -> 'b", "float list");
+    ("'b -> 'a", "int -> 'a");
+    ("int -> 'a", "float * int -> 'a");
     ("'a -> 'b", "int * float list -> 'a");
   ]
 
-let uncompatible = [ ("float", "int"); ("'a -> 'a * int list", "float list") ]
+let incompatible = [ ("float", "int"); ("'a -> 'a * int list", "float list") ]
 let comp' = Alcotest.testable Acic.pp_hint ( = )
 
 let match_feat =
@@ -80,9 +82,9 @@ let match_feat =
     Alcotest.test_case (CCInt.to_string !test_cnt) `Quick test
   in
   CCList.map (make_test Unsure) unsure
-  @ CCList.map (make_test Uncompatible) uncompatible
-  @ CCList.map (make_test Not_bigger) not_bigger
-  @ CCList.map (make_test Not_smaller) not_smaller
+  @ CCList.map (make_test Incompatible) incompatible
+  @ CCList.map (make_test Maybe_smaller) maybe_smaller
+  @ CCList.map (make_test Maybe_bigger) maybe_bigger
 
 let () = add_tests "MatchFeat.compatible" match_feat
 
