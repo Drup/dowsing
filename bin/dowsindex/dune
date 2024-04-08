@@ -6,5 +6,5 @@
             utils common db
             dowsing_odig
             dowsing_odoc
-            trace trace.core trace-tef)
+            trace.core trace-tef)
  (flags (:standard -open Utils -open Common)))

@@ -10,7 +10,7 @@ let rec apply (env : Type.Env.t) t =
     | Var var -> (
         match Variable.Map.get var t with
         | None -> ty
-        | Some ty -> substitute ty)
+        | Some ty -> ty)
     | Constr (lid, params) ->
         Type.constr env lid @@ CCArray.map substitute params
     | Arrow (params, ret) ->

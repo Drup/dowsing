@@ -16,7 +16,7 @@ module Make (Elt : Set.OrderedType) = struct
   type t = {
     hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : (Elt.Set.t * TypeId.t) Type.HMap.t;
+    index_by_type : (Elt.Set.t * TypeId.t * Automorphism.all) Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
@@ -39,7 +39,8 @@ module Make (Elt : Set.OrderedType) = struct
       let id = size t in
       let tyid = TypeId.mk id ty in
       let entries = Elt.Set.singleton entry in
-      Type.HMap.add t.index_by_type ty (entries, tyid);
+      let automorphisms = Automorphism.enumerate env ty in
+      Type.HMap.add t.index_by_type ty (entries, tyid, automorphisms);
       t.trie <- T.add tyid t.trie;
       begin match t.poset with
         | None -> ()
@@ -47,9 +48,9 @@ module Make (Elt : Set.OrderedType) = struct
           let range = T.checker ty t.trie in
           Poset.add poset tyid ~range
       end
-    | Some (entries, tyid) ->
+    | Some (entries, tyid, autos) ->
       let entries = Elt.Set.add entry entries in
-      Type.HMap.replace t.index_by_type ty (entries, tyid)
+      Type.HMap.replace t.index_by_type ty (entries, tyid, autos)
 
   let import t l =
     _info (fun m ->
@@ -59,39 +60,45 @@ module Make (Elt : Set.OrderedType) = struct
 
   (** Iterators *)
 
-  let insert_ids ~to_type t it k =
-    it (fun elt ->
-        let ty = to_type elt in
-        let elts, _ = Type.HMap.find t.index_by_type ty in
-        Elt.Set.iter (fun id -> k (id, elt)) elts
+  let insert_elts t it k = 
+    it (fun ty ->
+        let elts, _, _ = Type.HMap.find t.index_by_type ty in
+        k (elts, ty)
       )
 
-  let filter_with_unification env ty it =
-    Iter.filter_map
-      (fun ty' ->
-         Acic.unify env ty ty'
-         |> CCOption.map @@ CCPair.make ty')
-      it
+  let expand it k =
+    it (fun (elts, v) ->
+        Elt.Set.iter (fun elt -> k (elt, v)) elts
+      )
+
+  let filter_with_unification t env ty it k =
+    it (fun ty' ->
+        let elts, _, _autos = Type.HMap.find t.index_by_type ty in
+        match Acic.unify env ty ty' with
+        | None -> ()
+        | Some subst -> k (elts, (ty, subst)))
 
   let iter t : iter =
     T.iter t.trie
-    |> insert_ids t ~to_type:Fun.id
+    |> insert_elts t
+    |> expand
 
   let iter_compatible t ty : iter =
     let it = T.search ty t.trie in
     it
-    |> insert_ids t ~to_type:Fun.id
-
+    |> insert_elts t
+    |> expand
+    
   let find_exhaustive t env ty : iter_with_unifier =
     T.iter t.trie
-    |> filter_with_unification env ty
-    |> insert_ids t ~to_type:fst
+    |> filter_with_unification t env ty
+    |> expand
 
   let find_with_trie t env ty : iter_with_unifier =
     let it = T.search ty t.trie in
     it
-    |> filter_with_unification env ty
-    |> insert_ids t ~to_type:fst
+    |> filter_with_unification t env ty
+    |> expand
 
   let find t env ty : iter_with_unifier =
     match t.poset with
@@ -99,8 +106,8 @@ module Make (Elt : Set.OrderedType) = struct
       find_with_trie t env ty
     | Some poset -> 
       let range = T.checker ty t.trie in
-      Poset.check poset env ~query:ty ~range
-      |> insert_ids t ~to_type:fst
+      Poset.check poset t env ~query:ty ~range
+      |> expand
 
   let pp_metrics fmt t =
     Fmt.pf fmt

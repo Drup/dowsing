@@ -370,7 +370,7 @@ module MemoTbl = struct
     |> Iter.filter_map (function (k, Unifiable sub) -> Some (k,sub) | _ -> None)
 end
   
-let check poset env ~query:ty ~range =
+let check poset env tbl ~query:ty ~range =
   let memotbl = MemoTbl.init poset in
   let check tyid =
     if TypeId.check tyid range then
