@@ -430,6 +430,8 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   let tyenv = Type.Env.restart tyenv in
   let t1 = Type.refresh_variables tyenv t1 in
   let t2 = Type.refresh_variables tyenv t2 in
+  Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp t1);
+  Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp t2);
   let orig_vars =
     Variable.Set.(
       union (of_iter @@ Type.iter_vars t1) (of_iter @@ Type.iter_vars t2))

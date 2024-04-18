@@ -22,7 +22,7 @@ module Shape = struct
 
         (* TODO: check if those 3 cases are meaningful. Other should be
            considered as a constant but is not in Pure yet.*)
-        | E (_, (Var _ | Tuple _ | Other _)) -> failwith "Wrong assumption on pure AC system."
+        | E (v, (Var _ | Tuple _ | Other _)) -> Logs.warn (fun m -> m "Wrong assumption on pure AC system."); Var v
         | E (_, FrozenVar fv) -> Const (Pure.FrozenVar fv)
         | E (_, Constr (c, [||])) -> Const (Constant c)
         | E (v, ((Constr _ | Arrow _) as t)) ->
