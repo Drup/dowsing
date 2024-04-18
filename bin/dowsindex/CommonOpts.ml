@@ -24,7 +24,7 @@ let copts =
   (*     & info [ "features" ] ~docs ~docv ~doc) *)
   (* in *)
   let copts debug =
-    Logs.set_level @@ Some (if debug then Logs.Debug else Logs.Info);
+    Logs.set_level @@ Some (if debug then Logs.Debug else Logs.Error);
     (* let idx = Db.make feats in *)
     { debug; }
   in
