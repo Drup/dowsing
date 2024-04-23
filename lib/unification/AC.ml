@@ -481,8 +481,9 @@ let rec exists f s k stop : bool =
 let solve_systems env (var_system, const_systems, kind_systems) =
   Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp var_system);
   Logs.debug (fun m -> m "@[Const system: %a@]" Fmt.(vbox @@ list ~sep:cut (pair Pure.pp System.pp)) const_systems);
+  Logs.debug (fun m -> m "@[Kind system: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) kind_systems);
   let cut_const solution =
-    solution.(1) > 1
+    solution.(0) > 1
   in
 
   let const_sols = List.map (fun (p, system) ->
