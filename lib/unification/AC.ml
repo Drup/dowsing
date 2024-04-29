@@ -75,8 +75,11 @@ end = struct
     system : int array array ;
   }
 
-  let pp ppf {system; _} =
-    Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) ppf system
+  let pp ppf {system; assoc_pure; nb_atom; first_var} =
+    Format.fprintf ppf "@[<v>{nb_atom: %i@ fist_var: %i@ assoc: %a@ system: %a}@]"
+    nb_atom first_var
+    Fmt.(vbox (array ~sep:(any ",") Pure.pp)) assoc_pure
+    Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) system
 
   (** For each variable, look at the represntative,
       if the representative is a constant or a variable, replace the variable by it
@@ -282,7 +285,7 @@ end = struct
     let f k col = Bitv.mem k const_vec || Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 @@ Array.length bitvars
 
-  let small_enough first_var bitvars bitset =
+  let small_enough_kind first_var bitvars bitset =
     let f _ col = Bitv.(is_singleton_or_empty (bitset && col)) in
     for_all2_range f bitvars 0 first_var
 
@@ -295,20 +298,21 @@ end = struct
 
   let combine_kind_sols kind_sols =
     CCList.map_product_l (fun (nb_kinds, symbols, solutions, bitvars, assoc_pure, sols) ->
-      List.map (fun x -> (nb_kinds, symbols, solutions, bitvars, assoc_pure, x)) (Iter.to_list sols))
+      List.map (fun x -> (nb_kinds, symbols, solutions, bitvars, assoc_pure, x))
+      (Iter.to_list sols))
     kind_sols
 
   let iterate_kind_subsets len system bitvars =
     Hullot.Default.iter ~len
-      ~small:(small_enough system.System.first_var bitvars)
+      ~small:(small_enough_kind system.System.first_var bitvars)
       ~large:(large_enough_kind system.first_var bitvars)
 
-  let prod_iter i1 i2 =
-    Iter.flat_map (fun x -> Iter.map (fun y -> (x,y)) i2) i1
+  let prod_iter l1 l2 f =
+    List.iter (fun x -> List.iter (fun y -> f (x, y)) l2) l1
 
   let iterate_subsets nb_columns const_sols kind_combined_sols len bitvars =
-    let consts_parts = combine_const_sols const_sols |> Iter.of_list in
-    let kinds_parts = combine_kind_sols kind_combined_sols |> Iter.of_list in
+    let consts_parts = combine_const_sols const_sols in
+    let kinds_parts = combine_kind_sols kind_combined_sols in
     let fixed_parts = prod_iter consts_parts kinds_parts in
     Iter.flat_map (fun (consts_part, kinds_part) ->
       let const_vec =
@@ -433,11 +437,13 @@ end = struct
            k (key, pure_term))
         unifiers
 
-  let get_kind_solutions env (({System. nb_atom; first_var; assoc_pure; _} as system), solutions) =
+  let get_kind_solutions env
+      (({System. nb_atom; first_var; assoc_pure; _} as system), solutions) =
     let stack_solution = CCVector.create () in
     let bitvars = extract_solutions stack_solution nb_atom solutions in
     let symbols = Array.init (CCVector.length stack_solution) (fun _ -> Pure.var (Env.gen env)) in
-    first_var, symbols, stack_solution, bitvars, assoc_pure, iterate_kind_subsets nb_atom system bitvars
+    let iter_sol = iterate_kind_subsets (Array.length symbols) system bitvars in
+    first_var, symbols, stack_solution, bitvars, assoc_pure, iter_sol
 
   (** Combine everything *)
   let get_solutions env
@@ -475,6 +481,8 @@ let rec exists f s k stop : bool =
   if k = stop then false
   else f (System.get_solution s k) || exists f s (k+1) stop
 
+(* TODO: If a system have no solution, then there is no solution to the problem and
+ we could cut early. *)
 (** Take a collection of diophantine equations corresponding to the projection
     of the original problem on to each constant and the homogenous systems,
     solve them and combine them into solution to the original problems. *)
@@ -511,7 +519,8 @@ let solve_systems env (var_system, const_systems, kind_systems) =
     ( system,
       System.solve (cut_kind system.first_var) system
         |> Iter.filter (fun s ->
-            exists (fun x -> x > 0) s 0 system.first_var))
+            exists (fun x -> x > 0) s 0 system.first_var)
+        )
     ) kind_systems
   in
   Logs.debug (fun m -> m "@[Const solution: %a@]" Fmt.Dump.(list @@ pair Pure.pp (list System.pp_dioph)) const_sols);
