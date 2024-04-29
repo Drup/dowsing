@@ -8,6 +8,7 @@ let add_tests name tests =
 let pos_tests = [
   (* com-2 *)
   "a * b", "b * a" ;
+  "int * float", "float * int";
   "a * (b * c)", "(c * b) * a" ;
   "(a * b) f", "(b * a) f" ;
   "a * b -> c", "b * a -> c" ;
@@ -50,6 +51,8 @@ let pos_tests = [
   "'a -> 'b f -> a", "'x g * 'y f -> 'x" ;
   "'a -> 'a -> a", "'x * a -> 'x" ;
   "'a * int", "bool * bool * 'b";
+  "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
+  "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
   "int list -> 'a", "int list -> int";
 ]
@@ -74,6 +77,8 @@ let neg_tests = [
   "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   "'a -> 'a -> a", "'x * b -> 'x" ;
   "'a * float * 'a", "int * 'a * 'a" ;
+  "int * int * int", "int * int";
+  "int * int * int * 'a", "int * int";
   (* require occur check *)
   "'X -> 'X", "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t" ;
   "'a -> 'a list -> 'a", "'x -> 'x -> 'x" ;
@@ -107,7 +112,7 @@ let () = add_tests "Acic.unifiable" tests
 (* do test *)
 
 let () = Alcotest.run
-    ~quick_only:true (* Change for slow tests *)
+    ~quick_only:false (* Change for slow tests *)
     ~argv:Sys.argv
     "unification"
     !all_tests
