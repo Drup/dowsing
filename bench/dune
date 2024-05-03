@@ -11,3 +11,10 @@
  (libraries common acic db benchmark)
  (flags
   (:standard -open Common)))
+
+(executable
+  (name bench)
+  (modules bench)
+  (libraries common acic bechamel bechamel-notty bechamel-js notty.unix cmdliner)
+  (flags
+    (:standard -open Common)))

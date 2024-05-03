@@ -262,7 +262,7 @@ end = struct
   (** In the following, [i] is always the row/solution index and [j] is always
       the column/variable index. *)
 
-  module Trace = Trace_core
+  module Trace = Utils.Tracing
 
   type t = (Variable.t * ACTerm.t) Iter.t
 
@@ -460,9 +460,9 @@ end = struct
     let subsets = iterate_subsets nb_atom const_sols kind_combined_sols
                     (Array.length symbols) bitvars in (* TODO need change here *)
     let n_solutions = ref 0 in
-    Iter.map
+    Trace.wrap_ac_sol (Iter.map
       (unifier_of_subset assoc_pure stack_solutions symbols)
-      subsets (fun x -> incr n_solutions; k x);
+      subsets) (fun x -> incr n_solutions; k x);
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
 

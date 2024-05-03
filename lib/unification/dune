@@ -2,4 +2,4 @@
  (name acic)
  (libraries logs zarith common diet trace)
  (flags
-  (:standard -open Common)))
+  (:standard -open Common -open Utils)))
