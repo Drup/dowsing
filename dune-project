@@ -23,6 +23,9 @@
   trace-tef
   (alcotest :with-test)
   (benchmark :with-test)
+  (bechamel :with-test)
+  (bechamel-notty :with-test)
+  (bechamel-js :with-test)
 ))
  
 (package
