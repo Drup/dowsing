@@ -391,6 +391,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
            "Solve_arrow sub problem"
            ~data:(fun () -> [ ("case", `String desc) ])
            (try_with_solution env0 f ()))
+  |> Trace.wrap_arrow_sol
 
 and try_with_solution : type a. _ -> (Env.t -> a -> return) -> a -> _ =
  fun env f sol k ->
