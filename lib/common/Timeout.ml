@@ -26,6 +26,7 @@ let with_timeout time f =
     | exception Timeout ->
         Logs.debug (fun m -> m "Timeout");
         Atomic.set state No_timeout;
+        Tracing.timeout ();
         Error ()
     | exception exn ->
         Atomic.set state No_timeout;

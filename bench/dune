@@ -13,8 +13,8 @@
   (:standard -open Common)))
 
 (executable
-  (name bench)
-  (modules bench)
+  (name unif)
+  (modules unif)
   (libraries common acic bechamel bechamel-notty bechamel-js notty.unix cmdliner)
   (flags
-    (:standard -open Common)))
+    (:standard -open Common -open Utils)))

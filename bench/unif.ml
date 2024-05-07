@@ -11,11 +11,12 @@ let unify t1 t2 =
 
 let _test = Test.make ~name:"Unify" (unify "a * int * string" "float * a")
 
-let unify_data =
+let unif_easy =
+  "easy",
   [|
-    ("a * b", "b * a");
-    ("(a * b) * c -> d", "a * (b * c) -> d");
+    ("(a * b) * c -> d", "a * (c * b) -> d");
     ("a * b -> c -> d", "a -> b -> c -> d");
+    ("'a * int * string", "float * 'a");
     ("'a -> 'a", "(x -> y) * x -> y");
     ( "'A * int list -> unit",
       "anchor * bitmap * bool * bool * color * color * color * color * color * \
@@ -24,29 +25,45 @@ let unify_data =
        -> 'a" );
   |]
 
-let unify =
-  Test.make_indexed ~name:"Unify"
-    ~args:CCList.(0 --^ Array.length unify_data)
+let unif_hard =
+  "hard",
+  [|
+    ( "('a * 'b) -> ('a -> 'c) -> ('b -> 'd) -> unit",
+      "('a * 'b) -> ('b -> 'd) -> ('a -> 'c) -> unit" );
+    ( "('a * 'b) -> ('a -> 'c) -> ('b -> 'd) -> ('c * 'd)",
+      "('a * 'b) -> ('b -> 'd) -> ('a -> 'c) -> ('d * 'c)" );
+  |]
+
+let unify (name, data) =
+  Test.make_indexed ~name:("Unify-"^name)
+    ~args:CCList.(0 --^ Array.length data)
     (fun i ->
       Staged.stage @@ fun () ->
-        let env_query = Type.Env.make () in
-        let l, r = unify_data.(i) in
-        let t1 = Type.of_string env_query l in
-        let t2 = Type.of_string env_query r in
-        Acic.unify env_query t1 t2)
+      let env_query = Type.Env.make () in
+      let l, r = data.(i) in
+      let t1 = Type.of_string env_query l in
+      let t2 = Type.of_string env_query r in
+      Acic.unify env_query t1 t2)
 
-let unifiable =
-  Test.make_indexed ~name:"Unifiable"
-    ~args:CCList.(0 --^ Array.length unify_data)
+let unifiable (name, data) =
+  Test.make_indexed ~name:("Unifiable-"^name)
+    ~args:CCList.(0 --^ Array.length data)
     (fun i ->
       Staged.stage @@ fun () ->
-        let env_query = Type.Env.make () in
-        let l, r = unify_data.(i) in
-        let t1 = Type.of_string env_query l in
-        let t2 = Type.of_string env_query r in
-        Acic.unifiable env_query t1 t2)
+      let env_query = Type.Env.make () in
+      let l, r = data.(i) in
+      let t1 = Type.of_string env_query l in
+      let t2 = Type.of_string env_query r in
+      Acic.unifiable env_query t1 t2)
 
-let tests = Test.make_grouped ~name:"Unif" [ unify; unifiable]
+let tests =
+  Test.make_grouped ~name:"Unif"
+    [
+      unify unif_easy;
+      unifiable unif_easy;
+      unify unif_hard;
+      unifiable unif_hard;
+    ]
 
 (* From our test, we can start to benchmark it!
 
@@ -84,13 +101,12 @@ let benchmark test =
     Instance.
       [
         monotonic_clock;
-        Utils.Tracing.Instance.ac_sols;
-        Utils.Tracing.Instance.arrow_sols;
+        Tracing.Instance.ac_sols;
+        Tracing.Instance.arrow_sols;
+        Tracing.Instance.timeout;
       ]
   in
-  let cfg =
-    Benchmark.cfg ()
-  in
+  let cfg = Benchmark.cfg ~limit:5000 ~quota:(Time.second 2.) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
@@ -125,8 +141,9 @@ let bench print_type =
             minor_allocated;
             major_allocated;
             monotonic_clock;
-            Utils.Tracing.Instance.ac_sols;
-            Utils.Tracing.Instance.arrow_sols;
+            Tracing.Instance.ac_sols;
+            Tracing.Instance.arrow_sols;
+            Tracing.Instance.timeout;
           ];
       let window =
         match winsize Unix.stdout with
