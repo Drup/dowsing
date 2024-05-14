@@ -173,5 +173,5 @@ let cmd =
   let info = Cmd.info "bench" ~version:"%%VERSION%%" ~doc ~man in
   Cmd.v info Term.(const bench $ print_type)
 
-let main () = exit (Cmd.eval cmd)
+let main () = exit (let e = Cmd.eval cmd in flush_all (); e)
 let () = main ()
