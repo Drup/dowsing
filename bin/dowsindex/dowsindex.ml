@@ -12,7 +12,7 @@ let cmds = [
 let main_cmd, main_info =
   let doc = "search OCaml functions using types" in
   Term.(ret (const (`Error (true, "no command")))),
-  Cmd.info "dowsindex" ~sdocs:Manpage.s_common_options ~doc
+  Cmd.info "dowsing" ~sdocs:Manpage.s_common_options ~doc
 
 let () =
   exit @@
