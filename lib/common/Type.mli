@@ -93,6 +93,7 @@ end
 
 (* smart constructors *)
 
+val dummy : t
 val var : Env.t -> Variable.t -> t
 val frozen_var : Env.t -> Variable.t -> t
 val constr : Env.t -> LongIdent.t -> t Array.t -> t

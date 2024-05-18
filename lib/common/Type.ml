@@ -258,6 +258,7 @@ let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
 
 (* smart constructors *)
 
+let dummy = Constr (Longident.Lident "__dummy", [||])
 let var env v = hashcons env @@ Var v
 let frozen_var env v = hashcons env @@ FrozenVar v
 

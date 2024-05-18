@@ -273,8 +273,8 @@ let insert_tuple_solution env sol =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   let exception Bail of return in
   try
-    let f (k, v) =
-      match insert_var env k (ACTerm.as_tuple (Env.tyenv env) v) with
+    let f (t1, t2) =
+      match insert env t1 t2 with
       | Done -> ()
       | r -> raise (Bail r)
     in
