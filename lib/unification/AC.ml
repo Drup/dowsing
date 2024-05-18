@@ -1,48 +1,10 @@
 (* Shape *)
-module Shape = struct
-  (** The shape of a type is:
-    - [Constant] constants or frozen variables
-    - [Var] if it is a non fronzen variable
-    - [Free] if the top symbols is a free symbols, arrow or tuples. *)
-  type t = Const of Pure.t | Var of Variable.t | Free of Variable.t * Type.Kind'.t * Type.t
-
-  let rec _is_const : Type.t -> bool = function
-    | Type.Var _ -> false
-    | Type.FrozenVar _ | Type.Other _ -> true
-    | Type.Constr (_, params) -> Array.for_all _is_const params
-    | Type.Tuple ts -> Type.NSet.fold (fun t b -> b && _is_const t) ts true
-    | Type.Arrow (params, ret) ->
-        Type.NSet.fold (fun t b -> b && _is_const t) params (_is_const ret)
-
-  (** Given a Pure.t return the shape of the representative *)
-  let of_pure_repr env = function
-    | Pure.Var v -> (
-        match Env.representative env v with
-        | V v -> Var v
-
-        (* TODO: check if those 3 cases are meaningful. Other should be
-           considered as a constant but is not in Pure yet.*)
-        | E (v, (Var _ | Tuple _ | Other _)) -> Logs.warn (fun m -> m "Wrong assumption on pure AC system."); Var v
-        | E (_, FrozenVar fv) -> Const (Pure.FrozenVar fv)
-        | E (_, Constr (c, [||])) -> Const (Constant c)
-        | E (v, ((Constr _ | Arrow _) as t)) ->
-            Free (v, Type.kind' t, t)
-    )
-    | (Constant _ | FrozenVar _) as c ->
-        Const c
-
-  let is_compatible env p k =
-    match of_pure_repr env p with
-    | Const _ | Var _ -> false
-    | Free (_, k', _) -> Type.Kind'.equal k' k
-
-end
+module S = Shape.Kind
 
 module System : sig
   type t = {
     nb_atom : int ; (* Number of atoms in each equation *)
-    (* TODO: remove assoc_pure, does not seems useful *)
-    assoc_pure : Pure.t array ; (* Map from indices to the associated pure terms *)
+    assoc_type : Type.t array ; (* Map from indices to the associated terms *)
     first_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
     system : int array array ;
   }
@@ -51,10 +13,7 @@ module System : sig
 
   val simplify_problem : Env.t -> ACTerm.problem -> ACTerm.problem
 
-  (* Storing the pure term with the system repeat information because in [assoc_pure],
-     the first value contains it, but in the future we want to have heterogenous system
-     meaning we may loose this information. *)
-  val make : Env.t -> ACTerm.problem list -> t * (Pure.t * t) list * t List.t
+  val make : Env.t -> ACTerm.problem list -> t * t List.t
 
   type dioph_solution
   val get_solution : dioph_solution -> int -> int
@@ -70,15 +29,15 @@ end = struct
 
   type t = {
     nb_atom : int ; (* Number of atoms in each equation *)
-    assoc_pure : Pure.t array ; (* Map from indices to the associated pure terms *)
+    assoc_type : Type.t array ; (* Map from indices to the associated pure terms *)
     first_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
     system : int array array ;
   }
 
-  let pp ppf {system; assoc_pure; nb_atom; first_var} =
+  let pp ppf {system; assoc_type; nb_atom; first_var} =
     Format.fprintf ppf "@[<v>{nb_atom: %i@ fist_var: %i@ assoc: %a@ system: %a}@]"
     nb_atom first_var
-    Fmt.(vbox (array ~sep:(any ",") Pure.pp)) assoc_pure
+    Fmt.(vbox (array ~sep:(any ",") Type.pp)) assoc_type
     Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) system
 
   (** For each variable, look at the represntative,
@@ -107,13 +66,21 @@ end = struct
     Array.iter (add (-1)) right ;
     equation
 
+  let get_type_of_repr env = function
+    | Pure.Constant name -> Type.constr (Env.tyenv env) name [||]
+    | FrozenVar v -> Type.frozen_var (Env.tyenv env) v
+    | Var v ->
+        match Env.representative env v with
+          | V _ -> assert false
+          | E (_, t) -> t
+
   let partition_frees frees =
-    Type.Kind'.Map.map (fun (n, l) ->
+    S.Map.map (fun (n, l) ->
       ( n,
       List.fold_left
-        (fun (c, m) (v, t) ->
+        (fun (c, m) t ->
           if Type.Map.mem t m then (c, m)
-          else (c+1, Type.Map.add t (c, v) m)
+          else (c+1, Type.Map.add t c m)
         )
         (0, Type.Map.empty) l )
         |> snd
@@ -122,15 +89,17 @@ end = struct
   (* The number of constants and variables in a system *)
   let make_mapping env problems =
     let vars = Variable.HMap.create 4 in
-    let frees = ref Type.Kind'.Map.empty in
+    let frees = ref S.Map.empty in
     let nb_vars = ref 0 in
-    let consts = ref Pure.Set.empty in
-    let f p = match Shape.of_pure_repr env p with
-      | Shape.Const c -> consts := Pure.Set.add c !consts
-      | Shape.Var v ->
+    let f p = match S.shape_or_var env p with
+      | Either.Right v ->
           if Variable.HMap.mem vars v then ()
           else Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
-      | Shape.Free (v, s, t) -> frees := Type.Kind'.Map.update s (function None -> Some (1, [v, t]) | Some (n, l) -> Some (n+1, (v, t)::l)) !frees
+      | Left s ->
+          let t = get_type_of_repr env p in
+          frees := S.Map.update s
+          (function None -> Some (1, [ t ]) | Some (n, l) -> Some (n+1, t::l))
+          !frees
     in
     let aux {ACTerm. left ; right} =
       Array.iter f left ; Array.iter f right
@@ -138,105 +107,68 @@ end = struct
     List.iter aux problems ;
     (* Partition the term with a free symbol into equivalence classes *)
     let free_classes = partition_frees !frees in
-    (vars, !nb_vars, free_classes, Pure.Set.to_list !consts)
+    (vars, !nb_vars, free_classes)
 
-  let get_compatibles env free_classes c =
-    let acc = ref 0 in
-    let m = Type.Kind'.Map.filter_map (fun k (n, tm) ->
-      if Shape.is_compatible env c k then (
-        acc := !acc + n;
-        Some (!acc - n, tm)
-      ) else None) free_classes
-    in
-    !acc, m
-
+(* TODO: We have a partition of shape, then we solve the system, then we can filter solution
+   if some stuff is obviously not compatible *)
   (*NOTE: Current implementation.
     A simple type is either a constant, a varialbe or a frozen variable.
-     - We create a system for each constants and frozen variable
      - We create a system only for variables
-     - For each equivalent class on non simple type (Define by the Kind' currently)
+     - For each equivalent class on non variables, the shapes,
        we create a system for each.
        In this system, each type appearing is consider to be equal only to it self.
 
     Possible improvements:
-      - We can increase the set of constant type, be including non simple constant type
       - In each equivalence class, we can look for term that are equal up to the current substitution
       TODO: is it true that equal type up to iso in the current substitution will be equal here?
        *)
-  let make env problems : t * (Pure.t * t) list * t List.t =
-    let vars, nb_vars, free_classes, consts = make_mapping env problems in
-    let get_index_const (nb_frees, compatible_frees) c =
-      fun p -> match Shape.of_pure_repr env p with
-          | Shape.Var v -> Variable.HMap.find vars v + nb_frees + 1
-          | Shape.Free (_, k, t) -> begin
-              match Type.Kind'.Map.get k compatible_frees with
-              | None -> -1
-              | Some (nk, tm) ->
-              let i, _ = Type.Map.find t tm in
-              nk + i + 1
-            end
-          | Shape.Const t -> if Pure.equal t c then 0 else -1
-    in
+  let make env problems : t * t List.t =
+    let vars, nb_vars, shape_partition = make_mapping env problems in
     let get_index_var p =
-      match Shape.of_pure_repr env p with
-      | Shape.Var v -> Variable.HMap.find vars v
+      match S.shape_or_var env p with
+      | Either.Right v -> Variable.HMap.find vars v
       | _ -> -1
     in
-    let get_index_kind k =
-      let nb_frees, frees_map = Type.Kind'.Map.find k free_classes in
-      fun p -> match Shape.of_pure_repr env p with
-      | Shape.Const _ -> -1
-      | Shape.Var v -> Variable.HMap.find vars v + nb_frees
-      | Shape.Free (_, k', t) ->
-          if Type.Kind'.equal k k' then fst (Type.Map.find t frees_map)
+    let get_index_shape s =
+      let nb_frees, frees_map = S.Map.find s shape_partition in
+      fun p -> match S.shape_or_var env p with
+      | Either.Right v -> Variable.HMap.find vars v + nb_frees
+      | Either.Left s' ->
+          let t = get_type_of_repr env p in
+          if S.equal s s' then Type.Map.find t frees_map
           else -1
     in
 
-    let gen_const c =
-      let nb_atom = nb_vars + 1 in
-      let assoc_pure = Array.make nb_atom Pure.dummy in
-      assoc_pure.(0) <- c;
-      Variable.HMap.iter (fun k i -> assoc_pure.(i + 1) <- Pure.var k) vars ;
-
-      let first_var = 1 in
-      let system =
-        List.map (add_problem (get_index_const (get_compatibles env free_classes c) c) nb_atom) problems
-        |> Array.of_list
-      in
-      { nb_atom ; assoc_pure ; first_var ; system }
-    in
-    let const_systems = List.map (fun p -> p, gen_const p) consts in
-    
     let var_system =
       let nb_atom = nb_vars in
-      let assoc_pure = Array.make nb_atom Pure.dummy in
-      Variable.HMap.iter (fun k i -> assoc_pure.(i) <- Pure.var k) vars ;
+      let assoc_type = Array.make nb_atom Type.dummy in
+      Variable.HMap.iter (fun k i -> assoc_type.(i) <- Type.var (Env.tyenv env) k) vars ;
       let first_var = 0 in
       let system =
         List.map (add_problem (get_index_var) nb_atom) problems
         |> Array.of_list
       in
-      { nb_atom ; assoc_pure ; first_var ; system }
+      { nb_atom ; assoc_type ; first_var ; system }
     in
 
-    let gen_kind k nb_frees types_map =
+    let gen_shape_system k nb_frees types_map =
       let nb_atom = nb_vars + nb_frees in
-      let assoc_pure = Array.make nb_atom Pure.dummy in
-      Type.Map.iter (fun _t (i, v) -> assoc_pure.(i) <- Var v) types_map;
-      Variable.HMap.iter (fun k i -> assoc_pure.(i + nb_frees) <- Pure.var k) vars ;
+      let assoc_type = Array.make nb_atom Type.dummy in
+      Type.Map.iter (fun t i -> assoc_type.(i) <- t) types_map;
+      Variable.HMap.iter (fun k i -> assoc_type.(i + nb_frees) <- Type.var (Env.tyenv env) k) vars ;
 
       let first_var = nb_frees in
       let system =
-        List.map (add_problem (get_index_kind k) nb_atom) problems
+        List.map (add_problem (get_index_shape k) nb_atom) problems
         |> Array.of_list
       in
-      { nb_atom ; assoc_pure ; first_var ; system }
+      { nb_atom ; assoc_type ; first_var ; system }
     in
-    let kind_systems = List.map
-            (fun (k, (n, tm)) -> gen_kind k n tm)
-            @@ Type.Kind'.Map.to_list free_classes
+    let shape_systems = List.map
+            (fun (k, (n, tm)) -> gen_shape_system k n tm)
+            @@ S.Map.to_list shape_partition
     in
-    var_system, const_systems, kind_systems
+    var_system, shape_systems
 
   type dioph_solution = int array
   let get_solution = Array.get
@@ -251,11 +183,10 @@ end
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
 
-  type t = (Variable.t * ACTerm.t) Iter.t
+  type t = (Type.t * Type.t) Iter.t
 
   val get_solutions :
     Env.t -> System.t -> System.dioph_solution Iter.t
-        -> (Pure.t * System.dioph_solution list) list
         -> (System.t * System.dioph_solution Iter.t) list -> t Iter.t
 
 end = struct
@@ -264,7 +195,7 @@ end = struct
 
   module Trace = Utils.Tracing
 
-  type t = (Variable.t * ACTerm.t) Iter.t
+  type t = (Type.t * Type.t) Iter.t
 
   let _pp ppf (subset, unif) =
     let pp_pair ppf (v,t) =
@@ -293,53 +224,37 @@ end = struct
     let f _ col = Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 first_var
 
-  let combine_const_sols const_sols =
-    CCList.map_product_l (fun (c, l) -> List.map (fun x -> (c,x)) l) const_sols
-
-  let combine_kind_sols kind_sols =
-    CCList.map_product_l (fun (nb_kinds, symbols, solutions, bitvars, assoc_pure, sols) ->
-      List.map (fun x -> (nb_kinds, symbols, solutions, bitvars, assoc_pure, x))
+  let combine_shape_sols kind_sols =
+    CCList.map_product_l (fun (nb_kinds, symbols, solutions, bitvars, assoc_type, sols) ->
+      List.map (fun x -> (nb_kinds, symbols, solutions, bitvars, assoc_type, x))
       (Iter.to_list sols))
     kind_sols
 
-  let iterate_kind_subsets len system bitvars =
+  let iterate_shape_subsets len system bitvars =
     Hullot.Default.iter ~len
       ~small:(small_enough_kind system.System.first_var bitvars)
       ~large:(large_enough_kind system.first_var bitvars)
 
-  let prod_iter l1 l2 f =
-    List.iter (fun x -> List.iter (fun y -> f (x, y)) l2) l1
-
-  let iterate_subsets nb_columns const_sols kind_combined_sols len bitvars =
-    let consts_parts = combine_const_sols const_sols in
-    let kinds_parts = combine_kind_sols kind_combined_sols in
-    let fixed_parts = prod_iter consts_parts kinds_parts in
-    Iter.flat_map (fun (consts_part, kinds_part) ->
-      let const_vec =
+  let iterate_subsets nb_columns shape_combined_sols len bitvars =
+    let shape_parts = combine_shape_sols shape_combined_sols in
+    Iter.flat_map (fun shape_part ->
+      let shape_vec= 
         let bitv = ref Bitv.empty in
-        for j = 0 to nb_columns - 1 do
-          if List.exists (fun (_, sol) -> System.get_solution sol (j+1) <> 0 ) consts_part then
-            bitv := Bitv.add !bitv j
-        done;
-        !bitv
-      in
-      let kind_vec = 
-        let bitv = ref Bitv.empty in
-        List.iter (fun (nb_kinds, symbols, _solutions, bitvars, _assoc_pure, kind_sols) ->
+        List.iter (fun (nb_kinds, symbols, _solutions, bitvars, _assoc_type, kind_sols) ->
           for i = 0 to nb_columns - 1 do
             for j = 0 to Array.length symbols - 1 do
               if Bitv.mem j kind_sols && Bitv.mem j bitvars.(i + nb_kinds) then
                 bitv := Bitv.add !bitv i
             done
           done
-        ) kinds_part;
+        ) shape_part;
         !bitv
       in
-      Iter.map (fun x -> (consts_part, kinds_part, x))
+      Iter.map (fun x -> (shape_part, x))
         (Hullot.Default.iter ~len
           ~small:(fun _ -> true)
-          ~large:(large_enough Bitv.(const_vec || kind_vec) bitvars))
-    ) fixed_parts
+          ~large:(large_enough shape_vec bitvars))
+    ) (Iter.of_list shape_parts)
 
   (** From the iter of solution of the diophantine equations system,
       extract the solution in a vector and return an array of bitset
@@ -363,15 +278,17 @@ end = struct
     bitvars
 
   (* TO OPTIM *)
-  let make_term buffer l : ACTerm.t =
+  let make_term env buffer l : Type.t =
     CCVector.clear buffer;
-    let f (n, symb) =
-      for _ = 1 to n do CCVector.push buffer symb done
+    let f acc (n, symb) =
+      let tmp = ref acc in
+      for _ = 1 to n do tmp := symb :: ! tmp done;
+      !tmp
     in
-    List.iter f l;
-    ACTerm.make @@ CCVector.to_array buffer
+    CCList.fold_left f [] l
+      |> fun l -> Type.tuple env @@ Type.NSet.of_list l
 
-  let unifier_of_subset vars solutions symbols (const_sols, kind_sols, pure_sols) =
+  let unifier_of_subset env vars solutions symbols (shape_sols, pure_sols) =
     (* TODO: vars should be only variable therefore the type should
        change removing the need for the match *)
     assert (CCVector.length solutions = Array.length symbols);
@@ -379,6 +296,7 @@ end = struct
     (* Unifier is a map from variable to a list of pure terms presenting the
        the tuple associated with the variable *)
     let unifiers = Variable.HMap.create (Array.length vars) in
+    let equations = ref [] in
     let solutions = CCVector.unsafe_get_array solutions in
 
     (* We add the variables comming from the solution in pure_sols *)
@@ -390,78 +308,77 @@ end = struct
         (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
         for j = 0 to Array.length vars - 1 do
           match vars.(j) with
-          | Pure.Constant _ | Pure.FrozenVar _ -> ()
-          | Pure.Var var ->
+          | Type.Var var ->
             let multiplicity = System.get_solution sol j in
             Variable.HMap.add_list unifiers var (multiplicity, symb)
+          | _ -> failwith "Impossible"
         done;
     done;
     (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
     (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
     (* ) ; *)
 
-    (* We add the constant comming from const_sols *)
-    List.iter (fun (constant, sol) ->
-      for j = 0 to Array.length vars - 1 do
-        assert (System.get_solution sol 0 = 1);
-        match vars.(j) with
-        | Pure.Constant _ | Pure.FrozenVar _ -> ()
-        | Pure.Var var ->
-            (* We have a shift of 1 because the first entry is for the constant (TODO: change it once using heterogenous system) *)
-            let multiplicity = System.get_solution sol (j+1) in
-            Variable.HMap.add_list unifiers var (multiplicity, constant)
-      done
-    ) const_sols;
-
     (* We add the variable comming from kind_sols *)
-    List.iter (fun (_nb_kinds, symbols, solutions, _bitvars, assoc_pure, kind_sol) ->
+    List.iter (fun (_nb_shapes, symbols, solutions, _bitvars, assoc_type, shape_sol) ->
       let solutions = CCVector.unsafe_get_array solutions in
       for i = 0 to Array.length symbols - 1 do
-        if Bitv.mem i kind_sol then
+        if Bitv.mem i shape_sol then
           let sol = solutions.(i) in
           let symb = symbols.(i) in
           Array.iteri (fun j v -> match v with
-          | Pure.Constant _ | FrozenVar _ -> ()
-          | Var var ->
+          | Type.Var var ->
               let multiplicity = System.get_solution sol j in
               Variable.HMap.add_list unifiers var (multiplicity, symb)
-          ) assoc_pure
+          | t ->
+              equations := (symb, t) :: !equations
+          ) assoc_type
       done
-    ) kind_sols;
+    ) shape_sols;
 
-    let buffer = CCVector.create_with ~capacity:10 Pure.dummy in
+    let buffer = CCVector.create_with ~capacity:10 Type.dummy in
     fun k ->
+      List.iter k !equations;
       Variable.HMap.iter
         (fun key l ->
-           let pure_term = make_term buffer l in
-           k (key, pure_term))
+           let pure_term = make_term env buffer l in
+           k (Type.var env key, pure_term))
         unifiers
 
-  let get_kind_solutions env
-      (({System. nb_atom; first_var; assoc_pure; _} as system), solutions) =
+  let get_first_assoc_type sol assoc_type =
+    let rec aux i =
+      if System.get_solution sol i <> 0 then
+        assoc_type.(i)
+      else aux (i+1)
+    in
+    aux 0
+
+  let get_shapes_solutions
+      (({System. nb_atom; first_var; assoc_type; _} as system), solutions) =
     let stack_solution = CCVector.create () in
     let bitvars = extract_solutions stack_solution nb_atom solutions in
-    let symbols = Array.init (CCVector.length stack_solution) (fun _ -> Pure.var (Env.gen env)) in
-    let iter_sol = iterate_kind_subsets (Array.length symbols) system bitvars in
-    first_var, symbols, stack_solution, bitvars, assoc_pure, iter_sol
+    let symbols = Array.init (CCVector.length stack_solution)
+          (fun i -> get_first_assoc_type (CCVector.get stack_solution i) assoc_type) in
+    let iter_sol = iterate_shape_subsets (Array.length symbols) system bitvars in
+    first_var, symbols, stack_solution, bitvars, assoc_type, iter_sol
 
   (** Combine everything *)
   let get_solutions env
-      {System. nb_atom; assoc_pure;_}
-      pure_solutions const_sols kind_sols k =
+      {System. nb_atom; assoc_type;_}
+      pure_solutions shapes_sols k =
     let stack_solutions = CCVector.create () in
     let bitvars = extract_solutions stack_solutions nb_atom pure_solutions in
     (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
     Logs.debug (fun m -> m "@[<v2>Sol stack:@ %a@]@."
       (CCVector.pp System.pp_solution) stack_solutions); *)
-    let symbols = Array.init (CCVector.length stack_solutions) (fun _ -> Pure.var (Env.gen env)) in
+    let symbols = Array.init (CCVector.length stack_solutions)
+                             (fun _ -> Type.var (Env.tyenv env) (Env.gen env)) in
     (* Logs.debug (fun m -> m "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols); *)
-    let kind_combined_sols = List.map (get_kind_solutions env) kind_sols in
-    let subsets = iterate_subsets nb_atom const_sols kind_combined_sols
-                    (Array.length symbols) bitvars in (* TODO need change here *)
+    let shapes_combined_sols = List.map get_shapes_solutions shapes_sols in
+    let subsets = iterate_subsets nb_atom shapes_combined_sols
+                    (Array.length symbols) bitvars in
     let n_solutions = ref 0 in
     Trace.wrap_ac_sol (Iter.map
-      (unifier_of_subset assoc_pure stack_solutions symbols)
+      (unifier_of_subset (Env.tyenv env) assoc_type stack_solutions symbols)
       subsets) (fun x -> incr n_solutions; k x);
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
@@ -470,11 +387,10 @@ end
     of the form [t_1 * t_2 * t_4 = t_5 * t_6] and return a colection of
     systems of diophantine equations [homogenous_system * heterogenous_systems]
     where [homogenous_system] is a homogenous system of diophantine equations
-    corresponding to the projection of [problems] with no constant.
-    [heterogenous_systems] is a list of heterogenous systems together with the
-    pure term associated to it which correspond to the projection of [problems]
-    on this constant. *)
-let make_systems env problems : System.t * (Pure.t * System.t) list * _ =
+    corresponding to the projection of [problems] on the variables.
+    [heterogenous_systems] is a list of heterogenous systems which correspond
+    to the projection of [problems] on the different shapes. *)
+let make_systems env problems : System.t * _ =
   System.make env @@ List.map (System.simplify_problem env) problems
 
 let rec exists f s k stop : bool =
@@ -486,45 +402,38 @@ let rec exists f s k stop : bool =
 (** Take a collection of diophantine equations corresponding to the projection
     of the original problem on to each constant and the homogenous systems,
     solve them and combine them into solution to the original problems. *)
-let solve_systems env (var_system, const_systems, kind_systems) =
+let solve_systems env (var_system, shape_systems) =
   Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp var_system);
-  Logs.debug (fun m -> m "@[Const system: %a@]" Fmt.(vbox @@ list ~sep:cut (pair Pure.pp System.pp)) const_systems);
-  Logs.debug (fun m -> m "@[Kind system: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) kind_systems);
-  let cut_const solution =
-    solution.(0) > 1
-  in
+  Logs.debug (fun m -> m "@[Kind system: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) shape_systems);
 
-  let const_sols = List.map (fun (p, system) ->
-    (p, System.solve cut_const system
-        |> Iter.filter (fun s -> System.get_solution s 0 = 1)
-        |> Iter.to_list)) const_systems
-  in
   let var_sols = System.solve (fun _ -> false) var_system in
 
-  let cut_kind nb_kinds x =
+  let cut_shape nb_shapes x =
     let rec cut_aux i stop solution =
       if i < stop then
         let v = solution.(i) in
         v > 1 || cut_aux (i+1) stop solution
       else false
     in
-    cut_aux 0 nb_kinds x
+    cut_aux 0 nb_shapes x
   in
 
   (* TODO: for each Kind we need to solve the pure system with only var.
       Then we filter it out here, we could tweak the solver to not have to do that.
       We initialise the solver by giving 1 to every position of firt_var, this way
       we garanty that the solution have a one there. *)
-  let kind_sols = List.map (fun (system: System.t) ->
+  (* TODO: here we should clean the solution, for all solution, we can
+   check if two positions < nb_shapes receive a 1 but the two associated types
+   are not compatible, then we should remove this solution *)
+  let shapes_sols = List.map (fun (system: System.t) ->
     ( system,
-      System.solve (cut_kind system.first_var) system
+      System.solve (cut_shape system.first_var) system
         |> Iter.filter (fun s ->
             exists (fun x -> x > 0) s 0 system.first_var)
         )
-    ) kind_systems
+    ) shape_systems
   in
-  Logs.debug (fun m -> m "@[Const solution: %a@]" Fmt.Dump.(list @@ pair Pure.pp (list System.pp_dioph)) const_sols);
-  Dioph2Sol.get_solutions env var_system var_sols const_sols kind_sols
+  Dioph2Sol.get_solutions env var_system var_sols shapes_sols
 
 let solve env problems =
   match problems with
