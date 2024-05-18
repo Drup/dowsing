@@ -55,6 +55,8 @@ let pos_tests = [
   "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
   "int list -> 'a", "int list -> int";
+  (* Tuples target of variable: TODO I think this is a case where a variable will point to a tuples *)
+  "'a * 'b -> 'a", "int * unit * float -> int * unit";
 ]
 
 let neg_tests = [
