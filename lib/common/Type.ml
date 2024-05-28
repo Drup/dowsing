@@ -169,6 +169,7 @@ and NSet : sig
 
   val compare : t CCOrd.t
   val of_list : elt List.t -> t
+  val of_array : elt Array.t -> t
   val of_iter : elt Iter.t -> t
   val to_iter : t -> elt Iter.t
   val as_array : t -> elt Array.t
@@ -191,6 +192,12 @@ end = struct
 
   let of_list lst =
     let t = CCArray.of_list lst in
+    sort t;
+    t
+
+  let of_array a =
+    (* TODO: Do we really need the copy? *)
+    let t = CCArray.copy a in
     sort t;
     t
 

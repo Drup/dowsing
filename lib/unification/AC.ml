@@ -46,16 +46,17 @@ end = struct
       if the representative is a constant or a variable, replace the variable by it
       otherwise replace the variable by the last variable on the chain. *)
   let simplify_problem env {ACTerm. left ; right} =
-    let f x = match x with
-      | Pure.Constant _ | Pure.FrozenVar _ -> x
-      | Pure.Var v ->
+    let f (t: Type.t) = match t with
+      | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
+      | Type.Other _ -> [|t|]
+      | Type.Tuple t  -> Type.NSet.as_array t
+      | Type.Var v ->
         match Env.representative env v with
-        | V v' -> Var v'
-        | E (_,Constr (p,[||])) -> Constant p
-        | E (_, FrozenVar v) -> FrozenVar v
-        | E (v', _) -> Var v'
+        | V v' -> [|Type.var (Env.tyenv env) v'|]
+        | E (_, Tuple t) -> Type.NSet.as_array t
+        | E (_, t) -> [|t|]
     in
-    {ACTerm. left = Array.map f left ; right = Array.map f right }
+    {ACTerm. left = CCArray.flat_map f left ; right = CCArray.flat_map f right }
 
   let add_problem get_index nb_atom {ACTerm. left; right} =
     let equation = Array.make nb_atom 0 in
@@ -67,14 +68,6 @@ end = struct
     Array.iter (add 1) left ;
     Array.iter (add (-1)) right ;
     equation
-
-  let get_type_of_repr env = function
-    | Pure.Constant name -> Type.constr (Env.tyenv env) name [||]
-    | FrozenVar v -> Type.frozen_var (Env.tyenv env) v
-    | Var v ->
-        match Env.representative env v with
-          | V _ -> assert false
-          | E (_, t) -> t
 
   let partition_frees frees =
     S.Map.map (fun (n, l) ->
@@ -93,12 +86,11 @@ end = struct
     let vars = Variable.HMap.create 4 in
     let frees = ref S.Map.empty in
     let nb_vars = ref 0 in
-    let f p = match S.shape_or_var env p with
+    let f t = match S.shape_or_var env t with
       | Either.Right v ->
           if Variable.HMap.mem vars v then ()
           else Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
       | Left s ->
-          let t = get_type_of_repr env p in
           frees := S.Map.update s
           (function None -> Some (1, [ t ]) | Some (n, l) -> Some (n+1, t::l))
           !frees
@@ -133,10 +125,9 @@ end = struct
     in
     let get_index_shape s =
       let nb_frees, frees_map = S.Map.find s shape_partition in
-      fun p -> match S.shape_or_var env p with
+      fun t -> match S.shape_or_var env t with
       | Either.Right v -> Variable.HMap.find vars v + nb_frees
       | Either.Left s' ->
-          let t = get_type_of_repr env p in
           if S.equal s s' then Type.Map.find t frees_map
           else -1
     in
