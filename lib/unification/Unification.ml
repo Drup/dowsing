@@ -16,31 +16,25 @@ let debug f =
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
-  type elt = Var of Variable.t * Type.t | Expr of Type.t * Type.t
+  type elt = Type.t * Type.t
   type t
 
   val empty : t
   val pop : t -> (elt * t) option
-  val push_quasi_solved : t -> Variable.t -> Type.t -> t
   val push_array2 : Type.t array -> Type.t array -> t -> t
   val pp : t Fmt.t [@@warning "-32"] [@@ocaml.toplevel_printer]
 end = struct
-  type elt = Var of Variable.t * Type.t | Expr of Type.t * Type.t
+  type elt = Type.t * Type.t
   type t = elt list
 
   let empty : t = []
   let[@inline] pop = function [] -> None | h :: t -> Some (h, t)
 
-  (* TODO: introduce some priorities:
-     subst first, then quasi solved, then expr. ===> Use a form of deque. *)
-
-  let push l t1 t2 = Expr (t1, t2) :: l
-  let push_quasi_solved l v t = Var (v, t) :: l
+  let push l t1 t2 = (t1, t2) :: l
   let push_array2 a1 a2 stack = CCArray.fold2 push stack a1 a2
 
-  let pp_elt ppf = function
-    | Var (v, t) -> Fmt.pf ppf "%a = %a" Variable.pp v Type.pp t
-    | Expr (t1, t2) -> Fmt.pf ppf "%a = %a" Type.pp t1 Type.pp t2
+  let pp_elt ppf (t1, t2) =
+    Fmt.pf ppf "%a = %a" Type.pp t1 Type.pp t2
 
   let pp = Fmt.(vbox (list ~sep:cut pp_elt))
 end
@@ -113,8 +107,7 @@ let rec process_stack env (stack : Stack.t) : return =
   debug (fun m -> m "Process_stack");
   Timeout.check ();
   match Stack.pop stack with
-  | Some (Expr (t1, t2), stack) -> insert_rec env stack t1 t2
-  | Some (Var (v, t), stack) -> insert_var env stack v t
+  | Some ((t1, t2), stack) -> insert_rec env stack t1 t2
   | None -> Done)
 
 and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
@@ -137,20 +130,15 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   *)
   | Type.Arrow (arg1, ret1), Type.Arrow (arg2, ret2) ->
       debug (fun m -> m "Arrow|Arrow");
-      let stack, arg1 = variable_abstraction_all env stack arg1 in
-      let stack, arg2 = variable_abstraction_all env stack arg2 in
-      (* let stack, ret1 = variable_abstraction env stack ret1 in
-       * let stack, ret2 = variable_abstraction env stack ret2 in *)
-      Env.push_arrow env (ArrowTerm.make arg1 ret1) (ArrowTerm.make arg2 ret2);
+      Env.push_arrow env (ArrowTerm.make (Type.NSet.as_array arg1) ret1)
+                         (ArrowTerm.make (Type.NSet.as_array arg2) ret2);
       process_stack env stack
   (* Two tuples, we apply VA repeatedly
      (s₁,...,sₙ) ≡ (t₁,...,tₙ) --> an equivalent pure problem
   *)
-  | Tuple s, Tuple t (* Can't we shortcut here? *) ->
+  | Tuple s, Tuple t ->
       debug (fun m -> m "Tuple|Tuple");
-      let stack, pure_s = variable_abstraction_all env stack s in
-      let stack, pure_t = variable_abstraction_all env stack t in
-      Env.push_tuple env pure_s pure_t;
+      Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
       process_stack env stack
   | Var v, t | t, Var v ->
       debug (fun m -> m "Var|Var");
@@ -163,44 +151,6 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
       debug (fun m -> m "Fail");
       FailUnif (t1, t2))
-
-(* Repeated application of VA on an array of subexpressions. *)
-and variable_abstraction_all env stack a =
-  Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  debug (fun m -> m "Variable abstraction");
-  let r = ref stack in
-  let f x =
-    let stack, x = variable_abstraction env !r x in
-    r := stack;
-    x
-  in
-  (!r, Array.map f @@ Type.NSet.as_array a))
-
-(* TODO: do we assume that tuples are flatten? Invariant de la forme normal *)
-(* rule VA/Variable Abstraction
-   Given a tuple, assign a variable to each subexpressions that is foreign
-   and push them on stack.
-
-   Returns the new state of the stack and the substituted expression.
-*)
-and variable_abstraction env stack t =
-  Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  match t with
-  (* A nested tuple. We consider that a pure subproblem *)
-  | Type.Tuple ts ->
-      let stack, all_vars = variable_abstraction_all env stack ts in
-      let var = Env.gen env in
-      Env.push_tuple env [| Pure.var var |] all_vars;
-      (stack, Pure.var var)
-  (* Not a foreign subterm *)
-  | Var i -> (stack, Pure.var i)
-  | Constr (p, [||]) -> (stack, Pure.constant p)
-  | FrozenVar v -> (stack, Pure.frozen v)
-  (* It's a foreign subterm *)
-  | Arrow _ | Constr (_, _) | Other _ ->
-      let var = Env.gen env in
-      let stack = Stack.push_quasi_solved stack var t in
-      (stack, Pure.var var))
 
 and insert_var env stack x s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
@@ -324,7 +274,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
             "AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR" (fun _sp ->
               let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
               Env.push_tuple env
-                (ACTerm.add left.args (Pure.var var_arg_left))
+                (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
                 right.args;
               let* () =
                 insert env left.ret
@@ -343,7 +293,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
             "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL" (fun _sp ->
               let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
               Env.push_tuple env left.args
-                (ACTerm.add right.args (Pure.var var_arg_right));
+                (ACTerm.add right.args (Type.var (Env.tyenv env) var_arg_right));
               let* () =
                 insert env right.ret
                   (Type.arrow (Env.tyenv env)
@@ -365,8 +315,8 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
               let var_arg_right = Env.gen env and var_ret_right = Env.gen env in
               (* TOCHECK *)
               Env.push_tuple env
-                (ACTerm.add left.args (Pure.var var_arg_left))
-                (ACTerm.add right.args (Pure.var var_arg_right));
+                (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
+                (ACTerm.add right.args (Type.var (Env.tyenv env) var_arg_right));
               let* () =
                 insert env left.ret
                   (Type.arrow (Env.tyenv env)
