@@ -20,7 +20,9 @@ module System : sig
 
   val solve : (int array -> bool) -> t -> dioph_solution Iter.t
 
+  [@@@ocaml.warning "-32"]
   val pp_dioph : dioph_solution Fmt.t
+  [@@@ocaml.warning "+32"]
 
 end = struct
 
