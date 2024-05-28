@@ -93,6 +93,20 @@ let aux opts ?stats0 iter_idx =
          Fmt.pr " (%g %%)" @@ (total_cnt /. total_cnt' *. 100.));
   (total_time, total_cnt)
 
+let print_stat () =
+  let stats =
+    Array.map (Format.sprintf "%i")
+    [|
+      Tracing.get_nb_ac ();
+      Tracing.get_nb_arrow ();
+        Tracing.get_nb_timeout ();
+    |]
+  in
+  Fmt.pr "@.Stats@.";
+  print_table [|"AC sol"; "Arrow sol"; "Timeout"|]
+  (Iter.singleton stats);
+  Fmt.pr "@."
+
 let aux opts iter_idx iter_idx_filt =
   let aux = aux opts in
   Fmt.pr "@[<v>";
@@ -100,7 +114,8 @@ let aux opts iter_idx iter_idx_filt =
   if opts.with_feats then (
     Fmt.pr "@,";
     ignore @@ aux ~stats0 iter_idx_filt);
-  Fmt.pr "@]@."
+  Fmt.pr "@]@.";
+  print_stat ()
 
 let main opts =
   let pkgs = if CCList.is_empty opts.pkgs then None else Some opts.pkgs in
