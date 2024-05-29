@@ -1,6 +1,6 @@
 (rule
  (target fmt.db)
- (deps ../assets/fmt.odocl)
+ (deps ../assets/fmt.odoc)
  (action
   (run dowsing save --index %{target} --poset=true %{deps})))
 
