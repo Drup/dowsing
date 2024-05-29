@@ -13,7 +13,7 @@ module System : sig
 
   val simplify_problem : Env.t -> ACTerm.problem -> ACTerm.problem
 
-  val make : Env.t -> ACTerm.problem list -> t * t List.t
+  val make : ACTerm.problem list -> t * t List.t
 
   type dioph_solution
   val get_solution : dioph_solution -> int -> int
@@ -61,47 +61,38 @@ end = struct
   let add_problem get_index nb_atom {ACTerm. left; right} =
     let equation = Array.make nb_atom 0 in
     let add dir r =
-      let i = get_index r in
-      if i >= 0 then
-        equation.(i) <- equation.(i) + dir
+      match get_index r with
+      | Some i -> equation.(i) <- equation.(i) + dir
+      | None -> ()
     in
     Array.iter (add 1) left ;
     Array.iter (add (-1)) right ;
     equation
 
-  let partition_frees frees =
-    S.Map.map (fun (n, l) ->
-      ( n,
-      List.fold_left
-        (fun (c, m) t ->
-          if Type.Map.mem t m then (c, m)
-          else (c+1, Type.Map.add t c m)
-        )
-        (0, Type.Map.empty) l )
-        |> snd
-      ) frees
-
   (* The number of constants and variables in a system *)
-  let make_mapping env problems =
-    let vars = Variable.HMap.create 4 in
-    let frees = ref S.Map.empty in
-    let nb_vars = ref 0 in
-    let f t = match S.shape_or_var env t with
-      | Either.Right v ->
-          if Variable.HMap.mem vars v then ()
-          else Variable.HMap.add vars v @@ CCRef.get_then_incr nb_vars
-      | Left s ->
-          frees := S.Map.update s
-          (function None -> Some (1, [ t ]) | Some (n, l) -> Some (n+1, t::l))
-          !frees
+  let make_mapping problems =
+    let all_types = List.fold_left (fun s {ACTerm. left; right} ->
+      let s = Array.fold_left (fun s t -> Type.Set.add t s) s left in
+      Array.fold_left (fun s t -> Type.Set.add t s) s right) Type.Set.empty problems
     in
-    let aux {ACTerm. left ; right} =
-      Array.iter f left ; Array.iter f right
+    let shape_partition = S.partition all_types in
+    let f part count map t =
+      if part t then
+        Type.Map.update t (fun x ->
+          match x with
+          | Some _ -> x
+          | None -> Some (CCRef.get_then_incr count)) map
+      else map
     in
-    List.iter aux problems ;
-    (* Partition the term with a free symbol into equivalence classes *)
-    let free_classes = partition_frees !frees in
-    (vars, !nb_vars, free_classes)
+    let aux part =
+      let count = ref 0 in
+      let m = List.fold_left (fun m {ACTerm. left ; right} ->
+        let m = Array.fold_left (f part count) m left in
+        Array.fold_left (f part count) m right) Type.Map.empty problems
+      in
+      (!count, m)
+    in
+    (aux shape_partition.variable, List.map aux shape_partition.shapes)
 
 (* TODO: We have a partition of shape, then we solve the system, then we can filter solution
    if some stuff is obviously not compatible *)
@@ -116,50 +107,46 @@ end = struct
       - In each equivalence class, we can look for term that are equal up to the current substitution
       TODO: is it true that equal type up to iso in the current substitution will be equal here?
        *)
-  let make env problems : t * t List.t =
-    let vars, nb_vars, shape_partition = make_mapping env problems in
-    let get_index_var p =
-      match S.shape_or_var env p with
-      | Either.Right v -> Variable.HMap.find vars v
-      | _ -> -1
+  let make problems : t * t List.t =
+    let (nb_vars, vars), shape_partition = make_mapping problems in
+    let get_index map t =
+      Type.Map.get t map
     in
-    let get_index_shape s =
-      let nb_frees, frees_map = S.Map.find s shape_partition in
-      fun t -> match S.shape_or_var env t with
-      | Either.Right v -> Variable.HMap.find vars v + nb_frees
-      | Either.Left s' ->
-          if S.equal s s' then Type.Map.find t frees_map
-          else -1
+
+    let get_index_shape var_map map nb_free t =
+      match Type.Map.get t var_map with
+      | Some i -> Some (i + nb_free)
+      | None -> Type.Map.get t map
     in
 
     let var_system =
       let nb_atom = nb_vars in
       let assoc_type = Array.make nb_atom Type.dummy in
-      Variable.HMap.iter (fun k i -> assoc_type.(i) <- Type.var (Env.tyenv env) k) vars ;
+      Type.Map.iter (fun k i -> assoc_type.(i) <- k) vars ;
       let first_var = 0 in
       let system =
-        List.map (add_problem (get_index_var) nb_atom) problems
+        List.map (add_problem (get_index vars) nb_atom) problems
         |> Array.of_list
       in
       { nb_atom ; assoc_type ; first_var ; system }
     in
 
-    let gen_shape_system k nb_frees types_map =
+    let gen_shape_system nb_frees types_map =
       let nb_atom = nb_vars + nb_frees in
       let assoc_type = Array.make nb_atom Type.dummy in
       Type.Map.iter (fun t i -> assoc_type.(i) <- t) types_map;
-      Variable.HMap.iter (fun k i -> assoc_type.(i + nb_frees) <- Type.var (Env.tyenv env) k) vars ;
+      Type.Map.iter (fun k i -> assoc_type.(i + nb_frees) <- k) vars ;
 
       let first_var = nb_frees in
       let system =
-        List.map (add_problem (get_index_shape k) nb_atom) problems
+        List.map (add_problem (get_index_shape vars types_map nb_frees) nb_atom) problems
         |> Array.of_list
       in
       { nb_atom ; assoc_type ; first_var ; system }
     in
     let shape_systems = List.map
-            (fun (k, (n, tm)) -> gen_shape_system k n tm)
-            @@ S.Map.to_list shape_partition
+            (fun (n, tm) -> gen_shape_system n tm)
+            shape_partition
     in
     var_system, shape_systems
 
@@ -384,7 +371,7 @@ end
     [heterogenous_systems] is a list of heterogenous systems which correspond
     to the projection of [problems] on the different shapes. *)
 let make_systems env problems : System.t * _ =
-  System.make env @@ List.map (System.simplify_problem env) problems
+  System.make @@ List.map (System.simplify_problem env) problems
 
 let rec exists f s k stop : bool =
   if k = stop then false
