@@ -9,19 +9,6 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 
 open Syntactic
 
-let insert_tuple_solution env sol =
-  Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  let exception Bail of return in
-  try
-    let f (t1, t2) =
-      match insert env t1 t2 with
-      | Done -> ()
-      | r -> raise (Bail r)
-    in
-    sol f;
-    Done
-  with Bail r -> r)
-
 (* Elementary AC theory *)
 let rec solve_tuple_problems env0 =
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__ @@
@@ -33,7 +20,7 @@ let rec solve_tuple_problems env0 =
   in
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ "AC.solve"
     (AC.solve env0 @@ pop_all_tuples [] env0)
-  |> Iter.flat_map (try_with_solution env0 insert_tuple_solution)
+  |> Iter.flat_map (solve_loop)
 
 (* TODO: here we could expend the return type and check if it can
    be unified with a arrow under the current substitution. To avoid branching *)
@@ -62,6 +49,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
              BL ≡? αL -> βL  ∧
              βL ≡? BR
           *)
+          (* TODO: Do not create the variable βL, just put  BL ≡? αL -> BR in as equation *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR" (fun _sp ->
               let var_arg_left = Env.gen env and var_ret_left = Env.gen env in
@@ -130,7 +118,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
   potentials |> Iter.of_list
   |> Iter.flat_map (fun (desc, f) ->
          Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__
-           "Solve_arrow sub problem"
+           ("Solve_arrow sub problem: " ^ desc )
            ~data:(fun () -> [ ("case", `String desc) ])
            (try_with_solution env0 f ()))
   |> Trace.wrap_arrow_sol

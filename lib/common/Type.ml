@@ -293,6 +293,7 @@ let arrow env param ret =
   | _, _ -> Arrow (NSet.singleton param, ret)
 
 let tuple env elts =
+  (* TODO: can elts be of size 0 or 1? *)
   let aux = function Tuple elts -> elts | elt -> NSet.singleton elt in
   let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
   hashcons env
@@ -491,7 +492,7 @@ let rec pp ppf = function
   | Constr (lid, [||]) -> LongIdent.pp ppf lid
   | Constr (lid, params) -> Fmt.pf ppf "%a@ %a" pp_array params LongIdent.pp lid
   | Arrow (params, ret) ->
-      Fmt.pf ppf "@[<2>%a@ ->@ %a@]" (NSet.pp pp_parens) params pp_parens ret
+      Fmt.pf ppf "@[<2>(%a@ ->@ %a)@]" (NSet.pp pp_parens) params pp_parens ret
   | Tuple elts -> Fmt.pf ppf "@[<2>%a@]" (NSet.pp pp_parens) elts
   | Other i -> Fmt.pf ppf "other%i" i
 

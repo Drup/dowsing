@@ -1,6 +1,8 @@
 (* Shape *)
 module S = Shape.Kind
 
+module Stack = Syntactic.Stack
+
 module System : sig
   type t = {
     nb_atom : int ; (* Number of atoms in each equation *)
@@ -37,7 +39,7 @@ end = struct
   }
 
   let pp ppf {system; assoc_type; nb_atom; first_var} =
-    Format.fprintf ppf "@[<v>{nb_atom: %i@ fist_var: %i@ assoc: %a@ system: %a}@]"
+    Format.fprintf ppf "@[<v>{nb_atom: %i@ first_var: %i@ assoc: %a@ system: %a}@]"
     nb_atom first_var
     Fmt.(vbox (array ~sep:(any ",") Type.pp)) assoc_type
     Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) system
@@ -163,7 +165,7 @@ end
 (** See section 6.2 and 6.3 *)
 module Dioph2Sol : sig
 
-  type t = (Type.t * Type.t) Iter.t
+  type t = Env.t
 
   val get_solutions :
     Env.t -> System.t -> System.dioph_solution Iter.t
@@ -175,7 +177,7 @@ end = struct
 
   module Trace = Utils.Tracing
 
-  type t = (Type.t * Type.t) Iter.t
+  type t = Env.t
 
   let _pp ppf (subset, unif) =
     let pp_pair ppf (v,t) =
@@ -204,11 +206,11 @@ end = struct
     let f _ col = Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 first_var
 
-  let combine_shape_sols kind_sols =
-    CCList.map_product_l (fun (nb_kinds, symbols, solutions, bitvars, assoc_type, sols) ->
-      List.map (fun x -> (nb_kinds, symbols, solutions, bitvars, assoc_type, x))
+  let combine_shape_sols shape_sols =
+    CCList.map_product_l (fun (system, solutions, bitvars, sols) ->
+      List.map (fun x -> (system, solutions, bitvars, x))
       (Iter.to_list sols))
-    kind_sols
+    shape_sols
 
   let iterate_shape_subsets len system bitvars =
     Hullot.Default.iter ~len
@@ -220,10 +222,10 @@ end = struct
     Iter.flat_map (fun shape_part ->
       let shape_vec= 
         let bitv = ref Bitv.empty in
-        List.iter (fun (nb_kinds, symbols, _solutions, bitvars, _assoc_type, kind_sols) ->
+        List.iter (fun (system, solutions, bitvars, shape_sol) ->
           for i = 0 to nb_columns - 1 do
-            for j = 0 to Array.length symbols - 1 do
-              if Bitv.mem j kind_sols && Bitv.mem j bitvars.(i + nb_kinds) then
+            for j = 0 to CCVector.length solutions - 1 do
+              if Bitv.mem j shape_sol && Bitv.mem j bitvars.(i + system.System.first_var) then
                 bitv := Bitv.add !bitv i
             done
           done
@@ -236,129 +238,142 @@ end = struct
           ~large:(large_enough shape_vec bitvars))
     ) (Iter.of_list shape_parts)
 
-  (** From the iter of solution of the diophantine equations system,
-      extract the solution in a vector and return an array of bitset
-      for each variables, the bitset contains i if the ith solution
-      gives a non-zero value to the variables. *)
-  let extract_solutions stack nb_atom
-      (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
-    let nb_columns = nb_atom in
-    let bitvars = Array.make nb_columns Bitv.empty in
-    let counter = ref 0 in
-    seq_solutions begin fun sol ->
-      CCVector.push stack sol ;
-      let i = CCRef.get_then_incr counter in
-      for j = 0 to nb_columns - 1 do
-        if System.get_solution sol j <> 0 then
-          bitvars.(j) <- Bitv.add bitvars.(j) i
-        else ()
-      done;
-    end;
-    assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
-    bitvars
-
-  (* TO OPTIM *)
-  let make_term env buffer l : Type.t =
-    CCVector.clear buffer;
-    let f acc (n, symb) =
-      let tmp = ref acc in
-      for _ = 1 to n do tmp := symb :: ! tmp done;
-      !tmp
-    in
-    CCList.fold_left f [] l
-      |> fun l -> Type.tuple env @@ Type.NSet.of_list l
-
-  let unifier_of_subset env vars solutions symbols (shape_sols, pure_sols) =
-    (* TODO: vars should be only variable therefore the type should
-       change removing the need for the match *)
-    assert (CCVector.length solutions = Array.length symbols);
-
-    (* Unifier is a map from variable to a list of pure terms presenting the
-       the tuple associated with the variable *)
-    let unifiers = Variable.HMap.create (Array.length vars) in
-    let equations = ref [] in
-    let solutions = CCVector.unsafe_get_array solutions in
-
-    (* We add the variables comming from the solution in pure_sols *)
-    for i = 0 to Array.length symbols - 1 do
-      if Bitv.mem i pure_sols then
-        let sol = solutions.(i) in
-        (* assert (Array.length sol = Array.length vars) ; *)
-        let symb = symbols.(i) in
-        (* log (fun m -> m "Checking %i:%a for subset %a@." i Pure.pp symb Bitv.pp subset) ; *)
-        for j = 0 to Array.length vars - 1 do
-          match vars.(j) with
-          | Type.Var var ->
-            let multiplicity = System.get_solution sol j in
-            Variable.HMap.add_list unifiers var (multiplicity, symb)
-          | _ -> failwith "Impossible"
-        done;
-    done;
-    (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
-    (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
-    (* ) ; *)
-
-    (* We add the variable comming from kind_sols *)
-    List.iter (fun (_nb_shapes, symbols, solutions, _bitvars, assoc_type, shape_sol) ->
-      let solutions = CCVector.unsafe_get_array solutions in
-      for i = 0 to Array.length symbols - 1 do
-        if Bitv.mem i shape_sol then
-          let sol = solutions.(i) in
-          let symb = symbols.(i) in
-          Array.iteri (fun j v -> match v with
-          | Type.Var var ->
-              let multiplicity = System.get_solution sol j in
-              Variable.HMap.add_list unifiers var (multiplicity, symb)
-          | t ->
-              equations := (symb, t) :: !equations
-          ) assoc_type
-      done
-    ) shape_sols;
-
-    let buffer = CCVector.create_with ~capacity:10 Type.dummy in
-    fun k ->
-      List.iter k !equations;
-      Variable.HMap.iter
-        (fun key l ->
-           let pure_term = make_term env buffer l in
-           k (Type.var env key, pure_term))
-        unifiers
-
-  let get_first_assoc_type sol assoc_type =
+  let get_first_assoc_type sol {System. assoc_type; first_var; _} =
     let rec aux i =
+      assert (i < first_var);
       if System.get_solution sol i <> 0 then
         assoc_type.(i)
       else aux (i+1)
     in
     aux 0
 
-  let get_shapes_solutions
-      (({System. nb_atom; first_var; assoc_type; _} as system), solutions) =
-    let stack_solution = CCVector.create () in
-    let bitvars = extract_solutions stack_solution nb_atom solutions in
-    let symbols = Array.init (CCVector.length stack_solution)
-          (fun i -> get_first_assoc_type (CCVector.get stack_solution i) assoc_type) in
-    let iter_sol = iterate_shape_subsets (Array.length symbols) system bitvars in
-    first_var, symbols, stack_solution, bitvars, assoc_type, iter_sol
+  (** Given a solution of the diophantine system, generate the equations associated to it
+      and process them using the syntactic simplification. Return the environnement
+      obtain after processing the equations and containing the partial assignment of
+      variables *)
+  let dioph2env env ({System. nb_atom; assoc_type; first_var; _} as system) sol =
+    let symb =
+      if first_var = 0 then
+        Type.var (Env.tyenv env) (Env.gen env)
+      else get_first_assoc_type sol system
+    in
+    let env = Env.copy env in
+    (* Generate equations between the first variable of the solution *)
+    let stack = ref Stack.empty in
+    for i = 0 to first_var - 1 do
+      if System.get_solution sol i > 0 then (
+        stack := Stack.push !stack symb assoc_type.(i)
+      )
+    done;
+    (* Process the equations if we reach a contradiction, we stop, otherwise
+       we generate the partial assignment for the variables. *)
+    Logs.debug (fun m -> m "Stack sol dioph: @[[%a]@]" Stack.pp !stack);
+    match Syntactic.process_stack env !stack with
+    | Syntactic.FailUnif _ | FailedOccurCheck _ -> None
+    | Done ->
+        for i = first_var to nb_atom - 1 do
+          if System.get_solution sol i > 0 then (
+            match assoc_type.(i) with
+            | Var v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
+            | _ -> failwith "Impossible"
+          )
+        done;
+        Some env
+
+  (** From the iter of solution of the diophantine equations system,
+      extract the solution in a vector and return an array of bitset
+      for each variables, the bitset contains i if the ith solution
+      gives a non-zero value to the variables. *)
+  let extract_solutions env stack system
+      (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
+    let nb_columns = system.System.nb_atom in
+    let bitvars = Array.make nb_columns Bitv.empty in
+    let counter = ref 0 in
+    seq_solutions begin fun sol ->
+      match dioph2env env system sol with
+      | None -> ()
+      | Some env_sol ->
+        CCVector.push stack env_sol ;
+        let i = CCRef.get_then_incr counter in
+        for j = 0 to nb_columns - 1 do
+          if System.get_solution sol j <> 0 then
+            bitvars.(j) <- Bitv.add bitvars.(j) i
+          else ()
+        done;
+    end;
+    assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
+    bitvars
+
+  let env_of_subset env solutions (shape_sols, pure_sols) =
+    (* TODO: vars should be only variable therefore the type should
+       change removing the need for the match *)
+
+    (* Unifier is a map from variable to a list of pure terms presenting the
+       the tuple associated with the variable *)
+    let exception Bail in
+    let nb_sol = CCVector.length solutions in
+    let solutions = CCVector.unsafe_get_array solutions in
+    let final_env = ref env in
+
+    try
+      (* We add the variables comming from the solution in pure_sols *)
+      for i = 0 to nb_sol - 1 do
+        if Bitv.mem i pure_sols then
+          let new_env, stack = Env.merge !final_env solutions.(i) in
+          match Syntactic.process_stack new_env (Stack.of_list stack) with
+          | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
+          | Done -> final_env := new_env
+      done;
+      (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
+      (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
+      (* ) ; *)
+
+      (* We add the variable comming from kind_sols *)
+      List.iter (fun (_system, solutions, _bitvars, shape_sol) ->
+        let nb_sol = CCVector.length solutions in
+        let solutions = CCVector.unsafe_get_array solutions in
+        for i = 0 to nb_sol - 1 do
+          if Bitv.mem i shape_sol then
+            let new_env, stack = Env.merge !final_env solutions.(i) in
+            match Syntactic.process_stack new_env (Stack.of_list stack) with
+            | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
+            | Done -> final_env := new_env
+        done
+      ) shape_sols;
+
+      let final_env, stack = Env.commit !final_env in
+      match
+        (* TODO: need to check the call to occur_check here *)
+        let open Syntactic in
+        let* _ = Syntactic.process_stack final_env (Stack.of_list stack) in
+        Syntactic.occur_check final_env
+      with
+      | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
+      | Done ->
+          Some final_env
+    with Bail -> None
+
+
+  let get_shapes_solutions env
+      (system, solutions) =
+    let stack_env_sols = CCVector.create () in
+    let bitvars = extract_solutions env stack_env_sols system solutions in
+    let iter_sol = iterate_shape_subsets (CCVector.length stack_env_sols) system bitvars in
+    system, stack_env_sols, bitvars, iter_sol
 
   (** Combine everything *)
-  let get_solutions env
-      {System. nb_atom; assoc_type;_}
-      pure_solutions shapes_sols k =
-    let stack_solutions = CCVector.create () in
-    let bitvars = extract_solutions stack_solutions nb_atom pure_solutions in
+  let get_solutions env system pure_solutions shapes_sols k =
+    let stack_env_sols = CCVector.create () in
+    let bitvars = extract_solutions env stack_env_sols system pure_solutions in
     (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
     Logs.debug (fun m -> m "@[<v2>Sol stack:@ %a@]@."
       (CCVector.pp System.pp_solution) stack_solutions); *)
-    let symbols = Array.init (CCVector.length stack_solutions)
-                             (fun _ -> Type.var (Env.tyenv env) (Env.gen env)) in
-    (* Logs.debug (fun m -> m "@[Symbols: %a@]@." (Fmt.Dump.array @@ Pure.pp) symbols); *)
-    let shapes_combined_sols = List.map get_shapes_solutions shapes_sols in
-    let subsets = iterate_subsets nb_atom shapes_combined_sols
-                    (Array.length symbols) bitvars in
+    let shapes_combined_sols = List.map (get_shapes_solutions env) shapes_sols in
+    let subsets = iterate_subsets system.System.nb_atom shapes_combined_sols
+                    (CCVector.length stack_env_sols) bitvars in
     let n_solutions = ref 0 in
-    Trace.wrap_ac_sol (Iter.map
-      (unifier_of_subset (Env.tyenv env) assoc_type stack_solutions symbols)
+    Trace.wrap_ac_sol (Iter.filter_map
+      (env_of_subset env stack_env_sols)
       subsets) (fun x -> incr n_solutions; k x);
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
@@ -384,7 +399,7 @@ let rec exists f s k stop : bool =
     solve them and combine them into solution to the original problems. *)
 let solve_systems env (var_system, shape_systems) =
   Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp var_system);
-  Logs.debug (fun m -> m "@[Kind system: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) shape_systems);
+  Logs.debug (fun m -> m "@[Shape systems: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) shape_systems);
 
   let var_sols = System.solve (fun _ -> false) var_system in
 
@@ -398,7 +413,7 @@ let solve_systems env (var_system, shape_systems) =
     cut_aux 0 nb_shapes x
   in
 
-  (* TODO: for each Kind we need to solve the pure system with only var.
+  (* TODO: for each Shape we need to solve the pure system with only var.
       Then we filter it out here, we could tweak the solver to not have to do that.
       We initialise the solver by giving 1 to every position of firt_var, this way
       we garanty that the solution have a one there. *)
@@ -408,8 +423,8 @@ let solve_systems env (var_system, shape_systems) =
   let shapes_sols = List.map (fun (system: System.t) ->
     ( system,
       System.solve (cut_shape system.first_var) system
-        |> Iter.filter (fun s ->
-            exists (fun x -> x > 0) s 0 system.first_var)
+        |> Iter.filter (fun sol ->
+            exists (fun x -> x > 0) sol 0 system.first_var)
         )
     ) shape_systems
   in
@@ -417,8 +432,9 @@ let solve_systems env (var_system, shape_systems) =
 
 let solve env problems =
   match problems with
-  | [] -> Iter.empty
+  | [] -> failwith "Nothing to solve"
   | _ ->
+    Logs.debug (fun m -> m "Solving AC system: @,@[%a@]" (CCList.pp ACTerm.pp_problem) problems);
     make_systems env problems
     |> solve_systems env
 
