@@ -401,7 +401,19 @@ let solve_systems env (var_system, shape_systems) =
   Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp var_system);
   Logs.debug (fun m -> m "@[Shape systems: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) shape_systems);
 
-  let var_sols = System.solve (fun _ -> false) var_system in
+  let var_sols =
+    System.solve (fun _ -> false) var_system
+      |> Iter.filter (fun sol ->
+          let b = exists (fun x -> x > 0) sol 0 var_system.nb_atom in
+          if not b then Logs.debug (fun m -> m "WRONG");
+          b
+          )
+      (* TODO: Maybe a bug in the solver.
+         If the only solution is the solution null (in case the system is empty,
+         then the Hublot tree will generatethe solution constisting of the empty set
+         (which is equal to 0) and the solution consisting of the solution 0 generating
+         two identical solution instead of one. *)
+  in
 
   let cut_shape nb_shapes x =
     let rec cut_aux i stop solution =
