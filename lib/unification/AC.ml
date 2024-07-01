@@ -33,7 +33,7 @@ end = struct
 
   type t = {
     nb_atom : int ; (* Number of atoms in each equation *)
-    assoc_type : Type.t array ; (* Map from indices to the associated pure terms *)
+    assoc_type : Type.t array ; (* Map from indices to the associated types *)
     first_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
     system : int array array ;
   }
@@ -302,34 +302,32 @@ end = struct
         done;
     end;
     assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
+    assert (!counter = CCVector.length stack);
     bitvars
 
-  let env_of_subset env solutions (shape_sols, pure_sols) =
+  let env_of_subset env solutions (shape_sols, var_sols) =
     (* TODO: vars should be only variable therefore the type should
        change removing the need for the match *)
 
-    (* Unifier is a map from variable to a list of pure terms presenting the
-       the tuple associated with the variable *)
     let exception Bail in
     let nb_sol = CCVector.length solutions in
     let solutions = CCVector.unsafe_get_array solutions in
     let final_env = ref env in
 
     try
-      (* We add the variables comming from the solution in pure_sols *)
+      (* We add the variables comming from the solution in var_sols *)
+      Logs.debug (fun m -> m "Merge env var sol: %a" Bitv.pp var_sols);
       for i = 0 to nb_sol - 1 do
-        if Bitv.mem i pure_sols then
+        if Bitv.mem i var_sols then
           let new_env, stack = Env.merge !final_env solutions.(i) in
           match Syntactic.process_stack new_env (Stack.of_list stack) with
           | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
           | Done -> final_env := new_env
       done;
-      (* log (fun m -> m "Unif: %a@." Fmt.(iter_bindings ~sep:(unit" | ") Variable.HMap.iter @@ *)
-      (*    pair ~sep:(unit" -> ") Variable.pp @@ list ~sep:(unit",@ ") @@ pair int Pure.pp ) unifiers *)
-      (* ) ; *)
 
-      (* We add the variable comming from kind_sols *)
+      (* We add the variable comming from shape_sols *)
       List.iter (fun (_system, solutions, _bitvars, shape_sol) ->
+        Logs.debug (fun m -> m "Merge env shape sol: %a" Bitv.pp shape_sol);
         let nb_sol = CCVector.length solutions in
         let solutions = CCVector.unsafe_get_array solutions in
         for i = 0 to nb_sol - 1 do
@@ -341,6 +339,7 @@ end = struct
         done
       ) shape_sols;
 
+      Logs.debug (fun m -> m "Commit into final env");
       let final_env, stack = Env.commit !final_env in
       match
         (* TODO: need to check the call to occur_check here *)
@@ -362,12 +361,11 @@ end = struct
     system, stack_env_sols, bitvars, iter_sol
 
   (** Combine everything *)
-  let get_solutions env system pure_solutions shapes_sols k =
+  let get_solutions env system var_solutions shapes_sols k =
     let stack_env_sols = CCVector.create () in
-    let bitvars = extract_solutions env stack_env_sols system pure_solutions in
-    (* Logs.debug (fun m -> m "@[Bitvars: %a@]@." (Fmt.Dump.array Bitv.pp) bitvars);
-    Logs.debug (fun m -> m "@[<v2>Sol stack:@ %a@]@."
-      (CCVector.pp System.pp_solution) stack_solutions); *)
+    Logs.debug (fun m -> m "Extract var solutions");
+    let bitvars = extract_solutions env stack_env_sols system var_solutions in
+    Logs.debug (fun m -> m "Extract shapes solutions");
     let shapes_combined_sols = List.map (get_shapes_solutions env) shapes_sols in
     let subsets = iterate_subsets system.System.nb_atom shapes_combined_sols
                     (CCVector.length stack_env_sols) bitvars in
@@ -398,7 +396,7 @@ let rec exists f s k stop : bool =
     of the original problem on to each constant and the homogenous systems,
     solve them and combine them into solution to the original problems. *)
 let solve_systems env (var_system, shape_systems) =
-  Logs.debug (fun m -> m "@[Pure system: %a@]" System.pp var_system);
+  Logs.debug (fun m -> m "@[Var system: %a@]" System.pp var_system);
   Logs.debug (fun m -> m "@[Shape systems: %a@]" Fmt.(vbox @@ list ~sep:cut System.pp) shape_systems);
 
   let var_sols =
@@ -425,7 +423,7 @@ let solve_systems env (var_system, shape_systems) =
     cut_aux 0 nb_shapes x
   in
 
-  (* TODO: for each Shape we need to solve the pure system with only var.
+  (* TODO: for each Shape we need to solve the var system with only var.
       Then we filter it out here, we could tweak the solver to not have to do that.
       We initialise the solver by giving 1 to every position of firt_var, this way
       we garanty that the solution have a one there. *)
