@@ -15,7 +15,9 @@ module Stack : sig
 
   val empty : t
   val pop : t -> (elt * t) option
-  val push_array2 : Type.t array -> Type.t array -> t -> t
+  val push : t -> Type.t -> Type.t -> t
+  val push_array2 : t -> Type.t array -> Type.t array -> t
+  val of_list : elt list -> t
   val pp : t Fmt.t [@@warning "-32"] [@@ocaml.toplevel_printer]
 end = struct
   type elt = Type.t * Type.t
@@ -25,7 +27,9 @@ end = struct
   let[@inline] pop = function [] -> None | h :: t -> Some (h, t)
 
   let push l t1 t2 = (t1, t2) :: l
-  let push_array2 a1 a2 stack = CCArray.fold2 push stack a1 a2
+  let push_array2 stack a1 a2 = CCArray.fold2 push stack a1 a2
+
+  let of_list l = l
 
   let pp_elt ppf (t1, t2) =
     Fmt.pf ppf "%a = %a" Type.pp t1 Type.pp t2
@@ -114,7 +118,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
     ->
       debug (fun m -> m "Constr|Constr");
       assert (Array.length args1 = Array.length args2);
-      let stack = Stack.push_array2 args1 args2 stack in
+      let stack = Stack.push_array2 stack args1 args2 in
       process_stack env stack
   (* Two arrows, we apply VA repeatedly
      (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r'  -->  an equivalent arrow problem

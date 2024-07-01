@@ -1,5 +1,5 @@
 (library
  (name acic)
- (libraries logs zarith common diet trace)
+ (libraries logs zarith common diet trace containers)
  (flags
   (:standard -open Common -open Utils)))
