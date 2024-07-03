@@ -96,8 +96,6 @@ end = struct
     in
     (aux shape_partition.variable, List.map aux shape_partition.shapes)
 
-(* TODO: We have a partition of shape, then we solve the system, then we can filter solution
-   if some stuff is obviously not compatible *)
   (*NOTE: Current implementation.
     A simple type is either a constant, a varialbe or a frozen variable.
      - We create a system only for variables
@@ -390,7 +388,7 @@ let rec exists f s k stop : bool =
   if k = stop then false
   else f (System.get_solution s k) || exists f s (k+1) stop
 
-(* TODO: If a system have no solution, then there is no solution to the problem and
+(* TODO: If a shape system have no solution, then there is no solution to the problem and
  we could cut early. *)
 (** Take a collection of diophantine equations corresponding to the projection
     of the original problem on to each constant and the homogenous systems,
