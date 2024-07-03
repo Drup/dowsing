@@ -293,7 +293,7 @@ let arrow env param ret =
   | _, _ -> Arrow (NSet.singleton param, ret)
 
 let tuple env elts =
-  (* TODO: can elts be of size 0 or 1? *)
+  (* TODO: can elts be of size 0 or 1? Currently it is needed *)
   let aux = function Tuple elts -> elts | elt -> NSet.singleton elt in
   let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
   hashcons env

@@ -23,11 +23,14 @@ let rec solve_tuple_problems env0 =
   |> Iter.flat_map (solve_loop)
 
 (* TODO: here we could expend the return type and check if it can
-   be unified with a arrow under the current substitution. To avoid branching *)
+   be unified with a arrow under the current substitution. To avoid branching.
+   We could also check if in the args, a variable appears exactly once and we
+   can then avoid branching. *)
 (* Elementary Arrow theory *)
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
   (*  TODO: we could reuse fresh variable accross the solutions *)
   (* AL -> BL ≡? AR -> BR *)
+  let pb = CCFormat.sprintf "%a" ArrowTerm.pp_problem {ArrowTerm.left; right} in
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__
     ~data:(fun () ->
       [
@@ -44,19 +47,14 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
             "AL ≡? AR  ∧  BL ≡? BR" (fun _sp ->
               Env.push_tuple env left.args right.args;
               insert env left.ret right.ret) );
-      ( "AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR",
+      ( "AL * αL ≡? AR  ∧  BL ≡? αL -> BR",
         fun env () ->
           (* AL * αL ≡? AR  ∧
-             BL ≡? αL -> βL  ∧
-             βL ≡? BR
-          *)
-          (* We use this reformulation:
-             AL * αL ≡? AR  ∧
              BL ≡? αL -> BR
           *)
           (* TODO: Do not create the variable βL, just put  BL ≡? αL -> BR in as equation *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
-            "AL * αL ≡? AR  ∧  BL ≡? αL -> βL  ∧  βL ≡? BR" (fun _sp ->
+            "AL * αL ≡? AR  ∧  BL ≡? αL -> BR" (fun _sp ->
               let var_arg_left = Env.gen env in
               Env.push_tuple env
                 (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
@@ -65,18 +63,13 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_left)
                    right.ret) ) );
-      ( "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βR ≡? BL",
+      ( "AL ≡? AR * αR  ∧  αR -> BL ≡? BR",
         fun env () ->
           (* AL ≡? AR * αR  ∧
-             αR -> βR ≡? BR   ∧
-             βR ≡? BL
-          *)
-          (* We use this reformulation:
-             AL ≡? AR * αR  ∧
-             αR -> BL ≡? BR   ∧
+             αR -> BL ≡? BR
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
-            "AL ≡? AR * αR  ∧  αR -> βR ≡? BR   ∧  βL ≡? BL" (fun _sp ->
+            "AL ≡? AR * αR  ∧  αR -> BL ≡? BR" (fun _sp ->
               let var_arg_right = Env.gen env in
               Env.push_tuple env left.args
                 (ACTerm.add right.args (Type.var (Env.tyenv env) var_arg_right));
@@ -84,21 +77,14 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_right)
                    left.ret) ) );
-      ( "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> βL  ∧  αR -> βR ≡? BR   ∧  βL ≡? βR",
+      ( "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> β  ∧  αR -> β ≡? BR",
         fun env () ->
           (* AL * αL ≡? AR * αR  ∧
-             BL ≡? αL -> βL  ∧
-             αR -> βR ≡? BR   ∧
-             βL ≡? βR
-          *)
-          (* We use this reformulation:
-             AL * αL ≡? AR * αR  ∧
              BL ≡? αL -> β  ∧
-             αR -> β ≡? BR   ∧
+             αR -> β ≡? BR
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
-            "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> βL  ∧  αR -> βR ≡? BR   ∧  βL \
-             ≡? βR" (fun _sp ->
+            "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> β  ∧  αR -> β ≡? BR" (fun _sp ->
               let var_arg_left = Env.gen env in
               let var_arg_right = Env.gen env in
               let var_ret = Env.gen env in
@@ -123,7 +109,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
   |> Iter.flat_map (fun (desc, f) ->
          Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__
            ("Solve_arrow sub problem: " ^ desc )
-           ~data:(fun () -> [ ("case", `String desc) ])
+           ~data:(fun () -> [ ("case", `String desc); "pb", `String pb ])
            (try_with_solution env0 f ()))
   |> Trace.wrap_arrow_sol
 
