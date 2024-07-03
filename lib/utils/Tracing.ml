@@ -87,4 +87,5 @@ let wrap_iter ?__FUNCTION__ ~__FILE__ ~__LINE__ ?data ?count name iter k =
         fun x ->
           with_span ?__FUNCTION__ ~__FILE__ ~__LINE__ k_name (fun _sp -> k x)
   in
+  Logs.debug (fun m -> m "%s" name);
   with_span ?__FUNCTION__ ~__FILE__ ~__LINE__ ?data name (fun _sp -> iter k)
