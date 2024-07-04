@@ -196,11 +196,11 @@ end = struct
     let f k col = Bitv.mem k const_vec || Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 @@ Array.length bitvars
 
-  let small_enough_kind first_var bitvars bitset =
+  let small_enough_shape first_var bitvars bitset =
     let f _ col = Bitv.(is_singleton_or_empty (bitset && col)) in
     for_all2_range f bitvars 0 first_var
 
-  let large_enough_kind first_var bitvars subset =
+  let large_enough_shape first_var bitvars subset =
     let f _ col = Bitv.do_intersect col subset in
     for_all2_range f bitvars 0 first_var
 
@@ -212,8 +212,8 @@ end = struct
 
   let iterate_shape_subsets len system bitvars =
     Hullot.Default.iter ~len
-      ~small:(small_enough_kind system.System.first_var bitvars)
-      ~large:(large_enough_kind system.first_var bitvars)
+      ~small:(small_enough_shape system.System.first_var bitvars)
+      ~large:(large_enough_shape system.first_var bitvars)
 
   let iterate_subsets nb_columns shape_combined_sols len bitvars =
     let shape_parts = combine_shape_sols shape_combined_sols in
@@ -400,10 +400,7 @@ let solve_systems env (var_system, shape_systems) =
   let var_sols =
     System.solve (fun _ -> false) var_system
       |> Iter.filter (fun sol ->
-          let b = exists (fun x -> x > 0) sol 0 var_system.nb_atom in
-          if not b then Logs.debug (fun m -> m "WRONG");
-          b
-          )
+          exists (fun x -> x > 0) sol 0 var_system.nb_atom)
       (* TODO: Maybe a bug in the solver.
          If the only solution is the solution null (in case the system is empty,
          then the Hublot tree will generatethe solution constisting of the empty set
