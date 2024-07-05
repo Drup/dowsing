@@ -3,6 +3,7 @@ module Stack : sig
   type t
 
   val empty : t
+  val is_empty : t -> bool
   val pop : t -> (elt * t) option
   val push : t -> Type.t -> Type.t -> t
   val push_array2 : t -> Type.t array -> Type.t array -> t
@@ -11,6 +12,10 @@ module Stack : sig
 end
 
 type return = Done | FailUnif of Type.t * Type.t | FailedOccurCheck of Env.t
+
+module Infix : sig
+  val ( let* ) : return -> ( unit -> return ) -> return
+end
 
 val ( let* ) : return -> ( unit -> return ) -> return
 

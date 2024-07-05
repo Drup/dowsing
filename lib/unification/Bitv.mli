@@ -4,12 +4,14 @@ module type S = sig
   val empty : t
   val (&&) : t -> t -> t
   val (||) : t -> t -> t
+  val (lsr) : t -> int -> t
   val not : t -> t
   val add : t -> int -> t
   val singleton : int -> t
   val all_until : int -> t
   val is_empty : t -> bool
   val mem : int -> t -> bool
+  val equal : t -> t -> bool
   val is_subset : t -> t -> bool
   val do_intersect : t -> t -> bool
   val is_singleton_or_empty : t -> bool

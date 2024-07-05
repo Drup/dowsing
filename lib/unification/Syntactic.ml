@@ -14,6 +14,7 @@ module Stack : sig
   type t
 
   val empty : t
+  val is_empty : t -> bool
   val pop : t -> (elt * t) option
   val push : t -> Type.t -> Type.t -> t
   val push_array2 : t -> Type.t array -> Type.t array -> t
@@ -24,6 +25,7 @@ end = struct
   type t = elt list
 
   let empty : t = []
+  let is_empty = List.is_empty
   let[@inline] pop = function [] -> None | h :: t -> Some (h, t)
 
   let push l t1 t2 = (t1, t2) :: l
@@ -39,7 +41,11 @@ end
 
 type return = Done | FailUnif of Type.t * Type.t | FailedOccurCheck of Env.t
 
-let ( let* ) x1 f = match x1 with Done -> f () | _ -> x1
+module Infix = struct
+  let ( let* ) x1 f = match x1 with Done -> f () | _ -> x1
+end
+
+include Infix
 
 (** Checking for cycles *)
 
