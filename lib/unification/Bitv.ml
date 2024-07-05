@@ -3,12 +3,14 @@ module type S = sig
   val empty : t
   val (&&) : t -> t -> t
   val (||) : t -> t -> t
+  val (lsr) : t -> int -> t
   val not : t -> t
   val add : t -> int -> t
   val singleton : int -> t
   val all_until : int -> t
   val is_empty : t -> bool
   val mem : int -> t -> bool
+  val equal : t -> t -> bool
   val is_subset : t -> t -> bool
   val do_intersect : t -> t -> bool
   val is_singleton_or_empty : t -> bool
@@ -28,6 +30,7 @@ module Int : S with type t = private int = struct
   let empty = 0
   let (&&) = (land)
   let (||) = (lor)
+  let (lsr) = (lsr)
   let not = lnot
   let singleton i = check_len i ; 1 lsl i
   let add x i = x || singleton i
@@ -38,6 +41,7 @@ module Int : S with type t = private int = struct
   let is_subset i b = (i && b) = i
   let do_intersect i b = (i && b) <> 0
   let mem i b = ((singleton i) && b) <> 0
+  let equal = Int.equal
 
   let pp = CCInt.pp_binary
 end
@@ -52,6 +56,7 @@ module Z : S with type t = private Z.t = struct
   let empty = Z.zero
   let (&&) = Z.(land)
   let (||) = Z.(lor)
+  let (lsr) = Z.(asr)
   let not = Z.lognot
   let singleton i = Z.(one lsl i)
   let add x i = x || singleton i
@@ -62,6 +67,7 @@ module Z : S with type t = private Z.t = struct
   let is_subset i b = (i && b) = i
   let do_intersect i b = (i && b) <> Z.zero
   let mem i b = ((singleton i) && b) <> Z.zero
+  let equal = Z.equal
 
   let pp = Z.pp_print
 end

@@ -1,3 +1,4 @@
+open Syntactic.Infix
 (* Shape *)
 module S = Shape.Kind
 
@@ -187,60 +188,67 @@ end = struct
          Variable.HMap.iter pp_pair)
       unif
 
-  (** Construction of the hullot tree to iterate through subsets. *)
+  exception Bail
 
-  let rec for_all2_range f a k stop : bool =
-    k = stop || f k a.(k) && for_all2_range f a (k+1) stop
+  let merge_env env1 env2 =
+    let new_env, stack = Env.merge env1 env2 in
+    if List.is_empty stack then new_env else
+      match Syntactic.process_stack new_env (Stack.of_list stack) with
+      | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
+      | Done -> new_env
 
-  let large_enough const_vec bitvars subset =
-    let f k col = Bitv.mem k const_vec || Bitv.do_intersect col subset in
-    for_all2_range f bitvars 0 @@ Array.length bitvars
+  let iterate_shape_subsets env system solutions bitvars_cover k =
+    let mask = Bitv.all_until (system.System.first_var - 1) in
+    let rec aux env coverage = function
+      | -1 ->
+          (* Check if the subset is large enough *)
+          if Bitv.(is_subset mask coverage) then
+            k (env, Bitv.(coverage lsr system.first_var))
+      | n ->
+          aux env coverage (n-1);
+          (* Check if the subset is small enough *)
+          if Bitv.(is_empty (coverage && bitvars_cover.(n) && mask)) then
+            match merge_env env solutions.(n) with
+            | env ->
+                let coverage = Bitv.(coverage || bitvars_cover.(n)) in
+                aux env coverage (n-1)
+            | exception Bail -> ()
+    in
+    aux env Bitv.empty (Array.length solutions - 1)
 
-  let small_enough_shape first_var bitvars bitset =
-    let f _ col = Bitv.(is_singleton_or_empty (bitset && col)) in
-    for_all2_range f bitvars 0 first_var
-
-  let large_enough_shape first_var bitvars subset =
-    let f _ col = Bitv.do_intersect col subset in
-    for_all2_range f bitvars 0 first_var
-
-  let combine_shape_sols shape_sols =
-    CCList.map_product_l (fun (system, solutions, bitvars, sols) ->
-      List.map (fun x -> (system, solutions, bitvars, x))
-      (Iter.to_list sols))
-    shape_sols
-
-  let iterate_shape_subsets len system bitvars =
-    Hullot.Default.iter ~len
-      ~small:(small_enough_shape system.System.first_var bitvars)
-      ~large:(large_enough_shape system.first_var bitvars)
-
-  let iterate_subsets nb_columns shape_combined_sols len bitvars =
-    let shape_parts = combine_shape_sols shape_combined_sols in
-    Iter.flat_map (fun shape_part ->
-      let shape_vec= 
-        let bitv = ref Bitv.empty in
-        List.iter (fun (system, solutions, bitvars, shape_sol) ->
-          for i = 0 to nb_columns - 1 do
-            for j = 0 to CCVector.length solutions - 1 do
-              if Bitv.mem j shape_sol && Bitv.mem j bitvars.(i + system.System.first_var) then
-                bitv := Bitv.add !bitv i
-            done
-          done
-        ) shape_part;
-        !bitv
-      in
-      Iter.map (fun x -> (shape_part, x))
-        (Hullot.Default.iter ~len
-          ~small:(fun _ -> true)
-          ~large:(large_enough shape_vec bitvars))
-    ) (Iter.of_list shape_parts)
+  let iterate_var_subsets env shape_coverage system solutions bitvars_cover k =
+    let mask = Bitv.all_until (system.System.nb_atom - 1) in
+    let rec aux env coverage = function
+      | -1 ->
+          (* Check if the subset is large enough *)
+          if Bitv.(equal mask coverage) then (
+            let final_env, stack = Env.commit env in
+            match
+              let* _ =
+                if List.is_empty stack then Done
+                else Syntactic.process_stack final_env (Stack.of_list stack)
+              in
+              Syntactic.occur_check final_env
+            with
+            | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
+            | Done ->
+                  k final_env
+          )
+      | n ->
+          aux env coverage (n-1);
+          match merge_env env solutions.(n) with
+          | env ->
+              let coverage = Bitv.(coverage || bitvars_cover.(n)) in
+              aux env coverage (n-1)
+          | exception Bail -> ()
+    in
+    aux env shape_coverage (Array.length solutions - 1)
 
   let get_first_assoc_type sol {System. assoc_type; first_var; _} =
     let rec aux i =
       assert (i < first_var);
       if System.get_solution sol i <> 0 then
-        assoc_type.(i)
+        assoc_type.(i), i + 1
       else aux (i+1)
     in
     aux 0
@@ -250,23 +258,25 @@ end = struct
       obtain after processing the equations and containing the partial assignment of
       variables *)
   let dioph2env env ({System. nb_atom; assoc_type; first_var; _} as system) sol =
-    let symb =
+    let symb, start_i =
       if first_var = 0 then
-        Type.var (Env.tyenv env) (Env.gen env)
+        Type.var (Env.tyenv env) (Env.gen env), 0
       else get_first_assoc_type sol system
     in
     let env = Env.copy env in
     (* Generate equations between the first variable of the solution *)
     let stack = ref Stack.empty in
-    for i = 0 to first_var - 1 do
-      if System.get_solution sol i > 0 then (
+    for i = start_i to first_var - 1 do
+      if System.get_solution sol i > 0 then
         stack := Stack.push !stack symb assoc_type.(i)
-      )
     done;
     (* Process the equations if we reach a contradiction, we stop, otherwise
        we generate the partial assignment for the variables. *)
     Logs.debug (fun m -> m "Stack sol dioph: @[[%a]@]" Stack.pp !stack);
-    match Syntactic.process_stack env !stack with
+    match
+      if Stack.is_empty !stack then Syntactic.Done
+      else Syntactic.process_stack env !stack (* TODO: maybe add an occur_check here but it would need an adapted version that looks in the partial too *)
+    with
     | Syntactic.FailUnif _ | FailedOccurCheck _ -> None
     | Done ->
         for i = first_var to nb_atom - 1 do
@@ -282,95 +292,50 @@ end = struct
       extract the solution in a vector and return an array of bitset
       for each variables, the bitset contains i if the ith solution
       gives a non-zero value to the variables. *)
-  let extract_solutions env stack system
-      (seq_solutions:System.dioph_solution Iter.t) : Bitv.t array =
-    let nb_columns = system.System.nb_atom in
-    let bitvars = Array.make nb_columns Bitv.empty in
+  let extract_solutions env system
+      (seq_solutions:System.dioph_solution Iter.t) =
+    let bitvars = CCVector.create () in
+    let stack = CCVector.create () in
     let counter = ref 0 in
     seq_solutions begin fun sol ->
       match dioph2env env system sol with
       | None -> ()
       | Some env_sol ->
         CCVector.push stack env_sol ;
+        CCVector.push bitvars Bitv.empty;
         let i = CCRef.get_then_incr counter in
-        for j = 0 to nb_columns - 1 do
+        for j = 0 to system.System.nb_atom - 1 do
           if System.get_solution sol j <> 0 then
-            bitvars.(j) <- Bitv.add bitvars.(j) i
+            CCVector.set bitvars i (Bitv.add (CCVector.get bitvars i) j)
           else ()
         done;
     end;
     assert (!counter < Bitv.capacity) ; (* Ensure we are not doing something silly with bitsets. *)
     assert (!counter = CCVector.length stack);
-    bitvars
-
-  let env_of_subset env solutions (shape_sols, var_sols) =
-    (* TODO: vars should be only variable therefore the type should
-       change removing the need for the match *)
-
-    let exception Bail in
-    let nb_sol = CCVector.length solutions in
-    let solutions = CCVector.unsafe_get_array solutions in
-    let final_env = ref env in
-
-    try
-      (* We add the variables comming from the solution in var_sols *)
-      Logs.debug (fun m -> m "Merge env var sol: %a" Bitv.pp var_sols);
-      for i = 0 to nb_sol - 1 do
-        if Bitv.mem i var_sols then
-          let new_env, stack = Env.merge !final_env solutions.(i) in
-          match Syntactic.process_stack new_env (Stack.of_list stack) with
-          | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
-          | Done -> final_env := new_env
-      done;
-
-      (* We add the variable comming from shape_sols *)
-      List.iter (fun (_system, solutions, _bitvars, shape_sol) ->
-        Logs.debug (fun m -> m "Merge env shape sol: %a" Bitv.pp shape_sol);
-        let nb_sol = CCVector.length solutions in
-        let solutions = CCVector.unsafe_get_array solutions in
-        for i = 0 to nb_sol - 1 do
-          if Bitv.mem i shape_sol then
-            let new_env, stack = Env.merge !final_env solutions.(i) in
-            match Syntactic.process_stack new_env (Stack.of_list stack) with
-            | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
-            | Done -> final_env := new_env
-        done
-      ) shape_sols;
-
-      Logs.debug (fun m -> m "Commit into final env");
-      let final_env, stack = Env.commit !final_env in
-      match
-        (* TODO: need to check the call to occur_check here *)
-        let open Syntactic in
-        let* _ = Syntactic.process_stack final_env (Stack.of_list stack) in
-        Syntactic.occur_check final_env
-      with
-      | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
-      | Done ->
-          Some final_env
-    with Bail -> None
-
-
-  let get_shapes_solutions env
-      (system, solutions) =
-    let stack_env_sols = CCVector.create () in
-    let bitvars = extract_solutions env stack_env_sols system solutions in
-    let iter_sol = iterate_shape_subsets (CCVector.length stack_env_sols) system bitvars in
-    system, stack_env_sols, bitvars, iter_sol
+    (CCVector.to_array stack, CCVector.to_array bitvars)
 
   (** Combine everything *)
   let get_solutions env system var_solutions shapes_sols k =
-    let stack_env_sols = CCVector.create () in
     Logs.debug (fun m -> m "Extract var solutions");
-    let bitvars = extract_solutions env stack_env_sols system var_solutions in
+    let env_sols, sol_coverages = extract_solutions env system var_solutions in
     Logs.debug (fun m -> m "Extract shapes solutions");
-    let shapes_combined_sols = List.map (get_shapes_solutions env) shapes_sols in
-    let subsets = iterate_subsets system.System.nb_atom shapes_combined_sols
-                    (CCVector.length stack_env_sols) bitvars in
+    let shapes_sols =
+      List.map (fun (system, solutions) -> system, extract_solutions env system solutions) shapes_sols
+    in
+    let rec combine_shapes env shapes_sols acc_coverage k =
+      (* TODO: env of each sol for each shape is computed several time, not good, either computed once and combine, or combined while building it *)
+      match shapes_sols with
+      | (system, (env_sols, bitvars)) :: t ->
+          let iter_sol = iterate_shape_subsets env system env_sols bitvars in
+          iter_sol (fun (env_sol, coverage) ->
+            combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
+          )
+      | [] ->
+          iterate_var_subsets env acc_coverage system env_sols sol_coverages k
+    in
     let n_solutions = ref 0 in
-    Trace.wrap_ac_sol (Iter.filter_map
-      (env_of_subset env stack_env_sols)
-      subsets) (fun x -> incr n_solutions; k x);
+    Trace.wrap_ac_sol (combine_shapes env shapes_sols Bitv.empty)
+      (fun x -> incr n_solutions; k x);
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
 end
 
