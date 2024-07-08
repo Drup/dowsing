@@ -23,6 +23,8 @@ let unif_easy =
        color * color * color * cursor *  int * int * int * int * int * int * \
        int * int * justification * relief * state * string * string * string \
        -> 'a" );
+    ("('a, int) list * (int, 'a) list", "(float, 'b) list * ('b, string) list");
+    ("('a, int) list * (int, 'a) list", "(float, 'b) list * ('b, 'c) list");
   |]
 
 let unif_hard =
@@ -32,6 +34,12 @@ let unif_hard =
       "('a * 'b) -> ('b -> 'd) -> ('a -> 'c) -> unit" );
     ( "('a * 'b) -> ('a -> 'c) -> ('b -> 'd) -> ('c * 'd)",
       "('a * 'b) -> ('b -> 'd) -> ('a -> 'c) -> ('d * 'c)" );
+    ( "('a, 'b) result -> ('a -> 'c) -> ('c, 'b) result",
+      "('a, 'b) result -> ('a -> 'c) -> ('c, 'b) result");
+    ( "('a, 'b) result -> ('a -> 'c) -> ('b -> 'd) -> ('c, 'd) result",
+      "('a, 'b) result -> ('a -> 'c) -> ('b -> 'd) -> ('c, 'd) result");
+    ( "('a, 'b) result -> ('a -> 'c) -> ('b -> 'c) -> 'c",
+      "('a, 'b) result -> ('a -> 'c) -> ('b -> 'c) -> 'c");
   |]
 
 let unify (name, data) =
@@ -106,7 +114,7 @@ let benchmark test =
         Tracing.Instance.timeout;
       ]
   in
-  let cfg = Benchmark.cfg ~limit:5000 ~quota:(Time.second 2.) () in
+  let cfg = Benchmark.cfg ~limit:5000 ~quota:(Time.second 3.) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
