@@ -10,9 +10,9 @@ val vars : t -> Subst.t
 val tyenv : t -> Type.Env.t
 
 type representative =
-  | V of Variable.t
+  | V of Variable.t * bool
   | E of Variable.t * Type.t
-val representative : t -> Variable.t -> representative
+val representative : non_arrow:bool -> t -> Variable.t -> representative
 
 val push_tuple : t -> ACTerm.t -> ACTerm.t -> unit
 val push_arrow : t -> ArrowTerm.t -> ArrowTerm.t -> unit

@@ -11,6 +11,14 @@ let rec apply (env : Type.Env.t) t =
         match Variable.Map.get var t with
         | None -> ty
         | Some ty -> substitute ty)
+    | Non_arrow_var var -> (
+        match Variable.Map.get var t with
+        | None -> ty
+        | Some ty ->
+            let ty = substitute ty in
+            assert (not @@ Type.is_arrow ty);
+            ty
+    )
     | Constr (lid, params) ->
         Type.constr env lid @@ CCArray.map substitute params
     | Arrow (params, ret) ->

@@ -144,8 +144,15 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       (* TODO: we can add check that the tuples can actually be unified otherwise stop *)
       Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
       process_stack env stack
+  | Non_arrow_var _, Arrow _ | Arrow _, Non_arrow_var _ ->
+      debug (fun m -> m "Fail");
+      FailUnif (t1, t2)
+  (* This need to be before the rules for variables *)
+  | Non_arrow_var v, t | t, Non_arrow_var v ->
+      debug (fun m -> m "Non_arrow_var");
+      insert_non_arrow_var env stack v t
   | Var v, t | t, Var v ->
-      debug (fun m -> m "Var|Var");
+      debug (fun m -> m "Var");
       insert_var env stack v t
   (* Clash rule
      Terms are incompatible
@@ -156,25 +163,38 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       debug (fun m -> m "Fail");
       FailUnif (t1, t2))
 
+and insert_non_arrow_var env stack x s =
+  Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
+  debug (fun m -> m "Insert_non_arrow_var: %a = %a" Variable.pp x Type.pp s);
+  match s with
+  | Type.Arrow _ -> failwith "Impossible"
+  | Type.Tuple _ | Type.Constr _ | Type.Other _
+  | Type.FrozenVar _ ->
+      quasi_solved env stack x true s
+  | Type.Var y -> non_proper env stack x true y false
+  | Type.Non_arrow_var y -> non_proper env stack x true y true
+  )
+
 and insert_var env stack x s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   debug (fun m -> m "Insert_var: %a = %a" Variable.pp x Type.pp s);
   match s with
+  | Type.Non_arrow_var _ -> failwith "Impossible should have been catch before"
   | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _
   | Type.FrozenVar _ ->
-      quasi_solved env stack x s
-  | Type.Var y -> non_proper env stack x y)
+      quasi_solved env stack x false s
+  | Type.Var y -> non_proper env stack x false y false)
 
 (* Quasi solved equation
    'x = (s₁,...sₙ)
    'x = (s₁,...sₙ) p
 *)
-and quasi_solved env stack x s =
+and quasi_solved env stack x non_arrow s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   (* Rule representative *)
-  match Env.representative env x with
-  | V x ->
-      let* () = attach env x s in
+  match Env.representative ~non_arrow env x with
+  | V (x, non_arrow) ->
+      let* () = attach non_arrow env x s in
       process_stack env stack
   (* TODO: I don't understand why we need to separate the cases and why we need an order
      on the equality *)
@@ -189,26 +209,37 @@ and quasi_solved env stack x s =
 (* Non proper equations
    'x ≡ 'y
 *)
-and non_proper env stack (x : Variable.t) (y : Variable.t) =
+and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow_y =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  match (Env.representative env x, Env.representative env y) with
-  | V x', V y' when Variable.equal x' y' -> process_stack env stack
-  | V x', (E (y', _) | V y') | E (y', _), V x' ->
-      let* () = attach env x' (Type.var (Env.tyenv env) y') in
+  match
+    (Env.representative ~non_arrow:non_arrow_x env x,
+     Env.representative ~non_arrow:non_arrow_y env y) with
+  | V (x', _), V (y', _) when Variable.equal x' y' -> process_stack env stack
+  | V (x', true), V (y', non_arrow_y) | V (y', non_arrow_y), V (x', true) ->
+      let ty' = (if non_arrow_y then Type.non_arrow_var else Type.var) (Env.tyenv env) y' in
+      let* () = attach true env x' ty' in
+      process_stack env stack
+  | V (x', false), V (y', false) ->
+      let* () = attach false env x' (Type.var (Env.tyenv env) y') in
+      process_stack env stack
+  | V (x', non_arrow), E (_, t) | E (_, t), V (x', non_arrow) ->
+      let* () = attach non_arrow env x' t in
       process_stack env stack
   (* TODO: I don't understand why we need an order on the equality *)
   | E (x', s), E (y', t) ->
       if Measure.make NodeCount s < Measure.make NodeCount t then
-        let* () = attach env y' (Type.var (Env.tyenv env) x') in
+        let* () = attach false env y' (Type.var (Env.tyenv env) x') in
         insert_rec env stack s t
       else
-        let* () = attach env x' (Type.var (Env.tyenv env) y') in
+        let* () = attach false env x' (Type.var (Env.tyenv env) y') in
         insert_rec env stack t s)
 
-and attach env v t : return =
+and attach non_arrow env v t : return =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  Env.add env v t;
-  occur_check env)
+    if non_arrow && Type.is_arrow t then FailUnif (Type.non_arrow_var (Env.tyenv env) v, t)
+    else (
+      Env.add env v t;
+      occur_check env))
 
 let insert env t u : return =
   Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__

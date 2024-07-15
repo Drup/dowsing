@@ -56,15 +56,21 @@ let pop_arrow e =
 
 
 type representative =
-  | V of Variable.t
+  | V of Variable.t * bool
   | E of Variable.t * Type.t
 
-let rec representative_rec m x =
+let rec representative_rec non_arrow m x =
   match Variable.Map.get x m with
-  | None -> V x
-  | Some (Type.Var x') -> representative_rec m x'
-  | Some t -> E (x, t)
-let representative e x = representative_rec e.vars x
+  | None -> V (x, non_arrow)
+  | Some (Type.Var x') ->
+      if non_arrow then failwith "Env.representative: Non_arrow_var followed by Var"
+      else representative_rec false m x'
+  | Some (Type.Non_arrow_var x') -> representative_rec true m x'
+  | Some t ->
+      if non_arrow && Type.is_arrow t then
+        failwith "Env.representative: Non_arrow_var followed by Arrow"
+      else E (x, t)
+let representative ~non_arrow e x = representative_rec non_arrow e.vars x
 
 (* TODO: During the merge, it could be that there is a contradiction between
    partials and vars but for now we will not see it. *)
