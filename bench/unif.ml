@@ -14,17 +14,14 @@ let _test = Test.make ~name:"Unify" (unify "a * int * string" "float * a")
 let unif_easy =
   "easy",
   [|
-    ("(a * b) * c -> d", "a * (c * b) -> d");
-    ("a * b -> c -> d", "a -> b -> c -> d");
-    ("'a * int * string", "float * 'a");
     ("'a -> 'a", "(x -> y) * x -> y");
     ( "'A * int list -> unit",
       "anchor * bitmap * bool * bool * color * color * color * color * color * \
        color * color * color * cursor *  int * int * int * int * int * int * \
        int * int * justification * relief * state * string * string * string \
        -> 'a" );
-    ("('a, int) list * (int, 'a) list", "(float, 'b) list * ('b, string) list");
-    ("('a, int) list * (int, 'a) list", "(float, 'b) list * ('b, 'c) list");
+    ("('a, int, float) f * (int, 'a, string) f * ('b, 'b, 'a) f * (char, string, 'b) f * 'a * 'b",
+     "('a, int, float) f * (int, 'a, string) f * ('b, 'b, 'a) f * (char, string, 'b) f * 'a * 'b");
   |]
 
 let unif_hard =
@@ -116,7 +113,7 @@ let benchmark test =
         Tracing.Instance.timeout;
       ]
   in
-  let cfg = Benchmark.cfg ~limit:5000 ~quota:(Time.second 3.) () in
+  let cfg = Benchmark.cfg ~limit:10000 ~quota:(Time.second 2.) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances

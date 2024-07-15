@@ -58,8 +58,8 @@ let pos_tests = [
   (* Tuples target of variable: TODO I think this is a case where a variable will point to a tuples *)
   1, "'a * 'b -> 'a", "int * unit * float -> int * unit";
   (* Loop *)
-  (* 1, "'a -> 'a", "'b -> 'b"; *)
-  (* 1, "'a -> 'a -> 'a", "'x * b -> 'x" ; *)
+  2, "'a -> 'a", "'b -> 'b";
+  1, "'a -> 'a -> 'a", "'x * b -> 'x" ;
 ]
 
 let neg_tests = [
