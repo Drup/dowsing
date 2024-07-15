@@ -40,6 +40,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
     @@
   let potentials =
     [
+      (* TODO: When doing AL = AR if they are both tuples of size 1 it is useless  *)
       ( "AL ≡? AR  ∧  BL ≡? BR",
         fun env () ->
           (* AL ≡? AR  ∧  BL ≡? BR *)
@@ -96,12 +97,12 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                 insert env left.ret
                   (Type.arrow (Env.tyenv env)
                      (Type.var (Env.tyenv env) var_arg_left)
-                     (Type.var (Env.tyenv env) var_ret))
+                     (Type.non_arrow_var (Env.tyenv env) var_ret))
               in
               insert env
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_right)
-                   (Type.var (Env.tyenv env) var_ret))
+                   (Type.non_arrow_var (Env.tyenv env) var_ret))
                 right.ret ) );
     ]
   in

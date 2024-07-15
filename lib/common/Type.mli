@@ -33,6 +33,7 @@ module rec Base : sig
   type t = private
     | Var of Variable.t
     | FrozenVar of Variable.t
+    | Non_arrow_var of Variable.t
     | Constr of LongIdent.t * t Array.t
     (** Represents the types of the form [(a₁,...,aₙ) p] where [p] is a [Longident.t] *)
     | Arrow of NSet.t * t
@@ -97,6 +98,7 @@ end
 val dummy : t
 val var : Env.t -> Variable.t -> t
 val frozen_var : Env.t -> Variable.t -> t
+val non_arrow_var : Env.t -> Variable.t -> t
 val constr : Env.t -> LongIdent.t -> t Array.t -> t
 val arrow : Env.t -> t -> t -> t
 val arrows : Env.t -> NSet.t -> t -> t
@@ -106,6 +108,7 @@ val tuple : Env.t -> NSet.t -> t
 
 val freeze_variables : Env.t -> t -> t
 val refresh_variables : Env.t -> t -> t
+val is_arrow : t -> bool
 
 (* import functions *)
 

@@ -53,11 +53,20 @@ end = struct
       | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
       | Type.Other _ -> [|t|]
       | Type.Tuple t  -> Type.NSet.as_array t
-      | Type.Var v ->
-        match Env.representative env v with
-        | V v' -> [|Type.var (Env.tyenv env) v'|]
+      | Type.Var v -> (
+        match Env.representative ~non_arrow:false env v with
+        | V (v', non_arrow) ->
+            [| (if non_arrow then Type.non_arrow_var else Type.var) (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
+      )
+      | Type.Non_arrow_var v -> (
+        match Env.representative ~non_arrow:true env v with
+        | V (v', non_arrow) ->
+            [| (if non_arrow then Type.non_arrow_var else Type.var) (Env.tyenv env) v'|]
+        | E (_, Tuple t) -> Type.NSet.as_array t
+        | E (_, t) -> [|t|]
+      )
     in
     {ACTerm. left = CCArray.flat_map f left ; right = CCArray.flat_map f right }
 
