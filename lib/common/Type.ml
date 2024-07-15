@@ -351,6 +351,9 @@ let of_parsetree of_parsetree env var (parse_ty : Parsetree.core_type) =
   | Ptyp_tuple elts ->
       elts |> Iter.of_list |> Iter.map of_parsetree |> NSet.of_iter |> tuple env
   | Ptyp_alias (parse_ty, _) | Ptyp_poly (_, parse_ty) -> of_parsetree parse_ty
+  (* Ignore open in types *)
+  | Ptyp_open (_modpath, typ) ->
+    of_parsetree typ
   (* not handled *)
   | Ptyp_object _ | Ptyp_class _ | Ptyp_variant _ | Ptyp_package _
   | Ptyp_extension _ ->
@@ -373,18 +376,17 @@ let rec parse_to_outcome (parse_ty : Parsetree.core_type) =
       let params = params |> CCList.map parse_to_outcome in
       Outcometree.Otyp_constr (id, params)
   | Ptyp_arrow (lbl, param, ret) ->
-      let str =
-        match lbl with Nolabel -> "" | Labelled s -> s | Optional s -> s
-      in
-      Outcometree.Otyp_arrow (str, parse_to_outcome param, parse_to_outcome ret)
+      Outcometree.Otyp_arrow (lbl, parse_to_outcome param, parse_to_outcome ret)
   | Ptyp_tuple elts -> Outcometree.Otyp_tuple (CCList.map parse_to_outcome elts)
   | Ptyp_alias (parse_ty, alias) ->
       let aliased = parse_to_outcome parse_ty in
-      Outcometree.Otyp_alias {non_gen = false; aliased; alias}
+      Outcometree.Otyp_alias {non_gen = false; aliased; alias=alias.txt}
   | Ptyp_poly (s, parse_ty) ->
       let f (str : string Location.loc) = str.txt in
       let str = CCList.map f s in
       Outcometree.Otyp_poly (str, parse_to_outcome parse_ty)
+  | Ptyp_open (_modpath, typ) ->
+    parse_to_outcome typ
   | Ptyp_object _ | Ptyp_class _ | Ptyp_variant _ | Ptyp_package _
   | Ptyp_extension _ | Ptyp_any ->
       Outcometree.Otyp_abstract

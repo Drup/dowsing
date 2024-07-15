@@ -52,7 +52,9 @@ let rec odoc_to_outcometree
      let arg = odoc_to_outcometree arg in
      let res = odoc_to_outcometree res in
      let lbl = match lbl with
-       | None -> "" | Some (Label s) | Some (Optional s) -> s
+       | None -> Asttypes.Nolabel
+       | Some (Label s) -> Labelled s
+       | Some (Optional s) -> Optional s
      in
      Otyp_arrow (lbl, arg, res)
    | Tuple l ->
@@ -107,11 +109,11 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
   let module O = Outcometree in
   let format_args args = match args with
     | Odoc_model.Lang.TypeDecl.Constructor.Tuple l ->
-      List.map (fun ty -> "",odoc_to_outcometree ty) l
+      List.map (fun ty -> Asttypes.Nolabel,odoc_to_outcometree ty) l
     | Record l ->
       List.map
         (fun (field : Odoc_model.Lang.TypeDecl.Field.t) ->
-           Odoc_model.Paths.Identifier.name field.id,
+           Asttypes.Labelled (Odoc_model.Paths.Identifier.name field.id),
            odoc_to_outcometree field.type_)
         l
   in
@@ -136,7 +138,7 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
   | Field { mutable_ = _; parent_type; type_ } ->
     let arg = odoc_to_outcometree parent_type in
     let res = odoc_to_outcometree type_ in
-    let ty = mk_arrow ["", arg] res in
+    let ty = mk_arrow [Nolabel, arg] res in
     Some ty
   | Doc _ 
   | Class_type _ 
