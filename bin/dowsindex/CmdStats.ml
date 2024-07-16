@@ -54,7 +54,7 @@ let aux opts ?stats0 iter_idx =
   let tbl = ref Measure.Map.empty in
   iter_idx (fun ty ->
       Timer.start timer;
-      ignore @@ Acic.unifiable env opts.ty ty;
+      ignore @@ Acic.unify env opts.ty ty;
       Timer.stop timer;
       let time = Timer.get timer in
       let meas = Measure.make opts.meas_kind ty in
