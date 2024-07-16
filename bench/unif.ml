@@ -40,6 +40,8 @@ let unif_hard =
       "('a, 'b) result -> ('a -> 'c) -> ('b -> 'd) -> ('c, 'd) result");
     ( "('a, 'b) result -> ('a -> 'c) -> ('b -> 'c) -> 'c",
       "('a, 'b) result -> ('a -> 'c) -> ('b -> 'c) -> 'c");
+    ( "'a * int -> 'a",
+      "'a * 'b * 'c * ('a -> 'd) * ('b -> 'e) * ('c -> 'f) -> ('d * 'e * 'f)");
   |]
 
 let unify (name, data) =
