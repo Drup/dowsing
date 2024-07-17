@@ -4,9 +4,12 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 let _info = Logs.info
 
 let debug f =
-  let s = f CCFormat.sprintf in
-  Logs.debug (fun m -> m "%s" s);
-  Trace.message ~data:(fun () -> [ ("message", `String s) ]) "Debug"
+  Logs.debug (fun m ->
+    let s = f CCFormat.sprintf in
+    m "%s" s);
+  Trace.message ~data:(fun () ->
+    let s = f CCFormat.sprintf in
+    [ ("message", `String s) ]) "Debug"
 
 (** {2 A stack of unification pairs} *)
 module Stack : sig
