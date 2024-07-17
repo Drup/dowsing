@@ -504,7 +504,7 @@ let rec iter_consts t f =
 let rec pp ppf = function
   | Var var -> Fmt.pf ppf "'%a" Variable.pp var
   | FrozenVar var -> Fmt.pf ppf "^%a" Variable.pp var
-  | NonArrowVar var -> Fmt.pf ppf "-/>%a" Variable.pp var
+  | NonArrowVar var -> Fmt.pf ppf ">%a" Variable.pp var
   | Constr (lid, [||]) -> LongIdent.pp ppf lid
   | Constr (lid, params) -> Fmt.pf ppf "%a@ %a" pp_array params LongIdent.pp lid
   | Arrow (params, ret) ->

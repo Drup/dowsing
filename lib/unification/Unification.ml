@@ -38,6 +38,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         ("Right", `String (CCFormat.sprintf "%a" ArrowTerm.pp right));
       ])
     @@
+  let ret_type = Type.non_arrow_var (Env.tyenv env0) (Env.gen env0) in
   let potentials =
     [
       (* TODO: When doing AL = AR if they are both tuples of size 1 it is useless  *)
@@ -47,19 +48,20 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL ≡? AR  ∧  BL ≡? BR" (fun _sp ->
               Env.push_tuple env left.args right.args;
-              insert env left.ret right.ret) );
+              let* () = insert env ret_type left.ret in
+              insert env ret_type right.ret) );
       ( "AL * αL ≡? AR  ∧  BL ≡? αL -> BR",
         fun env () ->
           (* AL * αL ≡? AR  ∧
              BL ≡? αL -> BR
           *)
-          (* TODO: Do not create the variable βL, just put  BL ≡? αL -> BR in as equation *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL * αL ≡? AR  ∧  BL ≡? αL -> BR" (fun _sp ->
               let var_arg_left = Env.gen env in
               Env.push_tuple env
                 (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
                 right.args;
+              let* () = insert env ret_type right.ret in
               insert env left.ret
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_left)
@@ -74,6 +76,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
               let var_arg_right = Env.gen env in
               Env.push_tuple env left.args
                 (ACTerm.add right.args (Type.var (Env.tyenv env) var_arg_right));
+              let* () = insert env ret_type left.ret in
               insert env right.ret
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_right)
@@ -88,7 +91,6 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
             "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> β  ∧  αR -> β ≡? BR" (fun _sp ->
               let var_arg_left = Env.gen env in
               let var_arg_right = Env.gen env in
-              let var_ret = Env.gen env in
               (* TOCHECK *)
               Env.push_tuple env
                 (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
@@ -97,12 +99,12 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
                 insert env left.ret
                   (Type.arrow (Env.tyenv env)
                      (Type.var (Env.tyenv env) var_arg_left)
-                     (Type.non_arrow_var (Env.tyenv env) var_ret))
+                     ret_type)
               in
               insert env
                 (Type.arrow (Env.tyenv env)
                    (Type.var (Env.tyenv env) var_arg_right)
-                   (Type.non_arrow_var (Env.tyenv env) var_ret))
+                   ret_type)
                 right.ret ) );
     ]
   in
