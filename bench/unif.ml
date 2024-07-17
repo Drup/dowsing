@@ -113,7 +113,7 @@ let benchmark test =
         Tracing.Instance.timeout;
       ]
   in
-  let cfg = Benchmark.cfg ~limit:10000 ~quota:(Time.second 2.) () in
+  let cfg = Benchmark.cfg ~quota:(Time.second 2.) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
