@@ -45,12 +45,12 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let is_var = function Type.Var _ -> true | _ -> false in
+    let is_var = function Type.Var _ | NonArrowVar _ -> true | _ -> false in
     let shape_map =
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ -> m
+          | Type.Var _ | Type.NonArrowVar _ -> m
           | _ ->
               Map.update (of_type t)
                 (function

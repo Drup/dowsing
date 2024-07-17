@@ -291,7 +291,7 @@ end = struct
         for i = first_var to nb_atom - 1 do
           if System.get_solution sol i > 0 then (
             match assoc_type.(i) with
-            | Var v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
+            | Var v | NonArrowVar v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
             | _ -> failwith "Impossible"
           )
         done;
