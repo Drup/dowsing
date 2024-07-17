@@ -33,7 +33,7 @@ module rec Base : sig
   type t = private
     | Var of Variable.t
     | FrozenVar of Variable.t
-    | Non_arrow_var of Variable.t
+    | NonArrowVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     (** Represents the types of the form [(a₁,...,aₙ) p] where [p] is a [Longident.t] *)
     | Arrow of NSet.t * t

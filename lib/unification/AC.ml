@@ -55,15 +55,15 @@ end = struct
       | Type.Tuple t  -> Type.NSet.as_array t
       | Type.Var v -> (
         match Env.representative ~non_arrow:false env v with
-        | V (v', non_arrow) ->
-            [| (if non_arrow then Type.non_arrow_var else Type.var) (Env.tyenv env) v'|]
+        | V v' -> [| Type.var (Env.tyenv env) v'|]
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
       )
-      | Type.Non_arrow_var v -> (
+      | Type.NonArrowVar v -> (
         match Env.representative ~non_arrow:true env v with
-        | V (v', non_arrow) ->
-            [| (if non_arrow then Type.non_arrow_var else Type.var) (Env.tyenv env) v'|]
+        | V v' -> [| Type.var (Env.tyenv env) v'|]
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
       )
@@ -339,7 +339,7 @@ end = struct
           iter_sol (fun (env_sol, coverage) ->
             combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
           )
-      | [] ->
+      | [] -> (* Here we could have a custom occur check to avoid the iteration on var *)
           iterate_var_subsets env acc_coverage system env_sols sol_coverages k
     in
     let n_solutions = ref 0 in

@@ -147,12 +147,9 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       (* TODO: we can add check that the tuples can actually be unified otherwise stop *)
       Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
       process_stack env stack
-  | Non_arrow_var _, Arrow _ | Arrow _, Non_arrow_var _ ->
-      debug (fun m -> m "Fail");
-      FailUnif (t1, t2)
   (* This need to be before the rules for variables *)
-  | Non_arrow_var v, t | t, Non_arrow_var v ->
-      debug (fun m -> m "Non_arrow_var");
+  | NonArrowVar v, t | t, NonArrowVar v ->
+      debug (fun m -> m "NonArrowVar");
       insert_non_arrow_var env stack v t
   | Var v, t | t, Var v ->
       debug (fun m -> m "Var");
@@ -170,19 +167,18 @@ and insert_non_arrow_var env stack x s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   debug (fun m -> m "Insert_non_arrow_var: %a = %a" Variable.pp x Type.pp s);
   match s with
-  | Type.Arrow _ -> failwith "Impossible"
-  | Type.Tuple _ | Type.Constr _ | Type.Other _
+  | Type.Arrow _ | Type.Tuple _ | Type.Constr _ | Type.Other _
   | Type.FrozenVar _ ->
       quasi_solved env stack x true s
   | Type.Var y -> non_proper env stack x true y false
-  | Type.Non_arrow_var y -> non_proper env stack x true y true
+  | Type.NonArrowVar y -> non_proper env stack x true y true
   )
 
 and insert_var env stack x s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   debug (fun m -> m "Insert_var: %a = %a" Variable.pp x Type.pp s);
   match s with
-  | Type.Non_arrow_var _ -> failwith "Impossible should have been catch before"
+  | Type.NonArrowVar _ -> failwith "Impossible should have been catch before"
   | Type.Tuple _ | Type.Constr _ | Type.Arrow _ | Type.Other _
   | Type.FrozenVar _ ->
       quasi_solved env stack x false s
@@ -196,8 +192,11 @@ and quasi_solved env stack x non_arrow s =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   (* Rule representative *)
   match Env.representative ~non_arrow env x with
-  | V (x, non_arrow) ->
-      let* () = attach non_arrow env x s in
+  | V x ->
+      let* () = attach false env x s in
+      process_stack env stack
+  | NAR x ->
+      let* () = attach true env x s in
       process_stack env stack
   (* TODO: I don't understand why we need to separate the cases and why we need an order
      on the equality *)
@@ -217,16 +216,19 @@ and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow
   match
     (Env.representative ~non_arrow:non_arrow_x env x,
      Env.representative ~non_arrow:non_arrow_y env y) with
-  | V (x', _), V (y', _) when Variable.equal x' y' -> process_stack env stack
-  | V (x', true), V (y', non_arrow_y) | V (y', non_arrow_y), V (x', true) ->
-      let ty' = (if non_arrow_y then Type.non_arrow_var else Type.var) (Env.tyenv env) y' in
+  | (V x' | NAR x'), (V y' | NAR y') when Variable.equal x' y' -> process_stack env stack
+  | NAR y', (V x' | NAR x') | V x', NAR y' ->
+      let ty' = Type.non_arrow_var (Env.tyenv env) y' in
       let* () = attach true env x' ty' in
       process_stack env stack
-  | V (x', false), V (y', false) ->
+  | V x', V y' ->
       let* () = attach false env x' (Type.var (Env.tyenv env) y') in
       process_stack env stack
-  | V (x', non_arrow), E (_, t) | E (_, t), V (x', non_arrow) ->
-      let* () = attach non_arrow env x' t in
+  | V x', E (_, t) | E (_, t), V x' ->
+      let* () = attach false env x' t in
+      process_stack env stack
+  | NAR x', E (_, t) | E (_, t), NAR x' ->
+      let* () = attach true env x' t in
       process_stack env stack
   (* TODO: I don't understand why we need an order on the equality *)
   | E (x', s), E (y', t) ->

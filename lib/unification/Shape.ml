@@ -31,8 +31,8 @@ module Kind : S = struct
     | _ -> CCInt.compare (to_int s1) (to_int s2)
 
   let of_type = function
-    (* TODO: Non_arrow_var should not be match with an arrow *)
-    | Type.Var _ | Tuple _ | Non_arrow_var _ -> raise (Invalid_argument "Shape.of_type")
+    (* TODO: NonArrowVar should not be match with an arrow *)
+    | Type.Var _ | Tuple _ | NonArrowVar _ -> raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
     | Type.Arrow (_, _) -> Arrow

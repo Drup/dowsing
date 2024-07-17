@@ -56,19 +56,18 @@ let pop_arrow e =
 
 
 type representative =
-  | V of Variable.t * bool
+  | V of Variable.t
+  | NAR of Variable.t
   | E of Variable.t * Type.t
 
 let rec representative_rec non_arrow m x =
   match Variable.Map.get x m with
-  | None -> V (x, non_arrow)
-  | Some (Type.Var x') ->
-      if non_arrow then failwith "Env.representative: Non_arrow_var followed by Var"
-      else representative_rec false m x'
-  | Some (Type.Non_arrow_var x') -> representative_rec true m x'
+  | None -> if non_arrow then NAR x else V x
+  | Some (Type.Var x') -> representative_rec non_arrow m x'
+  | Some (Type.NonArrowVar x') -> representative_rec true m x'
   | Some t ->
       if non_arrow && Type.is_arrow t then
-        failwith "Env.representative: Non_arrow_var followed by Arrow"
+        failwith "Env.representative: NonArrowVar followed by Arrow"
       else E (x, t)
 let representative ~non_arrow e x = representative_rec non_arrow e.vars x
 

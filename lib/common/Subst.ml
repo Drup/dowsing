@@ -11,7 +11,7 @@ let rec apply (env : Type.Env.t) t =
         match Variable.Map.get var t with
         | None -> ty
         | Some ty -> substitute ty)
-    | Non_arrow_var var -> (
+    | NonArrowVar var -> (
         match Variable.Map.get var t with
         | None -> ty
         | Some ty ->
