@@ -1,7 +1,12 @@
 module type S = sig
-  type partition = { variable : Type.t -> bool; shapes : (Type.t -> bool) list }
+  type 'a partition = {
+    variable : 'a;
+    non_arrow_var : 'a;
+    shapes : 'a list;
+    arrows : 'a;
+  }
 
-  val partition : Type.Set.t -> partition
+  val partition : Type.Set.t -> (Type.t -> bool )partition
   (** Partition a set of type into the variables in one side and the partition of
       the type with a shape on the other. Here the notion of variable is broad,
       it means anything that we treat as variable. In the case of Const it is
@@ -15,7 +20,12 @@ module Kind : S = struct
     | Constr of LongIdent.t
     | Arrow
 
-  type partition = { variable : Type.t -> bool; shapes : (Type.t -> bool) list }
+  type 'a partition = {
+    variable : 'a;
+    non_arrow_var : 'a;
+    shapes : 'a list;
+    arrows : 'a;
+  }
 
   let to_int = function
     | Other _ -> 0
@@ -32,7 +42,8 @@ module Kind : S = struct
 
   let of_type = function
     (* TODO: NonArrowVar should not be match with an arrow *)
-    | Type.Var _ | Tuple _ | NonArrowVar _ -> raise (Invalid_argument "Shape.of_type")
+    | Type.Var _ | Tuple _ | NonArrowVar _ ->
+        raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
     | Type.Arrow (_, _) -> Arrow
@@ -45,12 +56,13 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let is_var = function Type.Var _ | NonArrowVar _ -> true | _ -> false in
-    let shape_map =
+    let variable = function Type.Var _ -> true | _ -> false in
+    let non_arrow_var = function Type.NonArrowVar _ -> true | _ -> false in
+    let shapes =
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ | Type.NonArrowVar _ -> m
+          | Type.Var _ | NonArrowVar _ | Arrow _ -> m
           | _ ->
               Map.update (of_type t)
                 (function
@@ -58,17 +70,21 @@ module Kind : S = struct
                   | Some s -> Some (Type.Set.add t s))
                 m)
         types Map.empty
+      |> Map.to_list
+      |> List.map (fun (_, s) t -> Type.Set.mem t s)
     in
-    {
-      variable = is_var;
-      shapes =
-        Map.to_list shape_map |> List.map (fun (_, s) t -> Type.Set.mem t s);
-    }
+    { variable; non_arrow_var; shapes; arrows = Type.is_arrow }
 end
 
 module Const : S = struct
   type t = Constant of LongIdent.t | FrozenVar of Variable.t  (** Constants *)
-  type partition = { variable : Type.t -> bool; shapes : (Type.t -> bool) list }
+
+  type 'a partition = {
+    variable : 'a;
+    non_arrow_var : 'a;
+    shapes : 'a list;
+    arrows : 'a;
+  }
 
   let to_int = function Constant _ -> 0 | FrozenVar _ -> 1
 
@@ -109,7 +125,9 @@ module Const : S = struct
     in
     {
       variable = is_var;
+      non_arrow_var = (fun _ -> false);
       shapes =
         Map.to_list shape_map |> List.map (fun (_, s) t -> Type.Set.mem t s);
+      arrows = (fun _ -> false);
     }
 end

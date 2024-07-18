@@ -104,7 +104,12 @@ end = struct
       in
       (!count, m)
     in
-    (aux shape_partition.variable, List.map aux shape_partition.shapes)
+    {
+      S.variable = aux shape_partition.variable;
+      non_arrow_var = aux shape_partition.non_arrow_var;
+      shapes = List.map aux shape_partition.shapes;
+      arrows = aux shape_partition.arrows
+    }
 
   (*NOTE: Current implementation.
     A simple type is either a constant, a varialbe or a frozen variable.
@@ -118,7 +123,19 @@ end = struct
       TODO: is it true that equal type up to iso in the current substitution will be equal here?
        *)
   let make problems : t * t List.t =
-    let (nb_vars, vars), shape_partition = make_mapping problems in
+    let mapping = make_mapping problems in
+    let nb_vars, vars = mapping.variable in
+    let nb_non_arrow, non_arrow = mapping.non_arrow_var in
+    let shape_partition = mapping.shapes in
+    let nb_arrow, arrow = mapping.arrows in
+    let nb_all_vars = nb_vars + nb_non_arrow in
+    let all_vars = Type.Map.merge (fun _t o1 o2 ->
+      match o1, o2 with
+      | Some _, None -> o1
+      | None, Some i -> Some (nb_vars + i)
+      | Some _, Some _| None, None -> failwith "Variables exists in both normal and non arrow")
+      vars non_arrow
+    in
     let get_index map t =
       Type.Map.get t map
     in
@@ -130,18 +147,35 @@ end = struct
     in
 
     let var_system =
-      let nb_atom = nb_vars in
+      let nb_atom = nb_all_vars in
       let assoc_type = Array.make nb_atom Type.dummy in
-      Type.Map.iter (fun k i -> assoc_type.(i) <- k) vars ;
+      Type.Map.iter (fun k i -> assoc_type.(i) <- k) all_vars ;
       let first_var = 0 in
       let system =
-        List.map (add_problem (get_index vars) nb_atom) problems
+        List.map (add_problem (get_index all_vars) nb_atom) problems
         |> Array.of_list
       in
       { nb_atom ; assoc_type ; first_var ; system }
     in
 
     let gen_shape_system nb_frees types_map =
+      let nb_atom = nb_all_vars + nb_frees in
+      let assoc_type = Array.make nb_atom Type.dummy in
+      Type.Map.iter (fun t i -> assoc_type.(i) <- t) types_map;
+      Type.Map.iter (fun k i -> assoc_type.(i + nb_frees) <- k) all_vars ;
+
+      let first_var = nb_frees in
+      let system =
+        List.map (add_problem (get_index_shape all_vars types_map nb_frees) nb_atom) problems
+        |> Array.of_list
+      in
+      { nb_atom ; assoc_type ; first_var ; system }
+    in
+    let shape_systems = List.map
+            (fun (n, tm) -> gen_shape_system n tm)
+            shape_partition
+    in
+    let gen_arrow_system nb_frees types_map =
       let nb_atom = nb_vars + nb_frees in
       let assoc_type = Array.make nb_atom Type.dummy in
       Type.Map.iter (fun t i -> assoc_type.(i) <- t) types_map;
@@ -154,11 +188,8 @@ end = struct
       in
       { nb_atom ; assoc_type ; first_var ; system }
     in
-    let shape_systems = List.map
-            (fun (n, tm) -> gen_shape_system n tm)
-            shape_partition
-    in
-    var_system, shape_systems
+    let arrow_system =  gen_arrow_system nb_arrow arrow in
+    var_system, (arrow_system::shape_systems)
 
   type dioph_solution = int array
   let get_solution = Array.get
@@ -292,7 +323,7 @@ end = struct
           if System.get_solution sol i > 0 then (
             match assoc_type.(i) with
             | Var v | NonArrowVar v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
-            | _ -> failwith "Impossible"
+            | _ -> failwith (CCFormat.sprintf "Impossible: %a" Type.pp assoc_type.(i))
           )
         done;
         Some env
