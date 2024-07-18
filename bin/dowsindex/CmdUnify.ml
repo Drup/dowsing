@@ -6,13 +6,11 @@ type opts = { copts : copts; all_unifs : Bool.t; ty1 : Type.t; ty2 : Type.t }
 let main opts =
   Logs.info (fun m -> m "@[<2>type1:@ %a@]" Type.pp opts.ty1);
   Logs.info (fun m -> m "@[<2>type2:@ %a@]" Type.pp opts.ty2);
-  let unifs =
-    Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__ "Unification cmd" (fun _ ->
-      Acic.unifiers env opts.ty1 opts.ty2
-      |> Iter.sort ~cmp:Subst.compare
-      |> Iter.to_list)
-  in
-  let unifs = if opts.all_unifs then unifs else CCList.take 1 unifs in
+  let unifs = if opts.all_unifs then
+    Acic.unifiers env opts.ty1 opts.ty2
+    |> Iter.sort ~cmp:Subst.compare
+    |> Iter.to_list
+  else Acic.unify env opts.ty1 opts.ty2 |> CCOption.to_list in
   if unifs = [] then Fmt.pr "no unifier@."
   else Fmt.pr "@[<v2>unifiers:@ %a@]@." Fmt.(list ~sep:sp Subst.pp) unifs
 
