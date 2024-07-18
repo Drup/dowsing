@@ -60,6 +60,8 @@ type representative =
   | NAR of Variable.t
   | E of Variable.t * Type.t
 
+exception ArrowClash of Variable.t * Type.t
+
 let rec representative_rec non_arrow m x =
   match Variable.Map.get x m with
   | None -> if non_arrow then NAR x else V x
@@ -67,7 +69,8 @@ let rec representative_rec non_arrow m x =
   | Some (Type.NonArrowVar x') -> representative_rec true m x'
   | Some t ->
       if non_arrow && Type.is_arrow t then
-        failwith "Env.representative: NonArrowVar followed by Arrow"
+        (* failwith "Env.representative: NonArrowVar followed by Arrow" *)
+        raise (ArrowClash (x, t)) (* TODO: change this once the AC is fixed *)
       else E (x, t)
 let representative ~non_arrow e x = representative_rec non_arrow e.vars x
 

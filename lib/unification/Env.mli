@@ -13,6 +13,9 @@ type representative =
   | V of Variable.t
   | NAR of Variable.t
   | E of Variable.t * Type.t
+
+exception ArrowClash of Variable.t * Type.t
+
 val representative : non_arrow:bool -> t -> Variable.t -> representative
 
 val push_tuple : t -> ACTerm.t -> ACTerm.t -> unit

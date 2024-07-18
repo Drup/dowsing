@@ -206,7 +206,9 @@ and quasi_solved env stack x non_arrow s =
   | E (_, t) ->
       if Measure.make NodeCount t < Measure.make NodeCount s then
         insert_rec env stack t s
-      else insert_rec env stack s t)
+      else insert_rec env stack s t
+  | exception Env.ArrowClash (v, t) ->
+      FailUnif (Type.non_arrow_var (Env.tyenv env) v, t))
 
 (* Non proper equations
    'x ≡ 'y
@@ -237,7 +239,9 @@ and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow
         insert_rec env stack s t
       else
         let* () = attach false env x' (Type.var (Env.tyenv env) y') in
-        insert_rec env stack t s)
+        insert_rec env stack t s
+  | exception Env.ArrowClash (v, t) ->
+      FailUnif (Type.non_arrow_var (Env.tyenv env) v, t))
 
 and attach non_arrow env v t : return =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->

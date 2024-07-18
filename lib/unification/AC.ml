@@ -62,7 +62,7 @@ end = struct
       )
       | Type.NonArrowVar v -> (
         match Env.representative ~non_arrow:true env v with
-        | V v' -> [| Type.var (Env.tyenv env) v'|]
+        | V _ -> failwith "Impossible"
         | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
@@ -340,6 +340,8 @@ end = struct
             combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
           )
       | [] -> (* Here we could have a custom occur check to avoid the iteration on var *)
+          (* TODO we branch uselessly here, we could have all the solution for the var system
+             computed once and iterate through them. *)
           iterate_var_subsets env acc_coverage system env_sols sol_coverages k
     in
     let n_solutions = ref 0 in
