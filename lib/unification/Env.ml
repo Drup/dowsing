@@ -112,27 +112,21 @@ let merge e1 e2 =
 
 let commit e =
   let stack = ref [] in
-  let type_partials =
-    Variable.Map.map
-    (function
-      | [] -> failwith "Replace me by unit"
-      | [t] -> t (* TODO check this *)
-      | l -> Type.tuple (tyenv e) (Type.NSet.of_list l)
-      ) e.partials
-  in
   let vars = Variable.Map.merge
     (fun v t1 t2 ->
       match t1, t2 with
       | None, None -> None
-      | Some t, None | None, Some t -> Some t
-      | Some t1, Some t2 ->
+      | Some t, None | None, Some [t] -> Some t
+      | None, Some l -> Some (Type.tuple (tyenv e) (Type.NSet.of_list l))
+      | Some t1, Some l ->
         (* TODO: Should we do something more clever here? Like look for the repr or
            we let the insert do that? For now, we will let the insert function do the job *)
+        let t2 = match l with [t] -> t | l -> Type.tuple (tyenv e) (Type.NSet.of_list l) in
         if t1 != t2 then
           stack := ((Type.var (tyenv e) v), t2) ::!stack;
         Some t1)
     e.vars
-    type_partials
+    e.partials
   in
   {e with vars; partials = Variable.Map.empty}, !stack
 
