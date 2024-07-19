@@ -230,6 +230,10 @@ end = struct
 
   exception Bail
 
+  (** Merge two env into one and treat the equation that result from the merge.
+      For performence reason, the first env should be the main one.
+      For exemple, is [env] is the accumulated one and [sol_env] the one from a solution,
+      the function should be call [merge_env env sol_env]. *)
   let merge_env env1 env2 =
     let new_env, stack = Env.merge env1 env2 in
     if List.is_empty stack then new_env else
@@ -256,33 +260,18 @@ end = struct
     in
     aux env Bitv.empty (Array.length solutions - 1)
 
-  let iterate_var_subsets env shape_coverage system solutions bitvars_cover k =
-    let mask = Bitv.all_until (system.System.nb_atom - 1) in
-    let rec aux env coverage = function
-      | -1 ->
-          (* Check if the subset is large enough *)
-          if Bitv.(equal mask coverage) then (
-            let final_env, stack = Env.commit env in
-            match
-              let* _ =
-                if List.is_empty stack then Done
-                else Syntactic.process_stack final_env (Stack.of_list stack)
-              in
-              Syntactic.occur_check final_env
-            with
-            | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
-            | Done ->
-                  k final_env
-          )
+  let get_var_envs env solutions bitvars_cover =
+    let rec aux acc env coverage = function
+      | -1 -> (env, coverage)::acc
       | n ->
-          aux env coverage (n-1);
+          let envs = aux acc env coverage (n-1) in
           match merge_env env solutions.(n) with
           | env ->
               let coverage = Bitv.(coverage || bitvars_cover.(n)) in
-              aux env coverage (n-1)
-          | exception Bail -> ()
+              aux envs env coverage (n-1)
+          | exception Bail -> failwith "Impossible"
     in
-    aux env shape_coverage (Array.length solutions - 1)
+    aux [] env Bitv.empty (Array.length solutions - 1)
 
   let get_first_assoc_type sol {System. assoc_type; first_var; _} =
     let rec aux i =
@@ -362,8 +351,9 @@ end = struct
     let shapes_sols =
       List.map (fun (system, solutions) -> system, extract_solutions env system solutions) shapes_sols
     in
+    let mask_var = Bitv.all_until (system.System.nb_atom - 1) in
+    let var_envs = get_var_envs env env_sols sol_coverages in
     let rec combine_shapes env shapes_sols acc_coverage k =
-      (* TODO: env of each sol for each shape is computed several time, not good, either computed once and combine, or combined while building it *)
       match shapes_sols with
       | (system, (env_sols, bitvars)) :: t ->
           let iter_sol = iterate_shape_subsets env system env_sols bitvars in
@@ -371,11 +361,29 @@ end = struct
             combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
           )
       | [] -> (* Here we could have a custom occur check to avoid the iteration on var *)
-          (* TODO we branch uselessly here, we could have all the solution for the var system
-             computed once and iterate through them. *)
-          iterate_var_subsets env acc_coverage system env_sols sol_coverages k
+          List.iter (fun (var_env, coverage) ->
+            if Bitv.(equal mask_var (coverage || acc_coverage)) then (
+              (* TODO: This merge_env could be specialised, because we only have new element in
+                 partial and thuse only this to merge. *)
+              let env = merge_env env var_env in
+              let final_env, stack = Env.commit env in
+              match
+                let* _ =
+                  if List.is_empty stack then Done
+                  else Syntactic.process_stack final_env (Stack.of_list stack)
+                in
+                Syntactic.occur_check final_env
+              with
+              | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
+              | Done ->
+                    k final_env
+            )
+            else ()) var_envs
     in
     let n_solutions = ref 0 in
+    (* TODO: We should sort shapes_sol by the number of first_var, the bigger first as it is
+       more likele to be the one bringing clashes. Because constant will have first_var = 1
+       and bring no clash. Also arrow for now bring no clashes. *)
     Trace.wrap_ac_sol (combine_shapes env shapes_sols Bitv.empty)
       (fun x -> incr n_solutions; k x);
     Trace.message ~data:(fun () -> [("n", `Int !n_solutions)] )"Number of AC solutions"
