@@ -119,5 +119,5 @@ let () = add_tests "Acic.unifier" tests
 let () = Alcotest.run
     ~quick_only:false (* Change for slow tests *)
     ~argv:Sys.argv
-    "unification"
+    "Unifier"
     !all_tests

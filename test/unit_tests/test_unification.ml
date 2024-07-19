@@ -55,11 +55,13 @@ let pos_tests = [
   "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
   "int list -> 'a", "int list -> int";
-  (* Tuples target of variable: TODO I think this is a case where a variable will point to a tuples *)
+  (* Tuples target of variable *)
   "'a * 'b -> 'a", "int * unit * float -> int * unit";
   (* Loop *)
   "'a -> 'a", "'b -> 'b";
   "'a -> 'a -> 'a", "'x * b -> 'x" ;
+  (* Bug with non-proper equations *)
+  "('b, 'a, 'a, int, 'a, 'b) t", "('b, 'a, int, 'a, 'b, 'a) t";
 ]
 
 let neg_tests = [
@@ -119,5 +121,5 @@ let () = add_tests "Acic.unifiable" tests
 let () = Alcotest.run
     ~quick_only:false (* Change for slow tests *)
     ~argv:Sys.argv
-    "unification"
+    "Unifiable"
     !all_tests
