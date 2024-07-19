@@ -198,15 +198,9 @@ and quasi_solved env stack x non_arrow s =
   | NAR x ->
       let* () = attach true env x s in
       process_stack env stack
-  (* TODO: I don't understand why we need to separate the cases and why we need an order
-     on the equality *)
-  (* Rule AC-Merge *)
-  | E (_, (Type.Tuple _ as t)) -> insert_rec env stack t s
-  (* Rule Merge *)
+  (* Rule Merge and AC-Merge *)
   | E (_, t) ->
-      if Measure.make NodeCount t < Measure.make NodeCount s then
         insert_rec env stack t s
-      else insert_rec env stack s t
   | exception Env.ArrowClash (v, t) ->
       FailUnif (Type.non_arrow_var (Env.tyenv env) v, t))
 
