@@ -212,23 +212,24 @@ and quasi_solved env stack x non_arrow s =
 
 (* Non proper equations
    'x ≡ 'y
+   To include a non propre equations, we need to be sure that the dependency created between variable is a DAG. Therefore, we use the Variable.compare, to order the dependency.
 *)
 and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow_y =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   match
     (Env.representative ~non_arrow:non_arrow_x env x,
      Env.representative ~non_arrow:non_arrow_y env y) with
-  | (V x' | NAR x'), (V y' | NAR y') when Variable.equal x' y' -> process_stack env stack
+  | (V x' | NAR x' | E (x', _)), (V y' | NAR y' | E (y', _)) when Variable.equal x' y' -> process_stack env stack
   | NAR y', V x' | V x', NAR y' ->
       let ty' = Type.non_arrow_var (Env.tyenv env) y' in
       let* () = attach true env x' ty' in
       process_stack env stack
   | NAR x', NAR y' ->
       if Variable.compare x' y' <= 0 then
-        let* () = attach false env y' (Type.non_arrow_var (Env.tyenv env) x') in
+        let* () = attach true env y' (Type.non_arrow_var (Env.tyenv env) x') in
         process_stack env stack
       else
-        let* () = attach false env x' (Type.non_arrow_var (Env.tyenv env) y') in
+        let* () = attach true env x' (Type.non_arrow_var (Env.tyenv env) y') in
         process_stack env stack
   | V x', V y' ->
       if Variable.compare x' y' <= 0 then
@@ -243,7 +244,6 @@ and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow
   | NAR x', E (_, t) | E (_, t), NAR x' ->
       let* () = attach true env x' t in
       process_stack env stack
-  (* TODO: I don't understand why we need an order on the equality *)
   | E (x', s), E (y', t) ->
       if Variable.compare x' y' <= 0 then
         let* () = attach false env y' (Type.var (Env.tyenv env) x') in
