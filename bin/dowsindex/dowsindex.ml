@@ -7,6 +7,7 @@ let cmds = [
   CmdStats.cmd ;
   CmdSearch.cmd ;
   CmdUnifiable.cmd ;
+  CmdHOF.cmd ;
 ]
 
 let main_cmd, main_info =
