@@ -219,6 +219,7 @@ and non_proper env stack (x : Variable.t) non_arrow_x (y : Variable.t) non_arrow
   match
     (Env.representative ~non_arrow:non_arrow_x env x,
      Env.representative ~non_arrow:non_arrow_y env y) with
+  | V x', NAR y' | NAR y', V x' when Variable.equal x' y' -> failwith "A variable cannot be V and NAR at the same time."
   | (V x' | NAR x' | E (x', _)), (V y' | NAR y' | E (y', _)) when Variable.equal x' y' -> process_stack env stack
   | NAR y', V x' | V x', NAR y' ->
       let ty' = Type.non_arrow_var (Env.tyenv env) y' in
