@@ -35,7 +35,7 @@
   (ocaml (>= "5.1")) dune
   cmdliner
   odoc odig 
-  (dowsing-lib (= version))
+  (dowsing-lib (= :version))
   (alcotest :with-test)
   (benchmark :with-test)
 ))
