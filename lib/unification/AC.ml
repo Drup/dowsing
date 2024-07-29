@@ -260,18 +260,33 @@ end = struct
     in
     aux env Bitv.empty (Array.length solutions - 1)
 
-  let get_var_envs env solutions bitvars_cover =
-    let rec aux acc env coverage = function
-      | -1 -> (env, coverage)::acc
+  let iterate_var_subsets env shape_coverage system solutions bitvars_cover k =
+    let mask = Bitv.all_until (system.System.nb_atom - 1) in
+    let rec aux env coverage = function
+      | -1 ->
+          (* Check if the subset is large enough *)
+          if Bitv.(equal mask coverage) then (
+            let final_env, stack = Env.commit env in
+            match
+              let* _ =
+                if List.is_empty stack then Done
+                else Syntactic.process_stack final_env (Stack.of_list stack)
+              in
+              Syntactic.occur_check final_env
+            with
+            | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
+            | Done ->
+                  k final_env
+          )
       | n ->
-          let envs = aux acc env coverage (n-1) in
+          aux env coverage (n-1);
           match merge_env env solutions.(n) with
           | env ->
               let coverage = Bitv.(coverage || bitvars_cover.(n)) in
-              aux envs env coverage (n-1)
-          | exception Bail -> failwith "Impossible"
+              aux env coverage (n-1)
+          | exception Bail -> ()
     in
-    aux [] env Bitv.empty (Array.length solutions - 1)
+    aux env shape_coverage (Array.length solutions - 1)
 
   let get_first_assoc_type sol {System. assoc_type; first_var; _} =
     let rec aux i =
@@ -351,8 +366,6 @@ end = struct
     let shapes_sols =
       List.map (fun (system, solutions) -> system, extract_solutions env system solutions) shapes_sols
     in
-    let mask_var = Bitv.all_until (system.System.nb_atom - 1) in
-    let var_envs = get_var_envs env env_sols sol_coverages in
     let rec combine_shapes env shapes_sols acc_coverage k =
       match shapes_sols with
       | (system, (env_sols, bitvars)) :: t ->
@@ -361,24 +374,7 @@ end = struct
             combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
           )
       | [] -> (* Here we could have a custom occur check to avoid the iteration on var *)
-          List.iter (fun (var_env, coverage) ->
-            if Bitv.(equal mask_var (coverage || acc_coverage)) then (
-              (* TODO: This merge_env could be specialised, because we only have new element in
-                 partial and thuse only this to merge. *)
-              let env = merge_env env var_env in
-              let final_env, stack = Env.commit env in
-              match
-                let* _ =
-                  if List.is_empty stack then Done
-                  else Syntactic.process_stack final_env (Stack.of_list stack)
-                in
-                Syntactic.occur_check final_env
-              with
-              | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
-              | Done ->
-                    k final_env
-            )
-            else ()) var_envs
+          iterate_var_subsets env acc_coverage system env_sols sol_coverages k
     in
     let n_solutions = ref 0 in
     (* TODO: We should sort shapes_sol by the number of first_var, the bigger first as it is
