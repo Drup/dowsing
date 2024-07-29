@@ -27,9 +27,11 @@ let aux size iter_idx =
             acc l
         in
         Gc.major ();
-        all_pairs (i+1) acc t
+        all_pairs (i + 1) acc t
   in
-  let hof = all_pairs 1 (List.init size (fun _ -> (0., (Type.dummy, Type.dummy)))) types in
+  let hof =
+    all_pairs 1 (List.init size (fun _ -> (0., (Type.dummy, Type.dummy)))) types
+  in
   Format.printf "@[<v>%a@]@."
     (CCList.pp ~pp_sep:(CCFormat.return "@ ")
        (CCPair.pp CCFloat.pp (CCPair.pp Type.pp Type.pp)))
@@ -60,6 +62,7 @@ let main size idx_file =
   aux size iter_idx
 
 let main size idx_file =
+  Format.set_margin max_int;
   try Ok (main size idx_file) with Error msg -> Error (`Msg msg)
 
 open Cmdliner
