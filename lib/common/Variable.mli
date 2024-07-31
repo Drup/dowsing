@@ -1,9 +1,17 @@
-type t [@@ocaml.immediate]
+type t
 type var = t
 
 val as_int : t -> int 
 val equal : t CCEqual.t
 val compare : t CCOrd.t
+
+val set_non_arrow : t -> t
+val is_non_arrow : t -> bool
+
+(** [merge v1 v2 gen] merge the flags of v1 v2 into a fresh variable
+    created by gen. 
+ *)
+val merge_flags : t -> t -> ( unit -> t) -> t
 
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t

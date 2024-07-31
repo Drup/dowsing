@@ -43,8 +43,7 @@ module Kind : S = struct
     | _ -> CCInt.compare (to_int s1) (to_int s2)
 
   let of_type = function
-    (* TODO: NonArrowVar should not be match with an arrow *)
-    | Type.Var _ | Tuple _ | NonArrowVar _ ->
+    | Type.Var _ | Tuple _ ->
         raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
@@ -58,13 +57,13 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let variable = function Type.Var _ -> true | _ -> false in
-    let non_arrow_var = function Type.NonArrowVar _ -> true | _ -> false in
+    let variable = function Type.Var var -> not (Variable.is_non_arrow var) | _ -> false in
+    let non_arrow_var = function Type.Var var -> Variable.is_non_arrow var | _ -> false in
     let shapes =
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ | NonArrowVar _ | Arrow _ -> m
+          | Type.Var _ | Arrow _ -> m
           | _ ->
               Map.update (of_type t)
                 (function
@@ -82,16 +81,8 @@ module Kind : S = struct
       | Type.Other _ -> [|t|]
       | Type.Tuple t  -> Type.NSet.as_array t
       | Type.Var v -> (
-        match Env.representative ~non_arrow:false env v with
-        | V v' -> [| Type.var (Env.tyenv env) v'|]
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [|t|]
-      )
-      | Type.NonArrowVar v -> (
-        match Env.representative ~non_arrow:true env v with
-        | V _ -> failwith "Impossible"
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        match Env.representative env v with
+        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
       )
@@ -155,20 +146,13 @@ module Const : S = struct
     let simplify env (t: Type.t) = match t with
       | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
       | Type.Var v -> (
-        match Env.representative ~non_arrow:false env v with
-        | V v' -> [|Type.var (Env.tyenv env) v'|]
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, (FrozenVar _ | Constr (_, [||]) as t)) -> [| t |]
-        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
-      | Type.NonArrowVar v -> (
-        match Env.representative ~non_arrow:true env v with
-        | V _ -> failwith "Impossible"
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, (FrozenVar _ | Constr (_, [||]) as t)) -> [| t |]
-        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
+        match Env.representative env v with
+        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
+        | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
+      )
       | _ ->
           let new_v = Env.gen env in
-          match Syntactic.attach false env new_v t with
+          match Syntactic.attach env new_v t with
           | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
           | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"
 end

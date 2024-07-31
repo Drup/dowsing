@@ -105,7 +105,6 @@ module rec Base : sig
   type t =
     | Var of Variable.t
     | FrozenVar of Variable.t
-    | NonArrowVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     (** Represents the types of the form [(a₁,...,aₙ) p] where [p] is a [Longident.t] *)
     | Arrow of NSet.t * t
@@ -123,21 +122,20 @@ end = struct
   type t =
     | Var of Variable.t
     | FrozenVar of Variable.t
-    | NonArrowVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     | Arrow of NSet.t * t
     | Tuple of NSet.t
     | Other of Int.t
 
   let kind : t -> Kind.t = function
-    | Var _ | FrozenVar _ | NonArrowVar _ -> Var
+    | Var _ | FrozenVar _ -> Var
     | Constr _ -> Constr
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
     | Other _ -> Other
 
   let kind' : t -> Kind'.t = function
-    | Var _ | FrozenVar _ | NonArrowVar _ -> Var
+    | Var _ | FrozenVar _ -> Var
     | Constr (lid, _) -> Constr lid
     | Arrow _ -> Arrow
     | Tuple _ -> Tuple
@@ -150,7 +148,6 @@ end = struct
       match (t1, t2) with
       | Var var1, Var var2 -> Variable.compare var1 var2
       | FrozenVar var1, FrozenVar var2 -> Variable.compare var1 var2
-      | NonArrowVar var1, NonArrowVar var2 -> Variable.compare var1 var2
       | Constr (lid1, params1), Constr (lid2, params2) ->
           LongIdent.compare lid1 lid2
           <?> (CCArray.compare compare, params1, params2)
@@ -271,7 +268,6 @@ let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
 let dummy = Constr (Longident.Lident "__dummy", [||])
 let var env v = hashcons env @@ Var v
 let frozen_var env v = hashcons env @@ FrozenVar v
-let non_arrow_var env v = hashcons env @@ NonArrowVar v
 
 let constr env lid params =
   hashcons env
@@ -309,7 +305,7 @@ let other env x = hashcons env @@ Other (CCHash.poly x)
 
 let rec freeze_variables env (t : t) =
   match t with
-  | Var v | NonArrowVar v -> frozen_var env v
+  | Var v -> frozen_var env v
   | Constr (lid, t) -> constr env lid (Array.map (freeze_variables env) t)
   | Arrow (args, t) ->
       arrows env (NSet.map (freeze_variables env) args) (freeze_variables env t)
@@ -323,11 +319,6 @@ let rec refresh_variables bdgs env (t : t) =
       Variable.HMap.get_or_add bdgs ~f:(fun _ -> Variable.Gen.gen env.Env.var_gen) ~k:v
     in
     var env v'
-  | NonArrowVar v ->
-    let v' =
-      Variable.HMap.get_or_add bdgs ~f:(fun _ -> Variable.Gen.gen env.Env.var_gen) ~k:v
-    in
-    non_arrow_var env v'
   | Constr (lid, t) -> constr env lid (Array.map (refresh_variables bdgs env) t)
   | Arrow (args, t) ->
     arrows env (NSet.map (refresh_variables bdgs env) args) (refresh_variables bdgs env t)
@@ -481,7 +472,7 @@ let iter =
 let rec iter_vars t k =
   match t with
   | Other _ | FrozenVar _ -> ()
-  | Var var | NonArrowVar var -> k var
+  | Var var -> k var
   | Constr (_, params) -> CCArray.iter (fun t -> iter_vars t k) params
   | Arrow (params, ret) ->
       Iter.flat_map iter_vars (NSet.to_iter params) k;
@@ -490,7 +481,7 @@ let rec iter_vars t k =
 
 let rec iter_consts t f =
   match t with
-  | Other _ | FrozenVar _ | Var _ | NonArrowVar _ -> ()
+  | Other _ | FrozenVar _ | Var _ -> ()
   | Constr (lid, params) ->
       f lid;
       CCArray.iter (fun t -> iter_consts t f) params
@@ -504,7 +495,6 @@ let rec iter_consts t f =
 let rec pp ppf = function
   | Var var -> Fmt.pf ppf "'%a" Variable.pp var
   | FrozenVar var -> Fmt.pf ppf "^%a" Variable.pp var
-  | NonArrowVar var -> Fmt.pf ppf ">%a" Variable.pp var
   | Constr (lid, [||]) -> LongIdent.pp ppf lid
   | Constr (lid, params) -> Fmt.pf ppf "%a@ %a" pp_array params LongIdent.pp lid
   | Arrow (params, ret) ->
@@ -514,7 +504,7 @@ let rec pp ppf = function
 
 and pp_parens ppf ty =
   match ty with
-  | Var _ | FrozenVar _ | Other _ | Constr _ | NonArrowVar _ -> pp ppf ty
+  | Var _ | FrozenVar _ | Other _ | Constr _ -> pp ppf ty
   | Arrow _ -> Fmt.parens pp ppf ty
   | Tuple elts ->
       if NSet.length elts <= 1 then pp ppf ty else Fmt.parens pp ppf ty
