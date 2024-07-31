@@ -2,7 +2,7 @@ open CommonOpts
 
 let cmp (time1, _) (time2, _) = CCFloat.compare time1 time2
 
-let full size iter_idx =
+let full size idx_file with_features iter_idx =
   let timer = Timer.make () in
   let acc_time = ref 0. in
   let types = Iter.to_list iter_idx |> List.sort_uniq Type.compare in
@@ -12,6 +12,22 @@ let full size iter_idx =
     | [] -> acc
     | t1 :: t ->
         Format.printf "@[<h>%i/%i: %a@]@." i n_types Type.pp t1;
+        let l =
+          if with_features then
+            let iter_idx =
+              let db =
+                try Db.load idx_file
+                with Sys_error _ ->
+                  error
+                  @@ Fmt.str "cannot open index file `%a'" Fpath.pp idx_file
+              in
+              Db.iter_compatible db t1 |> Iter.map snd
+            in
+            Iter.to_list iter_idx
+            |> List.sort_uniq Type.compare
+            |> CCList.drop_while (fun t2 -> Type.compare t1 t2 < 0)
+          else l
+        in
         acc_time := 0.;
         let acc =
           List.fold_left
@@ -68,17 +84,30 @@ let print_stat () =
     stats;
   Fmt.pr "@."
 
-let main size idx_file ty =
-  let iter_idx =
-    let db =
-      try Db.load idx_file
-      with Sys_error _ ->
-        error @@ Fmt.str "cannot open index file `%a'" Fpath.pp idx_file
-    in
-    Db.iter db |> Iter.map snd
-  in
+let main with_features size idx_file ty =
   let hof =
-    match ty with None -> full size iter_idx | Some ty -> one size iter_idx ty
+    match ty with
+    | None ->
+        let iter_idx =
+          let db =
+            try Db.load idx_file
+            with Sys_error _ ->
+              error @@ Fmt.str "cannot open index file `%a'" Fpath.pp idx_file
+          in
+          Db.iter db |> Iter.map snd
+        in
+        full size idx_file with_features iter_idx
+    | Some ty ->
+        let iter_idx =
+          let db =
+            try Db.load idx_file
+            with Sys_error _ ->
+              error @@ Fmt.str "cannot open index file `%a'" Fpath.pp idx_file
+          in
+          (if with_features then Db.iter_compatible db ty else Db.iter db)
+          |> Iter.map snd
+        in
+        one size iter_idx ty
   in
   Format.printf "@[<v>%a@]@."
     (CCList.pp ~pp_start:(CCFormat.return "@[<h>")
@@ -88,9 +117,10 @@ let main size idx_file ty =
     hof;
   print_stat ()
 
-let main size idx_file ty =
+let main with_features size idx_file ty =
   Format.set_margin max_int;
-  try Ok (main size idx_file ty) with Error msg -> Error (`Msg msg)
+  try Ok (main with_features size idx_file ty)
+  with Error msg -> Error (`Msg msg)
 
 open Cmdliner
 open Cmd
@@ -109,8 +139,12 @@ let ty =
   let docv = "TYPE" in
   Arg.(value & pos 0 (some @@ Convs.typ env) None & info [] ~docv)
 
+let with_features =
+  let doc = "Pre filter using the features." in
+  Arg.(value & flag & info [ "with-features" ] ~doc)
+
 let cmd =
   let doc = "compute hall of fame" in
   Cmd.v
     (info "hof" ~sdocs:Manpage.s_common_options ~doc)
-    Term.(term_result (const main $ size $ idx_file $ ty))
+    Term.(term_result (const main $ with_features $ size $ idx_file $ ty))
