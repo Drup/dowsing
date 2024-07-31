@@ -29,42 +29,31 @@ let full size iter_idx =
               CCList.tl (CCList.sorted_insert ~cmp (time, (t1, t2)) acc))
             acc l
         in
-        Gc.major ();
+        Gc.full_major ();
+        Gc.print_stat stdout;
         all_pairs (i + 1) acc t
   in
-  let hof =
-    all_pairs 1 (List.init size (fun _ -> (0., (Type.dummy, Type.dummy)))) types
-  in
-  Format.printf "@[<v>%a@]@."
-    (CCList.pp ~pp_sep:(CCFormat.return "@ ")
-       (CCPair.pp CCFloat.pp (CCPair.pp Type.pp Type.pp)))
-    hof
+  all_pairs 1 (List.init size (fun _ -> (0., (Type.dummy, Type.dummy)))) types
 
 let one size iter_idx t1 =
   let timer = Timer.make () in
   let types = Iter.to_list iter_idx |> List.sort_uniq Type.compare in
   let n_types = List.length types in
   Format.printf "@[<h>Test against: %a@]@." Type.pp t1;
-  let hof =
-    CCList.foldi
-      (fun acc i t2 ->
-        Format.printf "@[<h>%i/%i: %a@]@." i n_types Type.pp t2;
-        let env = Type.Env.make () in
-        Timer.start timer;
-        (try ignore @@ Acic.unify env t1 t2
-         with e ->
-           Format.printf "\"%a\" \"%a\"@." Type.pp t1 Type.pp t2;
-           raise e);
-        Timer.stop timer;
-        let time = Timer.get timer in
-        CCList.tl (CCList.sorted_insert ~cmp (time, (t1, t2)) acc))
-      (List.init size (fun _ -> (0., (Type.dummy, Type.dummy))))
-      types
-  in
-  Format.printf "@[<v>%a@]@."
-    (CCList.pp ~pp_sep:(CCFormat.return "@ ")
-       (CCPair.pp CCFloat.pp (CCPair.pp Type.pp Type.pp)))
-    hof
+  CCList.foldi
+    (fun acc i t2 ->
+      Format.printf "@[<h>%i/%i: %a@]@." i n_types Type.pp t2;
+      let env = Type.Env.make () in
+      Timer.start timer;
+      (try ignore @@ Acic.unify env t1 t2
+       with e ->
+         Format.printf "\"%a\" \"%a\"@." Type.pp t1 Type.pp t2;
+         raise e);
+      Timer.stop timer;
+      let time = Timer.get timer in
+      CCList.tl (CCList.sorted_insert ~cmp (time, (t1, t2)) acc))
+    (List.init size (fun _ -> (0., (Type.dummy, Type.dummy))))
+    types
 
 let print_stat () =
   let stats =
@@ -88,7 +77,15 @@ let main size idx_file ty =
     in
     Db.iter db |> Iter.map snd
   in
-  (match ty with None -> full size iter_idx | Some ty -> one size iter_idx ty);
+  let hof =
+    match ty with None -> full size iter_idx | Some ty -> one size iter_idx ty
+  in
+  Format.printf "@[<v>%a@]@."
+    (CCList.pp ~pp_start:(CCFormat.return "@[<h>")
+       ~pp_sep:(CCFormat.return "@]@ @[<h>")
+       ~pp_stop:(CCFormat.return "@]")
+       (CCPair.pp CCFloat.pp (CCPair.pp Type.pp Type.pp)))
+    hof;
   print_stat ()
 
 let main size idx_file ty =
