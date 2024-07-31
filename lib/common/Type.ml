@@ -227,7 +227,7 @@ end = struct
   let map fn t = of_iter @@ Iter.map fn @@ to_iter t
 
   let pp pp_ty ppf = function
-    | [||] -> Fmt.string ppf "()"
+    | [||] -> Fmt.string ppf "unit"
     | [| elt |] -> pp_ty ppf elt
     | t -> Fmt.pf ppf "@[<2>%a@]" Fmt.(array ~sep:(any " *@ ") pp_ty) t
 end
