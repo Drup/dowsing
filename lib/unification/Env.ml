@@ -57,22 +57,20 @@ let pop_arrow e =
 
 type representative =
   | V of Variable.t
-  | NAR of Variable.t
   | E of Variable.t * Type.t
 
 exception ArrowClash of Variable.t * Type.t
 
 let rec representative_rec non_arrow m x =
   match Variable.Map.get x m with
-  | None -> if non_arrow then NAR x else V x
-  | Some (Type.Var x') -> representative_rec non_arrow m x'
-  | Some (Type.NonArrowVar x') -> representative_rec true m x'
+  | None -> assert (Variable.is_non_arrow x = non_arrow); V x
+  | Some (Type.Var x') -> representative_rec (non_arrow || Variable.is_non_arrow x') m x'
   | Some t ->
       if non_arrow && Type.is_arrow t then
         (* failwith "Env.representative: NonArrowVar followed by Arrow" *)
         raise (ArrowClash (x, t)) (* TODO: change this once the AC is fixed *)
       else E (x, t)
-let representative ~non_arrow e x = representative_rec non_arrow e.vars x
+let representative e x = representative_rec (Variable.is_non_arrow x) e.vars x
 
 (* TODO: During the merge, it could be that there is a contradiction between
    partials and vars but for now we will not see it. *)

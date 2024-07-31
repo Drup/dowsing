@@ -43,7 +43,7 @@ let rec make (kind : Kind.t) ty =
   | NodeCount ->
       let rec aux (ty : Type.t) =
         match ty with
-        | Var _ | FrozenVar _ | NonArrowVar _ | Other _ -> 1
+        | Var _ | FrozenVar _ | Other _ -> 1
         | Constr (_, args) -> 1 + aux_array args
         | Arrow (args, ret) -> 1 + aux_set args + aux ret
         | Tuple elts -> 1 + aux_set elts

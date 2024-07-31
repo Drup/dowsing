@@ -54,16 +54,8 @@ end = struct
       | Type.Other _ -> [|t|]
       | Type.Tuple t  -> Type.NSet.as_array t
       | Type.Var v -> (
-        match Env.representative ~non_arrow:false env v with
-        | V v' -> [| Type.var (Env.tyenv env) v'|]
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [|t|]
-      )
-      | Type.NonArrowVar v -> (
-        match Env.representative ~non_arrow:true env v with
-        | V _ -> failwith "Impossible"
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        match Env.representative env v with
+        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
       )
@@ -326,7 +318,7 @@ end = struct
         for i = first_var to nb_atom - 1 do
           if System.get_solution sol i > 0 then (
             match assoc_type.(i) with
-            | Var v | NonArrowVar v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
+            | Var v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
             | _ -> failwith (CCFormat.sprintf "Impossible: %a" Type.pp assoc_type.(i))
           )
         done;

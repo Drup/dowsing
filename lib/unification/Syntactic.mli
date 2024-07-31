@@ -27,6 +27,6 @@ val insert : Env.t -> Type.t -> Type.t -> return
 
 val insert_var : Env.t -> Variable.t -> Type.t -> return
 
-val attach : bool -> Env.t -> Variable.t -> Type.t -> return
+val attach : Env.t -> Variable.t -> Type.t -> return
 
 val debug : ((('a, Format.formatter, unit, string) format4 -> 'a) -> string) -> unit

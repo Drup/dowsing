@@ -41,8 +41,7 @@ module Kind : S = struct
     | _ -> CCInt.compare (to_int s1) (to_int s2)
 
   let of_type = function
-    (* TODO: NonArrowVar should not be match with an arrow *)
-    | Type.Var _ | Tuple _ | NonArrowVar _ ->
+    | Type.Var _ | Tuple _ ->
         raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
@@ -56,13 +55,13 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let variable = function Type.Var _ -> true | _ -> false in
-    let non_arrow_var = function Type.NonArrowVar _ -> true | _ -> false in
+    let variable = function Type.Var var -> not (Variable.is_non_arrow var) | _ -> false in
+    let non_arrow_var = function Type.Var var -> Variable.is_non_arrow var | _ -> false in
     let shapes =
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ | NonArrowVar _ | Arrow _ -> m
+          | Type.Var _ | Arrow _ -> m
           | _ ->
               Map.update (of_type t)
                 (function

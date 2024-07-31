@@ -1,13 +1,64 @@
-type t = Int.t
+module Flags : sig
+  type t = private int
+  type field
+
+  val equal : t -> t -> bool
+
+  val empty : t
+
+  val non_arrow : field
+
+  val set : field -> t -> t
+  val get : field -> t -> bool
+
+  val union : t -> t -> t
+end = struct
+  type t = int
+  type field = int
+
+  let max_field = ref 0
+  let mk_field () = CCRef.get_then_incr max_field
+
+  let equal = Int.equal
+
+  let empty = 0
+
+  let non_arrow = mk_field ()
+
+  let set f b = (1 lsl f) lor b
+  let get f b = (1 lsl f) land b <> 0
+
+  let union b1 b2 = b1 lor b2
+end
+
+type t = { id: Int.t; flags: Flags.t }
 type var = t
 
-let as_int v = v
-let compare = CCInt.compare
-let equal = CCInt.equal
+let as_int v = v.id
+let compare v1 v2 = CCInt.compare v1.id v2.id
+let equal v1 v2 =
+  if CCInt.equal v1.id v2.id then (assert (Flags.equal v1.flags v2.flags); true) else false
 
-module Map = CCMap.Make (CCInt)
-module HMap = CCHashtbl.Make (CCInt)
-module Set = CCSet.Make (CCInt)
+let set_non_arrow v = {v with flags = Flags.(set non_arrow v.flags)}
+let is_non_arrow v = Flags.(get non_arrow v.flags)
+
+let merge_flags v1 v2 gen =
+  let {id; _} = gen () in
+  {id; flags = Flags.union v1.flags v2.flags}
+
+module Map = CCMap.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
+module HMap = CCHashtbl.Make (struct
+    type nonrec t = t
+    let equal = equal
+    let hash v = CCInt.hash v.id
+  end)
+module Set = CCSet.Make (struct
+    type nonrec t = t
+    let compare = compare
+  end)
 
 (* module Namespace () = struct *)
 (*   type t = int *)
@@ -20,15 +71,13 @@ module Set = CCSet.Make (CCInt)
 
 module Gen  = struct
 
-  type t = var ref
+  type t = int ref
 
   let make () =
     ref 0
 
   let gen t =
-    let var = !t in
-    t := var+1 ;
-    var
+    { id = CCRef.get_then_incr t; flags = Flags.empty }
 
 end
 
@@ -46,8 +95,9 @@ let to_string =
   in
   fun var ->
     let str =
-      var
+      var.id
       |> base_26 'a'
+      |> (fun l -> if Flags.get Flags.non_arrow var.flags then '>'::l else l)
       |> String.of_list
     in
     str

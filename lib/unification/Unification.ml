@@ -38,7 +38,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         ("Right", `String (CCFormat.sprintf "%a" ArrowTerm.pp right));
       ])
     @@
-  let ret_type = Type.non_arrow_var (Env.tyenv env0) (Env.gen env0) in
+  let ret_type = Type.var (Env.tyenv env0) (Env.gen env0 |> Variable.set_non_arrow) in
   let potentials =
     [
       (* TODO: When doing AL = AR if they are both tuples of size 1 it is useless  *)
