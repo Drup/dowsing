@@ -151,7 +151,7 @@ module Const : S = struct
         | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
       )
       | _ ->
-          let new_v = Env.gen env in
+          let new_v = Env.gen Variable.Flags.empty env in
           match Syntactic.attach env new_v t with
           | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
           | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"

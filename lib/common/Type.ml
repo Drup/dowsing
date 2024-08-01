@@ -316,7 +316,8 @@ let rec refresh_variables bdgs env (t : t) =
   match t with
   | Var v ->
     let v' =
-      Variable.HMap.get_or_add bdgs ~f:(fun _ -> Variable.Gen.gen env.Env.var_gen) ~k:v
+      Variable.HMap.get_or_add bdgs
+        ~f:(fun _ -> Variable.(Gen.gen Flags.empty env.Env.var_gen)) ~k:v
     in
     var env v'
   | Constr (lid, t) -> constr env lid (Array.map (refresh_variables bdgs env) t)
@@ -413,12 +414,12 @@ let outcome_of_string (str : String.t) =
   parse_to_outcome parse_ty
 
 let generate_var bdgs (env : Env.t) = function
-  | None -> var env @@ Variable.Gen.gen env.var_gen
+  | None -> var env @@ Variable.(Gen.gen Flags.empty env.var_gen)
   | Some name -> (
       match String.HMap.get bdgs name with
       | Some v -> var env v
       | None ->
-          let v = Variable.Gen.gen env.var_gen in
+          let v = Variable.(Gen.gen Flags.empty env.var_gen) in
           String.HMap.add bdgs name v;
           var env v)
     

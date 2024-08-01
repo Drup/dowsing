@@ -38,7 +38,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
         ("Right", `String (CCFormat.sprintf "%a" ArrowTerm.pp right));
       ])
     @@
-  let ret_type = Type.var (Env.tyenv env0) (Env.gen env0 |> Variable.set_non_arrow) in
+  let ret_type = Type.var (Env.tyenv env0) (Env.gen Variable.Flags.(set non_arrow empty) env0) in
   let potentials =
     [
       (* TODO: When doing AL = AR if they are both tuples of size 1 it is useless  *)
@@ -57,7 +57,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL * αL ≡? AR  ∧  BL ≡? αL -> BR" (fun _sp ->
-              let var_arg_left = Env.gen env in
+              let var_arg_left = Env.gen Variable.Flags.empty env in
               Env.push_tuple env
                 (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))
                 right.args;
@@ -73,7 +73,7 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL ≡? AR * αR  ∧  αR -> BL ≡? BR" (fun _sp ->
-              let var_arg_right = Env.gen env in
+              let var_arg_right = Env.gen Variable.Flags.empty env in
               Env.push_tuple env left.args
                 (ACTerm.add right.args (Type.var (Env.tyenv env) var_arg_right));
               let* () = insert env ret_type left.ret in
@@ -89,8 +89,8 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> β  ∧  αR -> β ≡? BR" (fun _sp ->
-              let var_arg_left = Env.gen env in
-              let var_arg_right = Env.gen env in
+              let var_arg_left = Env.gen Variable.Flags.empty env in
+              let var_arg_right = Env.gen Variable.Flags.empty env in
               (* TOCHECK *)
               Env.push_tuple env
                 (ACTerm.add left.args (Type.var (Env.tyenv env) var_arg_left))

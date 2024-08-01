@@ -39,12 +39,10 @@ let compare v1 v2 = CCInt.compare v1.id v2.id
 let equal v1 v2 =
   if CCInt.equal v1.id v2.id then (assert (Flags.equal v1.flags v2.flags); true) else false
 
-let set_non_arrow v = {v with flags = Flags.(set non_arrow v.flags)}
 let is_non_arrow v = Flags.(get non_arrow v.flags)
 
 let merge_flags v1 v2 gen =
-  let {id; _} = gen () in
-  {id; flags = Flags.union v1.flags v2.flags}
+  gen (Flags.union v1.flags v2.flags)
 
 module Map = CCMap.Make (struct
     type nonrec t = t
@@ -76,8 +74,8 @@ module Gen  = struct
   let make () =
     ref 0
 
-  let gen t =
-    { id = CCRef.get_then_incr t; flags = Flags.empty }
+  let gen flags t =
+    { id = CCRef.get_then_incr t; flags }
 
 end
 

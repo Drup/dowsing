@@ -287,7 +287,7 @@ end = struct
   let dioph2env env ({System. nb_atom; assoc_type; first_var; _} as system) sol =
     let symb, start_i =
       if first_var = 0 then
-        Type.var (Env.tyenv env) (Env.gen env), 0
+        Type.var (Env.tyenv env) (Env.gen Variable.Flags.empty env), 0
       else get_first_assoc_type sol system
     in
     let env = Env.copy env in

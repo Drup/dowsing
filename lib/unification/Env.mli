@@ -4,7 +4,7 @@ type t
 
 val make : tyenv:Type.Env.t -> orig_vars:Variable.Set.t -> t
 val copy : t -> t
-val gen : t -> Variable.t
+val gen : Variable.Flags.t -> t -> Variable.t
 val vars : t -> Subst.t
 
 val tyenv : t -> Type.Env.t
