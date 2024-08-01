@@ -71,10 +71,13 @@ module Gen  = struct
 
   type t = int ref
 
+  let max_var = max_int
+
   let make () =
     ref 0
 
   let gen flags t =
+    if !t = max_var then failwith "Too many variable created";
     { id = CCRef.get_then_incr t; flags }
 
 end
