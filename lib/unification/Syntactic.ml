@@ -197,7 +197,10 @@ and non_proper env stack (x : Variable.t) (y : Variable.t) =
      Env.representative env y) with
   | (V x' | E (x', _)), (V y' | E (y', _)) when Variable.equal x' y' -> process_stack env stack
   | V x', V y' ->
-      let t = Type.var (Env.tyenv env) (Variable.merge_flags x' y' (fun () -> Env.gen env)) in
+      let t =
+        Type.var (Env.tyenv env)
+          (Variable.merge_flags x' y' (fun flags -> Env.gen flags env))
+      in
       let* () = attach env x' t in
       let* () = attach env y' t in
       process_stack env stack
@@ -205,7 +208,7 @@ and non_proper env stack (x : Variable.t) (y : Variable.t) =
       let* () = attach env x' t in
       process_stack env stack
   | E (x', s), E (y', t) ->
-      let z' = Variable.merge_flags x' y' (fun () -> Env.gen env) in
+      let z' = Variable.merge_flags x' y' (fun flags -> Env.gen flags env) in
       let tv = Type.var (Env.tyenv env) z' in
       let* () = attach env x' tv in
       let* () = attach env y' tv in

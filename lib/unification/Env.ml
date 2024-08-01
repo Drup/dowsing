@@ -26,7 +26,7 @@ let copy { tyenv ; vars ; tuples ; arrows; partials ; orig_vars } =
 
 let vars e = e.vars
 let tyenv t = t.tyenv
-let gen e : Variable.t = Variable.Gen.gen e.tyenv.var_gen
+let gen flags e : Variable.t = Variable.Gen.gen flags e.tyenv.var_gen
     
 let add e v ty = e.vars <- Subst.add v ty e.vars
 
