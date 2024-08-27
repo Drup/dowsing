@@ -147,16 +147,19 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       (* TODO: we can add check that the tuples can actually be unified otherwise stop *)
       Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
       process_stack env stack
-  (* This need to be before the rules for variables *)
   | Var v, t | t, Var v ->
       debug (fun m -> m "Var");
       insert_var env stack v t
   (* Clash rule
      Terms are incompatible
   *)
+  | Tuple ts, t | t, Tuple ts ->
+      debug (fun m -> m "Colapse Tuple");
+      Env.push_tuple env (Type.NSet.as_array ts) [| t |];
+      process_stack env stack
   | Constr _, Constr _ (* if same constructor, already checked above *)
-  | ( (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _),
-      (Constr _ | Tuple _ | Arrow _ | Other _ | FrozenVar _) ) ->
+  | ( (Constr _ | Arrow _ | Other _ | FrozenVar _),
+      (Constr _ | Arrow _ | Other _ | FrozenVar _) ) ->
       debug (fun m -> m "Fail");
       FailUnif (t1, t2))
 
@@ -183,7 +186,7 @@ and quasi_solved env stack x s =
   (* Rule Merge and AC-Merge *)
   | E (_, t) ->
         insert_rec env stack t s
-  | exception Env.ArrowClash (v, t) ->
+  | exception Env.FlagsClash (v, t) ->
       FailUnif (Type.var (Env.tyenv env) v, t))
 
 (* Non proper equations
@@ -214,12 +217,12 @@ and non_proper env stack (x : Variable.t) (y : Variable.t) =
       let* () = attach env y' tv in
       let* () = attach env z' s in
       insert_rec env stack s t
-  | exception Env.ArrowClash (v, t) ->
+  | exception Env.FlagsClash (v, t) ->
       FailUnif (Type.var (Env.tyenv env) v, t))
 
 and attach env v t : return =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-    if Variable.is_non_arrow v && Type.is_arrow t then FailUnif (Type.var (Env.tyenv env) v, t)
+    if Type.variable_clash v t then FailUnif (Type.var (Env.tyenv env) v, t)
     else (
       Env.add env v t;
       occur_check env))

@@ -13,13 +13,14 @@ type representative =
   | V of Variable.t
   | E of Variable.t * Type.t
 
-exception ArrowClash of Variable.t * Type.t
+exception FlagsClash of Variable.t * Type.t
 
 val representative : t -> Variable.t -> representative
 
 val push_tuple : t -> ACTerm.t -> ACTerm.t -> unit
 val push_arrow : t -> ArrowTerm.t -> ArrowTerm.t -> unit
 val add : t -> Variable.t -> Type.t -> unit
+val init_partial : t -> Variable.t -> unit
 val extend_partial : ?by:int -> t -> Variable.t -> Type.t -> unit
 
 val merge : t -> t -> t * (Type.t * Type.t) list

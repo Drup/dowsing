@@ -1,12 +1,7 @@
 module type S = sig
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list; arrows : 'a }
 
-  val partition : Type.Set.t -> (Type.t -> bool )partition
+  val partition : Type.Set.t -> (Type.t -> bool) partition
   (** Partition a set of type into the variables in one side and the partition of
       the type with a shape on the other. Here the notion of variable is broad,
       it means anything that we treat as variable. In the case of Const it is
@@ -22,12 +17,7 @@ module Kind : S = struct
     | Constr of LongIdent.t
     | Arrow
 
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list; arrows : 'a }
 
   let to_int = function
     | Other _ -> 0
@@ -43,8 +33,7 @@ module Kind : S = struct
     | _ -> CCInt.compare (to_int s1) (to_int s2)
 
   let of_type = function
-    | Type.Var _ | Tuple _ ->
-        raise (Invalid_argument "Shape.of_type")
+    | Type.Var _ | Tuple _ -> raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
     | Type.Arrow (_, _) -> Arrow
@@ -57,8 +46,7 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let variable = function Type.Var var -> not (Variable.is_non_arrow var) | _ -> false in
-    let non_arrow_var = function Type.Var var -> Variable.is_non_arrow var | _ -> false in
+    let variable = function Type.Var _ -> true | _ -> false in
     let shapes =
       Type.Set.fold
         (fun t m ->
@@ -74,7 +62,7 @@ module Kind : S = struct
       |> Map.to_list
       |> List.map (fun (_, s) t -> Type.Set.mem t s)
     in
-    { variable; non_arrow_var; shapes; arrows = Type.is_arrow }
+    { variable; shapes; arrows = Type.is_arrow }
 
     let simplify env (t: Type.t) = match t with
       | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
@@ -82,7 +70,7 @@ module Kind : S = struct
       | Type.Tuple t  -> Type.NSet.as_array t
       | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
+        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [|t|]
       )
@@ -90,13 +78,7 @@ end
 
 module Const : S = struct
   type t = Constant of LongIdent.t | FrozenVar of Variable.t  (** Constants *)
-
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list; arrows : 'a }
 
   let to_int = function Constant _ -> 0 | FrozenVar _ -> 1
 
@@ -137,7 +119,6 @@ module Const : S = struct
     in
     {
       variable = is_var;
-      non_arrow_var = (fun _ -> false);
       shapes =
         Map.to_list shape_map |> List.map (fun (_, s) t -> Type.Set.mem t s);
       arrows = (fun _ -> false);
@@ -147,7 +128,7 @@ module Const : S = struct
       | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
       | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
+        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
         | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
       )
       | _ ->

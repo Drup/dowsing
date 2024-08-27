@@ -293,7 +293,6 @@ let arrow env param ret =
   | _, _ -> Arrow (NSet.singleton param, ret)
 
 let tuple env elts =
-  (* TODO: can elts be of size 0 or 1? Currently it is needed *)
   let aux = function Tuple elts -> elts | elt -> NSet.singleton elt in
   let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
   hashcons env
@@ -330,6 +329,18 @@ let refresh_variables env t =
 
 let is_arrow = function
   | Arrow _ -> true
+  | _ -> false
+
+let is_tuple = function
+  | Tuple ts -> NSet.length ts >= 2
+  | _ -> false
+
+let is_non_arrow_var = function
+  | Var v -> Variable.is_non_arrow v
+  | _ -> false
+
+let is_non_tuple_var = function
+  | Var v -> Variable.is_non_tuple v
   | _ -> false
 
 (** import functions *)
@@ -490,6 +501,11 @@ let rec iter_consts t f =
       Iter.flat_map iter_consts (NSet.to_iter params) f;
       iter_consts ret f
   | Tuple elts -> Iter.flat_map iter_consts (NSet.to_iter elts) f
+
+let variable_clash v t =
+  (Variable.is_non_arrow v && is_arrow t)
+  || (Variable.is_non_tuple v && is_tuple t)
+
 
 (* pretty printing *)
 

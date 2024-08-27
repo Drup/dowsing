@@ -62,6 +62,12 @@ let pos_tests = [
   "'a -> 'a -> 'a", "'x * b -> 'x" ;
   (* Bug with non-proper equations *)
   "('b, 'a, 'a, int, 'a, 'b) t", "('b, 'a, int, 'a, 'b, 'a) t";
+  (* Bug with only the ACU no modif to syntactic, does not find the minimum solution *)
+  "'a * 'a f", "'a * 'b * int f";
+  (* Need ACU *)
+  "int * float", "'a * 'b * 'c";
+  "'a * float", "float";
+  "'a -> 'b", "'a * 'b" ;
 ]
 
 let neg_tests = [
@@ -79,7 +85,6 @@ let neg_tests = [
   "a", "a -> a" ;
   "a", "a * a" ;
   "a", "a f" ;
-  "'a -> 'b", "'a * 'b" ;
   "'a f * a", "'x g * a" ;
   "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   "'a -> 'a -> a", "'x * b -> 'x" ;
