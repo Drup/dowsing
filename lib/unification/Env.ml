@@ -30,13 +30,22 @@ let gen flags e : Variable.t = Variable.Gen.gen flags e.tyenv.var_gen
     
 let add e v ty = e.vars <- Subst.add v ty e.vars
 
+let init_partial e v =
+  e.partials <- Variable.Map.update v
+    (function
+      | None -> Some []
+      | Some _ -> failwith "Init on a non empty partials map of variable")
+    e.partials
+
 let extend_partial ?(by = 1) e v ty =
-  let add_l = List.init by (fun _ -> ty) in
+  let rec extend by l =
+    assert (by >= 0);
+    if by = 0 then l else extend (by - 1) (ty::l) in
   e.partials <-
     Variable.Map.update v
       (function
-        | None -> Some add_l
-        | Some l -> Some (add_l @ l))
+        | None -> Some (extend by [])
+        | Some l -> Some (extend by l))
     e.partials
 
 let push_tuple e left right =
@@ -59,18 +68,20 @@ type representative =
   | V of Variable.t
   | E of Variable.t * Type.t
 
-exception ArrowClash of Variable.t * Type.t
+exception FlagsClash of Variable.t * Type.t
 
-let rec representative_rec non_arrow m x =
+let rec representative_rec m x =
   match Variable.Map.get x m with
-  | None -> assert (Variable.is_non_arrow x = non_arrow); V x
-  | Some (Type.Var x') -> representative_rec (non_arrow || Variable.is_non_arrow x') m x'
+  | None -> V x
+  | Some (Type.Var x') ->
+      assert (Variable.are_flags_included x x');
+      representative_rec m x'
   | Some t ->
-      if non_arrow && Type.is_arrow t then
+      if Type.variable_clash x t then
         (* failwith "Env.representative: NonArrowVar followed by Arrow" *)
-        raise (ArrowClash (x, t)) (* TODO: change this once the AC is fixed *)
+        raise (FlagsClash (x, t)) (* TODO: change this once the AC is fixed *)
       else E (x, t)
-let representative e x = representative_rec (Variable.is_non_arrow x) e.vars x
+let representative e x = representative_rec e.vars x
 
 (* TODO: During the merge, it could be that there is a contradiction between
    partials and vars but for now we will not see it. *)

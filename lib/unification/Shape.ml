@@ -1,7 +1,7 @@
 module type S = sig
   type 'a partition = { variable : 'a; shapes : 'a list }
 
-  val partition : Type.Set.t -> (Type.t -> bool )partition
+  val partition : Type.Set.t -> (Type.t -> bool) partition
   (** Partition a set of type into the variables in one side and the partition of
       the type with a shape on the other. Here the notion of variable is broad,
       it means anything that we treat as variable. In the case of Const it is
@@ -33,8 +33,7 @@ module Kind : S = struct
     | _ -> CCInt.compare (to_int s1) (to_int s2)
 
   let of_type = function
-    | Type.Var _ | Tuple _ ->
-        raise (Invalid_argument "Shape.of_type")
+    | Type.Var _ | Tuple _ -> raise (Invalid_argument "Shape.of_type")
     | Type.FrozenVar v -> FrozenVar v
     | Type.Constr (c, _) -> Constr c
     | Type.Arrow (_, _) -> Arrow
@@ -73,8 +72,7 @@ module Kind : S = struct
     | Type.Tuple t -> Type.NSet.as_array t
     | Type.Var v -> (
         match Env.representative env v with
-        | V v' ->
-            [| Type.var (Env.tyenv env) v' |]
+        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
         | E (_, Tuple t) -> Type.NSet.as_array t
         | E (_, t) -> [| t |])
 end
@@ -131,13 +129,12 @@ module Const : S = struct
     | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
     | Type.Var v -> (
         match Env.representative env v with
-        | V v' ->
-            [| Type.var (Env.tyenv env) v' |]
-        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
-    | _ -> (
-        let new_v = Env.gen Variable.Flags.empty env in
-        match Syntactic.attach env new_v t with
-        | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
-        | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ ->
-            failwith "Impossible")
+        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
+        | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
+      )
+      | _ ->
+          let new_v = Env.gen Variable.Flags.empty env in
+          match Syntactic.attach env new_v t with
+          | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
+          | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"
 end

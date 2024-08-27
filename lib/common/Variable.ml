@@ -3,15 +3,19 @@ module Flags : sig
   type field
 
   val equal : t -> t -> bool
+  val compare : t -> t -> int
 
   val empty : t
 
   val non_arrow : field
+  val non_tuple : field
 
   val set : field -> t -> t
   val get : field -> t -> bool
 
   val union : t -> t -> t
+
+  val subset : t -> t -> bool
 end = struct
   type t = int
   type field = int
@@ -21,25 +25,40 @@ end = struct
 
   let equal = Int.equal
 
+  (* Writen reversed so that variable with the non_tuple flags are the smallest. *)
+  let compare b1 b2 = Int.compare b2 b1
+
   let empty = 0
 
+  (* This must be in this order, because of the compare function. *)
   let non_arrow = mk_field ()
+  let non_tuple = mk_field ()
 
   let set f b = (1 lsl f) lor b
   let get f b = (1 lsl f) land b <> 0
 
   let union b1 b2 = b1 lor b2
+
+  let subset b1 b2 = (b1 land b2) = b1
 end
 
 type t = { id: Int.t; flags: Flags.t }
 type var = t
 
 let as_int v = v.id
-let compare v1 v2 = CCInt.compare v1.id v2.id
+
+(* The order must guarantee that the variable with the flags non_tuple are smaller than
+   variable without this flags. *)
+let compare v1 v2 =
+  CCPair.compare Flags.compare CCInt.compare (v1.flags, v1.id) (v2.flags, v2.id)
 let equal v1 v2 =
   if CCInt.equal v1.id v2.id then (assert (Flags.equal v1.flags v2.flags); true) else false
 
+let is_pure v = Flags.(equal empty v.flags)
 let is_non_arrow v = Flags.(get non_arrow v.flags)
+let is_non_tuple v = Flags.(get non_tuple v.flags)
+
+let are_flags_included v1 v2 = Flags.subset v1.flags v2.flags
 
 let merge_flags v1 v2 gen =
   gen (Flags.union v1.flags v2.flags)
@@ -98,7 +117,9 @@ let to_string =
     let str =
       var.id
       |> base_26 'a'
-      |> (fun l -> if Flags.get Flags.non_arrow var.flags then '>'::l else l)
+      |> (fun l -> if is_non_arrow var then '>' :: l else l)
+      |> (fun l -> if is_non_tuple var then '*' :: l else
+        l)
       |> String.of_list
     in
     str

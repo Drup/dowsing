@@ -40,26 +40,28 @@ let pos_tests = [
   1, "a * b -> c", "a -> 'a" ;
   1, "'a -> 'a", "(x -> y) * x -> y" ;
   (* other *)
-  1, "a -> a", "a -> 'a" ;
+  2, "a -> a", "a -> 'a" ;
   1, "a -> a", "'a -> a" ;
   1, "a -> a", "'a -> 'a" ;
-  1, "a -> a", "'a -> 'b" ;
-  2, "a -> a -> a", "'a -> 'b" ;
-  1, "a -> a -> a", "'a * 'b -> 'c" ;
-  3, "a * a -> a -> a", "'a * 'b -> 'c" ;
-  2, "'a -> 'b -> 'c", "'x -> 'y * 'z" ;
-  4, "'a -> 'b f -> a", "'x g * 'y f -> 'x" ;
+  3, "a -> a", "'a -> 'b" ;
+  4, "a -> a -> a", "'a -> 'b" ;
+  9, "a -> a -> a", "'a * 'b -> 'c" ;
+  14, "a * a -> a -> a", "'a * 'b -> 'c" ;
+  6, "'a -> 'b -> 'c", "'x -> 'y * 'z" ;
+  3, "'a -> 'b f -> a", "'x g * 'y f -> 'x" ; (* We find more general solution, therefore less *)
   1, "'a -> 'a -> a", "'x * a -> 'x" ;
-  2, "'a * int", "bool * bool * 'b";
-  8264, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
-  2, "int list * int -> 'a", "int list * int -> 'a";
+  1, "'a * int", "bool * bool * 'b";
+  108, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
+  4, "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
-  1, "int list -> 'a", "int list -> int";
+  2, "int list -> 'a", "int list -> int";
   (* Tuples target of variable: TODO I think this is a case where a variable will point to a tuples *)
   1, "'a * 'b -> 'a", "int * unit * float -> int * unit";
   (* Loop *)
   2, "'a -> 'a", "'b -> 'b";
   1, "'a -> 'a -> 'a", "'x * b -> 'x" ;
+  (* Need ACU *)
+  2, "'a -> 'b", "'a * 'b" ;
 ]
 
 let neg_tests = [
@@ -77,7 +79,6 @@ let neg_tests = [
   0, "a", "a -> a" ;
   0, "a", "a * a" ;
   0, "a", "a f" ;
-  0, "'a -> 'b", "'a * 'b" ;
   0, "'a f * a", "'x g * a" ;
   0, "'a f -> 'b g -> a", "'x h * 'y -> 'x" ;
   0, "'a -> 'a -> a", "'x * b -> 'x" ;
@@ -91,7 +92,7 @@ let neg_tests = [
 ]
 
 let slow_tests = [
-  2, "'A * int list -> unit",
+  1, "'A * int list -> unit",
   "anchor * bitmap * bool * bool * color * color * color * color * color * color * color * color * cursor *  int * int * int * int * int * int * int * int * justification * relief * state * string * string * string -> 'a"
 ]
   

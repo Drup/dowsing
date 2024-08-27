@@ -393,6 +393,18 @@ let is_arrow = function
   | Arrow _ -> true
   | _ -> false
 
+let is_tuple = function
+  | Tuple ts -> NSet.length ts >= 2
+  | _ -> false
+
+let is_non_arrow_var = function
+  | Var v -> Variable.is_non_arrow v
+  | _ -> false
+
+let is_non_tuple_var = function
+  | Var v -> Variable.is_non_tuple v
+  | _ -> false
+
 (** import functions *)
 
 let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
@@ -551,6 +563,11 @@ let rec iter_consts t f =
       Iter.flat_map iter_consts (NSet.to_iter params) f;
       iter_consts ret f
   | Tuple elts -> Iter.flat_map iter_consts (NSet.to_iter elts) f
+
+let variable_clash v t =
+  (Variable.is_non_arrow v && is_arrow t)
+  || (Variable.is_non_tuple v && is_tuple t)
+
 
 (* pretty printing *)
 

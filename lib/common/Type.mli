@@ -106,6 +106,9 @@ val tuple : Env.t -> NSet.t -> t
 val freeze_variables : Env.t -> t -> t
 val refresh_variables : Env.t -> t -> t
 val is_arrow : t -> bool
+val is_tuple : t -> bool
+val is_non_arrow_var : t -> bool
+val is_non_tuple_var : t -> bool
 
 (* import functions *)
 
@@ -126,6 +129,7 @@ val tail : t -> NSet.t
 val iter : t -> t Iter.t
 val iter_vars : t -> Variable.t Iter.t
 val iter_consts : t -> LongIdent.t Iter.t
+val variable_clash : Variable.t -> t -> bool
 
 (* pretty printing *)
 
