@@ -86,7 +86,7 @@ let merge e1 e2 =
   in
   let stack = ref [] in
   (* TODO: we should use a Unification.Stack.t for stack but we would get a module cycle *)
-  let vars = Variable.Map.merge
+  let vars = Variable.Map.merge  (* TODO: Test physical equality to skip merging vars, not sure this will help, we need to think about a way to do stuff faster. *)
     (fun v t1 t2 ->
       match t1, t2 with
       | None, None -> None
