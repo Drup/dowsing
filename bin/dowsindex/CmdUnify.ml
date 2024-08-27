@@ -25,7 +25,7 @@ let main opts =
   Timer.stop timer;
   if not opts.quiet then
     if unifs = [] then Fmt.pr "no unifier@."
-    else Fmt.pr "@[<v2>unifiers:@ %a@]@." Fmt.(list ~sep:sp Subst.pp) unifs;
+    else Fmt.pr "@[<v2>unifiers:@ %a@]@." Fmt.(list ~sep:(CCFormat.return "@ @ ") Subst.pp) unifs;
   if opts.stat then (* TODO: Forgot if this can be cut by the index. *)
     Fmt.pr "%f | %b | %i | %i | %i@."
       (Timer.get timer) (check_features opts.ty1 opts.ty2)
