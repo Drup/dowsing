@@ -49,26 +49,8 @@ end = struct
       if the representative is a constant or a variable, replace the variable by it
       otherwise replace the variable by the last variable on the chain. *)
   let simplify_problem env {ACTerm. left ; right} =
-    let f (t: Type.t) = match t with
-      | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
-      | Type.Other _ -> [|t|]
-      | Type.Tuple t  -> Type.NSet.as_array t
-      | Type.Var v -> (
-        match Env.representative ~non_arrow:false env v with
-        | V v' -> [| Type.var (Env.tyenv env) v'|]
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [|t|]
-      )
-      | Type.NonArrowVar v -> (
-        match Env.representative ~non_arrow:true env v with
-        | V _ -> failwith "Impossible"
-        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
-        | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [|t|]
-      )
-    in
-    {ACTerm. left = CCArray.flat_map f left ; right = CCArray.flat_map f right }
+    {ACTerm. left = CCArray.flat_map (S.simplify env) left ;
+             right = CCArray.flat_map (S.simplify env) right }
 
   let add_problem get_index nb_atom {ACTerm. left; right} =
     let equation = Array.make nb_atom 0 in

@@ -11,6 +11,8 @@ module type S = sig
       the type with a shape on the other. Here the notion of variable is broad,
       it means anything that we treat as variable. In the case of Const it is
       everything thing except constant and frozen variables. *)
+
+  val simplify : Env.t -> Type.t -> Type.t array
 end
 
 module Kind : S = struct
@@ -74,6 +76,25 @@ module Kind : S = struct
       |> List.map (fun (_, s) t -> Type.Set.mem t s)
     in
     { variable; non_arrow_var; shapes; arrows = Type.is_arrow }
+
+    let simplify env (t: Type.t) = match t with
+      | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
+      | Type.Other _ -> [|t|]
+      | Type.Tuple t  -> Type.NSet.as_array t
+      | Type.Var v -> (
+        match Env.representative ~non_arrow:false env v with
+        | V v' -> [| Type.var (Env.tyenv env) v'|]
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        | E (_, Tuple t) -> Type.NSet.as_array t
+        | E (_, t) -> [|t|]
+      )
+      | Type.NonArrowVar v -> (
+        match Env.representative ~non_arrow:true env v with
+        | V _ -> failwith "Impossible"
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        | E (_, Tuple t) -> Type.NSet.as_array t
+        | E (_, t) -> [|t|]
+      )
 end
 
 module Const : S = struct
@@ -114,13 +135,13 @@ module Const : S = struct
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ -> m
-          | _ ->
+          | Type.FrozenVar _ | Constr (_ , [||]) ->
               Map.update (of_type t)
                 (function
                   | None -> Some (Type.Set.singleton t)
                   | Some s -> Some (Type.Set.add t s))
-                m)
+                m
+          | _ -> m)
         types Map.empty
     in
     {
@@ -130,4 +151,24 @@ module Const : S = struct
         Map.to_list shape_map |> List.map (fun (_, s) t -> Type.Set.mem t s);
       arrows = (fun _ -> false);
     }
+
+    let simplify env (t: Type.t) = match t with
+      | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
+      | Type.Var v -> (
+        match Env.representative ~non_arrow:false env v with
+        | V v' -> [|Type.var (Env.tyenv env) v'|]
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        | E (_, (FrozenVar _ | Constr (_, [||]) as t)) -> [| t |]
+        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
+      | Type.NonArrowVar v -> (
+        match Env.representative ~non_arrow:true env v with
+        | V _ -> failwith "Impossible"
+        | NAR v' -> [| Type.non_arrow_var (Env.tyenv env) v'|]
+        | E (_, (FrozenVar _ | Constr (_, [||]) as t)) -> [| t |]
+        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
+      | _ ->
+          let new_v = Env.gen env in
+          match Syntactic.attach false env new_v t with
+          | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
+          | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"
 end
