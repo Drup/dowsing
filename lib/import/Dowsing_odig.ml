@@ -16,9 +16,9 @@ let odig_odoc_cache () =
   | [s] -> CCResult.get_exn @@ Fpath.of_string s
   | _ -> assert false
 
-let odig_cache_dir = odig_odoc_cache ()
+let odig_cache_dir = lazy (odig_odoc_cache ())
 let odig_cache_pkg pkgname =
-  let dir = Fpath.(odig_cache_dir / "odoc" / pkgname) in
+  let dir = Fpath.(Lazy.force odig_cache_dir / "odoc" / pkgname) in
   dir
 
 let odig_pkgs () =
