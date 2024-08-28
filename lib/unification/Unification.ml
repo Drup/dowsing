@@ -169,7 +169,7 @@ let unifiers (tyenv : Type.Env.t) t1 t2 : Subst.t Iter.t =
   | FailUnif _ | FailedOccurCheck _ -> Iter.empty
 
 (* 1s timeout *)
-let timeout = 30.
+let timeout = 5.
 
 let iter_with_timeout (it : _ Iter.t) k =
   match Timeout.with_timeout timeout (fun () -> it k) with
