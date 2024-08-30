@@ -109,12 +109,12 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
     ]
   in
   potentials |> Iter.of_list
+  |> Trace.wrap_arrow_sol
   |> Iter.flat_map (fun (desc, f) ->
          Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__
            ("Solve_arrow sub problem: " ^ desc )
            ~data:(fun () -> [ ("case", `String desc); "pb", `String pb ])
            (try_with_solution env0 f ()))
-  |> Trace.wrap_arrow_sol
 
 and try_with_solution : type a. _ -> (Env.t -> a -> return) -> a -> _ =
  fun env f sol k ->
