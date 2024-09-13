@@ -21,7 +21,8 @@ let create ~with_poset env entries =
     ) entries;
   let type_column =
     Content.iteri content
-    |> Iter.map (fun (id, entry) -> id, entry.Entry.ty)
+    |> Iter.map
+      (fun (id, entry) -> id, Type.of_outcometree env entry.Entry.ty)
   in
   DefaultIndex.import idx type_column;
   { idx; content}
