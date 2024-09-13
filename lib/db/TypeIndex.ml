@@ -26,13 +26,11 @@ module Make (I : Set.OrderedType) = struct
     let index_by_type = Type.HMap.create 17 in
     let trie = T.empty in
     let poset = if with_poset then Some (Poset.init env) else None in
-    { hcons = env.hcons; trie ; index_by_type ; poset }
+    { trie ; index_by_type ; poset }
 
   let size t = Type.HMap.length t.index_by_type
 
   let add t (entry, ty) =
-    let env = Type.Env.make ~hcons:t.hcons () in
-    let ty = Type.of_outcometree env ty in
     match Type.HMap.get t.index_by_type ty with
     | None ->
       let id = size t in
