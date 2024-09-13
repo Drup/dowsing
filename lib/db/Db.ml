@@ -7,6 +7,11 @@ module TypeIndex = TypeIndex
 
 module DefaultIndex = TypeIndex.Make (Content.ID)
 
+module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
+
+let _info = Logs.info
+let _debug = Logs.debug
+
 type t = {
   idx : DefaultIndex.t ;
   content : Content.t ;
@@ -19,24 +24,19 @@ let create ~with_poset env entries =
       let _ = Content.add content entry in
       ()
     ) entries;
-  let type_column =
-    Content.iteri content
-    |> Iter.map
-      (fun (id, entry) -> id, Type.of_outcometree env entry.Entry.ty)
-  in
-  DefaultIndex.import idx type_column;
+  _info (fun m ->
+      m "@[%i @ types to insert in the index @]"
+        (Content.size content));
+  Content.iteri content
+  |> Iter.map
+    (fun (id, entry) -> id, Type.of_outcometree env entry.Entry.ty)
+  |>  Iter.iter
+    (fun (id, ty) -> DefaultIndex.add idx id ty)
+  ;
   { idx; content}
 
-let find ?pkgs t env ty =
-  DefaultIndex.find t.idx env ty
-  |> Content.resolve_all ?pkgs t.content
-
-let find_with_trie ?pkgs t env ty =
-  DefaultIndex.find_with_trie t.idx env ty
-  |> Content.resolve_all ?pkgs t.content
-
-let find_exhaustive ?pkgs t env ty =
-  DefaultIndex.find_exhaustive t.idx env ty
+let find ?pkgs ?filter t env ty =
+  DefaultIndex.find ?filter t.idx env ty
   |> Content.resolve_all ?pkgs t.content
 
 let iter ?pkgs t =

@@ -1,4 +1,3 @@
-
 module type S = TypeIndexIntf.S
 
 module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
@@ -30,7 +29,8 @@ module Make (I : Set.OrderedType) = struct
 
   let size t = Type.HMap.length t.index_by_type
 
-  let add t (entry, ty) =
+  let add t entry ty =
+    _info (fun m -> m "@[Inserting %a @]" Type.pp ty);
     match Type.HMap.get t.index_by_type ty with
     | None ->
       let id = size t in
@@ -47,12 +47,6 @@ module Make (I : Set.OrderedType) = struct
     | Some (entries, tyid) ->
       let entries = ID.Set.add entry entries in
       Type.HMap.replace t.index_by_type ty (entries, tyid)
-
-  let import t l =
-    _info (fun m ->
-        m "@[%i @ types to insert in the index @]"
-          (Iter.length l));
-    Iter.iter (add t) l
 
   (** Iterators *)
 
@@ -90,7 +84,7 @@ module Make (I : Set.OrderedType) = struct
     |> filter_with_unification env ty
     |> insert_ids t ~to_type:fst
 
-  let find t env ty : iter_with_unifier =
+  let find_default t env ty : iter_with_unifier =
     match t.poset with
     | None ->
       find_with_trie t env ty
@@ -99,6 +93,12 @@ module Make (I : Set.OrderedType) = struct
       Poset.check poset env ~query:ty ~range
       |> insert_ids t ~to_type:fst
 
+  let find ?(filter=`Default) t env ty  : iter_with_unifier =
+    match filter with
+    | `Default -> find_default t env ty
+    | `None -> find_exhaustive t env ty
+    | `OnlyTrie -> find_with_trie t env ty
+  
   let pp_metrics fmt t =
     Fmt.pf fmt
       "@[<v>Entries: %i@,\

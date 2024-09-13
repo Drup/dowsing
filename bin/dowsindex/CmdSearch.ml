@@ -17,9 +17,9 @@ let main opts =
       error @@ Fmt.str "cannot open index file `%a'" Fpath.pp opts.idx_file
   in
   let res =
-    let find = if opts.exhaustive then Db.find_exhaustive else Db.find in
+    let filter = if opts.exhaustive then `None else `Default in
     let iter_idx =
-      try find idx env opts.ty ?pkgs
+      try Db.find ~filter idx env opts.ty ?pkgs
       with Not_found -> error "unknown package"
     in
     iter_idx
