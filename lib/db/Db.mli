@@ -18,16 +18,7 @@ val create :
 
 val find : 
   ?pkgs:Utils.String.HMap.key list ->
-  t ->
-  Type.Env.t ->
-  Type.t -> (Entry.t * (Type.t * Common.Subst.t)) Iter.t
-val find_with_trie : 
-  ?pkgs:Utils.String.HMap.key list ->
-  t ->
-  Type.Env.t ->
-  Type.t -> (Entry.t * (Type.t * Common.Subst.t)) Iter.t
-val find_exhaustive : 
-  ?pkgs:Utils.String.HMap.key list ->
+  ?filter:[ `Default | `None | `OnlyTrie] ->
   t ->
   Type.Env.t ->
   Type.t -> (Entry.t * (Type.t * Common.Subst.t)) Iter.t

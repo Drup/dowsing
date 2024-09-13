@@ -18,15 +18,12 @@ module type S = sig
   val create :
     with_poset:bool -> Type.Env.t -> t
 
-  val import :
+  val add :
     t ->
-    (ID.t * Type.t) Iter.t ->
+    ID.t -> Type.t ->
     unit
-  (** [import infos l] adds all the package in [l] to the index [t].
-      A package is a triplet [pkg, pkg_dir, iter] where [iter] is an
-      iterator of items to index.
-
-      Removes old contents from packages if present.
+  (** [add index id ty] adds the association [ty -> id] to the index
+      [index].
   *)
 
   val iter : t -> iter
@@ -36,19 +33,15 @@ module type S = sig
   (** [iter_compatible t ty] iterates over all types whose features 
       are compatible with [ty]. *)
 
-  val find : t -> Type.Env.t -> Type.t -> iter_with_unifier
-  (** [find t env ty] returns all types which unifies with [ty],
-      using the various filtering methods (Trie + Poset).
-  *)
-
-  val find_with_trie : t -> Type.Env.t -> Type.t -> iter_with_unifier
-  (** [find t env ty] returns all types which unifies with [ty],
-      using only the Trie filtering.
-  *)
-
-  val find_exhaustive : t -> Type.Env.t -> Type.t -> iter_with_unifier
-  (** [find_exhaustive t env ty] returns all types which unifies with [ty]
-      through exhaustive search over all types.
+  val find :
+    ?filter:[ `Default | `None | `OnlyTrie] ->
+    t -> Type.Env.t -> Type.t -> iter_with_unifier
+  (** [find t env ty] returns all types which unifies with [ty].
+      
+      Use [filter] to select a filtering techniques:
+      - [`Default] uses the most efficient techniques.
+      - [`None] relies on exhaustive search without filters.
+      - [`OnlyTrie] only relies on the Trie index.
   *)
 
   type serial

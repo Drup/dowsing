@@ -8,6 +8,7 @@ module ID : sig
     val get : key -> 'a t -> 'a
     val add : 'a -> 'a t -> key
     val iteri : (key -> 'a -> unit) -> 'a t -> unit
+    val size : _ t -> int
   end
   module Set : CCSet.S with type elt = t
 end = struct
@@ -22,6 +23,7 @@ end = struct
       CCVector.push t v;
       CCVector.size t - 1
     let iteri = CCVector.iteri
+    let size = CCVector.size
   end
   module Set = CCSet.Make(CCInt)
 end
@@ -39,6 +41,8 @@ let create () = {
   entries = ID.Tbl.create () ;
   index_by_lid = LongIdent.HMap.create 17 ;
 }
+
+let size t = ID.Tbl.size t.entries
 
 let find t id =
   ID.Tbl.get id t.entries
