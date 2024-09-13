@@ -6,22 +6,21 @@ module Logs = (val Logs.(src_log @@ Src.create __MODULE__))
 let _info = Logs.info
 let _debug = Logs.debug
 
-module Make (Elt : Set.OrderedType) = struct
+module Make (I : Set.OrderedType) = struct
   module T = Trie.Default
-  module Elt = struct
-    include Elt
-    module Set = CCSet.Make(Elt)
+  module ID = struct
+    include I
+    module Set = CCSet.Make(I)
   end
 
   type t = {
-    hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : (Elt.Set.t * TypeId.t) Type.HMap.t;
+    index_by_type : (ID.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
-  type iter = (Elt.t * Type.t) Iter.t
-  type iter_with_unifier = (Elt.t * (Type.t * Subst.t)) Iter.t
+  type iter = (ID.t * Type.t) Iter.t
+  type iter_with_unifier = (ID.t * (Type.t * Subst.t)) Iter.t
 
   let create ~with_poset env =
     let index_by_type = Type.HMap.create 17 in
@@ -38,7 +37,7 @@ module Make (Elt : Set.OrderedType) = struct
     | None ->
       let id = size t in
       let tyid = TypeId.mk id ty in
-      let entries = Elt.Set.singleton entry in
+      let entries = ID.Set.singleton entry in
       Type.HMap.add t.index_by_type ty (entries, tyid);
       t.trie <- T.add tyid t.trie;
       begin match t.poset with
@@ -48,7 +47,7 @@ module Make (Elt : Set.OrderedType) = struct
           Poset.add poset tyid ~range
       end
     | Some (entries, tyid) ->
-      let entries = Elt.Set.add entry entries in
+      let entries = ID.Set.add entry entries in
       Type.HMap.replace t.index_by_type ty (entries, tyid)
 
   let import t l =
@@ -63,7 +62,7 @@ module Make (Elt : Set.OrderedType) = struct
     it (fun elt ->
         let ty = to_type elt in
         let elts, _ = Type.HMap.find t.index_by_type ty in
-        Elt.Set.iter (fun id -> k (id, elt)) elts
+        ID.Set.iter (fun id -> k (id, elt)) elts
       )
 
   let filter_with_unification env ty it =
@@ -105,7 +104,7 @@ module Make (Elt : Set.OrderedType) = struct
   let pp_metrics fmt t =
     Fmt.pf fmt
       "@[<v>Entries: %i@,\
-       Size: %iko@,\
+       Total Size: %iko@,\
        Trie size: %iko@,\
        Poset size: %iko"
       (Type.HMap.length t.index_by_type)

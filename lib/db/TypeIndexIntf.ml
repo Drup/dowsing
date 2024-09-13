@@ -1,27 +1,26 @@
 module type S = sig
   module T : Trie.S
-  module Elt : sig
+  module ID : sig
     type t
     val compare : t -> t -> int
     module Set : Set.S with type elt = t
   end
 
   type t = private {
-    hcons : Type.Hashcons.t;
     mutable trie : T.t;
-    index_by_type : (Elt.Set.t * TypeId.t) Type.HMap.t;
+    index_by_type : (ID.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
   }
 
-  type iter = (Elt.t * Type.t) Iter.t
-  type iter_with_unifier = (Elt.t * (Type.t * Subst.t)) Iter.t
+  type iter = (ID.t * Type.t) Iter.t
+  type iter_with_unifier = (ID.t * (Type.t * Subst.t)) Iter.t
 
   val create :
     with_poset:bool -> Type.Env.t -> t
 
   val import :
     t ->
-    (Elt.t * Outcometree.out_type) Iter.t ->
+    (ID.t * Type.t) Iter.t ->
     unit
   (** [import infos l] adds all the package in [l] to the index [t].
       A package is a triplet [pkg, pkg_dir, iter] where [iter] is an
@@ -64,7 +63,7 @@ module type S = sig
 
     val make : index -> t
     val iter : t -> iter
-    val select : t -> (Elt.t * Type.t -> Bool.t) -> unit
+    val select : t -> (ID.t * Type.t -> Bool.t) -> unit
     val unselect : t -> unit
     val pp : t Fmt.t [@@ocaml.toplevel_printer]
   end

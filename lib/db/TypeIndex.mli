@@ -1,3 +1,3 @@
 module type S = TypeIndexIntf.S
 
-module Make (Elt : Set.OrderedType) : S with type Elt.t = Elt.t
+module Make (I : Set.OrderedType) : S with type ID.t = I.t
