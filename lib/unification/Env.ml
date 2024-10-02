@@ -29,6 +29,7 @@ let tyenv t = t.tyenv
 let gen flags e : Variable.t = Variable.Gen.gen flags e.tyenv.var_gen
     
 let add e v ty = e.vars <- Subst.add v ty e.vars
+let remove e v = e.vars <- Subst.remove v e.vars
 
 let init_partial e v =
   e.partials <- Variable.Map.update v
