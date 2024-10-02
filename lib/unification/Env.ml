@@ -87,7 +87,7 @@ let merge e1 e2 =
   let stack = ref [] in
   (* TODO: we should use a Unification.Stack.t for stack but we would get a module cycle *)
   let vars = Variable.Map.merge  (* TODO: Test physical equality to skip merging vars, not sure this will help, we need to think about a way to do stuff faster. *)
-    (fun v t1 t2 ->
+    (fun _v t1 t2 ->
       match t1, t2 with
       | None, None -> None
       | Some t, None | None, Some t -> Some t
@@ -95,7 +95,7 @@ let merge e1 e2 =
         (* TODO: Should we do something more clever here? Like look for the repr or
            we let the insert do that? For now, we will let the insert function do the job *)
         if t1 != t2 then
-          stack := ((Type.var (tyenv e1) v), t2) ::!stack;
+          stack := (t1, t2) ::!stack;
         Some t1)
     e1.vars
     e2.vars
@@ -127,7 +127,7 @@ let commit e =
            we let the insert do that? For now, we will let the insert function do the job *)
         let t2 = match l with [t] -> t | l -> Type.tuple (tyenv e) (Type.NSet.of_list l) in
         if t1 != t2 then
-          stack := ((Type.var (tyenv e) v), t2) ::!stack;
+          stack := (t1, t2) ::!stack;
         Some t1)
     e.vars
     e.partials
