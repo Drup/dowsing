@@ -2,6 +2,7 @@ type t = Type.t Variable.Map.t
 
 let empty = Variable.Map.empty
 let add = Variable.Map.add
+let remove = Variable.Map.remove
 
 let rec apply (env : Type.Env.t) t =
   let substitute ty = apply env t ty in

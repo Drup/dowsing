@@ -20,6 +20,7 @@ val representative : t -> Variable.t -> representative
 val push_tuple : t -> ACTerm.t -> ACTerm.t -> unit
 val push_arrow : t -> ArrowTerm.t -> ArrowTerm.t -> unit
 val add : t -> Variable.t -> Type.t -> unit
+val remove : t -> Variable.t -> unit
 val init_partial : t -> Variable.t -> unit
 val extend_partial : ?by:int -> t -> Variable.t -> Type.t -> unit
 

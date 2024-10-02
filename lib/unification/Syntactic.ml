@@ -53,7 +53,7 @@ include Infix
 (** Checking for cycles *)
 
 (* TO OPTIM/MEASURE *)
-let occur_check env : return =
+let _occur_check env : return =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   debug (fun m -> m "@[<v>Occur check in@,%a@]" Env.pp env);
   let nb_predecessors = Variable.HMap.create 17 in
@@ -104,9 +104,47 @@ let occur_check env : return =
   in
   loop 0 vars_without_predecessors)
 
+let rec occur_check env : return =
+  match Occur_check.occur_check env with
+  | None -> Done
+  | Some l ->
+      Logs.debug (fun m -> m "Occur check in: %a" Env.pp env);
+      Logs.debug (fun m -> m "Cycle: %a" (CCList.pp Variable.pp) l);
+      let rec collapse stack = function
+        | u::v::tl -> (
+          match Env.representative env u with
+          | Env.V _ -> failwith "Impossible"
+          | Env.E (_, t) ->
+              match t with
+              | Type.Var _ | FrozenVar _ | Other _ -> failwith "Impossible"
+              | Constr _ | Arrow _ -> None
+              | Tuple l ->
+                  let stack =
+                    Type.NSet.fold
+                      (fun t stack ->
+                        match t with
+                        | Type.Var v' when Variable.equal v v' -> stack
+                        | t ->
+                          Stack.push stack t
+                            (Type.tuple (Env.tyenv env) Type.NSet.empty)(*unit*))
+                      l stack
+                  in
+                  collapse stack tl
+                  )
+        | _ -> Some stack
+      in
+      match collapse Stack.empty l with
+      | None -> FailedOccurCheck env
+      | Some stack ->
+        let v = List.hd l in
+        List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) (List.tl l);
+        Env.remove env v;
+        let* () = process_stack env stack in
+        occur_check env
+
 (** Main process *)
 
-let rec process_stack env (stack : Stack.t) : return =
+and process_stack env (stack : Stack.t) : return =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
   debug (fun m -> m "Process_stack");
   Timeout.check ();
