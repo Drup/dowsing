@@ -54,7 +54,7 @@ let full types k =
                 skipable = check_features t1 t2;
               })
           l;
-        Gc.full_major ();
+        Gc.compact ();
         (* Gc.print_stat stdout; *)
         all_pairs (i + 1) t
   in
@@ -66,7 +66,7 @@ let one types t1 k =
   Format.printf "@[<h>Test against: %a@]@." Type.pp t1;
   List.iteri
     (fun j t2 ->
-      Format.printf "@[<h>%i/%i: %a@]@." j n_types Type.pp t1;
+      Format.printf "@[<h>%i/%i: %a@]@." j n_types Type.pp t2;
       let env = Type.Env.make () in
       Timer.start timer;
       (try ignore @@ Acic.unify env t1 t2
