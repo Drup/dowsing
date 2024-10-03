@@ -247,6 +247,7 @@ end = struct
     let rec aux env coverage = function
       | -1 ->
           (* Check if the subset is large enough *)
+          Timeout.check ();
           if Bitv.(equal mask coverage) then (
             let final_env, stack = Env.commit env in
             match
