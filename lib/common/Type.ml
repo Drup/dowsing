@@ -378,7 +378,7 @@ let rec refresh_variables bdgs env (t : t) =
   | Var v ->
     let v' =
       Variable.HMap.get_or_add bdgs
-        ~f:(fun _ -> Variable.(Gen.gen Flags.empty env.Env.var_gen)) ~k:v
+        ~f:(fun _ -> Variable.(Gen.gen (get_flags v) env.Env.var_gen)) ~k:v
     in
     var env v'
   | Constr (lid, t) -> constr env lid (Array.map (refresh_variables bdgs env) t)
