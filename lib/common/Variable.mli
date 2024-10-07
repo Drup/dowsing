@@ -24,6 +24,8 @@ val is_pure : t -> bool
 val is_non_arrow : t -> bool
 val is_non_tuple : t -> bool
 
+val get_flags : t -> Flags.t
+
 (** [is_flags_includes v1 v2] check if the flags of [v1] are included in the flags of [v2] *)
 val are_flags_included : t -> t -> bool
 

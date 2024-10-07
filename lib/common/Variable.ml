@@ -58,6 +58,8 @@ let is_pure v = Flags.(equal empty v.flags)
 let is_non_arrow v = Flags.(get non_arrow v.flags)
 let is_non_tuple v = Flags.(get non_tuple v.flags)
 
+let get_flags {flags; _} = flags
+
 let are_flags_included v1 v2 = Flags.subset v1.flags v2.flags
 
 let merge_flags v1 v2 gen =
