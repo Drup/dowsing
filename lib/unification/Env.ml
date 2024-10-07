@@ -114,7 +114,13 @@ let commit e =
     (fun v t1 t2 ->
       match t1, t2 with
       | None, None -> None
-      | Some t, None | None, Some [t] -> Some t
+      | Some t, None -> Some t
+      | None, Some [t] -> (
+        match t with
+          | Type.Var _ ->
+            stack := (Type.var (tyenv e) v, t) :: !stack; (* TODO: we will create a new variable because of this. We need to work to create less variables in general. *)
+            None
+          | _ -> Some t)
       | None, Some l -> Some (Type.tuple (tyenv e) (Type.NSet.of_list l))
       | Some t1, Some l ->
         (* TODO: Should we do something more clever here? Like look for the repr or
