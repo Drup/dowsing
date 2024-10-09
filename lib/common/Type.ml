@@ -187,7 +187,7 @@ end = struct
   type t = elt Array.t
 
   let compare = CCArray.compare Base.compare
-  let sort = CCArray.sort Base.compare
+  let sort = CCArray.fast_sort Base.compare
 
   let of_list lst =
     let t = CCArray.of_list lst in
