@@ -181,6 +181,7 @@ and NSet : sig
   val add : elt -> t -> t
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
   val map : (elt -> elt) -> t -> t
+  val flatten : t -> t
   val pp : elt Fmt.t -> t Fmt.t
 end = struct
   type elt = Base.t
@@ -228,6 +229,51 @@ end = struct
   let add elt t = union (singleton elt) t
   let fold fn t acc = CCArray.fold_left (CCFun.flip fn) acc t
   let map fn t = of_iter @@ Iter.map fn @@ to_iter t
+
+  let flatten a =
+    let size, t_list =
+      let size, toplevel, nested =
+        Array.fold_left
+          (fun (size, toplevel, nested) e ->
+            match e with
+            | Base.Tuple elts ->
+              let elts : elt array = Obj.magic elts in
+              if length elts = 0 then (size, toplevel, nested)
+              else (length elts + size, toplevel, (ref 0, elts)::nested)
+            | t -> (1 + size, t :: toplevel, nested)
+          ) (0, [], []) a
+      in
+      match toplevel with
+      | [] -> size, nested
+      | _ -> size, (ref 0, Array.of_list (List.rev toplevel))::nested
+    in
+    match t_list with
+    | [] -> empty
+    | [ _, a ] -> a
+    | _ ->
+      let t = Array.make size (Base.Constr (Longident.Lident "__dummy", [||])) in
+      let rec loop pos = function
+        | [] -> assert (pos = size)
+        | [ (i, a) ] ->
+          assert (pos = size - (length a - !i)); if !i < length a then Array.blit a !i t pos (length a - !i)
+        | (i, a) :: tl ->
+          if !i = length a then loop pos tl
+          else
+            let idx, e, tl =
+              List.fold_left
+                (fun (idx, e, tl) (i, a) ->
+                if !i = length a then (idx, e, tl)
+                else
+                  if Base.compare a.(!i) e < 0 then (i, a.(!i), (i, a) :: tl)
+                  else (idx, e, (i, a) :: tl)
+              ) (i, a.(!i), []) tl
+            in
+            incr idx;
+            t.(pos) <- e;
+            loop (pos + 1) ((i, a) :: tl)
+      in
+      loop 0 t_list;
+      t
 
   let pp pp_ty ppf = function
     | [||] -> Fmt.string ppf "unit"
@@ -299,9 +345,7 @@ let arrow env param ret =
   | _, _ -> Arrow (NSet.singleton param, ret)
 
 let tuple env elts =
-  (* TODO: can elts be of size 0 or 1? Currently it is needed *)
-  let aux = function Tuple elts -> elts | elt -> NSet.singleton elt in
-  let elts = NSet.fold (fun elt -> NSet.union @@ aux elt) elts NSet.empty in
+  let elts = NSet.flatten elts in
   hashcons env
   @@ match NSet.is_singleton elts with Some elt -> elt | None -> Tuple elts
 
