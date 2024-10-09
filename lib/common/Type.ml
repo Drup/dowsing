@@ -208,9 +208,22 @@ end = struct
   let is_singleton = function [| elt |] -> Some elt | _ -> None
 
   let union t1 t2 =
-    let t = CCArray.append t1 t2 in
-    sort t;
-    t
+    let l1 = length t1 in
+    if l1 = 0 then t2
+    else
+      let l2 = length t2 in
+      if l2 = 0 then t1
+      else
+        let t = Array.make (l1 + l2) (Array.get t1 0) in
+        let i1 = ref 0 and i2 = ref 0 in
+        while !i1 < l1 && !i2 < l2 do
+          let e1 = Array.get t1 !i1 and e2 = Array.get t2 !i2 in
+          if Base.compare e1 e2 <= 0 then (Array.set t (!i1 + !i2) e1; incr i1)
+          else (Array.set t (!i1 + !i2) e2; incr i2)
+        done;
+        if !i1 < l1 then Array.blit t1 !i1 t (!i1 + l2) (l1 - !i1);
+        if !i2 < l2 then Array.blit t2 !i2 t (!i2 + l1) (l2 - !i2);
+        t
 
   let add elt t = union (singleton elt) t
   let fold fn t acc = CCArray.fold_left (CCFun.flip fn) acc t
