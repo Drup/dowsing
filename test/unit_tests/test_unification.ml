@@ -68,6 +68,8 @@ let pos_tests = [
   "int * float", "'a * 'b * 'c";
   "'a * float", "float";
   "'a -> 'b", "'a * 'b" ;
+  (* Bug non-arrow *)
+  "((float -> int) * float * int, int -> 'b) t", "('b * int, int -> 'b) t";
 ]
 
 let neg_tests = [
@@ -101,6 +103,17 @@ let slow_tests = [
   "'A * int list -> unit",
   "anchor * bitmap * bool * bool * color * color * color * color * color * color * color * color * cursor *  int * int * int * int * int * int * int * int * justification * relief * state * string * string * string -> 'a"
 ]
+
+let marked_var_pos_tests = [
+  ">a. 'a * int", "int * float * float";
+  "*a. 'a * int", " (int -> string) * int";
+  ">a. 'a * int", " (int -> string) * int * float";
+]
+
+let marked_var_neg_tests = [
+  "*a. 'a * int", "int * float * float";
+  ">a. 'a * int", " (int -> string) * int";
+]
   
 
 let tests =
@@ -115,9 +128,22 @@ let tests =
     incr test_cnt ;
     Alcotest.test_case (CCInt.to_string ! test_cnt) speed test
   in
+  let make_marked_test speed res (str1, str2) =
+    let env  = Type.Env.make () in
+    let test () =
+      let ty1 = Scheme.of_string env str1 |> Scheme.to_type env in
+      let ty2 = Scheme.of_string env str2 |> Scheme.to_type env in
+      let name = Fmt.str "%s ≡ %s" str1 str2 in
+      Alcotest.(check bool) name res @@ Acic.unifiable env ty1 ty2
+    in
+    incr test_cnt ;
+    Alcotest.test_case (CCInt.to_string ! test_cnt) speed test
+  in
   CCList.map (make_test `Quick true) pos_tests @
   CCList.map (make_test `Quick false) neg_tests @
-  CCList.map (make_test `Slow true) slow_tests
+  CCList.map (make_test `Slow true) slow_tests @
+  CCList.map (make_marked_test `Quick true) marked_var_pos_tests @
+  CCList.map (make_marked_test `Quick false) marked_var_neg_tests
 
 let () = add_tests "Acic.unifiable" tests
 
