@@ -10,11 +10,6 @@ type problem = {left : t ; right : t }
 
 let make_problem left right = {left;right}
 
-let as_tuple env t : Type.t =
-  match t with
-  | [|x|] -> x
-  | t -> Type.tuple env @@ Type.NSet.of_array t
-
 let pp ppf t =
   match t with
   | [|x|] -> Type.pp ppf x
