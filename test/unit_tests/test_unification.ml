@@ -70,6 +70,8 @@ let pos_tests = [
   "'a -> 'b", "'a * 'b" ;
   (* Bug non-arrow *)
   "((float -> int) * float * int, int -> 'b) t", "('b * int, int -> 'b) t";
+  (* Bug occur check collapse *)
+  "'a * 'a -> 'a", "('c * 'd * 'e * 'f * (('c * 'e -> 'a)) * (('d * 'f -> 'b)) -> ('a * 'b))"
 ]
 
 let neg_tests = [

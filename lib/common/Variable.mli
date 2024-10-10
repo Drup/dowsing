@@ -34,6 +34,8 @@ val are_flags_included : t -> t -> bool
  *)
 val merge_flags : t -> t -> ( Flags.t -> t) -> t
 
+val find_most_general : t list -> (t, Flags.t) Either.t
+
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t
 module Set : CCSet.S with type elt = t

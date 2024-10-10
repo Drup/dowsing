@@ -129,16 +129,20 @@ let rec occur_check env : return =
                             (Type.tuple (Env.tyenv env) Type.NSet.empty)(*unit*))
                       l stack
                   in
-                  collapse stack tl
+                  collapse stack (v::tl)
                   )
         | _ -> Some stack
       in
       match collapse Stack.empty l with
       | None -> FailedOccurCheck env
       | Some stack ->
-        let v = List.hd l in
-        List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) (List.tl l);
-        Env.remove env v;
+          (match Variable.find_most_general l with
+            | Either.Right flags ->
+              let v = Env.gen flags env in
+              List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) l
+            | Left v ->
+              List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) l;
+              Env.remove env v);
         let* () = process_stack env stack in
         occur_check env
 
