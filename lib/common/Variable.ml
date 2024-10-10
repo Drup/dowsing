@@ -65,6 +65,20 @@ let are_flags_included v1 v2 = Flags.subset v1.flags v2.flags
 let merge_flags v1 v2 gen =
   gen (Flags.union v1.flags v2.flags)
 
+let rec find_most_general_rec flags v = function
+    | h :: t ->
+      let flags_h = get_flags h in
+      let new_flags = Flags.union flags flags_h in
+      if Flags.equal new_flags flags_h then find_most_general_rec new_flags (Some h) t
+      else if Flags.equal new_flags flags then find_most_general_rec new_flags v t
+      else find_most_general_rec new_flags None t
+    | [] ->
+      match v with
+      | Some v -> Either.Left v
+      | None -> Either.Right flags
+
+let find_most_general = find_most_general_rec Flags.empty None
+
 module Map = CCMap.Make (struct
     type nonrec t = t
     let compare = compare
