@@ -51,59 +51,6 @@ end
 include Infix
 
 (** Checking for cycles *)
-
-(* TO OPTIM/MEASURE *)
-let _occur_check env : return =
-  Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
-  debug (fun m -> m "@[<v>Occur check in@,%a@]" Env.pp env);
-  let nb_predecessors = Variable.HMap.create 17 in
-  let successors = Variable.HMap.create 17 in
-
-  let fill_nb_predecessors x ty =
-    let aux y =
-      Variable.HMap.incr nb_predecessors y;
-      Variable.HMap.add_list successors x y
-    in
-    if not @@ Variable.HMap.mem nb_predecessors x then
-      Variable.HMap.add nb_predecessors x 0;
-    Type.iter_vars ty |> Iter.iter aux
-  in
-  Variable.Map.iter fill_nb_predecessors (Env.vars env);
-
-  let nb_representatives = Variable.HMap.length nb_predecessors in
-  let vars_without_predecessors =
-    Variable.HMap.fold
-      (fun x count_preds l -> if count_preds = 0 then x :: l else l)
-      nb_predecessors []
-  in
-  debug (fun m ->
-      m "Predecessors: %a"
-        (Variable.HMap.pp Variable.pp Fmt.int)
-        nb_predecessors);
-  debug (fun m ->
-      m "Vars without predecessor: %a"
-        (Fmt.Dump.list Variable.pp)
-        vars_without_predecessors);
-
-  let rec loop n vars_without_predecessors =
-    match vars_without_predecessors with
-    (* We eliminated all the variables: there are no cycles *)
-    | _ when n = nb_representatives -> Done
-    | [] ->
-        debug (fun m -> m "Fail occur check");
-        FailedOccurCheck env
-    | x :: q ->
-        let aux l v =
-          Variable.HMap.decr nb_predecessors v;
-          let n = Variable.HMap.get_or ~default:0 nb_predecessors v in
-          if n = 0 then v :: l else l
-        in
-        let succs_x = Variable.HMap.get_or ~default:[] successors x in
-        let q = List.fold_left aux q succs_x in
-        loop (n + 1) q
-  in
-  loop 0 vars_without_predecessors)
-
 let rec occur_check env : return =
   match Occur_check.occur_check env with
   | None -> Done
