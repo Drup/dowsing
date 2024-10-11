@@ -28,7 +28,6 @@ let rec solve_tuple_problems env0 =
    can then avoid branching. *)
 (* Elementary Arrow theory *)
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
-  (*  TODO: we could reuse fresh variable accross the solutions *)
   (* AL -> BL ≡? AR -> BR *)
   let pb = CCFormat.sprintf "%a" ArrowTerm.pp_problem {ArrowTerm.left; right} in
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__

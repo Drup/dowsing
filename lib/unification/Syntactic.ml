@@ -118,9 +118,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       assert (Array.length args1 = Array.length args2);
       let stack = Stack.push_array2 stack args1 args2 in
       process_stack env stack
-  (* Two arrows, we apply VA repeatedly
-     (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r'  -->  an equivalent arrow problem
-  *)
+  (* Two arrows, (a₁,...,aₙ) -> r ≡ (a'₁,...,a'ₙ) -> r' *)
   | Type.Arrow (arg1, ret1), Type.Arrow (arg2, ret2) ->
       debug (fun m -> m "Arrow|Arrow");
       (* TODO: if ret1 and ret2 for sure cannot be unified with an arrow, we can decompose
@@ -128,24 +126,26 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       Env.push_arrow env (ArrowTerm.make (Type.NSet.as_array arg1) ret1)
                          (ArrowTerm.make (Type.NSet.as_array arg2) ret2);
       process_stack env stack
-  (* Two tuples, we apply VA repeatedly
-     (s₁,...,sₙ) ≡ (t₁,...,tₙ) --> an equivalent pure problem
-  *)
+  (* Two tuples, (s₁,...,sₙ) ≡ (t₁,...,tₙ) *)
   | Tuple s, Tuple t ->
       debug (fun m -> m "Tuple|Tuple");
       (* TODO: we can add check that the tuples can actually be unified otherwise stop *)
       Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
       process_stack env stack
+  (* A variable and a type, v ≡ t *)
   | Var v, t | t, Var v ->
       debug (fun m -> m "Var");
       insert_var env stack v t
-  (* Clash rule
-     Terms are incompatible
+  (* A tuple and a type, (s₁,...,sₙ) ≡ t
+     The tuple need to collapse, we transforme t into a tuple of one elements.
   *)
   | Tuple ts, t | t, Tuple ts ->
       debug (fun m -> m "Colapse Tuple");
       Env.push_tuple env (Type.NSet.as_array ts) [| t |];
       process_stack env stack
+  (* Clash rule
+     Terms are incompatible
+  *)
   | Constr _, Constr _ (* if same constructor, already checked above *)
   | ( (Constr _ | Arrow _ | Other _ | FrozenVar _),
       (Constr _ | Arrow _ | Other _ | FrozenVar _) ) ->
@@ -180,7 +180,7 @@ and quasi_solved env stack x s =
 
 (* Non proper equations
    'x ≡ 'y
-   To include a non propre equations, we need to be sure that the dependency created between variable is a DAG. Therefore, we use the Variable.compare, to order the dependency.
+   To include a non propre equations, we need to be sure that the dependency created between variable is a DAG. Therefore, we use the Variable.get_most_general, to order the dependency.
 *)
 and non_proper env stack (x : Variable.t) (y : Variable.t) =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
