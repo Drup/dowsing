@@ -1,10 +1,5 @@
 module type S = sig
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list }
 
   val partition : Type.Set.t -> (Type.t -> bool )partition
   (** Partition a set of type into the variables in one side and the partition of
@@ -22,12 +17,7 @@ module Kind : S = struct
     | Constr of LongIdent.t
     | Arrow
 
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list }
 
   let to_int = function
     | Other _ -> 0
@@ -57,13 +47,12 @@ module Kind : S = struct
   end)
 
   let partition types =
-    let variable = function Type.Var var -> not (Variable.is_non_arrow var) | _ -> false in
-    let non_arrow_var = function Type.Var var -> Variable.is_non_arrow var | _ -> false in
+    let variable = function Type.Var _ -> true | _ -> false in
     let shapes =
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.Var _ | Arrow _ -> m
+          | Type.Var _ -> m
           | _ ->
               Map.update (of_type t)
                 (function
@@ -74,29 +63,25 @@ module Kind : S = struct
       |> Map.to_list
       |> List.map (fun (_, s) t -> Type.Set.mem t s)
     in
-    { variable; non_arrow_var; shapes; arrows = Type.is_arrow }
+    { variable; shapes }
 
-    let simplify env (t: Type.t) = match t with
-      | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _)
-      | Type.Other _ -> [|t|]
-      | Type.Tuple t  -> Type.NSet.as_array t
-      | Type.Var v -> (
+  let simplify env (t : Type.t) =
+    match t with
+    | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _) | Type.Other _
+      ->
+        [| t |]
+    | Type.Tuple t -> Type.NSet.as_array t
+    | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
+        | V v' ->
+            [| Type.var (Env.tyenv env) v' |]
         | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [|t|]
-      )
+        | E (_, t) -> [| t |])
 end
 
 module Const : S = struct
   type t = Constant of LongIdent.t | FrozenVar of Variable.t  (** Constants *)
-
-  type 'a partition = {
-    variable : 'a;
-    non_arrow_var : 'a;
-    shapes : 'a list;
-    arrows : 'a;
-  }
+  type 'a partition = { variable : 'a; shapes : 'a list }
 
   let to_int = function Constant _ -> 0 | FrozenVar _ -> 1
 
@@ -126,7 +111,7 @@ module Const : S = struct
       Type.Set.fold
         (fun t m ->
           match t with
-          | Type.FrozenVar _ | Constr (_ , [||]) ->
+          | Type.FrozenVar _ | Constr (_, [||]) ->
               Map.update (of_type t)
                 (function
                   | None -> Some (Type.Set.singleton t)
@@ -137,22 +122,22 @@ module Const : S = struct
     in
     {
       variable = is_var;
-      non_arrow_var = (fun _ -> false);
       shapes =
         Map.to_list shape_map |> List.map (fun (_, s) t -> Type.Set.mem t s);
-      arrows = (fun _ -> false);
     }
 
-    let simplify env (t: Type.t) = match t with
-      | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
-      | Type.Var v -> (
+  let simplify env (t : Type.t) =
+    match t with
+    | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
+    | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (not (Variable.is_non_arrow v) || Variable.is_non_arrow v'); [| Type.var (Env.tyenv env) v'|]
-        | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
-      )
-      | _ ->
-          let new_v = Env.gen Variable.Flags.empty env in
-          match Syntactic.attach env new_v t with
-          | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
-          | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"
+        | V v' ->
+            [| Type.var (Env.tyenv env) v' |]
+        | E (v', _) -> [| Type.var (Env.tyenv env) v' |])
+    | _ -> (
+        let new_v = Env.gen Variable.Flags.empty env in
+        match Syntactic.attach env new_v t with
+        | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
+        | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ ->
+            failwith "Impossible")
 end
