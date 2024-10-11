@@ -1,9 +1,12 @@
+type rel = Smaller | Bigger | Equal | Incomparable
+
 module Flags : sig
   type t = private int
   type field
 
   val equal : t -> t -> bool
   val compare : t -> t -> int
+  val rel : t -> t -> rel
 
   val empty : t
 
@@ -15,6 +18,8 @@ module Flags : sig
 
   val union : t -> t -> t
 
+  (** [subset f1 f2] return true if [f2] contains all the flags of [f1].
+      Say otherwise, if [f1] is a subset of flags of [f2].*)
   val subset : t -> t -> bool
 end = struct
   type t = int
@@ -40,6 +45,12 @@ end = struct
   let union b1 b2 = b1 lor b2
 
   let subset b1 b2 = (b1 land b2) = b1
+
+  let rel b1 b2 =
+    if b1 = b2 then Equal
+    else if subset b1 b2 then Smaller
+    else if subset b2 b1 then Bigger
+    else Incomparable
 end
 
 type t = { id: Int.t; flags: Flags.t }
@@ -53,6 +64,14 @@ let compare v1 v2 =
   CCPair.compare Flags.compare CCInt.compare (v1.flags, v1.id) (v2.flags, v2.id)
 let equal v1 v2 =
   if CCInt.equal v1.id v2.id then (assert (Flags.equal v1.flags v2.flags); true) else false
+
+let rel v1 v2 =
+  match Flags.rel v1.flags v2.flags with
+  | Equal ->
+      if v1.id = v2.id then Equal
+      else if v1.id < v2.id then Smaller
+      else Bigger
+  | r -> r
 
 let is_pure v = Flags.(equal empty v.flags)
 let is_non_arrow v = Flags.(get non_arrow v.flags)
@@ -74,7 +93,7 @@ let rec find_most_general_rec flags v = function
       else find_most_general_rec new_flags None t
     | [] ->
       match v with
-      | Some v -> Either.Left v
+      | Some _v -> (* Either.Left v *) Either.Right flags (* TODO: if we want to return v, we need to be careful to not create cycle later, meaning we need to introduce an order on the variable and respect it when we go through the list. This need a rewrite of this functions. *)
       | None -> Either.Right flags
 
 let find_most_general = find_most_general_rec Flags.empty None

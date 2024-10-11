@@ -28,7 +28,10 @@ let vars e = e.vars
 let tyenv t = t.tyenv
 let gen flags e : Variable.t = Variable.Gen.gen flags e.tyenv.var_gen
     
-let add e v ty = e.vars <- Subst.add v ty e.vars
+let add e v ty =
+  assert (not @@ Type.variable_clash v ty);
+  e.vars <- Subst.add v ty e.vars
+
 let remove e v = e.vars <- Subst.remove v e.vars
 
 let init_partial e v =
@@ -129,7 +132,7 @@ let commit e =
       | Some t, None -> Some t
       | None, Some [t] -> (
         match t with
-          | Type.Var _ ->
+          | Type.Var _ | Arrow _ | Tuple _ ->
             stack := (Type.var (tyenv e) v, t) :: !stack; (* TODO: we will create a new variable because of this. We need to work to create less variables in general. *)
             None
           | _ -> Some t)

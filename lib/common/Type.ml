@@ -564,9 +564,11 @@ let rec iter_consts t f =
       iter_consts ret f
   | Tuple elts -> Iter.flat_map iter_consts (NSet.to_iter elts) f
 
-let variable_clash v t =
-  (Variable.is_non_arrow v && is_arrow t)
-  || (Variable.is_non_tuple v && is_tuple t)
+let variable_clash v = function
+  | Var v' -> Variable.rel v v' <> Variable.Smaller
+  | Arrow _ -> Variable.is_non_arrow v
+  | Tuple _ -> Variable.is_non_tuple v
+  | _ -> false
 
 
 (* pretty printing *)

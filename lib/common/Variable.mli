@@ -15,10 +15,16 @@ end
 
 type t
 type var = t
+type rel = Smaller | Bigger | Equal | Incomparable
 
 val as_int : t -> int 
 val equal : t CCEqual.t
 val compare : t CCOrd.t
+
+(** Define a partial order on the variable that extend the partial order of inclusion of
+    the flags. In the Env, we must have that a variable [v1] point to a variable [v2]
+    then [v1] must be [Smaller] than [v2]. *)
+val rel : t -> t -> rel
 
 val is_pure : t -> bool
 val is_non_arrow : t -> bool
