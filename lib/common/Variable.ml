@@ -84,19 +84,29 @@ let are_flags_included v1 v2 = Flags.subset v1.flags v2.flags
 let merge_flags v1 v2 gen =
   gen (Flags.union v1.flags v2.flags)
 
-let rec find_most_general_rec flags v = function
-    | h :: t ->
-      let flags_h = get_flags h in
-      let new_flags = Flags.union flags flags_h in
-      if Flags.equal new_flags flags_h then find_most_general_rec new_flags (Some h) t
-      else if Flags.equal new_flags flags then find_most_general_rec new_flags v t
-      else find_most_general_rec new_flags None t
-    | [] ->
-      match v with
-      | Some _v -> (* Either.Left v *) Either.Right flags (* TODO: if we want to return v, we need to be careful to not create cycle later, meaning we need to introduce an order on the variable and respect it when we go through the list. This need a rewrite of this functions. *)
-      | None -> Either.Right flags
-
-let find_most_general = find_most_general_rec Flags.empty None
+let get_most_general gen =
+  let rec get_most_general_rec flags v = function
+      | h :: t ->
+        begin match v with
+          | Some v ->
+            assert (v.flags = flags);
+            begin match rel h v with
+              | Equal | Smaller -> get_most_general_rec flags (Some v) t
+              | Bigger -> get_most_general_rec h.flags (Some h) t
+              | Incomparable -> get_most_general_rec (Flags.union flags h.flags) None t
+            end
+          | None ->
+            begin match Flags.rel h.flags flags with
+              | Equal | Bigger -> get_most_general_rec h.flags (Some h) t
+              | Smaller | Incomparable -> get_most_general_rec (Flags.union h.flags flags) None t
+            end
+        end
+      | [] ->
+        match v with
+        | Some v -> v
+        | None -> gen flags
+  in
+  get_most_general_rec Flags.empty None
 
 module Map = CCMap.Make (struct
     type nonrec t = t

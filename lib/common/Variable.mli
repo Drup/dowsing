@@ -40,7 +40,10 @@ val are_flags_included : t -> t -> bool
  *)
 val merge_flags : t -> t -> ( Flags.t -> t) -> t
 
-val find_most_general : t list -> (t, Flags.t) Either.t
+(** [get_most_general gen l] given the list [l] of variable, find the biggest variable according
+    to {rel} if it exist, otherwise create it with [gen].
+ *)
+val get_most_general : (Flags.t -> t) -> t list -> t
 
 module Map : CCMap.S with type key = t
 module HMap : CCHashtbl.S with type key = t

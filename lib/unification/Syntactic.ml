@@ -136,13 +136,13 @@ let rec occur_check env : return =
       match collapse Stack.empty l with
       | None -> FailedOccurCheck env
       | Some stack ->
-          (match Variable.find_most_general l with
-            | Either.Right flags ->
-              let v = Env.gen flags env in
-              List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) l
-            | Left v ->
-              List.iter (fun u -> Env.add env u (Type.var (Env.tyenv env) v)) l;
-              Env.remove env v);
+        let v = Variable.get_most_general (fun f -> Env.gen f env) l in
+        List.iter
+          (fun u ->
+            if not @@ Variable.equal u v then
+            Env.add env u (Type.var (Env.tyenv env) v))
+          l;
+        Env.remove env v;
         let* () = process_stack env stack in
         occur_check env
 
