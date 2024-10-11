@@ -226,7 +226,18 @@ end = struct
         if !i2 < l2 then Array.blit t2 !i2 t (!i2 + l1) (l2 - !i2);
         t
 
-  let add elt t = union (singleton elt) t
+  let add elt t =
+    let new_t = Array.make (length t + 1) elt in
+    begin match CCArray.bsearch ~cmp:Base.compare elt t with
+      | `Just_after i | `At i ->
+        Array.blit t 0 new_t 0 (i + 1);
+        Array.blit t (i + 1) new_t (i+2) (length t - i - 1)
+      | `All_lower -> Array.blit t 0 new_t 0 (length t)
+      | `All_bigger -> Array.blit t 0 new_t 1 (length t)
+      | `Empty -> ()
+    end;
+    new_t
+
   let fold fn t acc = CCArray.fold_left (CCFun.flip fn) acc t
   let map fn t = of_iter @@ Iter.map fn @@ to_iter t
 
