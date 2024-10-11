@@ -35,11 +35,6 @@ val get_flags : t -> Flags.t
 (** [is_flags_includes v1 v2] check if the flags of [v1] are included in the flags of [v2] *)
 val are_flags_included : t -> t -> bool
 
-(** [merge v1 v2 gen] merge the flags of v1 v2 into a fresh variable
-    created by gen. 
- *)
-val merge_flags : t -> t -> ( Flags.t -> t) -> t
-
 (** [get_most_general gen l] given the list [l] of variable, find the biggest variable according
     to {rel} if it exist, otherwise create it with [gen].
  *)

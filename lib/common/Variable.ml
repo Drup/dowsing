@@ -81,9 +81,6 @@ let get_flags {flags; _} = flags
 
 let are_flags_included v1 v2 = Flags.subset v1.flags v2.flags
 
-let merge_flags v1 v2 gen =
-  gen (Flags.union v1.flags v2.flags)
-
 let get_most_general gen =
   let rec get_most_general_rec flags v = function
       | h :: t ->

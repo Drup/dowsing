@@ -242,21 +242,19 @@ and non_proper env stack (x : Variable.t) (y : Variable.t) =
      Env.representative env y) with
   | (V x' | E (x', _)), (V y' | E (y', _)) when Variable.equal x' y' -> process_stack env stack
   | V x', V y' ->
-      let t =
-        Type.var (Env.tyenv env)
-          (Variable.merge_flags x' y' (fun flags -> Env.gen flags env))
-      in
-      let* () = attach env x' t in
-      let* () = attach env y' t in
+      let z' = Variable.get_most_general (fun f -> Env.gen f env) [x'; y'] in
+      let tz = Type.var (Env.tyenv env) z' in
+      let* () = if Variable.equal z' x' then Done else attach env x' tz in
+      let* () = if Variable.equal z' y' then Done else attach env y' tz in
       process_stack env stack
   | V x', E (_, t) | E (_, t), V x' ->
       let* () = attach env x' t in
       process_stack env stack
   | E (x', s), E (y', t) ->
-      let z' = Variable.merge_flags x' y' (fun flags -> Env.gen flags env) in
-      let tv = Type.var (Env.tyenv env) z' in
-      let* () = attach env x' tv in
-      let* () = attach env y' tv in
+      let z' = Variable.get_most_general (fun f -> Env.gen f env) [x'; y'] in
+      let tz = Type.var (Env.tyenv env) z' in
+      let* () = if Variable.equal z' x' then Done else attach env x' tz in
+      let* () = if Variable.equal z' y' then Done else attach env y' tz in
       let* () = attach env z' s in
       insert_rec env stack s t
   | exception Env.FlagsClash (v, t) ->
