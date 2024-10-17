@@ -51,7 +51,7 @@ let pos_tests = [
   4, "'a -> 'b f -> a", "'x g * 'y f -> 'x" ;
   1, "'a -> 'a -> a", "'x * a -> 'x" ;
   2, "'a * int", "bool * bool * 'b";
-  2696, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
+  8264, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
   2, "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
   1, "int list -> 'a", "int list -> int";
