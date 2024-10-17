@@ -51,7 +51,7 @@ let pos_tests = [
   3, "'a -> 'b f -> a", "'x g * 'y f -> 'x" ; (* We find more general solution, therefore less *)
   1, "'a -> 'a -> a", "'x * a -> 'x" ;
   1, "'a * int", "bool * bool * 'b";
-  108, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
+  132, "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit", "('a * 'b) -> ('a -> 'z) -> ('b -> 'y) -> unit";
   4, "int list * int -> 'a", "int list * int -> 'a";
   (* sub constructor *)
   2, "int list -> 'a", "int list -> int";
