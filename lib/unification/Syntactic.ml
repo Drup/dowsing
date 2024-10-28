@@ -139,16 +139,15 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   (* A tuple and a type, (s₁,...,sₙ) ≡ t
      The tuple need to collapse, we transforme t into a tuple of one elements.
   *)
-  | Tuple ts, t | t, Tuple ts ->
+  | Tuple ts, t | t, Tuple ts when not (Type.NSet.is_empty ts) ->
       debug (fun m -> m "Colapse Tuple");
       Env.push_tuple env (Type.NSet.as_array ts) [| t |];
       process_stack env stack
   (* Clash rule
      Terms are incompatible
   *)
-  | Constr _, Constr _ (* if same constructor, already checked above *)
-  | ( (Constr _ | Arrow _ | Other _ | FrozenVar _),
-      (Constr _ | Arrow _ | Other _ | FrozenVar _) ) ->
+  | ( (Tuple _ | Constr _ | Arrow _ | Other _ | FrozenVar _),
+      (Tuple _ | Constr _ | Arrow _ | Other _ | FrozenVar _) ) ->
       debug (fun m -> m "Fail");
       FailUnif (t1, t2))
 
