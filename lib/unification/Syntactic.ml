@@ -126,8 +126,8 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
       debug (fun m -> m "Arrow|Arrow");
       (* TODO: if ret1 and ret2 for sure cannot be unified with an arrow, we can decompose
          the problem already *)
-      Env.push_arrow env (ArrowTerm.make (Type.NSet.as_array arg1) ret1)
-                         (ArrowTerm.make (Type.NSet.as_array arg2) ret2);
+      Env.push_arrow env (ArrowTerm.make arg1 ret1)
+                         (ArrowTerm.make arg2 ret2);
       process_stack env stack
   (* Two tuples, (s₁,...,sₙ) ≡ (t₁,...,tₙ) *)
   | Tuple s, Tuple t ->
