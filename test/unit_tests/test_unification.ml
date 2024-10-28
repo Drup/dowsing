@@ -99,6 +99,8 @@ let neg_tests = [
   "'X -> 'X", "'a * ('a, 'b) t * ('a, 'b) t -> 'a option * ('a, 'b) t * ('a, 'b) t" ;
   "'a -> 'a list -> 'a", "'x -> 'x -> 'x" ;
   "('a * unit * string * 'b t) format4 -> 'a","('a * Buffer.t * unit * ('b * string) t) format4 -> 'a";
+  (* bug in occur check *)
+  "(int, 'b, 'a, 'b, 'a) t", "('b, 'a, 'b * 'b, 'b, 'a) t";
 ]
 
 let slow_tests = [

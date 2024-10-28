@@ -52,10 +52,10 @@ include Infix
 
 (** Checking for cycles *)
 let rec occur_check env : return =
+  Logs.debug (fun m -> m "Occur check in: %a" Env.pp env);
   match Occur_check.occur_check env with
   | None -> Done
   | Some l ->
-      Logs.debug (fun m -> m "Occur check in: %a" Env.pp env);
       Logs.debug (fun m -> m "Cycle: %a" (CCList.pp Variable.pp) l);
       let rec collapse stack = function
         | u::v::tl -> (
@@ -66,11 +66,14 @@ let rec occur_check env : return =
               | Type.Var _ | FrozenVar _ | Other _ -> failwith "Impossible"
               | Constr _ | Arrow _ -> None
               | Tuple l ->
+                  let first = ref true in
                   let stack =
                     Type.NSet.fold
                       (fun t stack ->
                         match t with
-                        | Type.Var v' when Variable.equal v v' -> stack
+                        | Type.Var v' when !first && Variable.equal v v' ->
+                          first := false;
+                          stack
                         | t ->
                           Stack.push stack t
                             (Type.tuple (Env.tyenv env) Type.NSet.empty)(*unit*))
