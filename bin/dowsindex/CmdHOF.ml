@@ -19,14 +19,6 @@ let pp_data_csv fmt data =
 let cmp data1 data2 = CCFloat.compare data1.unif_time data2.unif_time
 let features = Db.Feature.all
 
-let check_features t1 t2 =
-  not
-  @@ List.for_all
-       (fun (module F : Db.Feature.S) ->
-         let f1 = F.compute t1 and f2 = F.compute t2 in
-         F.compatible ~query:f1 ~data:f2)
-       features
-
 let full types k =
   let n_types = List.length types in
   let timer = Timer.make () in
@@ -51,7 +43,7 @@ let full types k =
                 t1;
                 t2;
                 unif_time;
-                skipable = check_features t1 t2;
+                skipable = Db.Feature.compatible t1 t2;
               })
           l;
         Gc.compact ();
@@ -75,7 +67,7 @@ let one types t1 k =
          raise e);
       Timer.stop timer;
       let unif_time = Timer.get timer in
-      k { id = (-1, j); t1; t2; unif_time; skipable = check_features t1 t2 })
+      k { id = (-1, j); t1; t2; unif_time; skipable = Db.Feature.compatible t1 t2 })
     types
 
 let print_stat () =
