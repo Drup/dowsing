@@ -22,3 +22,7 @@ watch :
 .PHONY : clean
 clean :
 	@ $(DUNE) clean
+
+.PHONY : bench
+bench :
+	@ $(DUNE) exec --release -- ./bench/bench.exe stat --index=containers.db "int -> int -> int" "'a -> int -> unit" "'a -> 'a list -> bool" "('a * 'b) -> ('a -> 'c) -> ('b -> 'd) -> ('c * 'd)"

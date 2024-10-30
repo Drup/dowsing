@@ -1,6 +1,7 @@
 (library
  (name common)
  (libraries
+  cmdliner
   compiler-libs.common
   containers
   containers-data
