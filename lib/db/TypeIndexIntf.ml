@@ -7,10 +7,11 @@ module type S = sig
   end
 
   type t = private {
+    env : Type.Env.t ;
     mutable trie : T.t;
     index_by_type : (ID.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
-    type_decls : (ID.t * Variable.var array * Type.t) LongIdent.HMap.t;
+    type_decls : (Variable.var array * Type.t) LongIdent.HMap.t;
   }
 
   type iter = (ID.t * Type.t) Iter.t
@@ -28,7 +29,7 @@ module type S = sig
   *)
 
   val add_type_decl :
-    t -> ID.t ->
+    t ->
     LongIdent.t -> Variable.t list -> Type.t ->
     unit
 

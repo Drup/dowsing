@@ -23,10 +23,10 @@ let create ~with_poset env =
   { idx; content}
 
 let add env { idx ; content } entry =
-  _debug (fun m -> m "Inserting %a" Entry.pp entry);
-  let id = Content.add content entry in
+  _info (fun m -> m "Inserting %a" Entry.pp entry);
   match entry.Entry.desc with
   | Val ty ->
+    let id = Content.add content entry in
     DefaultIndex.add idx id (Type.of_outcometree env ty)
   | Type { params; manifest } ->
     match manifest with
@@ -42,7 +42,7 @@ let add env { idx ; content } entry =
             | _ -> Variable.(Gen.gen Flags.empty env.var_gen)
           ) params
       in
-      DefaultIndex.add_type_decl idx id entry.lid params ty
+      DefaultIndex.add_type_decl idx entry.lid params ty
 
 let find ?pkgs ?filter t env ty =
   DefaultIndex.find ?filter t.idx env ty

@@ -13,10 +13,11 @@ module Make (I : Set.OrderedType) = struct
   end
 
   type t = {
+    env : Type.Env.t ;
     mutable trie : T.t;
     index_by_type : (ID.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
-    type_decls : (ID.t * Variable.t array * Type.t) LongIdent.HMap.t;
+    type_decls : (Variable.t array * Type.t) LongIdent.HMap.t;
   }
 
   type iter = (ID.t * Type.t) Iter.t
@@ -27,12 +28,14 @@ module Make (I : Set.OrderedType) = struct
     let type_decls = LongIdent.HMap.create 17 in
     let trie = T.empty in
     let poset = if with_poset then Some (Poset.init env) else None in
-    { trie ; index_by_type ; poset ; type_decls }
+    { env ; trie ; index_by_type ; poset ; type_decls }
 
   let size t = Type.HMap.length t.index_by_type
 
-  let add t entry ty =
-    _info (fun m -> m "@[Inserting %a @]" Type.pp ty);
+  let add t entry ty0 =
+    let ty = TypeAlias.expand_type t.env t.type_decls ty0 in
+    _debug (fun m -> m "TypeIndex.add @[<v>%a@]@ = @[<v>%a@]"
+               Type.pp ty0 Type.pp ty);
     match Type.HMap.get t.index_by_type ty with
     | None ->
       let id = size t in
@@ -50,9 +53,9 @@ module Make (I : Set.OrderedType) = struct
       let entries = ID.Set.add entry entries in
       Type.HMap.replace t.index_by_type ty (entries, tyid)
 
-  let add_type_decl t id lid params entry =
-    LongIdent.HMap.add t.type_decls lid (id, Array.of_list params, entry)
-  
+  let add_type_decl t lid params def =
+    TypeAlias.add t.env t.type_decls lid params def
+
   (** Iterators *)
 
   let insert_ids ~to_type t it k =
