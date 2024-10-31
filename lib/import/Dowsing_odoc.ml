@@ -127,19 +127,19 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
   | TypeDecl _ ->
     None
   | Value { value = _; type_ } ->
-    Some (odoc_to_outcometree type_)
+    Some (Db.Entry.Val (odoc_to_outcometree type_))
   | Constructor { args; res }
   | ExtensionConstructor { args; res }
   | Exception { args; res } ->
     let args = format_args args in
     let res = odoc_to_outcometree res in
     let ty = mk_arrow args res in
-    Some ty
+    Some (Db.Entry.Val ty)
   | Field { mutable_ = _; parent_type; type_ } ->
     let arg = odoc_to_outcometree parent_type in
     let res = odoc_to_outcometree type_ in
     let ty = mk_arrow [Nolabel, arg] res in
-    Some ty
+    Some (Db.Entry.Val ty)
   | Doc _ 
   | Class_type _ 
   | Method _ 
@@ -152,12 +152,12 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
 
 let of_entry pkg source_file (x : Odoc_search.Entry.t) =
   let open CCOption.Infix in
-  let+ ty = of_entry_kind x.kind in
+  let+ desc = of_entry_kind x.kind in
   let lid =
     LongIdent.of_list @@
     Odoc_model.Paths.Identifier.fullname x.id
   in
-  {Db.Entry. lid ; ty ; pkg; source_file }
+  {Db.Entry. lid ; desc ; pkg; source_file }
 
 let iter pkgs k =
   let register ~pkg ~source_file id () item =

@@ -1,6 +1,9 @@
+type desc =
+  | Val of Outcometree.out_type
+
 type t = {
   lid : LongIdent.t ;
-  ty : Outcometree.out_type ;
+  desc : desc ;
   pkg : string ;
   source_file : Fpath.t ;
 }
@@ -13,8 +16,10 @@ let is_internal info =
   |> LongIdent.to_iter
   |> Iter.exists @@ String.mem ~start:0 ~sub:"__"
 
-let pp ppf t =
-  Fmt.pf ppf "@[%s:%a :@ %a@]"
-    t.pkg
-    LongIdent.pp t.lid
-    !Oprint.out_type t.ty
+let pp ppf { lid; desc; pkg; source_file = _ } =
+  match desc with
+  | Val ty ->
+    Fmt.pf ppf "@[%s:%a :@ %a@]"
+      pkg
+      LongIdent.pp lid
+      !Oprint.out_type ty

@@ -17,23 +17,17 @@ type t = {
   content : Content.t ;
 }
 
-let create ~with_poset env entries =
+let create ~with_poset env =
   let content = Content.create () in
   let idx = DefaultIndex.create ~with_poset env in
-  Iter.iter (fun entry -> 
-      let _ = Content.add content entry in
-      ()
-    ) entries;
-  _info (fun m ->
-      m "@[%i @ types to insert in the index @]"
-        (Content.size content));
-  Content.iteri content
-  |> Iter.map
-    (fun (id, entry) -> id, Type.of_outcometree env entry.Entry.ty)
-  |>  Iter.iter
-    (fun (id, ty) -> DefaultIndex.add idx id ty)
-  ;
   { idx; content}
+
+let add env { idx ; content } entry =
+  _debug (fun m -> m "Inserting %a" Entry.pp entry);
+  match entry.Entry.desc with
+  | Val ty ->
+    let id = Content.add_value content entry in
+    DefaultIndex.add idx id (Type.of_outcometree env ty)
 
 let find ?pkgs ?filter t env ty =
   DefaultIndex.find ?filter t.idx env ty

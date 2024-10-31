@@ -14,7 +14,9 @@ type t = {
 
 val create : 
   with_poset:bool ->
-  Type.Env.t -> Entry.t Iter.t -> t
+  Type.Env.t -> t
+
+val add : Type.Env.t -> t -> Entry.t -> unit
 
 val find : 
   ?pkgs:Utils.String.HMap.key list ->

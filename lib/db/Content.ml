@@ -34,12 +34,14 @@ type t = {
      TODO: Ideally, the entries should be mmap-ed *)
   entries : Entry.t ID.Tbl.t ;
   (* Index by longident *)
-  index_by_lid : ID.t LongIdent.HMap.t ;
+  values_by_lid : ID.t LongIdent.HMap.t ;
+  types_by_lid : ID.t LongIdent.HMap.t ;
 }
 
 let create () = {
   entries = ID.Tbl.create () ;
-  index_by_lid = LongIdent.HMap.create 17 ;
+  values_by_lid = LongIdent.HMap.create 17 ;
+  types_by_lid = LongIdent.HMap.create 17 ;
 }
 
 let size t = ID.Tbl.size t.entries
@@ -47,18 +49,32 @@ let size t = ID.Tbl.size t.entries
 let find t id =
   ID.Tbl.get id t.entries
 
-let find_lid t lid =
-  let id = LongIdent.HMap.find t.index_by_lid lid in
+let find_value t lid =
+  let id = LongIdent.HMap.find t.values_by_lid lid in
   ID.Tbl.get id t.entries
 
-let add t (v : Entry.t) =
-  match LongIdent.HMap.get t.index_by_lid v.lid with
+let find_type t lid =
+  let id = LongIdent.HMap.find t.types_by_lid lid in
+  ID.Tbl.get id t.entries
+
+let add_value t (v : Entry.t) =
+  match LongIdent.HMap.get t.values_by_lid v.lid with
   | Some id ->
     (* TODO Probably should do a warning here *)
     id
   | None ->
     let id = ID.Tbl.add v t.entries in
-    LongIdent.HMap.add t.index_by_lid v.lid id;
+    LongIdent.HMap.add t.values_by_lid v.lid id;
+    id
+
+let add_types t (v : Entry.t) =
+  match LongIdent.HMap.get t.types_by_lid v.lid with
+  | Some id ->
+    (* TODO Probably should do a warning here *)
+    id
+  | None ->
+    let id = ID.Tbl.add v t.entries in
+    LongIdent.HMap.add t.types_by_lid v.lid id;
     id
 
 let iteri t f =

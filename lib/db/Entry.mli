@@ -1,6 +1,9 @@
+type desc =
+  | Val of Outcometree.out_type
+
 type t = {
   lid : LongIdent.t ;
-  ty : Outcometree.out_type ;
+  desc : desc ;
   pkg : string ;
   source_file : Fpath.t ;
 }

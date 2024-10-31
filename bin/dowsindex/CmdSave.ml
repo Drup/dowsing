@@ -31,10 +31,8 @@ let main opts =
     then ("", opts.files) :: pkgs
     else pkgs
   in
-  let infos =
-    Dowsing_odoc.iter pkgs
-  in
-  let db = Db.create ~with_poset:opts.with_poset env infos in
+  let db = Db.create ~with_poset:opts.with_poset env in
+  Dowsing_odoc.iter pkgs (Db.add env db);
   Fmt.pr "@[<2>Create an index:@,%a@]@."
     Db.DefaultIndex.pp_metrics db.idx;
   try
