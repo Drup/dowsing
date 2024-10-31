@@ -13,8 +13,8 @@ let make_test idx_file with_feats ty =
       with Sys_error _ ->
         failwith @@ Fmt.str "cannot open index file `%a'" Fpath.pp idx_file
     in
-    let find = if with_feats then Db.find else Db.find_exhaustive in
-    find db env ty
+    let filter = if with_feats then `Default else `None in
+    Db.find ~filter db env ty
   in
   let free _ = () in
   Test.make_with_resource ~name Test.multiple ~allocate ~free
