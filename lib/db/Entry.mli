@@ -1,5 +1,9 @@
 type desc =
   | Val of Outcometree.out_type
+  | Type of {
+      params : string option list ;
+      manifest : Outcometree.out_type option ;
+    }
 
 type t = {
   lid : LongIdent.t ;

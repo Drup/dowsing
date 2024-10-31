@@ -10,6 +10,7 @@ module type S = sig
     mutable trie : T.t;
     index_by_type : (ID.Set.t * TypeId.t) Type.HMap.t;
     mutable poset : Poset.t option;
+    type_decls : (ID.t * Variable.var array * Type.t) LongIdent.HMap.t;
   }
 
   type iter = (ID.t * Type.t) Iter.t
@@ -25,6 +26,11 @@ module type S = sig
   (** [add index id ty] adds the association [ty -> id] to the index
       [index].
   *)
+
+  val add_type_decl :
+    t -> ID.t ->
+    LongIdent.t -> Variable.t list -> Type.t ->
+    unit
 
   val iter : t -> iter
   (** [iter t] iterates over all types. *)

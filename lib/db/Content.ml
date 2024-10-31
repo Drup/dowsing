@@ -57,24 +57,17 @@ let find_type t lid =
   let id = LongIdent.HMap.find t.types_by_lid lid in
   ID.Tbl.get id t.entries
 
-let add_value t (v : Entry.t) =
-  match LongIdent.HMap.get t.values_by_lid v.lid with
+let add t (v : Entry.t) =
+  let map = match v.desc with
+    | Val _ -> t.values_by_lid | Type _ -> t.types_by_lid
+  in
+  match LongIdent.HMap.get map v.lid with
   | Some id ->
     (* TODO Probably should do a warning here *)
     id
   | None ->
     let id = ID.Tbl.add v t.entries in
-    LongIdent.HMap.add t.values_by_lid v.lid id;
-    id
-
-let add_types t (v : Entry.t) =
-  match LongIdent.HMap.get t.types_by_lid v.lid with
-  | Some id ->
-    (* TODO Probably should do a warning here *)
-    id
-  | None ->
-    let id = ID.Tbl.add v t.entries in
-    LongIdent.HMap.add t.types_by_lid v.lid id;
+    LongIdent.HMap.add map v.lid id;
     id
 
 let iteri t f =

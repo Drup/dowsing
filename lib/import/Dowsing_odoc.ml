@@ -124,8 +124,15 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
         res
   in  
   match kind with
-  | TypeDecl _ ->
-    None
+  | TypeDecl {
+      equation = { params; private_ = _; manifest; constraints = _ }; _ } ->
+    Some (Db.Entry.Type {
+        params =
+          List.map
+            (fun p -> match p.OM.Lang.TypeDecl.desc with Any -> None | Var s -> Some s)
+            params ;
+        manifest = Option.map odoc_to_outcometree manifest ;
+      })
   | Value { value = _; type_ } ->
     Some (Db.Entry.Val (odoc_to_outcometree type_))
   | Constructor { args; res }

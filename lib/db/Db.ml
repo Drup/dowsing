@@ -24,10 +24,25 @@ let create ~with_poset env =
 
 let add env { idx ; content } entry =
   _debug (fun m -> m "Inserting %a" Entry.pp entry);
+  let id = Content.add content entry in
   match entry.Entry.desc with
   | Val ty ->
-    let id = Content.add_value content entry in
     DefaultIndex.add idx id (Type.of_outcometree env ty)
+  | Type { params; manifest } ->
+    match manifest with
+    | None ->
+      ()
+    | Some ty ->
+      let vars, ty = Type.of_outcometree' env ty in
+      let params =
+        List.map (fun s ->
+            match s with
+            | Some s when String.HMap.mem vars s ->
+              String.HMap.find vars s
+            | _ -> Variable.(Gen.gen Flags.empty env.var_gen)
+          ) params
+      in
+      DefaultIndex.add_type_decl idx id entry.lid params ty
 
 let find ?pkgs ?filter t env ty =
   DefaultIndex.find ?filter t.idx env ty
