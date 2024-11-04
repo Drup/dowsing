@@ -32,15 +32,15 @@ let () =
       @@ Index_not_found (Fmt.str "cannot open index file `%a'" Fpath.pp path)
   in
   let search_exhaustive ty =
-    let it = Db.find_exhaustive idx env ty in
+    let it = Db.find ~filter:`None idx env ty in
     Iter.max it
   in
   let search_trie ty =
-    let it = Db.find_with_trie idx env ty in
+    let it = Db.find ~filter:`OnlyTrie idx env ty in
     Iter.max it
   in
   let search_trie_poset ty =
-    let it = Db.find idx env ty in
+    let it = Db.find ~filter:`Default idx env ty in
     Iter.max it
   in
   let make_res ty =
