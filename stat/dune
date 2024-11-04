@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (libraries common acic db bechamel bechamel-notty notty.unix cmdliner printbox printbox-text)
+  (flags
+    (:standard -open Common -open Utils)))

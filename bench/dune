@@ -25,9 +25,3 @@
   (libraries common acic bechamel bechamel-notty bechamel-js notty.unix cmdliner)
   (flags
     (:standard -open Common -open Utils)))
-
-(executable
- (name bench)
- (libraries common acic db bechamel bechamel-notty notty.unix cmdliner printbox printbox-text)
-  (flags
-    (:standard -open Common -open Utils)))
