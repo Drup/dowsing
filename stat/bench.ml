@@ -110,7 +110,7 @@ let stat idx_file save_file tys =
       (fun ty ->
         let data = get_data idx_file ty in
         Format.printf "@[%a@]@." pp_data data;
-        data)
+        (Format.sprintf "%a" Type.pp data.ty, data.feats, data.no_feats))
       tys
   in
   match save_file with

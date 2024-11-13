@@ -32,9 +32,17 @@ let get_name file =
   try Filename.chop_extension file with Invalid_argument _ -> file
 
 let compare results =
-  let results =
+  let env = Type.Env.make () in
+  let results : (string * Bench.data list) list =
     List.map
-      (fun file -> (get_name file, CCIO.with_in file Marshal.from_channel))
+      (fun file ->
+        let l =
+          CCIO.with_in file Marshal.from_channel
+          |> List.map (fun (ty, feats, no_feats) ->
+                 { Bench.ty = Type.of_string env ty; feats; no_feats })
+        in
+
+        (get_name file, l))
       results
   in
   let _, base = List.hd results in
@@ -57,7 +65,7 @@ let compare results =
           | Some res ->
               grid.(r + 1).(c + 1) <- ratio feats.time res.Bench.feats.time)
         results)
-    (snd base);
+    base;
   let grid = PrintBox.grid grid in
   Format.printf "@[%a@]@." (PrintBox_text.pp_with ~style:true) grid
 
