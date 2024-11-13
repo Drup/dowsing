@@ -141,32 +141,6 @@ let ratio x y =
       { PrintBox.Style.default with bold = true; bg_color = Some Green }
       "%.2f" r
 
-let compare base idx_file =
-  CCFormat.set_color_default true;
-  let base = CCIO.with_in base (fun cin -> Marshal.from_channel cin) in
-  let grid =
-    Array.init (List.length base + 1) (fun _ -> Array.make 4 (PrintBox.text ""))
-  in
-  grid.(0).(1) <- PrintBox.center_hv @@ PrintBox.text "Base";
-  grid.(0).(2) <- PrintBox.center_hv @@ PrintBox.text "New";
-  grid.(0).(3) <- PrintBox.center_hv @@ PrintBox.text "Ratio";
-  List.iteri
-    (fun i res ->
-      let ty = res.ty in
-      let data = get_data idx_file ty in
-      grid.(i + 1).(0) <- PrintBox.asprintf "%a" Type.pp ty;
-      grid.(i + 1).(1) <-
-        PrintBox.center_hv
-        @@ PrintBox.sprintf "%.2f ms" (res.feats.time /. 1_000_000.);
-      grid.(i + 1).(2) <-
-        PrintBox.center_hv
-        @@ PrintBox.sprintf "%.2f ms" (data.feats.time /. 1_000_000.);
-      grid.(i + 1).(3) <-
-        PrintBox.center_hv @@ ratio res.feats.time data.feats.time)
-    base;
-  let grid = PrintBox.grid grid in
-  Format.printf "@[%a@]@." (PrintBox_text.pp_with ~style:true) grid
-
 open Cmdliner
 
 let idx_file =
