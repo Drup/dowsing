@@ -41,6 +41,7 @@ module rec Base : sig
     (** Represents tuples [(a₁*...*aₙ)] *)
     | Other of Int.t
 
+  val hash : t -> int
   val kind : t -> Kind.t
   val kind' : t -> Kind'.t
   val compare : t CCOrd.t

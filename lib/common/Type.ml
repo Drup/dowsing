@@ -159,7 +159,14 @@ end = struct
       | _ -> CCOrd.poly t1 t2
 
   let equal t1 t2 = compare t1 t2 = 0
-  let hash = Hashtbl.hash
+  let rec hash t =
+    match t with
+    | Var v -> CCHash.(pair int Variable.hash) (0, v)
+    | FrozenVar v -> CCHash.(pair int Variable.hash) (1, v)
+    | Constr (lid, params) -> CCHash.(pair LongIdent.hash (array hash)) (lid, params)
+    | Arrow (args, ret) -> CCHash.(pair NSet.hash hash) (args, ret)
+    | Tuple elts -> NSet.hash elts
+    | Other i -> CCHash.int i
 end
 
 (* NSet *)
@@ -168,6 +175,7 @@ and NSet : sig
   type t
 
   val compare : t CCOrd.t
+  val hash : t -> int
   val of_list : elt List.t -> t
   val of_iter : elt Iter.t -> t
   val to_iter : t -> elt Iter.t
@@ -187,6 +195,7 @@ end = struct
   type elt = Base.t
   type t = elt Array.t
 
+  let hash = CCHash.array Base.hash
   let compare = CCArray.compare Base.compare
   let sort = CCArray.fast_sort Base.compare
 

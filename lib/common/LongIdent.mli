@@ -3,6 +3,8 @@ type t = Longident.t =
   | Ldot of t * String.t
   | Lapply of t * t
 
+val hash : t -> int
+
 val unit : t
 
 val of_list : String.t List.t -> t

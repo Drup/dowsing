@@ -56,6 +56,7 @@ end
 type t = { id: Int.t; flags: Flags.t }
 type var = t
 
+let hash v = CCHash.int v.id
 let as_int v = v.id
 
 (* The order must guarantee that the variable with the flags non_tuple are smaller than
