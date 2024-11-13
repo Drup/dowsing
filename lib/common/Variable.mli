@@ -17,6 +17,7 @@ type t
 type var = t
 type rel = Smaller | Bigger | Equal | Incomparable
 
+val hash : t -> int
 val as_int : t -> int 
 val equal : t CCEqual.t
 val compare : t CCOrd.t

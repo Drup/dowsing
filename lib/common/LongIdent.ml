@@ -4,6 +4,8 @@ type t = Longident.t =
   | Lapply of t * t
 [@@deriving ord, eq] 
 
+let hash = CCHash.poly
+
 let unit = Lident "unit"
 
 let of_list strs =
@@ -40,7 +42,7 @@ end)
 module HMap = CCHashtbl.Make (struct
   type nonrec t = t
   let equal = equal
-  let hash = CCHash.poly
+  let hash = hash
 end)
 
 let pp = Fmt.hbox Pprintast.longident
