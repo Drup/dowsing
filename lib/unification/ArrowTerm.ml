@@ -1,5 +1,5 @@
 type t = {
-  args: Type.NSet.t;
+  args: Type.Tuple.t;
   ret: Type.t;
 }
 
@@ -12,8 +12,8 @@ let make args ret : t = {args; ret}
 
 let pp ppf self =
   Fmt.pf ppf "%a -> %a"
-    Fmt.(array ~sep:(any " * ") Type.pp) (Type.NSet.as_array self.args)
-    Type.pp self.ret
+    (Type.Tuple.pp Type.pp)
+    self.args Type.pp self.ret
 
 let make_problem left right = {left; right}
 

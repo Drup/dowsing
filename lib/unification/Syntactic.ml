@@ -68,7 +68,7 @@ let rec occur_check env : return =
               | Tuple l ->
                   let first = ref true in
                   let stack =
-                    Type.NSet.fold
+                    Type.Tuple.fold
                       (fun t stack ->
                         match t with
                         | Type.Var v' when !first && Variable.equal v v' ->
@@ -76,7 +76,7 @@ let rec occur_check env : return =
                           stack
                         | t ->
                           Stack.push stack t
-                            (Type.tuple (Env.tyenv env) Type.NSet.empty)(*unit*))
+                            (Type.tuple (Env.tyenv env) Type.Tuple.unit)(*unit*))
                       l stack
                   in
                   collapse stack (v::tl)
@@ -133,7 +133,7 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   | Tuple s, Tuple t ->
       debug (fun m -> m "Tuple|Tuple");
       (* TODO: we can add check that the tuples can actually be unified otherwise stop *)
-      Env.push_tuple env (Type.NSet.as_array s) (Type.NSet.as_array t);
+      Env.push_tuple env s t;
       process_stack env stack
   (* A variable and a type, v ≡ t *)
   | Var v, t | t, Var v ->
@@ -142,9 +142,9 @@ and insert_rec env stack (t1 : Type.t) (t2 : Type.t) : return =
   (* A tuple and a type, (s₁,...,sₙ) ≡ t
      The tuple need to collapse, we transforme t into a tuple of one elements.
   *)
-  | Tuple ts, t | t, Tuple ts when not (Type.NSet.is_empty ts) ->
+  | Tuple ts, t | t, Tuple ts when not (Type.Tuple.is_unit ts) ->
       debug (fun m -> m "Colapse Tuple");
-      Env.push_tuple env (Type.NSet.as_array ts) [| t |];
+      Env.push_tuple env ts (Type.Tuple.singleton t);
       process_stack env stack
   (* Clash rule
      Terms are incompatible

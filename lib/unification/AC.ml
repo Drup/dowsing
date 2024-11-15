@@ -18,9 +18,9 @@ module System : sig
 
   val[@warning "-32"] pp : t Fmt.t
 
-  val simplify_problem : Env.t -> ACTerm.problem -> ACTerm.problem
+  val simplify_problem : Env.t -> ACTerm.t ACTerm.problem -> Type.t array ACTerm.problem
 
-  val make : ACTerm.problem list -> t * t List.t
+  val make : (Type.t array ACTerm.problem) list -> t * t List.t
 
   type dioph_solution
   val get_solution : dioph_solution -> int -> int
@@ -54,8 +54,21 @@ end = struct
       if the representative is a constant or a variable, replace the variable by it
       otherwise replace the variable by the last variable on the chain. *)
   let simplify_problem env {ACTerm. left ; right} =
-    {ACTerm. left = CCArray.flat_map (S.simplify env) left ;
-             right = CCArray.flat_map (S.simplify env) right }
+    let simplify tuple =
+      let n, l =
+        Type.Tuple.fold
+          (fun t (n_acc, l_acc) ->
+            let n, it = S.simplify env t in
+            (n_acc + n, it:: l_acc))
+          tuple (0, [])
+      in
+      let a = Array.make n Type.dummy in
+      let i = ref 0 in
+      Iter.flatten (CCList.to_iter l) (fun t -> assert(!i < n); a.(CCRef.get_then_incr i) <- t);
+      a
+    in
+    {ACTerm. left = simplify left ;
+             right = simplify right }
 
   (* Here the cut function is used in case we know that a type will not be compatible
      with the current build system, we can "remove" it by leaving it's coeficient to 0

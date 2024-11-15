@@ -49,21 +49,21 @@ let rec make (kind : Kind.t) ty =
         | Tuple elts -> 1 + aux_set elts
       and aux_array ty_arr = CCArray.fold (fun acc ty -> acc + aux ty) 0 ty_arr
       and aux_set ty_set =
-        Type.NSet.fold (fun ty acc -> aux ty + acc) ty_set 0
+        Type.Tuple.fold (fun ty acc -> aux ty + acc) ty_set 0
       in
       aux ty
   | HeadKind -> Type.(Kind.to_int @@ kind @@ head ty)
   | TailSpineVarCount ->
       let aux ty = ( + ) @@ CCBool.to_int Type.(kind ty = Var) in
-      Type.(NSet.fold aux (tail ty) 0)
+      Type.(Tuple.fold aux (tail ty) 0)
   | TailSpineNonVarCount ->
       let aux ty = ( + ) @@ CCBool.to_int Type.(kind ty <> Var) in
-      Type.(NSet.fold aux (tail ty) 0)
+      Type.(Tuple.fold aux (tail ty) 0)
   | SpineVarCount ->
       let meas = make TailSpineVarCount ty in
       let hd_kind = Type.(kind @@ head ty) in
       meas + CCBool.to_int (hd_kind = Var)
-  | TailLength -> Type.(NSet.length @@ tail ty)
+  | TailLength -> Type.(Tuple.size @@ tail ty)
 
 module Map = CCMap.Make (CCInt)
 module HMap = CCHashtbl.Make (CCInt)

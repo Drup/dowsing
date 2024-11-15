@@ -28,7 +28,7 @@ val merge : t -> t -> t * (Type.t * Type.t) list
 
 val commit : t -> t * (Type.t * Type.t) list
 
-val pop_tuple : t -> ACTerm.problem option
+val pop_tuple : t -> ACTerm.t ACTerm.problem option
 val pop_arrow : t -> ArrowTerm.problem option
 
 val is_solved : t -> Subst.t option

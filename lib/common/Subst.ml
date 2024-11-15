@@ -17,8 +17,8 @@ let rec apply (env : Type.Env.t) t =
     | Constr (lid, params) ->
         Type.constr env lid @@ CCArray.map substitute params
     | Arrow (params, ret) ->
-        Type.(arrows env (NSet.map substitute params) (substitute ret))
-    | Tuple elts -> Type.(tuple env @@ NSet.map substitute elts)
+        Type.(arrows_flatten env (Type.tuple_flat_map substitute params) (substitute ret))
+    | Tuple elts -> Type.tuple_map_type env substitute elts
     | Other _ | FrozenVar _ -> ty
 
 let simplify env vars t =
