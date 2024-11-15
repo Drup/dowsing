@@ -43,7 +43,7 @@ module Tail : S = struct
     let has_var = Measure.make SpineVarCount ty > 0 in
     let cnt = ref 0 in
     let tl =
-      Type.NSet.fold
+      Type.Tuple.fold
         (fun ty kinds ->
           let kind = Type.kind' ty in
           if kind <> Var then (

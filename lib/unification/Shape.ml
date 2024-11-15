@@ -7,7 +7,7 @@ module type S = sig
       it means anything that we treat as variable. In the case of Const it is
       everything thing except constant and frozen variables. *)
 
-  val simplify : Env.t -> Type.t -> Type.t array
+  val simplify : Env.t -> Type.t -> int * Type.t Iter.t
 end
 
 module Kind : S = struct
@@ -68,13 +68,15 @@ module Kind : S = struct
     match t with
     | Type.FrozenVar _ | Type.Constr (_, _) | Type.Arrow (_, _) | Type.Other _
       ->
-        [| t |]
-    | Type.Tuple t -> Type.NSet.as_array t
+        (1, Iter.return t)
+    | Type.Tuple t -> (Type.Tuple.size t, Type.Tuple.to_iter t)
     | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
-        | E (_, Tuple t) -> Type.NSet.as_array t
-        | E (_, t) -> [| t |])
+        | V v' ->
+            assert (Variable.are_flags_included v v');
+            (1, Iter.return @@ Type.var (Env.tyenv env) v')
+        | E (_, Tuple t) -> (Type.Tuple.size t, Type.Tuple.to_iter t)
+        | E (_, t) -> (1, Iter.return t))
 end
 
 module Const : S = struct
@@ -126,15 +128,17 @@ module Const : S = struct
 
   let simplify env (t : Type.t) =
     match t with
-    | Type.FrozenVar _ | Type.Constr (_, [||]) -> [| t |]
+    | Type.FrozenVar _ | Type.Constr (_, [||]) -> (1, Iter.return t)
     | Type.Var v -> (
         match Env.representative env v with
-        | V v' -> assert (Variable.are_flags_included v v'); [| Type.var (Env.tyenv env) v'|]
-        | E (v', _) -> [| Type.var (Env.tyenv env) v' |]
-      )
-      | _ ->
-          let new_v = Env.gen Variable.Flags.empty env in
-          match Syntactic.attach env new_v t with
-          | Syntactic.Done -> [| Type.var (Env.tyenv env) new_v |]
-          | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ -> failwith "Impossible"
+        | V v' ->
+            assert (Variable.are_flags_included v v');
+            (1, Iter.return @@ Type.var (Env.tyenv env) v')
+        | E (v', _) -> (1, Iter.return @@ Type.var (Env.tyenv env) v'))
+    | _ -> (
+        let new_v = Env.gen Variable.Flags.empty env in
+        match Syntactic.attach env new_v t with
+        | Syntactic.Done -> (1, Iter.return @@ Type.var (Env.tyenv env) new_v)
+        | Syntactic.FailUnif (_, _) | Syntactic.FailedOccurCheck _ ->
+            failwith "Impossible")
 end

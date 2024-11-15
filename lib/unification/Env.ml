@@ -1,7 +1,7 @@
 type t = {
   tyenv : Type.Env.t ;
   mutable vars : Subst.t (* TODO: maybe a simple array could do it because variable have a continous range *) ;
-  mutable tuples : ACTerm.problem list ;
+  mutable tuples : ACTerm.t ACTerm.problem list ;
   mutable arrows : ArrowTerm.problem list ;
   mutable partials : (Type.t list) Variable.Map.t;
   (** Store partial assignement, this represents the partial solution obtain
@@ -136,11 +136,11 @@ let commit e =
             stack := (Type.var (tyenv e) v, t) :: !stack; (* TODO: we will create a new variable because of this. We need to work to create less variables in general. *)
             None
           | _ -> Some t)
-      | None, Some l -> Some (Type.tuple (tyenv e) (Type.NSet.of_list l))
+      | None, Some l -> Some (Type.tuple (tyenv e) (Type.Tuple.mk_l l))
       | Some t1, Some l ->
         (* TODO: Should we do something more clever here? Like look for the repr or
            we let the insert do that? For now, we will let the insert function do the job *)
-        let t2 = match l with [t] -> t | l -> Type.tuple (tyenv e) (Type.NSet.of_list l) in
+        let t2 = match l with [t] -> t | l -> Type.tuple (tyenv e) (Type.Tuple.mk_l l) in
         if t1 != t2 then
           stack := (t1, t2) ::!stack;
         Some t1)

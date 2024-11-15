@@ -9,7 +9,7 @@ let add_tests name tests =
 
 let int = Type.constr env (LongIdent.Lident "int") [||]
 let (-->) = Type.arrow env
-let tuple tys = Type.(tuple env @@ NSet.of_list tys)
+let tuple tys = Type.(tuple env @@ Tuple.mk_l tys)
 
 (* Type.of_string *)
 
@@ -18,7 +18,7 @@ let tests = [
   "int -> int", int --> int ;
   "int * int", tuple [ int ; int ] ;
   "int * int -> int", tuple [ int ; int ] --> int ;
-  "int -> int -> int", int --> (int --> int) ;
+  "int -> int -> int", tuple [ int; int ] --> int ;
 ]
 
 let tests =

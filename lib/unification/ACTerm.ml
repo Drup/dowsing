@@ -1,12 +1,10 @@
 (** Terms and Problems for AC symbols *)
 
-type t = Type.t array
-
-let add (t: t) p = Array.append [|p|] t
+type t = Type.Tuple.t
 
 let make (p : t) = p
 
-type problem = {left : t ; right : t }
+type 'a problem = {left : 'a ; right : 'a }
 
 let make_problem left right = {left;right}
 
@@ -18,5 +16,5 @@ let pp ppf t =
 
 let pp_problem ppf {left ; right} =
   Fmt.pf ppf "%a = %a"
-    Fmt.(array ~sep:(any ",") Type.pp) left
-    Fmt.(array ~sep:(any ",") Type.pp) right
+    (Type.Tuple.pp Type.pp) left
+    (Type.Tuple.pp Type.pp) right

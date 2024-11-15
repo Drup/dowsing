@@ -35,9 +35,9 @@ module rec Base : sig
     | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     (** Represents the types of the form [(a₁,...,aₙ) p] where [p] is a [Longident.t] *)
-    | Arrow of NSet.t * t
+    | Arrow of Tuple.t * t
     (** Represents the types of the form [(a₁,...,aₙ) -> r] *)
-    | Tuple of NSet.t
+    | Tuple of Tuple.t
     (** Represents tuples [(a₁*...*aₙ)] *)
     | Other of Int.t
 
@@ -48,25 +48,35 @@ module rec Base : sig
   val equal : t CCEqual.t
 end
 
-and NSet : sig
-  type elt = Base.t
-  type t
+and Tuple : sig
+  module Complet : sig
+    type t
 
-  val compare : t CCOrd.t
-  val of_list : elt List.t -> t
-  val of_iter : elt Iter.t -> t
-  val to_iter : t -> elt Iter.t
-  val as_array : t -> elt Array.t
-  val empty : t
-  val is_empty : t -> Bool.t
-  val length : t -> Int.t
-  val singleton : elt -> t
-  val is_singleton : t -> elt Option.t
-  val union : t -> t -> t
-  val add : elt -> t -> t
-  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  val map : (elt -> elt) -> t -> t
-  val pp : elt Fmt.t -> t Fmt.t
+    val unit : t
+    val mk : Base.t array -> t
+    val mk_l : Base.t list -> t
+    val is_unit : t -> bool
+    val size : t -> int
+    val compare : t -> t -> int
+    val union : t -> t -> t
+    val add : t -> Base.t -> t
+    val singleton : Base.t -> t
+    val is_singleton : t -> Base.t option
+    val fold : (Base.t -> 'a -> 'a) -> t -> 'a -> 'a
+    val to_iter : t -> Base.t Iter.t
+    val pp : Base.t Fmt.t -> t Fmt.t
+  end
+
+  module Partial : sig
+    type t
+
+    val mk : ?tuple:Complet.t -> unit -> t
+    val add : t -> Base.t -> unit
+    val add_n : t -> Base.t -> int -> unit
+    val freeze : t -> Complet.t
+  end
+
+  include module type of Complet
 end
 
 include module type of Base with type t = Base.t
@@ -99,8 +109,9 @@ val var : Env.t -> Variable.t -> t
 val frozen_var : Env.t -> Variable.t -> t
 val constr : Env.t -> LongIdent.t -> t Array.t -> t
 val arrow : Env.t -> t -> t -> t
-val arrows : Env.t -> NSet.t -> t -> t
-val tuple : Env.t -> NSet.t -> t
+val arrows : Env.t -> Tuple.t -> t -> t
+val arrows_flatten : Env.t -> Tuple.t -> t -> t
+val tuple : Env.t -> Tuple.t -> t
 
 (* utility *)
 
@@ -110,6 +121,11 @@ val is_arrow : t -> bool
 val is_tuple : t -> bool
 val is_non_arrow_var : t -> bool
 val is_non_tuple_var : t -> bool
+
+val tuple_flat_map : ( t -> t ) -> Tuple.t -> Tuple.t
+(** This should be use only to create the arguments of an arrows. *)
+
+val tuple_map_type : Env.t -> ( t -> t ) -> Tuple.t -> t
 
 (* import functions *)
 
@@ -126,7 +142,7 @@ val outcome_of_string : String.t -> Outcometree.out_type
 (* utility functions *)
 
 val head : t -> t
-val tail : t -> NSet.t
+val tail : t -> Tuple.t
 val iter : t -> t Iter.t
 val iter_vars : t -> Variable.t Iter.t
 val iter_consts : t -> LongIdent.t Iter.t

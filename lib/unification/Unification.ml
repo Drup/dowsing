@@ -30,8 +30,13 @@ let rec solve_tuple_problems env0 =
 and solve_arrow_problem env0 { ArrowTerm.left; right } =
   (* AL -> BL ≡? AR -> BR *)
   let pb = CCFormat.sprintf "%a" ArrowTerm.pp_problem {ArrowTerm.left; right} in
-  let solve_args env args1 args2 =
-    insert env (Type.tuple (Env.tyenv env) args1) (Type.tuple (Env.tyenv env) args2)
+  let type_of_args env elts =
+    match Type.Tuple.is_singleton elts with
+    | None -> Type.tuple (Env.tyenv env) elts
+    | Some t -> t
+  in
+  let type_of_args_add env elts ty =
+    if Type.Tuple.is_unit elts then ty else Type.tuple (Env.tyenv env) (Type.Tuple.add elts ty)
   in
   Trace.wrap_iter ~__FUNCTION__ ~__FILE__ ~__LINE__ __FUNCTION__
     ~data:(fun () ->
@@ -49,7 +54,9 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           (* AL ≡? AR  ∧  BL ≡? BR *)
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL ≡? AR  ∧  BL ≡? BR" (fun _sp ->
-              let* () = solve_args env left.args right.args in
+              let left_ty = type_of_args env left.args in
+              let right_ty = type_of_args env right.args in
+              let* () = insert env left_ty right_ty in
               let* () = insert env ret_type left.ret in
               insert env ret_type right.ret
           ) );
@@ -61,7 +68,9 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL * αL ≡? AR  ∧  BL ≡? αL -> BR" (fun _sp ->
               let ty_arg_left = Type.var (Env.tyenv env) (Env.gen Variable.Flags.empty env) in
-              let* () = solve_args env (Type.NSet.add ty_arg_left left.args) right.args in
+              let left_ty = type_of_args_add env left.args ty_arg_left in
+              let right_ty = type_of_args env right.args in
+              let* () = insert env left_ty right_ty in
               let* () = insert env ret_type right.ret in
               insert env left.ret
                 (Type.arrow (Env.tyenv env) ty_arg_left right.ret) ) );
@@ -73,7 +82,9 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
           Trace.with_span ~__FUNCTION__ ~__FILE__ ~__LINE__
             "AL ≡? AR * αR  ∧  αR -> BL ≡? BR" (fun _sp ->
               let ty_arg_right = Type.var (Env.tyenv env) (Env.gen Variable.Flags.empty env) in
-              let* () = solve_args env left.args (Type.NSet.add ty_arg_right right.args) in
+              let left_ty = type_of_args env left.args in
+              let right_ty = type_of_args_add env right.args ty_arg_right in
+              let* () = insert env left_ty right_ty in
               let* () = insert env ret_type left.ret in
               insert env right.ret
                 (Type.arrow (Env.tyenv env) ty_arg_right left.ret) ) );
@@ -87,11 +98,9 @@ and solve_arrow_problem env0 { ArrowTerm.left; right } =
             "AL * αL ≡? AR * αR  ∧  BL ≡? αL -> β  ∧  αR -> β ≡? BR" (fun _sp ->
               let ty_arg_left = Type.var (Env.tyenv env) (Env.gen Variable.Flags.empty env) in
               let ty_arg_right = Type.var (Env.tyenv env) (Env.gen Variable.Flags.empty env) in
-              (* TOCHECK *)
-              let* () =
-                solve_args env (Type.NSet.add ty_arg_left left.args)
-                (Type.NSet.add ty_arg_right right.args)
-              in
+              let left_ty = type_of_args_add env left.args ty_arg_left in
+              let right_ty = type_of_args_add env right.args ty_arg_right in
+              let* () = insert env left_ty right_ty in
               let* () =
                 insert env left.ret
                   (Type.arrow (Env.tyenv env) ty_arg_left ret_type)

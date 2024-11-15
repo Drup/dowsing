@@ -107,9 +107,9 @@ module rec Base : sig
     | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
     (** Represents the types of the form [(a₁,...,aₙ) p] where [p] is a [Longident.t] *)
-    | Arrow of NSet.t * t
+    | Arrow of Tuple.t * t
     (** Represents the types of the form [(a₁,...,aₙ) -> r] *)
-    | Tuple of NSet.t
+    | Tuple of Tuple.t
     (** Represents tuples [(a₁*...*aₙ)] *)
     | Other of Int.t
 
@@ -118,13 +118,14 @@ module rec Base : sig
   val compare : t CCOrd.t
   val equal : t -> t -> Bool.t
   val hash : t CCHash.t
+  val is_tuple : t -> bool
 end = struct
   type t =
     | Var of Variable.t
     | FrozenVar of Variable.t
     | Constr of LongIdent.t * t Array.t
-    | Arrow of NSet.t * t
-    | Tuple of NSet.t
+    | Arrow of Tuple.t * t
+    | Tuple of Tuple.t
     | Other of Int.t
 
   let kind : t -> Kind.t = function
@@ -153,8 +154,8 @@ end = struct
           <?> (CCArray.compare compare, params1, params2)
       | Arrow (param1, ret1), Arrow (param2, ret2) ->
           let cmp = compare in
-          cmp ret1 ret2 <?> (NSet.compare, param1, param2)
-      | Tuple elts1, Tuple elts2 -> NSet.compare elts1 elts2
+          cmp ret1 ret2 <?> (Tuple.compare, param1, param2)
+      | Tuple elts1, Tuple elts2 -> Tuple.compare elts1 elts2
       | Other i1, Other i2 -> CCInt.compare i1 i2
       | _ -> CCOrd.poly t1 t2
 
@@ -164,141 +165,150 @@ end = struct
     | Var v -> CCHash.(pair int Variable.hash) (0, v)
     | FrozenVar v -> CCHash.(pair int Variable.hash) (1, v)
     | Constr (lid, params) -> CCHash.(pair LongIdent.hash (array hash)) (lid, params)
-    | Arrow (args, ret) -> CCHash.(pair NSet.hash hash) (args, ret)
-    | Tuple elts -> NSet.hash elts
+    | Arrow (args, ret) -> CCHash.(pair Tuple.hash hash) (args, ret)
+    | Tuple elts -> Tuple.hash elts
     | Other i -> CCHash.int i
+
+  let is_tuple = function
+    | Tuple ts -> not (Tuple.is_unit ts && (CCOption.is_some @@ Tuple.is_singleton ts))
+    | _ -> false
 end
 
-(* NSet *)
-and NSet : sig
-  type elt = Base.t
-  type t
+and Tuple : sig
+  module Complet : sig
+    type t
 
-  val compare : t CCOrd.t
-  val hash : t -> int
-  val of_list : elt List.t -> t
-  val of_iter : elt Iter.t -> t
-  val to_iter : t -> elt Iter.t
-  val as_array : t -> elt Array.t
-  val empty : t
-  val is_empty : t -> Bool.t
-  val length : t -> Int.t
-  val singleton : elt -> t
-  val is_singleton : t -> elt Option.t
-  val union : t -> t -> t
-  val add : elt -> t -> t
-  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
-  val map : (elt -> elt) -> t -> t
-  val flatten : t -> t
-  val pp : elt Fmt.t -> t Fmt.t
+    val hash : t -> int
+    val unit : t
+    val mk : Base.t array -> t
+    val mk_l : Base.t list -> t
+    val is_unit : t -> bool
+    val size : t -> int
+    val compare : t -> t -> int
+    val union : t -> t -> t
+    val add : t -> Base.t -> t
+    val singleton : Base.t -> t
+    val is_singleton : t -> Base.t option
+    val fold : (Base.t -> 'a -> 'a) -> t -> 'a -> 'a
+    val to_iter : t -> Base.t Iter.t
+    val pp : Base.t Fmt.t -> t Fmt.t
+  end
+
+  module Partial : sig
+    type t
+
+    val mk : ?tuple:Complet.t -> unit -> t
+    val add : t -> Base.t -> unit
+    val add_n : t -> Base.t -> int -> unit
+    val freeze : t -> Complet.t
+  end
+
+  include module type of Complet
 end = struct
-  type elt = Base.t
-  type t = elt Array.t
+  module M = CCMultiSet.Make (Base)
 
-  let hash = CCHash.array Base.hash
-  let compare = CCArray.compare Base.compare
-  let sort = CCArray.fast_sort Base.compare
+  module Complet = struct
+    type t = M.t
 
-  let of_list lst =
-    let t = CCArray.of_list lst in
-    sort t;
-    t
+    let hash m = CCHash.list Base.hash @@ M.to_list m
 
-  let of_iter it =
-    let t = Iter.to_array it in
-    sort t;
-    t
+    let mk a =
+      assert (Array.length a >= 2);
+      M.of_iter (fun k ->
+          CCArray.to_iter a (fun elt ->
+              assert (not (Base.is_tuple elt));
+              k elt))
 
-  let to_iter = Iter.of_array
-  let as_array = CCFun.id
-  let empty = [||]
-  let is_empty t = t = [||]
-  let length = CCArray.length
-  let singleton elt = [| elt |]
-  let is_singleton = function [| elt |] -> Some elt | _ -> None
+    let mk_l l =
+      assert (List.length l <> 1);
+      M.of_iter (fun k ->
+          CCList.to_iter l (fun elt ->
+              assert (not (Base.is_tuple elt));
+              k elt))
 
-  let union t1 t2 =
-    let l1 = length t1 in
-    if l1 = 0 then t2
-    else
-      let l2 = length t2 in
-      if l2 = 0 then t1
+    let size m = M.fold m 0 (fun acc n _ -> acc + n)
+    let is_unit = M.is_empty
+    let compare = M.compare
+    let unit = M.empty
+    let union = M.union
+
+    let add m elt =
+      assert (not @@ M.is_empty m);
+      assert (not (Base.is_tuple elt));
+      M.add m elt
+
+    let singleton elt =
+      assert (not (Base.is_tuple elt));
+      M.singleton elt
+
+    let is_singleton elts =
+      let exception Too_many in
+      try
+        let res = ref None in
+        M.iter elts (fun n elt ->
+            match n with
+            | 0 -> ()
+            | 1 ->
+                if CCOption.is_some !res then raise Too_many
+                else res := Some elt
+            | _ -> raise Too_many);
+        !res
+      with Too_many -> None
+
+    let fold f m x =
+      M.fold m x (fun acc n elt ->
+          let acc = ref acc in
+          for _ = 1 to n do
+            acc := f elt !acc
+          done;
+          !acc)
+
+    let to_iter m f =
+      M.iter m (fun n elt ->
+          for _ = 1 to n do
+            f elt
+          done)
+
+    let pp pp_x fmt m =
+      if is_unit m then Format.fprintf fmt "unit"
       else
-        let t = Array.make (l1 + l2) (Array.get t1 0) in
-        let i1 = ref 0 and i2 = ref 0 in
-        while !i1 < l1 && !i2 < l2 do
-          let e1 = Array.get t1 !i1 and e2 = Array.get t2 !i2 in
-          if Base.compare e1 e2 <= 0 then (Array.set t (!i1 + !i2) e1; incr i1)
-          else (Array.set t (!i1 + !i2) e2; incr i2)
-        done;
-        if !i1 < l1 then Array.blit t1 !i1 t (!i1 + l2) (l1 - !i1);
-        if !i2 < l2 then Array.blit t2 !i2 t (!i2 + l1) (l2 - !i2);
-        t
+        let pp_sep fmt () = Format.fprintf fmt " * " in
+        let pp_start fmt () = Format.fprintf fmt "(" in
+        let pp_stop fmt () = Format.fprintf fmt ")" in
+        let rec pp_mult ?(first = true) x n =
+          if n = 0 then ()
+          else (
+            if not first then pp_sep fmt ();
+            pp_x fmt x;
+            pp_mult ~first:false x (n - 1))
+        in
+        pp_start fmt ();
+        let first = ref true in
+        M.iter m (fun x n ->
+            if !first then first := false else pp_sep fmt ();
+            pp_mult n x);
+        pp_stop fmt ()
+  end
 
-  let add elt t =
-    let new_t = Array.make (length t + 1) elt in
-    begin match CCArray.bsearch ~cmp:Base.compare elt t with
-      | `Just_after i | `At i ->
-        Array.blit t 0 new_t 0 (i + 1);
-        Array.blit t (i + 1) new_t (i+2) (length t - i - 1)
-      | `All_lower -> Array.blit t 0 new_t 0 (length t)
-      | `All_bigger -> Array.blit t 0 new_t 1 (length t)
-      | `Empty -> ()
-    end;
-    new_t
+  module Partial = struct
+    type t = M.t ref
 
-  let fold fn t acc = CCArray.fold_left (CCFun.flip fn) acc t
-  let map fn t = of_iter @@ Iter.map fn @@ to_iter t
+    let mk ?tuple () = match tuple with None -> ref M.empty | Some m -> ref m
 
-  let flatten a =
-    let size, t_list =
-      let size, toplevel, nested =
-        Array.fold_left
-          (fun (size, toplevel, nested) e ->
-            match e with
-            | Base.Tuple elts ->
-              let elts : elt array = Obj.magic elts in
-              if length elts = 0 then (size, toplevel, nested)
-              else (length elts + size, toplevel, (ref 0, elts)::nested)
-            | t -> (1 + size, t :: toplevel, nested)
-          ) (0, [], []) a
-      in
-      match toplevel with
-      | [] -> size, nested
-      | _ -> size, (ref 0, Array.of_list (List.rev toplevel))::nested
-    in
-    match t_list with
-    | [] -> empty
-    | [ _, a ] -> a
-    | _ ->
-      let t = Array.make size (Base.Constr (Longident.Lident "__dummy", [||])) in
-      let rec loop pos = function
-        | [] -> assert (pos = size)
-        | [ (i, a) ] ->
-          assert (pos = size - (length a - !i)); if !i < length a then Array.blit a !i t pos (length a - !i)
-        | (i, a) :: tl ->
-          if !i = length a then loop pos tl
-          else
-            let idx, e, tl =
-              List.fold_left
-                (fun (idx, e, tl) (i, a) ->
-                if !i = length a then (idx, e, tl)
-                else
-                  if Base.compare a.(!i) e < 0 then (i, a.(!i), (i, a) :: tl)
-                  else (idx, e, (i, a) :: tl)
-              ) (i, a.(!i), []) tl
-            in
-            incr idx;
-            t.(pos) <- e;
-            loop (pos + 1) ((i, a) :: tl)
-      in
-      loop 0 t_list;
-      t
+    let add m t =
+      assert (not (Base.is_tuple t));
+      m := M.add !m t
 
-  let pp pp_ty ppf = function
-    | [||] -> Fmt.string ppf "unit"
-    | [| elt |] -> pp_ty ppf elt
-    | t -> Fmt.pf ppf "@[<2>%a@]" Fmt.(array ~sep:(any " *@ ") pp_ty) t
+    let add_n m t n =
+      assert (not (Base.is_tuple t));
+      m := M.add_mult !m t n
+
+    let freeze m =
+      assert (M.cardinal !m <> 1);
+      !m
+  end
+
+  include Complet
 end
 
 include Base
@@ -335,6 +345,19 @@ end
 
 let hashcons env ty = Hashcons.hashcons env.Env.hcons ty
 
+(* Test functions *)
+let is_arrow = function
+  | Arrow _ -> true
+  | _ -> false
+
+let is_non_arrow_var = function
+  | Var v -> Variable.is_non_arrow v
+  | _ -> false
+
+let is_non_tuple_var = function
+  | Var v -> Variable.is_non_tuple v
+  | _ -> false
+
 (* smart constructors *)
 
 let dummy = Constr (Longident.Lident "__dummy", [||])
@@ -345,41 +368,68 @@ let constr env lid params =
   hashcons env
   @@
   match params with
-  | [||] when lid = LongIdent.unit -> Tuple NSet.empty
+  | [||] when lid = LongIdent.unit -> Tuple Tuple.unit
   | params -> Constr (lid, params)
 
 let arrows env params ret =
+  assert (not @@ is_arrow ret);
+  hashcons env @@ Arrow (params, ret)
+
+let arrows_flatten env params ret =
   hashcons env
   @@
   match ret with
-  | Arrow (params', ret) -> Arrow (NSet.union params params', ret)
+  | Arrow (params', ret) -> Arrow (Tuple.union params params', ret)
   | _ -> Arrow (params, ret)
 
 let arrow env param ret =
+  assert (not @@ is_arrow ret);
   hashcons env
   @@
-  match (param, ret) with
-  | Tuple elts, Arrow (params, ret) -> Arrow (NSet.union elts params, ret)
-  | _, Arrow (params, ret) -> Arrow (NSet.add param params, ret)
-  | Tuple elts, _ -> Arrow (elts, ret)
-  | _, _ -> Arrow (NSet.singleton param, ret)
+  match param with
+  | Tuple elts -> Arrow (elts, ret)
+  | _ -> Arrow (Tuple.singleton param, ret)
 
 let tuple env elts =
-  let elts = NSet.flatten elts in
-  hashcons env
-  @@ match NSet.is_singleton elts with Some elt -> elt | None -> Tuple elts
+  hashcons env @@ Tuple elts
 
 let other env x = hashcons env @@ Other (CCHash.poly x)
 
 (** Utility functions *)
+
+let tuple_flat_map f elts =
+  match
+    Tuple.to_iter elts
+    |> Iter.flat_map
+        (fun t -> match f t with
+          | Tuple elts -> Tuple.to_iter elts
+          | t -> Iter.return t)
+    |> Iter.to_rev_list
+  with
+  | [] -> Tuple.unit
+  | [ t ] -> Tuple.singleton t
+  | l -> Tuple.mk_l l
+
+let tuple_map_type env f elts =
+  match
+    Tuple.to_iter elts
+    |> Iter.flat_map
+        (fun t -> match f t with
+          | Tuple elts -> Tuple.to_iter elts
+          | t -> Iter.return t)
+    |> Iter.to_rev_list
+  with
+  | [] -> tuple env Tuple.unit
+  | [ t ] -> t
+  | l -> tuple env @@ Tuple.mk_l l
 
 let rec freeze_variables env (t : t) =
   match t with
   | Var v -> frozen_var env v
   | Constr (lid, t) -> constr env lid (Array.map (freeze_variables env) t)
   | Arrow (args, t) ->
-      arrows env (NSet.map (freeze_variables env) args) (freeze_variables env t)
-  | Tuple ts -> tuple env (NSet.map (freeze_variables env) ts)
+      arrows env (tuple_flat_map (freeze_variables env) args) (freeze_variables env t)
+  | Tuple ts -> tuple_map_type env (freeze_variables env) ts
   | Other _ | FrozenVar _ -> hashcons env t
 
 let rec refresh_variables bdgs env (t : t) =
@@ -392,29 +442,41 @@ let rec refresh_variables bdgs env (t : t) =
     var env v'
   | Constr (lid, t) -> constr env lid (Array.map (refresh_variables bdgs env) t)
   | Arrow (args, t) ->
-    arrows env (NSet.map (refresh_variables bdgs env) args) (refresh_variables bdgs env t)
-  | Tuple ts -> tuple env (NSet.map (refresh_variables bdgs env) ts)
+    arrows env (tuple_flat_map (refresh_variables bdgs env) args) (refresh_variables bdgs env t)
+  | Tuple ts -> tuple_map_type env (refresh_variables bdgs env) ts
   | Other _ | FrozenVar _ -> hashcons env t
 let refresh_variables env t =
   refresh_variables (Variable.HMap.create 17) env t
 
-let is_arrow = function
-  | Arrow _ -> true
-  | _ -> false
-
-let is_tuple = function
-  | Tuple ts -> NSet.length ts >= 2
-  | _ -> false
-
-let is_non_arrow_var = function
-  | Var v -> Variable.is_non_arrow v
-  | _ -> false
-
-let is_non_tuple_var = function
-  | Var v -> Variable.is_non_tuple v
-  | _ -> false
-
 (** import functions *)
+
+let flatten_tuple env elts =
+  let rec flatten = function
+    | Tuple elt -> Tuple.to_iter elt |> Iter.flat_map flatten
+    | t -> Iter.return t
+  in
+  match
+    CCList.to_iter elts |> Iter.flat_map flatten |> Iter.to_rev_list
+  with
+  | [ t ] -> t
+  | l -> tuple env (Tuple.mk_l l)
+
+let flatten_args_arrows env param ret =
+  let params = match param with
+    | Tuple elts -> Tuple.to_iter elts |> Iter.to_list
+    | ty -> [ty]
+  in
+  let rec flatten params = function
+    | Arrow (args, ret) -> flatten (Tuple.fold List.cons args params) ret
+    | t -> params, t
+  in
+  let params, ret = flatten params ret in
+  let args = match params with
+    | [] -> Tuple.unit
+    | [ elt ] -> Tuple.singleton elt
+    | l -> Tuple.mk_l l
+  in
+  arrows env args ret
 
 let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
   match out_ty with
@@ -423,10 +485,12 @@ let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
       params |> Iter.of_list |> Iter.map of_outcometree |> Iter.to_array
       |> constr env @@ LongIdent.of_outcometree id
   | Otyp_arrow (_, param, ret) ->
-      arrow env (of_outcometree param) (of_outcometree ret)
+      let param = of_outcometree param in
+      let ret = of_outcometree ret in
+      flatten_args_arrows env param ret
   | Otyp_tuple elts ->
-      elts |> Iter.of_list |> Iter.map of_outcometree |> NSet.of_iter
-      |> tuple env
+      assert (match elts with [_] -> false | _ -> true);
+      elts |> List.map of_outcometree |> flatten_tuple env
   | Otyp_alias { aliased ; _ } -> of_outcometree aliased
   (* not handled *)
   | Otyp_object _ | Otyp_class _ | Otyp_variant _ | Otyp_module _
@@ -444,9 +508,12 @@ let of_parsetree of_parsetree env var (parse_ty : Parsetree.core_type) =
       params |> Iter.of_list |> Iter.map of_parsetree |> Iter.to_array
       |> constr env id.txt
   | Ptyp_arrow (_, param, ret) ->
-      arrow env (of_parsetree param) (of_parsetree ret)
+      let param = of_parsetree param in
+      let ret = of_parsetree ret in
+      flatten_args_arrows env param ret
   | Ptyp_tuple elts ->
-      elts |> Iter.of_list |> Iter.map of_parsetree |> NSet.of_iter |> tuple env
+      assert (match elts with [_] -> false | _ -> true);
+      elts |> List.map of_parsetree |> flatten_tuple env
   | Ptyp_alias (parse_ty, _) | Ptyp_poly (_, parse_ty) -> of_parsetree parse_ty
   (* Ignore open in types *)
   | Ptyp_open (_modpath, typ) ->
@@ -536,13 +603,13 @@ let of_string, of_string' =
 (* utility functions *)
 
 let head = function Arrow (_, ret) -> ret | t -> t
-let tail = function Arrow (params, _) -> params | _ -> NSet.empty
+let tail = function Arrow (params, _) -> params | _ -> Tuple.unit
 
 let iter =
   let iter_subs = function
     | Constr (_, params) -> Iter.of_array params
-    | Arrow (params, ret) -> Iter.snoc (NSet.to_iter params) ret
-    | Tuple elts -> NSet.to_iter elts
+    | Arrow (params, ret) -> Iter.snoc (Tuple.to_iter params) ret
+    | Tuple elts -> Tuple.to_iter elts
     | _ -> Iter.empty
   in
   fun t k ->
@@ -558,9 +625,9 @@ let rec iter_vars t k =
   | Var var -> k var
   | Constr (_, params) -> CCArray.iter (fun t -> iter_vars t k) params
   | Arrow (params, ret) ->
-      Iter.flat_map iter_vars (NSet.to_iter params) k;
+      Iter.flat_map iter_vars (Tuple.to_iter params) k;
       iter_vars ret k
-  | Tuple elts -> Iter.flat_map iter_vars (NSet.to_iter elts) k
+  | Tuple elts -> Iter.flat_map iter_vars (Tuple.to_iter elts) k
 
 let rec iter_consts t f =
   match t with
@@ -569,9 +636,9 @@ let rec iter_consts t f =
       f lid;
       CCArray.iter (fun t -> iter_consts t f) params
   | Arrow (params, ret) ->
-      Iter.flat_map iter_consts (NSet.to_iter params) f;
+      Iter.flat_map iter_consts (Tuple.to_iter params) f;
       iter_consts ret f
-  | Tuple elts -> Iter.flat_map iter_consts (NSet.to_iter elts) f
+  | Tuple elts -> Iter.flat_map iter_consts (Tuple.to_iter elts) f
 
 let variable_clash v = function
   | Var v' -> Variable.rel v v' <> Variable.Smaller
@@ -588,8 +655,8 @@ let rec pp ppf = function
   | Constr (lid, [||]) -> LongIdent.pp ppf lid
   | Constr (lid, params) -> Fmt.pf ppf "%a@ %a" pp_array params LongIdent.pp lid
   | Arrow (params, ret) ->
-      Fmt.pf ppf "@[<2>(%a@ ->@ %a)@]" (NSet.pp pp_parens) params pp_parens ret
-  | Tuple elts -> Fmt.pf ppf "@[<2>%a@]" (NSet.pp pp_parens) elts
+      Fmt.pf ppf "@[<2>(%a@ ->@ %a)@]" (Tuple.pp pp_parens) params pp_parens ret
+  | Tuple elts -> Fmt.pf ppf "@[<2>%a@]" (Tuple.pp pp_parens) elts
   | Other i -> Fmt.pf ppf "other%i" i
 
 and pp_parens ppf ty =
@@ -597,7 +664,7 @@ and pp_parens ppf ty =
   | Var _ | FrozenVar _ | Other _ | Constr _ -> pp ppf ty
   | Arrow _ -> Fmt.parens pp ppf ty
   | Tuple elts ->
-      if NSet.length elts <= 1 then pp ppf ty else Fmt.parens pp ppf ty
+      if CCOption.is_some @@ Tuple.is_singleton elts then pp ppf ty else Fmt.parens pp ppf ty
 
 and pp_array ppf = function
   | [||] -> Fmt.string ppf "()"
