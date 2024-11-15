@@ -1,3 +1,11 @@
 (library
   (name utils)
-  (libraries compiler-libs.common unix containers fpath bos trace iter bechamel))
+  (libraries
+    compiler-libs.common
+    unix
+    containers
+    fpath
+    bos
+    trace
+    iter
+    bechamel))
