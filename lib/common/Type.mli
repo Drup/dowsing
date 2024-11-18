@@ -53,12 +53,9 @@ and Tuple : sig
     type t
 
     val unit : t
-    val mk : Base.t array -> t
     val mk_l : Base.t list -> t
     val is_unit : t -> bool
     val size : t -> int
-    val compare : t -> t -> int
-    val union : t -> t -> t
     val add : t -> Base.t -> t
     val singleton : Base.t -> t
     val is_singleton : t -> Base.t option

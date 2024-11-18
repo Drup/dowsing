@@ -109,7 +109,6 @@ module type Tuple = sig
 
     val hash : t -> int
     val unit : t
-    val mk : base_t array -> t
     val mk_l : base_t list -> t
     val is_unit : t -> bool
     val size : t -> int
@@ -219,15 +218,8 @@ and Multiset : Tuple with type base_t = Base.t = struct
 
     let hash m = CCHash.list Base.hash @@ M.to_list m
 
-    let mk a =
-      assert (Array.length a >= 2);
-      M.of_iter (fun k ->
-          CCArray.to_iter a (fun elt ->
-              assert (not (Base.is_tuple elt));
-              k elt))
-
     let mk_l l =
-      assert (List.length l <> 1);
+      assert (match l with [ _ ] -> false | _ -> true);
       M.of_iter (fun k ->
           CCList.to_iter l (fun elt ->
               assert (not (Base.is_tuple elt));
@@ -325,13 +317,6 @@ and Array_vec : Tuple with type base_t = Base.t = struct
     type t = Base.t CCArray.t
 
     let hash = CCHash.array Base.hash
-
-    let mk a =
-      assert (Array.length a >= 2);
-      assert (Array.for_all (fun elt -> not @@ Base.is_tuple elt) a);
-      let a = Array.copy a in
-      Array.fast_sort Base.compare a;
-      a
 
     let mk_l l =
       let a = Array.of_list l in
