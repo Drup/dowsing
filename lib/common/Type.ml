@@ -101,6 +101,41 @@ end
 
 (* Base *)
 
+module type Tuple = sig
+  type base_t
+
+  module Complet : sig
+    type t
+
+    val hash : t -> int
+    val unit : t
+    val mk : base_t array -> t
+    val mk_l : base_t list -> t
+    val is_unit : t -> bool
+    val size : t -> int
+    val compare : t -> t -> int
+    val union : t -> t -> t
+    val add : t -> base_t -> t
+    val singleton : base_t -> t
+    val is_singleton : t -> base_t option
+    val fold : (base_t -> 'a -> 'a) -> t -> 'a -> 'a
+    val to_iter : t -> base_t Iter.t
+    val pp : base_t Fmt.t -> t Fmt.t
+  end
+
+  module Partial : sig
+    type t
+
+    val mk : ?tuple:Complet.t -> unit -> t
+    val add : t -> base_t -> unit
+    val add_n : t -> base_t -> int -> unit
+    val freeze : t -> Complet.t
+  end
+
+  include module type of Complet
+end
+
+
 module rec Base : sig
   type t =
     | Var of Variable.t
@@ -174,37 +209,9 @@ end = struct
     | _ -> false
 end
 
-and Tuple : sig
-  module Complet : sig
-    type t
+and Multiset : Tuple with type base_t = Base.t = struct
+  type base_t = Base.t
 
-    val hash : t -> int
-    val unit : t
-    val mk : Base.t array -> t
-    val mk_l : Base.t list -> t
-    val is_unit : t -> bool
-    val size : t -> int
-    val compare : t -> t -> int
-    val union : t -> t -> t
-    val add : t -> Base.t -> t
-    val singleton : Base.t -> t
-    val is_singleton : t -> Base.t option
-    val fold : (Base.t -> 'a -> 'a) -> t -> 'a -> 'a
-    val to_iter : t -> Base.t Iter.t
-    val pp : Base.t Fmt.t -> t Fmt.t
-  end
-
-  module Partial : sig
-    type t
-
-    val mk : ?tuple:Complet.t -> unit -> t
-    val add : t -> Base.t -> unit
-    val add_n : t -> Base.t -> int -> unit
-    val freeze : t -> Complet.t
-  end
-
-  include module type of Complet
-end = struct
   module M = CCMultiSet.Make (Base)
 
   module Complet = struct
@@ -310,6 +317,114 @@ end = struct
 
   include Complet
 end
+
+and Array_vec : Tuple with type base_t = Base.t = struct
+  type base_t = Base.t
+
+  module Complet = struct
+    type t = Base.t CCArray.t
+
+    let hash = CCHash.array Base.hash
+
+    let mk a =
+      assert (Array.length a >= 2);
+      assert (Array.for_all (fun elt -> not @@ Base.is_tuple elt) a);
+      let a = Array.copy a in
+      Array.fast_sort Base.compare a;
+      a
+
+    let mk_l l =
+      let a = Array.of_list l in
+      assert (Array.length a <> 1);
+      assert (Array.for_all (fun elt -> not @@ Base.is_tuple elt) a);
+      Array.fast_sort Base.compare a;
+      a
+
+    let size a = Array.length a
+    let is_unit a = size a = 0
+    let compare = CCArray.compare Base.compare
+    let unit = [||]
+
+    let union t1 t2 =
+      let l1 = Array.length t1 in
+      if l1 = 0 then t2
+      else
+        let l2 = Array.length t2 in
+        if l2 = 0 then t1
+        else
+          let t = Array.make (l1 + l2) (Array.get t1 0) in
+          let i1 = ref 0 and i2 = ref 0 in
+          while !i1 < l1 && !i2 < l2 do
+            let e1 = Array.get t1 !i1 and e2 = Array.get t2 !i2 in
+            if Base.compare e1 e2 <= 0 then (
+              Array.set t (!i1 + !i2) e1;
+              incr i1)
+            else (
+              Array.set t (!i1 + !i2) e2;
+              incr i2)
+          done;
+          if !i1 < l1 then Array.blit t1 !i1 t (!i1 + l2) (l1 - !i1);
+          if !i2 < l2 then Array.blit t2 !i2 t (!i2 + l1) (l2 - !i2);
+          t
+
+    let add t elt =
+      assert (Array.length t > 0);
+      assert (not (Base.is_tuple elt));
+      let new_t = Array.make (Array.length t + 1) elt in
+      (match CCArray.bsearch ~cmp:Base.compare elt t with
+      | `Just_after i | `At i ->
+          Array.blit t 0 new_t 0 (i + 1);
+          Array.blit t (i + 1) new_t (i + 2) (Array.length t - i - 1)
+      | `All_lower -> Array.blit t 0 new_t 0 (Array.length t)
+      | `All_bigger -> Array.blit t 0 new_t 1 (Array.length t)
+      | `Empty -> ());
+      new_t
+
+    let singleton elt =
+      assert (not (Base.is_tuple elt));
+      [| elt |]
+
+    let is_singleton a = if size a = 1 then Some a.(0) else None
+    let fold f a elt = CCArray.fold (fun acc elt -> f elt acc) elt a
+    let to_iter = CCArray.to_iter
+
+    let pp pp_elt fmt a =
+      if is_unit a then Format.fprintf fmt "unit"
+      else CCArray.pp ~pp_sep:(CCFormat.return " * ") pp_elt fmt a
+  end
+
+  module Partial = struct
+    let dummy =  (Base.Constr (Longident.Lident "__dummy", [||]))
+
+    type t = (Base.t, CCVector.rw) CCVector.t
+
+    let mk ?tuple () =
+      match tuple with
+      | None -> CCVector.create ()
+      | Some a -> CCVector.of_array a
+
+    let add v t =
+      assert (not (Base.is_tuple t));
+      CCVector.push v t
+
+    let add_n v t n =
+      assert (not (Base.is_tuple t));
+      CCVector.ensure_with ~init:dummy v (CCVector.length v + n);
+      for _ = 1 to n do
+        CCVector.push v t
+      done
+
+    let freeze v =
+      let a = CCVector.to_array v in
+      assert (Array.length a <> 1);
+      CCArray.fast_sort Base.compare a;
+      a
+  end
+
+  include Complet
+end
+
+and Tuple : Tuple with type base_t = Base.t = Multiset
 
 include Base
 module HMap = CCHashtbl.Make (Base)
