@@ -67,13 +67,13 @@ and Tuple : sig
   module Partial : sig
     type t
 
-    val mk : ?tuple:Complet.t -> unit -> t
-    val add : t -> Base.t -> unit
-    val add_n : t -> Base.t -> int -> unit
+    val mk : unit -> t
+    val add_n : t -> Base.t -> int -> t
     val freeze : t -> Complet.t
+    val is_singleton : t -> Base.t option
   end
 
-  include module type of Complet
+  include module type of Complet with type t = Complet.t
 end
 
 include module type of Base with type t = Base.t

@@ -1,5 +1,7 @@
 open Syntactic.Infix
 
+module Partial = Type.Tuple.Partial
+
 let acu = true
 
 (* Shape *)
@@ -225,7 +227,9 @@ end = struct
       | Syntactic.FailUnif _ | FailedOccurCheck _ -> raise Bail
       | Done -> new_env
 
-  let iterate_shape_subsets env system solutions bitvars_cover k =
+  (* TODO: We could improve the naive iteration as follow, for each non_var elt of the system,
+     we try all solution that cover it if it is not already cover *)
+  let iterate_shape_subsets partials env system (solutions : (_ * _ * _) array) bitvars_cover k =
     let mask = Bitv.all_until (system.System.nb_non_var - 1) in
     let rec aux env coverage = function
       | -1 ->
@@ -235,34 +239,47 @@ end = struct
       | n ->
           aux env coverage (n-1);
           (* Check if the subset is small enough *)
-          if Bitv.(is_empty (coverage && bitvars_cover.(n) && mask)) then
-            match merge_env env solutions.(n) with
+          if Bitv.(is_empty (coverage && bitvars_cover.(n) && mask)) then (
+            let (local_sol, symb, vars_part) = solutions.(n) in
+            match merge_env env local_sol with
             | env ->
+                let backup = Array.copy partials in
+                List.iter (fun (i, n) -> partials.(i) <- Partial.add_n partials.(i) symb n) vars_part;
                 let coverage = Bitv.(coverage || bitvars_cover.(n)) in
-                aux env coverage (n-1)
+                aux env coverage (n-1);
+                Array.blit backup 0 partials 0 (Array.length partials)
             | exception Bail -> ()
+          )
     in
     aux env Bitv.empty (Array.length solutions - 1)
 
-  let iterate_var_subsets_acu system solutions bitvars_cover =
-    (* TODO: this could be faster because we only deal with partial, therefore, we don't need to
-       merge anything in the quasi solved. *)
+  let iterate_var_subsets_acu partials system (solutions : (_ * _ * _) array) bitvars_cover =
+    (* Note: the environnement in the solution of the var system is useless, therefore we just discard it *)
+    assert (system.System.nb_non_var = 0);
     let mask = Bitv.all_until (system.System.nb_non_tuple - 1) in
     let non_tuples_sols, pure_sols =
       List.combine (Array.to_list bitvars_cover) (Array.to_list solutions)
         |> List.partition (fun (b, _) -> not Bitv.(is_empty (b && mask)))
     in
-    let pure_var_env =
-      match pure_sols with
-      | [] -> None
-      | [ _, env ] -> Some env
-      | (_, hd) :: tl -> Some (List.fold_left (fun acc (_, env) -> merge_env acc env) hd tl)
-    in
+    List.iter
+      (fun (_, (_, symb, vars_part)) ->
+        List.iter (fun (i, n) -> partials.(i) <- Partial.add_n partials.(i) symb n) vars_part
+      ) pure_sols;
     fun env shape_coverage k ->
       let rec aux env coverage = function
         | [] -> (
-          let merged_env = match pure_var_env with None -> env | Some pure_var_env -> merge_env env pure_var_env in
-          let final_env, stack = Env.commit merged_env in
+          let partials =
+            Variable.Map.of_iter
+            (fun f ->
+              Array.iteri
+                (fun i p ->
+                  match system.assoc_type.(i) with
+                  | Var v -> f (v, p)
+                  | _ -> failwith "Impossible, this should be a variable"
+                ) partials
+            )
+          in
+          let final_env, stack = Env.commit env partials in
             match
               let* _ =
                 if List.is_empty stack then Done
@@ -273,25 +290,38 @@ end = struct
             | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
             | Done ->
                   k final_env )
-        | (cover, var_env):: t ->
+        | (cover, (_, symb, vars_part)):: t ->
           aux env coverage t;
-          if Bitv.(is_empty (coverage && cover  && mask)) then
-            match merge_env env var_env with
-            | env ->
-                let coverage = Bitv.(coverage || cover) in
-                aux env coverage t
-            | exception Bail -> ()
+          if Bitv.(is_empty (coverage && cover && mask)) then (
+            let coverage = Bitv.(coverage || cover) in
+            let backup = Array.copy partials in
+            List.iter (fun (i, n) -> partials.(i) <- Partial.add_n partials.(i) symb n) vars_part;
+            aux env coverage t;
+            Array.blit backup 0 partials 0 (Array.length partials)
+          )
       in
       aux env shape_coverage non_tuples_sols
 
-  let iterate_var_subsets_ac system solutions bitvars_cover env shape_coverage k =
+  let iterate_var_subsets_ac partials system (solutions : (_ * _ * _) array) bitvars_cover env shape_coverage k =
+    assert (system.System.nb_non_var = 0);
     let mask = Bitv.all_until (system.System.nb_atom - 1) in
     let rec aux env coverage = function
       | -1 ->
-          (* Check if the subset is large enough *)
           Timeout.check ();
+          (* Check if the subset is large enough *)
           if Bitv.(equal mask coverage) then (
-            let final_env, stack = Env.commit env in
+            let partials =
+              Variable.Map.of_iter
+              (fun f ->
+                Array.iteri
+                  (fun i p ->
+                    match system.assoc_type.(i) with
+                    | Var v -> f (v, p)
+                    | _ -> failwith "Impossible, this should be a variable"
+                  ) partials
+              )
+            in
+            let final_env, stack = Env.commit env partials in
             match
               let* _ =
                 if List.is_empty stack then Done
@@ -305,11 +335,12 @@ end = struct
           )
       | n ->
           aux env coverage (n-1);
-          match merge_env env solutions.(n) with
-          | env ->
-              let coverage = Bitv.(coverage || bitvars_cover.(n)) in
-              aux env coverage (n-1)
-          | exception Bail -> ()
+          let coverage = Bitv.(coverage || bitvars_cover.(n)) in
+          let (_, symb, vars_part) = solutions.(n) in
+          let backup = Array.copy partials in
+          List.iter (fun (i, n) -> partials.(i) <- Partial.add_n partials.(i) symb n) vars_part;
+          aux env coverage (n-1);
+          Array.blit backup 0 partials 0 (Array.length partials)
     in
     aux env shape_coverage (Array.length solutions - 1)
 
@@ -351,14 +382,18 @@ end = struct
     with
     | Syntactic.FailUnif _ | FailedOccurCheck _ -> None
     | Done ->
+        let partial_add = ref [] in
         for i = nb_non_var to nb_atom - 1 do
-          if System.get_solution sol i > 0 then (
-            match assoc_type.(i) with
-            | Var v -> Env.extend_partial ~by:(System.get_solution sol i) env v symb
-            | _ -> failwith (CCFormat.sprintf "Impossible: %a" Type.pp assoc_type.(i))
-          )
+          (* For the variable v, this mean that the variable should be associated with tuple
+             that contains `System.get_solution sol i` time `symb` plus other stuff comming from
+             from the other solutions that will be combined together.*)
+          if System.get_solution sol i > 0 then
+            (* When combining the solutions, we will store the partial tuple for each variable
+               in a array of size `nb_atom - nb_non_var`, therefore we store as first composent
+               the index in this futur table. *)
+            partial_add := (i - nb_non_var, System.get_solution sol i) :: !partial_add
         done;
-        Some env
+        Some (env, symb, !partial_add)
 
   (** From the iter of solution of the diophantine equations system,
       extract the solution in a vector and return an array of bitset
@@ -392,9 +427,9 @@ end = struct
     (* Initialise each variable to unit with an empty list for ACU
        in case of AC, the condition force each variable to be associated with something
        therefore we did not need it before. *)
-    Array.iter (function
-      | Type.Var v -> Env.init_partial env v
-      | _ -> ()) system.System.assoc_type;
+    let partials =
+      Array.init (system.System.nb_atom - system.nb_non_var) (fun _ -> Type.Tuple.Partial.mk ())
+    in
 
     Logs.debug (fun m -> m "Extract var solutions");
     let env_sols, sol_coverages = extract_solutions env system var_solutions in
@@ -402,11 +437,11 @@ end = struct
     let shapes_sols =
       List.map (fun (system, solutions) -> system, extract_solutions env system solutions) shapes_sols
     in
-    let iterate_var_subsets = iterate_var_subsets system env_sols sol_coverages in
+    let iterate_var_subsets = iterate_var_subsets partials system env_sols sol_coverages in
     let rec combine_shapes env shapes_sols acc_coverage k =
       match shapes_sols with
       | (system, (env_sols, bitvars)) :: t ->
-          let iter_sol = iterate_shape_subsets env system env_sols bitvars in
+          let iter_sol = iterate_shape_subsets partials env system env_sols bitvars in
           iter_sol (fun (env_sol, coverage) ->
             combine_shapes env_sol t Bitv.(acc_coverage || coverage) k
           )

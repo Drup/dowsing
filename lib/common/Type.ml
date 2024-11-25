@@ -125,13 +125,13 @@ module type Tuple = sig
   module Partial : sig
     type t
 
-    val mk : ?tuple:Complet.t -> unit -> t
-    val add : t -> base_t -> unit
-    val add_n : t -> base_t -> int -> unit
+    val mk : unit -> t
+    val add_n : t -> base_t -> int -> t
     val freeze : t -> Complet.t
+    val is_singleton : t -> base_t option
   end
 
-  include module type of Complet
+  include module type of Complet with type t = Complet.t
 end
 
 
@@ -208,9 +208,7 @@ end = struct
     | _ -> false
 end
 
-and Multiset : Tuple with type base_t = Base.t = struct
-  type base_t = Base.t
-
+and Multiset : Tuple with type base_t := Base.t = struct
   module M = CCMultiSet.Make (Base)
 
   module Complet = struct
@@ -290,29 +288,25 @@ and Multiset : Tuple with type base_t = Base.t = struct
   end
 
   module Partial = struct
-    type t = M.t ref
+    type t = M.t
 
-    let mk ?tuple () = match tuple with None -> ref M.empty | Some m -> ref m
-
-    let add m t =
-      assert (not (Base.is_tuple t));
-      m := M.add !m t
+    let mk () = M.empty
 
     let add_n m t n =
       assert (not (Base.is_tuple t));
-      m := M.add_mult !m t n
+      M.add_mult m t n
 
     let freeze m =
-      assert (M.cardinal !m <> 1);
-      !m
+      assert (CCOption.is_none @@ Complet.is_singleton m);
+      m
+
+    let is_singleton = Complet.is_singleton
   end
 
   include Complet
 end
 
-and Array_vec : Tuple with type base_t = Base.t = struct
-  type base_t = Base.t
-
+and Array_vec : Tuple with type base_t := Base.t = struct
   module Complet = struct
     type t = Base.t CCArray.t
 
@@ -379,37 +373,26 @@ and Array_vec : Tuple with type base_t = Base.t = struct
   end
 
   module Partial = struct
-    let dummy =  (Base.Constr (Longident.Lident "__dummy", [||]))
+    type t = Base.t list
 
-    type t = (Base.t, CCVector.rw) CCVector.t
+    let mk () = []
 
-    let mk ?tuple () =
-      match tuple with
-      | None -> CCVector.create ()
-      | Some a -> CCVector.of_array a
-
-    let add v t =
+    let add_n l t n =
       assert (not (Base.is_tuple t));
-      CCVector.push v t
+      let rec aux acc n =
+        if n = 0 then acc else aux (t::acc) (n - 1)
+      in
+      aux l n
 
-    let add_n v t n =
-      assert (not (Base.is_tuple t));
-      CCVector.ensure_with ~init:dummy v (CCVector.length v + n);
-      for _ = 1 to n do
-        CCVector.push v t
-      done
+    let freeze l = Complet.mk_l l
 
-    let freeze v =
-      let a = CCVector.to_array v in
-      assert (Array.length a <> 1);
-      CCArray.fast_sort Base.compare a;
-      a
+    let is_singleton = function [ t ] -> Some t | _ -> None
   end
 
   include Complet
 end
 
-and Tuple : Tuple with type base_t = Base.t = Multiset
+and Tuple : Tuple with type base_t := Base.t = Multiset
 
 include Base
 module HMap = CCHashtbl.Make (Base)

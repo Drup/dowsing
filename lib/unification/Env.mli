@@ -21,12 +21,10 @@ val push_tuple : t -> ACTerm.t -> ACTerm.t -> unit
 val push_arrow : t -> ArrowTerm.t -> ArrowTerm.t -> unit
 val add : t -> Variable.t -> Type.t -> unit
 val remove : t -> Variable.t -> unit
-val init_partial : t -> Variable.t -> unit
-val extend_partial : ?by:int -> t -> Variable.t -> Type.t -> unit
 
 val merge : t -> t -> t * (Type.t * Type.t) list
 
-val commit : t -> t * (Type.t * Type.t) list
+val commit : t -> Type.Tuple.Partial.t Variable.Map.t -> t * (Type.t * Type.t) list
 
 val pop_tuple : t -> ACTerm.t ACTerm.problem option
 val pop_arrow : t -> ArrowTerm.problem option

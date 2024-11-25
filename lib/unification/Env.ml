@@ -1,12 +1,10 @@
+module Partial = Type.Tuple.Partial
+
 type t = {
   tyenv : Type.Env.t ;
   mutable vars : Subst.t (* TODO: maybe a simple array could do it because variable have a continous range *) ;
   mutable tuples : ACTerm.t ACTerm.problem list ;
   mutable arrows : ArrowTerm.problem list ;
-  mutable partials : (Type.t list) Variable.Map.t;
-  (** Store partial assignement, this represents the partial solution obtain
-      when solving an AC problem. *)
-  (* TODO: When we will have unit as the neutral element for *, we need to initialise this for each variables in the system to the empty list. If it stays empty that's mean it unifies with unit *)
 
   orig_vars : Variable.Set.t ;
 }
@@ -17,12 +15,11 @@ let make ~(tyenv : Type.Env.t) ~orig_vars = {
   vars = Subst.empty ;
   tuples = [] ;
   arrows = [] ;
-  partials = Variable.Map.empty;
   orig_vars ;
 }
 
-let copy { tyenv ; vars ; tuples ; arrows; partials ; orig_vars } =
-  { tyenv ; vars ; tuples ; arrows ; partials ; orig_vars }
+let copy { tyenv ; vars ; tuples ; arrows ; orig_vars } =
+  { tyenv ; vars ; tuples ; arrows ; orig_vars }
 
 let vars e = e.vars
 let tyenv t = t.tyenv
@@ -33,24 +30,6 @@ let add e v ty =
   e.vars <- Subst.add v ty e.vars
 
 let remove e v = e.vars <- Subst.remove v e.vars
-
-let init_partial e v =
-  e.partials <- Variable.Map.update v
-    (function
-      | None -> Some []
-      | Some _ -> failwith "Init on a non empty partials map of variable")
-    e.partials
-
-let extend_partial ?(by = 1) e v ty =
-  let rec extend by l =
-    assert (by >= 0);
-    if by = 0 then l else extend (by - 1) (ty::l) in
-  e.partials <-
-    Variable.Map.update v
-      (function
-        | None -> Some (extend by [])
-        | Some l -> Some (extend by l))
-    e.partials
 
 let push_tuple e left right =
   e.tuples <- ACTerm.make_problem left right :: e.tuples
@@ -92,13 +71,6 @@ let representative e x = representative_rec e.vars x
 let merge e1 e2 =
   assert (e1.tyenv == e2.tyenv);
   assert (e1.orig_vars == e2.orig_vars);
-  let partials = Variable.Map.merge
-    (fun _v l1 l2 ->
-      let l1 = CCOption.get_or ~default:[] l1 in
-      let l2 = CCOption.get_or ~default:[] l2 in
-      Some (l1 @ l2))
-    e1.partials e2.partials
-  in
   let stack = ref [] in
   (* TODO: we should use a Unification.Stack.t for stack but we would get a module cycle *)
   let vars = Variable.Map.merge  (* TODO: Test physical equality to skip merging vars, not sure this will help, we need to think about a way to do stuff faster. *)
@@ -119,41 +91,46 @@ let merge e1 e2 =
     vars;
     tuples = e1.tuples @ e2.tuples;
     arrows = e1.arrows @ e2.arrows;
-    partials;
     orig_vars = e1.orig_vars;
   }, !stack)
 
-let commit e =
+let commit e partials =
   let stack = ref [] in
   let vars = Variable.Map.merge
     (fun v t1 t2 ->
       match t1, t2 with
       | None, None -> None
       | Some t, None -> Some t
-      | None, Some [t] -> (
-        match t with
-          | Type.Var _ | Arrow _ | Tuple _ ->
-            stack := (Type.var (tyenv e) v, t) :: !stack; (* TODO: we will create a new variable because of this. We need to work to create less variables in general. *)
-            None
-          | _ -> Some t)
-      | None, Some l -> Some (Type.tuple (tyenv e) (Type.Tuple.mk_l l))
-      | Some t1, Some l ->
+      | None, Some p -> begin
+        match Type.Tuple.Partial.is_singleton p with
+        | Some t ->
+          begin match t with
+            | Type.Var _ | Arrow _ | Tuple _ ->
+              stack := (Type.var (tyenv e) v, t) :: !stack;
+              None
+            | _ -> Some t
+          end
+        | None -> Some (Type.tuple (tyenv e) (Type.Tuple.Partial.freeze p))
+        end
+      | Some t1, Some p ->
         (* TODO: Should we do something more clever here? Like look for the repr or
            we let the insert do that? For now, we will let the insert function do the job *)
-        let t2 = match l with [t] -> t | l -> Type.tuple (tyenv e) (Type.Tuple.mk_l l) in
+        let t2 =
+          match Type.Tuple.Partial.is_singleton p with
+          | Some t -> t
+          | None -> Type.tuple (tyenv e) (Type.Tuple.Partial.freeze p) in
         if t1 != t2 then
           stack := (t1, t2) ::!stack;
         Some t1)
     e.vars
-    e.partials
+    partials
   in
-  {e with vars; partials = Variable.Map.empty}, !stack
+  {e with vars}, !stack
 
 let pp_binding ppf (x,t) =
   Fmt.pf ppf "@[%a = %a@]"  Variable.pp x Type.pp t
 
 let is_solved env =
-  assert (Variable.Map.is_empty env.partials);
   if CCList.is_empty env.tuples
   && CCList.is_empty env.arrows
   then
