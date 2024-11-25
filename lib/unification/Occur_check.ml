@@ -22,7 +22,7 @@ let find_cycle graph =
     | Done -> None
   in
   try
-    Variable.Map.iter (fun v _ -> assert (CCOption.is_none (dfs v))) graph;
+    Variable.Map.iter (fun v _ -> let res = dfs v in assert (CCOption.is_none res)) graph;
     None
   with Cycle l -> Some l
 
