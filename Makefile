@@ -26,3 +26,15 @@ clean :
 .PHONY : bench
 bench :
 	@ $(DUNE) exec --release -- ./stat/main.exe stat --index=containers.db "int -> int -> int" "'a -> int -> unit" "'a -> 'a list -> bool" "('a * 'b) -> ('a -> 'c) -> ('b -> 'd) -> ('c * 'd)"
+
+.PHONY : bug
+bug :
+	@ $(DUNE) clean
+	@ $(DUNE) exec -- dowsing save -p containers,containers-data --index=containers.db 
+	@ $(DUNE) exec --profile noassert -- ./stat/main.exe stat --index=containers.db "'a -> 'a list -> bool"
+
+.PHONY : nobug
+nobug :
+	@ $(DUNE) clean
+	@ $(DUNE) exec -- dowsing save -p containers,containers-data --index=containers.db 
+	@ $(DUNE) exec -- ./stat/main.exe stat --index=containers.db "'a -> 'a list -> bool"
