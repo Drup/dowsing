@@ -31,6 +31,21 @@ let get_name file =
   let file = Filename.basename file in
   try Filename.chop_extension file with Invalid_argument _ -> file
 
+let prod_l ls =
+  let rec aux = function
+    | [] :: _ -> []
+    | ls ->
+        let hs, rest =
+          List.fold_left
+            (fun (hs, rest) l -> (List.hd l :: hs, List.tl l :: rest))
+            ([], []) ls
+        in
+        let hs = List.rev hs in
+        let rest = List.rev rest in
+        hs :: aux rest
+  in
+  aux ls
+
 let compare results =
   let env = Type.Env.make () in
   let results : (string * Bench.data list) list =
@@ -55,17 +70,15 @@ let compare results =
     (fun i (name, _) ->
       grid.(0).(i + 1) <- PrintBox.center_hv @@ PrintBox.text name)
     results;
+  let table = List.map snd results |> prod_l |> CCList.combine base in
   List.iteri
-    (fun r { Bench.ty; feats; _ } ->
-      grid.(r + 1).(0) <- PrintBox.asprintf "%a" Type.pp ty;
+    (fun r (res, row) ->
+      grid.(r + 1).(0) <- PrintBox.asprintf "%a" Type.pp res.Bench.ty;
       List.iteri
-        (fun c (_, result) ->
-          match List.find_opt (fun e -> Type.equal e.Bench.ty ty) result with
-          | None -> grid.(r + 1).(c + 1) <- PrintBox.text "NA"
-          | Some res ->
-              grid.(r + 1).(c + 1) <- ratio feats.time res.Bench.feats.time)
-        results)
-    base;
+        (fun c { Bench.feats; _ } ->
+          grid.(r + 1).(c + 1) <- ratio res.Bench.feats.time feats.time)
+        row)
+    table;
   let grid = PrintBox.grid grid in
   Format.printf "@[%a@]@." (PrintBox_text.pp_with ~style:true) grid
 
