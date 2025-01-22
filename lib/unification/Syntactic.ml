@@ -182,7 +182,7 @@ and quasi_solved env stack x s =
 
 (* Non proper equations
    'x ≡ 'y
-   To include a non propre equations, we need to be sure that the dependency created between variable is a DAG. Therefore, we use the Variable.get_most_general, to order the dependency.
+   To include a non proper equations, we need to be sure that the dependency created between variable is a DAG. Therefore, we use the Variable.get_most_general, to order the dependency.
 *)
 and non_proper env stack (x : Variable.t) (y : Variable.t) =
   Trace.with_span ~__FUNCTION__ ~__LINE__ ~__FILE__ __FUNCTION__ (fun _sp ->
@@ -196,8 +196,12 @@ and non_proper env stack (x : Variable.t) (y : Variable.t) =
       let* () = if Variable.equal z' x' then Done else attach env x' tz in
       let* () = if Variable.equal z' y' then Done else attach env y' tz in
       process_stack env stack
-  | V x', E (_, t) | E (_, t), V x' ->
-      let* () = attach env x' t in
+  | V x', E (y', t) | E (y', t), V x' ->
+      let z' = Variable.get_most_general (fun f -> Env.gen f env) [x'; y'] in
+      let tz = Type.var (Env.tyenv env) z' in
+      let* () = if Variable.equal z' x' then Done else attach env x' tz in
+      let* () = if Variable.equal z' y' then Done else attach env y' tz in
+      let* () = attach env z' t in
       process_stack env stack
   | E (x', s), E (y', t) ->
       let z' = Variable.get_most_general (fun f -> Env.gen f env) [x'; y'] in
