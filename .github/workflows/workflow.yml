@@ -3,7 +3,7 @@ name: Build
 on:
   - pull_request
   - push
-  
+
 jobs:
   build-native:
     strategy:
@@ -13,7 +13,7 @@ jobs:
           - macos-latest
           - ubuntu-latest
         ocaml-compiler:
-          - '5.2'
+          - '5.3'
 
     runs-on: ${{ matrix.os }}
 

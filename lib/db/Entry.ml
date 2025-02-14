@@ -17,4 +17,4 @@ let pp ppf t =
   Fmt.pf ppf "@[%s:%a :@ %a@]"
     t.pkg
     LongIdent.pp t.lid
-    !Oprint.out_type t.ty
+    (Format_doc.compat !Oprint.out_type) t.ty
