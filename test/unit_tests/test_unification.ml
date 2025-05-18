@@ -110,15 +110,13 @@ let slow_tests = [
 
 let marked_var_pos_tests = [
   ">a. 'a * int", "int * float * float";
-  "*a. 'a * int", " (int -> string) * int";
   ">a. 'a * int", " (int -> string) * int * float";
 ]
 
 let marked_var_neg_tests = [
-  "*a. 'a * int", "int * float * float";
   ">a. 'a * int", " (int -> string) * int";
 ]
-  
+
 
 let tests =
   let make_test speed res (str1, str2) =

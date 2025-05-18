@@ -11,7 +11,6 @@ module Flags : sig
   val empty : t
 
   val non_arrow : field
-  val non_tuple : field
 
   val set : field -> t -> t
   val get : field -> t -> bool
@@ -30,14 +29,12 @@ end = struct
 
   let equal = Int.equal
 
-  (* Writen reversed so that variable with the non_tuple flags are the smallest. *)
   let compare b1 b2 = Int.compare b2 b1
 
   let empty = 0
 
   (* This must be in this order, because of the compare function. *)
   let non_arrow = mk_field ()
-  let non_tuple = mk_field ()
 
   let set f b = (1 lsl f) lor b
   let get f b = (1 lsl f) land b <> 0
@@ -58,8 +55,6 @@ type var = t
 
 let as_int v = v.id
 
-(* The order must guarantee that the variable with the flags non_tuple are smaller than
-   variable without this flags. *)
 let compare v1 v2 =
   CCPair.compare Flags.compare CCInt.compare (v1.flags, v1.id) (v2.flags, v2.id)
 let equal v1 v2 =
@@ -75,7 +70,6 @@ let rel v1 v2 =
 
 let is_pure v = Flags.(equal empty v.flags)
 let is_non_arrow v = Flags.(get non_arrow v.flags)
-let is_non_tuple v = Flags.(get non_tuple v.flags)
 
 let get_flags {flags; _} = flags
 
@@ -160,8 +154,6 @@ let to_string =
       var.id
       |> base_26 'a'
       |> (fun l -> if is_non_arrow var then '>' :: l else l)
-      |> (fun l -> if is_non_tuple var then '*' :: l else
-        l)
       |> String.of_list
     in
     str

@@ -401,10 +401,6 @@ let is_non_arrow_var = function
   | Var v -> Variable.is_non_arrow v
   | _ -> false
 
-let is_non_tuple_var = function
-  | Var v -> Variable.is_non_tuple v
-  | _ -> false
-
 (** import functions *)
 
 let of_outcometree of_outcometree env var (out_ty : Outcometree.out_type) =
@@ -495,7 +491,7 @@ let generate_var bdgs (env : Env.t) = function
           let v = Variable.(Gen.gen Flags.empty env.var_gen) in
           String.HMap.add bdgs name v;
           var env v)
-    
+
 let of_outcometree', of_parsetree' =
   let wrap fn (env : Env.t) x =
     let env = Env.restart env in
@@ -567,7 +563,6 @@ let rec iter_consts t f =
 let variable_clash v = function
   | Var v' -> Variable.rel v v' <> Variable.Smaller
   | Arrow _ -> Variable.is_non_arrow v
-  | Tuple _ -> Variable.is_non_tuple v
   | _ -> false
 
 

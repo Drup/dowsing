@@ -12,7 +12,6 @@ module System : sig
     nb_atom : int ; (* Number of atoms in each equation *)
     assoc_type : Type.t array ; (* Map from indices to the associated terms *)
     nb_non_var : int ; (* Non variables are at the beginning of the array, Variables at the end. *)
-    nb_non_tuple : int ; (* Among the variable, first we have the non tuple variables *)
     system : int array array ;
   }
 
@@ -40,13 +39,12 @@ end = struct
     nb_atom : int ; (* Number of atoms in each equation *)
     assoc_type : Type.t array ; (* Map from indices to the associated types *)
     nb_non_var : int ; (* Constants are at the beginning of the array, Variables at the end. *)
-    nb_non_tuple : int ; (* Among the variable, first we have the non tuple variables *)
     system : int array array ;
   }
 
-  let pp ppf {system; assoc_type; nb_atom; nb_non_var; nb_non_tuple} =
-    Format.fprintf ppf "@[<v>{nb_atom: %i@ nb_non_var: %i@ nb_non_tuple: %i@ assoc: %a@ system: %a}@]"
-    nb_atom nb_non_var nb_non_tuple
+  let pp ppf {system; assoc_type; nb_atom; nb_non_var} =
+    Format.fprintf ppf "@[<v>{nb_atom: %i@ nb_non_var: %i@ assoc: %a@ system: %a}@]"
+    nb_atom nb_non_var
     Fmt.(vbox (array ~sep:(any ",") Type.pp)) assoc_type
     Fmt.(vbox (array ~sep:cut @@ array ~sep:(any ", ") int)) system
 
@@ -91,12 +89,6 @@ end = struct
       let m = Type.Set.fold (f part count) all_types Type.Map.empty in
       (!count, m)
     in
-    let nb_non_tuple_var = Type.Set.fold (function
-      | Type.Var v ->
-        if Variable.is_non_tuple v then (+) 1 else Fun.id
-      |  _ -> Fun.id) all_types 0
-    in
-    nb_non_tuple_var,
     {
       S.variable = aux shape_partition.variable;
       shapes = List.map aux shape_partition.shapes;
@@ -114,7 +106,7 @@ end = struct
       TODO: is it true that equal type up to iso in the current substitution will be equal here?
        *)
   let make problems : t * t List.t =
-    let nb_non_tuple, mapping = make_mapping problems in
+    let mapping = make_mapping problems in
     let nb_vars, vars = mapping.variable in
     let shape_partition = mapping.shapes in
     let get_index map t =
@@ -130,16 +122,13 @@ end = struct
     let var_system =
       let nb_atom = nb_vars in
       let assoc_type = Array.make nb_atom Type.dummy in
-      Type.Map.iter (fun k i ->
-        assert (if i < nb_non_tuple then Type.is_non_tuple_var k
-                else not (Type.is_non_tuple_var k));
-        assoc_type.(i) <- k) vars ;
+      Type.Map.iter (fun k i -> assoc_type.(i) <- k) vars ;
       let nb_non_var = 0 in
       let system =
         List.map (add_problem (get_index vars) nb_atom) problems
         |> Array.of_list
       in
-      { nb_atom ; assoc_type ; nb_non_var; nb_non_tuple ; system }
+      { nb_atom ; assoc_type ; nb_non_var ; system }
     in
 
     let gen_shape_system nb_frees types_map =
@@ -154,7 +143,7 @@ end = struct
           (get_index_shape vars types_map nb_frees) nb_atom) problems
         |> Array.of_list
       in
-      { nb_atom ; assoc_type ; nb_non_var; nb_non_tuple ; system }
+      { nb_atom ; assoc_type ; nb_non_var ; system }
     in
     let shape_systems = List.map
             (fun (n, tm) -> gen_shape_system n tm)
@@ -231,45 +220,32 @@ end = struct
     in
     aux env Bitv.empty (Array.length solutions - 1)
 
-  let iterate_var_subsets_acu system solutions bitvars_cover =
+  let iterate_var_subsets_acu _system solutions _bitvars_cover =
     (* TODO: this could be faster because we only deal with partial, therefore, we don't need to
        merge anything in the quasi solved. *)
-    let mask = Bitv.all_until (system.System.nb_non_tuple - 1) in
-    let non_tuples_sols, pure_sols =
-      List.combine (Array.to_list bitvars_cover) (Array.to_list solutions)
-        |> List.partition (fun (b, _) -> not Bitv.(is_empty (b && mask)))
-    in
     let pure_var_env =
-      match pure_sols with
-      | [] -> None
-      | [ _, env ] -> Some env
-      | (_, hd) :: tl -> Some (List.fold_left (fun acc (_, env) -> merge_env acc env) hd tl)
+      match Array.length solutions with
+      | 0 -> None
+      | _ ->
+        let env = ref solutions.(0) in
+        for i = 1 to Array.length solutions - 1 do
+          env := merge_env !env solutions.(i)
+        done;
+        Some !env
     in
-    fun env shape_coverage k ->
-      let rec aux env coverage = function
-        | [] -> (
-          let merged_env = match pure_var_env with None -> env | Some pure_var_env -> merge_env env pure_var_env in
-          let final_env, stack = Env.commit merged_env in
-            match
-              let* _ =
-                if List.is_empty stack then Done
-                else Syntactic.process_stack final_env (Stack.of_list stack)
-              in
-              Syntactic.occur_check final_env
-            with
-            | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
-            | Done ->
-                  k final_env )
-        | (cover, var_env):: t ->
-          aux env coverage t;
-          if Bitv.(is_empty (coverage && cover  && mask)) then
-            match merge_env env var_env with
-            | env ->
-                let coverage = Bitv.(coverage || cover) in
-                aux env coverage t
-            | exception Bail -> ()
-      in
-      aux env shape_coverage non_tuples_sols
+    fun env _shape_coverage k ->
+      let merged_env = match pure_var_env with None -> env | Some pure_var_env -> merge_env env pure_var_env in
+      let final_env, stack = Env.commit merged_env in
+        match
+          let* _ =
+            if List.is_empty stack then Done
+            else Syntactic.process_stack final_env (Stack.of_list stack)
+          in
+          Syntactic.occur_check final_env
+        with
+        | Syntactic.FailUnif _ | FailedOccurCheck _ -> ()
+        | Done ->
+              k final_env
 
   let iterate_var_subsets_ac system solutions bitvars_cover env shape_coverage k =
     let mask = Bitv.all_until (system.System.nb_atom - 1) in
@@ -443,7 +419,7 @@ let solve_systems env (var_system, shape_systems) =
   in
 
   let var_sols =
-    System.solve (cut var_system.nb_non_tuple) var_system
+    System.solve (fun _ -> false) var_system
       |> Iter.filter (fun sol ->
           exists (fun x -> x > 0) sol 0 var_system.nb_atom)
       (* TODO: Maybe a bug in the solver.
@@ -463,7 +439,7 @@ let solve_systems env (var_system, shape_systems) =
   let shapes_sols = List.map (fun (system: System.t) ->
     assert (system.nb_non_var > 0);
     ( system,
-      System.solve (cut (system.nb_non_var + system.nb_non_tuple)) system
+      System.solve (cut (system.nb_non_var)) system
         |> Iter.filter (fun sol ->
             exists (fun x -> x > 0) sol 0 system.nb_non_var)
         )
@@ -478,4 +454,3 @@ let solve env problems =
     Logs.debug (fun m -> m "Solving AC system: @,@[%a@]" (CCList.pp ACTerm.pp_problem) problems);
     make_systems env problems
     |> solve_systems env
-

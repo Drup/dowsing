@@ -108,7 +108,6 @@ val refresh_variables : Env.t -> t -> t
 val is_arrow : t -> bool
 val is_tuple : t -> bool
 val is_non_arrow_var : t -> bool
-val is_non_tuple_var : t -> bool
 
 (* import functions *)
 

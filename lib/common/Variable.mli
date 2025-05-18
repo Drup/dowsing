@@ -4,7 +4,6 @@ module Flags : sig
 
   val empty : t
   val non_arrow : field
-  val non_tuple : field
 
   val equal : t -> t -> bool
 
@@ -17,7 +16,7 @@ type t
 type var = t
 type rel = Smaller | Bigger | Equal | Incomparable
 
-val as_int : t -> int 
+val as_int : t -> int
 val equal : t CCEqual.t
 val compare : t CCOrd.t
 
@@ -28,7 +27,6 @@ val rel : t -> t -> rel
 
 val is_pure : t -> bool
 val is_non_arrow : t -> bool
-val is_non_tuple : t -> bool
 
 val get_flags : t -> Flags.t
 

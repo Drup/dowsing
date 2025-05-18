@@ -3,20 +3,12 @@ type t = {
   ty : Type.t ;
 }
 
-type flags = NonArrow | NonTuple
-
 type var_type = Frozen | Flags of Variable.Flags.t
 
 let parse_var_type =
   let open CCParse in
   (string "^" >|= fun _ -> Frozen) <|>
-  (many1 ((string ">" >|= fun _ -> NonArrow)
-  <|> (string "*" >|= fun _ -> NonTuple))
-  >|= fun l -> Flags (List.fold_left (fun flags m ->
-                        match m with
-                        | NonArrow -> Variable.Flags.(set non_arrow flags)
-                        | NonTuple -> Variable.Flags.(set non_tuple flags))
-                        Variable.Flags.empty l))
+  (string ">" >|= fun _ -> Flags Variable.Flags.(set non_arrow empty))
 
 let parse_var =
   let open CCParse in
