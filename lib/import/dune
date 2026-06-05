@@ -7,7 +7,7 @@
 (library
  (name dowsing_odoc)
  (modules Dowsing_odoc)
- (libraries db fpath odoc.search odoc.odoc common)
+ (libraries db fpath odoc.index odoc.odoc odoc.odoc_utils common)
  (flags (:standard -open Common)))
 
 (library

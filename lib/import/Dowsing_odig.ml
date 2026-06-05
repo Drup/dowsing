@@ -6,7 +6,7 @@ exception Unbound_package of string
 
 let odig args =
   let ic = Unix.open_process_args_in "odig"
-      (Array.concat [[|"odig"|]; args; [|"--color=never"|]])
+      (Array.concat [[|"odig"|]; args; [|"--no-color"|]])
   in
   let l = CCIO.read_lines_l ic in
   l
