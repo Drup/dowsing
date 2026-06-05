@@ -1,17 +1,14 @@
 (** Load code from Odoc, partially taken from sherlodoc *)
 
 let index_file register filename =
-  let open Odoc_model in
-  let page p =
-    let id = p.Lang.Page.name in
-    Fold.page ~f:(register (id :> Paths.Identifier.t)) () p
-  in
-  let unit u =
-    let id = u.Lang.Compilation_unit.id in
-    Fold.unit ~f:(register (id :> Paths.Identifier.t)) () u
-  in
-  (match Odoc_odoc.Indexing.handle_file ~page ~unit filename with
-   | Ok result -> result
+  let open Odoc_index in
+  let open Odoc_utils in
+  (match Odoc_odoc.Odoc_file.load filename with
+   | Ok { content = Page_content p; _ } ->
+     Tree.iter ~f:register (Skeleton.from_page p)
+   | Ok { content = Unit_content u; _ } ->
+     Tree.iter ~f:register (Skeleton.from_unit u)
+   | Ok _ -> ()
    | Error (`Msg _msg) ->
      ()
      (* Format.printf "Odoc warning or error %a: %s@." Fpath.pp filename msg *)
@@ -33,13 +30,19 @@ let rec oid_of_lid l =
       (Outcometree.Oide_ident {printed_name = h})
       t
 
-let lid_of_odoc_path : P.Path.Type.t -> _ = function
+let rec lid_of_odoc_path : P.Path.Type.t -> _ = function
   | `Resolved t ->
-    P.Identifier.fullname @@ P.Path.Resolved.(identifier (t :> t))
+    (* identifier now returns option: None for e.g. functor-application paths *)
+    (match P.Path.Resolved.(identifier (t :> t)) with
+     | Some id -> P.Identifier.fullname id
+     | None -> failwith "TODO: fix me Dowsing_odoc.lid_of_odoc_path") (* TODO: I don't know what should be done here. *)
   | `Identifier (path, _hidden) ->
     P.Identifier.fullname path
-  | `Dot (mdl, x) ->
-    Odoc_document.Url.render_path (mdl :> P.Path.t) :: [x]
+  | `DotT (mdl, x) ->
+    Odoc_document.Url.render_path (mdl :> P.Path.t) :: [OM.Names.TypeName.to_string x]
+  | `SubstitutedT path ->
+    (* Substituted path (e.g. from functor application): recurse on the inner path *)
+    lid_of_odoc_path path
 
 let rec odoc_to_outcometree
     (odoc : Odoc_model.Lang.TypeExpr.t) : Outcometree.out_type =
@@ -55,10 +58,12 @@ let rec odoc_to_outcometree
        | None -> Asttypes.Nolabel
        | Some (Label s) -> Labelled s
        | Some (Optional s) -> Optional s
+       | Some (RawOptional s) -> Optional s (* TODO: is this correct? *)
      in
      Otyp_arrow (lbl, arg, res)
    | Tuple l ->
-     Otyp_tuple (List.map odoc_to_outcometree l)
+     (* OCaml 5.4 introduce labeled tuple. Tuple now carries optional per-element labels *)
+     Otyp_tuple (List.map (fun (_lbl, ty) -> odoc_to_outcometree ty) l)
    | Constr (c, params) ->
      let c = lid_of_odoc_path c in
      let params = List.map odoc_to_outcometree params in
@@ -104,8 +109,18 @@ let rec odoc_to_outcometree
      (* in *)
      (* let lid = oid_of_lid [Odoc_document.Url.render_path (path :> P.Path.t)] in *)
      (* Otyp_module (lid, substitutions)  *)
+   | OM.Lang.TypeExpr.Unboxed_tuple l ->
+     (* OxCaml feature: unboxed tuple #(int * string): no separate Outcometree constructor,
+        treat as a regular tuple for search purposes *)
+     Otyp_tuple (List.map (fun (_lbl, ty) -> odoc_to_outcometree ty) l)
+   | OM.Lang.TypeExpr.Quote t
+   | OM.Lang.TypeExpr.Splice t ->
+     (* OxCaml feature: recurse through *)
+     odoc_to_outcometree t
+   | OM.Lang.TypeExpr.Arrow_functor (_lbl, _mdl, _res) ->
+     failwith "not implemented" (* TODO: what are arrow functor? New in OCaml 5.5? Modular explicit? *)
 
-let of_entry_kind (kind : Odoc_search.Entry.kind) =
+let of_entry_kind (kind : Odoc_index.Entry.kind) =
   let module O = Outcometree in
   let format_args args = match args with
     | Odoc_model.Lang.TypeDecl.Constructor.Tuple l ->
@@ -135,22 +150,26 @@ let of_entry_kind (kind : Odoc_search.Entry.kind) =
     let res = odoc_to_outcometree res in
     let ty = mk_arrow args res in
     Some ty
-  | Field { mutable_ = _; parent_type; type_ } ->
+  | Field { mutable_ = _; parent_type; type_ }
+  | UnboxedField { mutable_ = _; parent_type; type_ } ->
     let arg = odoc_to_outcometree parent_type in
     let res = odoc_to_outcometree type_ in
     let ty = mk_arrow [Nolabel, arg] res in
     Some ty
-  | Doc _ 
-  | Class_type _ 
-  | Method _ 
-  | Class _ 
-  | TypeExtension _ 
-  | Module 
-  | ModuleType
+  | Doc
+  | Class_type _
+  | Method _
+  | Class _
+  | TypeExtension _
+  | Module _
+  | ModuleType _
+  | Page _
+  | Impl
+  | Dir
     ->
     None
 
-let of_entry pkg source_file (x : Odoc_search.Entry.t) =
+let of_entry pkg source_file (x : Odoc_index.Entry.t) =
   let open CCOption.Infix in
   let+ ty = of_entry_kind x.kind in
   let lid =
@@ -160,10 +179,8 @@ let of_entry pkg source_file (x : Odoc_search.Entry.t) =
   {Db.Entry. lid ; ty ; pkg; source_file }
 
 let iter pkgs k =
-  let register ~pkg ~source_file id () item =
-    List.iter
-      (fun e -> CCOption.iter k @@ of_entry pkg source_file e)
-      (Odoc_search.Entry.entries_of_item id item)
+  let register ~pkg ~source_file entry =
+    CCOption.iter k @@ of_entry pkg source_file entry
   in
   let loop (pkg, pkg_files) =
     List.iter
